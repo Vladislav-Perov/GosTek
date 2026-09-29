@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="GosTek/GosTek.csproj">
+    <Deploy Solution="Debug|*" />
+  </Project>
+</Solution>
