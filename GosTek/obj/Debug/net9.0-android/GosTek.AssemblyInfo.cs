@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GosTek")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0+e17c22c4c4fb62c0a0713182159d5ccaa1af565d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0+0043ce469427845ee74faa863779bb53ec8e037f")]
 [assembly: System.Reflection.AssemblyProductAttribute("GosTek")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GosTek")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
