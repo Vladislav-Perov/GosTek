@@ -6,52 +6,53 @@
              BackgroundColor="#0D0F1A"
              Shell.NavBarIsVisible="False">
 
-    <Grid RowDefinitions="*, Auto">
+    <Grid RowDefinitions="Auto, *, Auto">
 
-        <!-- Основной прокручиваемый контент -->
-        <ScrollView Grid.Row="0">
+        <!-- ==================== ШАПКА (СТАТИЧНАЯ) ==================== -->
+        <VerticalStackLayout Grid.Row="0" 
+                             Padding="20, 30, 20, 10"
+                             Spacing="5"
+                             MaximumWidthRequest="700"
+                             HorizontalOptions="Center">
 
-            <!-- Весь контент лежит строго в центральной колонке (индекс 1) -->
-            <VerticalStackLayout Grid.Column="1" Spacing="20">
+            <!-- Название приложения (По центру, зеленый акцент) -->
+            <Label Text="GosTek" 
+                   FontSize="28" 
+                   FontAttributes="Bold" 
+                   TextColor="#10B981" 
+                   HorizontalOptions="Center" />
 
-                <!-- Шапка с логотипом -->
-                <HorizontalStackLayout Spacing="10" Margin="0, 0, 0, 10">
-                    <Border BackgroundColor="#10B981" 
-                            StrokeShape="RoundRectangle 8" 
-                            WidthRequest="32" 
-                            HeightRequest="32" 
-                            StrokeThickness="0">
-                        <Label Text="📄" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center" />
-                    </Border>
-                    <Label Text="GosTek" 
-                           FontSize="22" 
-                           FontAttributes="Bold" 
-                           TextColor="White" 
-                           VerticalOptions="Center" />
-                </HorizontalStackLayout>
+            <!-- Подзаголовок (По центру, белый) -->
+            <Label Text="Что оформим сегодня?" 
+                   FontSize="22" 
+                   FontAttributes="Bold" 
+                   TextColor="White" 
+                   HorizontalOptions="Center" />
+        </VerticalStackLayout>
 
-                <!-- Заголовок -->
-                <Label Text="Что оформим сегодня?" 
-                       FontSize="26" 
-                       FontAttributes="Bold" 
-                       TextColor="White" />
+        <!-- ==================== СКРОЛЛИРУЕМЫЙ КОНТЕНТ ==================== -->
+        <ScrollView Grid.Row="1" 
+                    VerticalScrollBarVisibility="Never"
+                    Padding="20, 10, 20, 20">
 
-                <!-- Главная зеленая карточка: Создать документ -->
+            <VerticalStackLayout Spacing="20"
+                                 MaximumWidthRequest="700"
+                                 HorizontalOptions="Center">
+
+                <!-- Главная зеленая карточка -->
                 <Border BackgroundColor="#34D399"
                         StrokeShape="RoundRectangle 20"
                         Padding="20"
                         StrokeThickness="0">
+                    <Border.Shadow>
+                        <Shadow Brush="Black" Offset="0,4" Radius="8" Opacity="0.15" />
+                    </Border.Shadow>
                     <VerticalStackLayout Spacing="12">
                         <Label Text="📄" FontSize="24" />
                         <VerticalStackLayout Spacing="4">
-                            <Label Text="Создать документ" 
-                                   FontSize="20" 
-                                   FontAttributes="Bold" 
-                                   TextColor="#064E3B" />
+                            <Label Text="Создать документ" FontSize="20" FontAttributes="Bold" TextColor="#064E3B" />
                             <Label Text="Выберите шаблон, заполните поля. Файл Word или PDF будет готов." 
-                                   FontSize="14" 
-                                   TextColor="#065F46" 
-                                   LineBreakMode="WordWrap" />
+                                   FontSize="14" TextColor="#065F46" LineBreakMode="WordWrap" />
                         </VerticalStackLayout>
                     </VerticalStackLayout>
                 </Border>
@@ -59,27 +60,60 @@
                 <!-- Две карточки в ряд: Проверить и Сканировать -->
                 <Grid ColumnDefinitions="*, *" ColumnSpacing="12">
                     <!-- Проверить -->
-                    <Border Grid.Column="0"
-                            BackgroundColor="#161929"
-                            StrokeShape="RoundRectangle 16"
-                            Padding="16"
-                            Stroke="#272B44"
-                            StrokeThickness="1">
-                        <VerticalStackLayout Spacing="12">
-                            <VerticalStackLayout Spacing="4">
+                    <Border Grid.Column="0" VerticalOptions="Fill"
+                            StrokeShape="RoundRectangle 16" Padding="16" Stroke="#272B44" StrokeThickness="1">
+                        <Border.Shadow>
+                            <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
+                        </Border.Shadow>
+                        <Border.BackgroundColor>
+                            <Color>#161929</Color>
+                        </Border.BackgroundColor>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup Name="CommonStates">
+                                <VisualState Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Property="BackgroundColor" Value="#161929" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Property="BackgroundColor" Value="#1F2338" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <VerticalStackLayout Spacing="12" HorizontalOptions="Fill">
+                            <Label Text="✔️" FontSize="20" />
+                            <VerticalStackLayout Spacing="4" HorizontalOptions="Fill">
                                 <Label Text="Проверить" FontSize="16" FontAttributes="Bold" TextColor="White" />
-                                <Label Text="Свой документ на ошибки оформления" FontSize="12" TextColor="#8B90B3" LineBreakMode="WordWrap" />
+                                <Label Text="Документ на ошибки оформления" FontSize="12" TextColor="#8B90B3" LineBreakMode="WordWrap" HorizontalOptions="Fill" />
                             </VerticalStackLayout>
                         </VerticalStackLayout>
                     </Border>
 
                     <!-- Сканировать -->
-                    <Border Grid.Column="1"
-                            BackgroundColor="#161929"
-                            StrokeShape="RoundRectangle 16"
-                            Padding="16"
-                            Stroke="#272B44"
-                            StrokeThickness="1">
+                    <Border Grid.Column="1" VerticalOptions="Fill"
+                            StrokeShape="RoundRectangle 16" Padding="16" Stroke="#272B44" StrokeThickness="1">
+                        <Border.Shadow>
+                            <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
+                        </Border.Shadow>
+                        <Border.BackgroundColor>
+                            <Color>#161929</Color>
+                        </Border.BackgroundColor>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup Name="CommonStates">
+                                <VisualState Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Property="BackgroundColor" Value="#161929" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Property="BackgroundColor" Value="#1F2338" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
                         <VerticalStackLayout Spacing="12">
                             <Label Text="📷" FontSize="20" />
                             <VerticalStackLayout Spacing="4">
@@ -90,32 +124,56 @@
                     </Border>
                 </Grid>
 
+                <!-- Разделитель -->
+                <BoxView HeightRequest="1" Color="#1F2338" Margin="0, 4" />
+
                 <!-- Карточка профиля с прогресс-баром -->
-                <Border BackgroundColor="#161929"
-                        StrokeShape="RoundRectangle 16"
-                        Padding="16"
-                        Stroke="#272B44"
-                        StrokeThickness="1">
+                <Border BackgroundColor="#161929" StrokeShape="RoundRectangle 16" Padding="16" Stroke="#272B44" StrokeThickness="1">
+                    <Border.Shadow>
+                        <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
+                    </Border.Shadow>
                     <VerticalStackLayout Spacing="12">
                         <Label Text="Мой профиль" FontSize="16" FontAttributes="Bold" TextColor="White" />
-                        <!-- Прогресс-бар -->
-                        <ProgressBar Progress="0.8" 
-                                     ProgressColor="#34D399" 
-                                     BackgroundColor="#272B44" 
-                                     HeightRequest="6" />
-                        <Label Text="Заполнено на 80%. Не хватает расчётного счёта." 
-                               FontSize="12" 
-                               TextColor="#8B90B3" 
-                               LineBreakMode="WordWrap" />
+
+                        <!-- Прогресс-бар с текстом НАД линией -->
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="80%" TextColor="White" FontSize="12" FontAttributes="Bold" HorizontalOptions="End" />
+                            <ProgressBar Progress="0.8" ProgressColor="#34D399" BackgroundColor="#272B44" HeightRequest="12" VerticalOptions="Center" />
+                        </VerticalStackLayout>
+
+                        <Label Text="Заполнено на 80%. Не хватает расчётного счёта." FontSize="12" TextColor="#8B90B3" LineBreakMode="WordWrap" />
                     </VerticalStackLayout>
                 </Border>
 
+                <!-- Разделитель -->
+                <BoxView HeightRequest="1" Color="#1F2338" Margin="0, 4" />
+
                 <!-- Секция: Быстрый старт -->
-                <VerticalStackLayout Spacing="12" Margin="0, 10, 0, 0">
+                <VerticalStackLayout Spacing="12">
                     <Label Text="Быстрый старт" FontSize="18" FontAttributes="Bold" TextColor="White" />
 
-                    <!-- Элемент быстрого старта 1 -->
-                    <Border BackgroundColor="#161929" StrokeShape="RoundRectangle 16" Padding="14" Stroke="#272B44" StrokeThickness="1">
+                    <!-- Элемент 1 -->
+                    <Border StrokeShape="RoundRectangle 16" Padding="14" Stroke="#272B44" StrokeThickness="1">
+                        <Border.Shadow>
+                            <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
+                        </Border.Shadow>
+                        <Border.BackgroundColor>
+                            <Color>#161929</Color>
+                        </Border.BackgroundColor>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup Name="CommonStates">
+                                <VisualState Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Property="BackgroundColor" Value="#161929" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Property="BackgroundColor" Value="#1F2338" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
                         <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
                             <Border Grid.Column="0" BackgroundColor="#1F2937" StrokeShape="RoundRectangle 10" WidthRequest="40" HeightRequest="40" StrokeThickness="0" VerticalOptions="Center">
                                 <Label Text="📄" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
@@ -128,8 +186,28 @@
                         </Grid>
                     </Border>
 
-                    <!-- Элемент быстрого старта 2 -->
-                    <Border BackgroundColor="#161929" StrokeShape="RoundRectangle 16" Padding="14" Stroke="#272B44" StrokeThickness="1">
+                    <!-- Элемент 2 -->
+                    <Border StrokeShape="RoundRectangle 16" Padding="14" Stroke="#272B44" StrokeThickness="1">
+                        <Border.Shadow>
+                            <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
+                        </Border.Shadow>
+                        <Border.BackgroundColor>
+                            <Color>#161929</Color>
+                        </Border.BackgroundColor>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup Name="CommonStates">
+                                <VisualState Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Property="BackgroundColor" Value="#161929" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Property="BackgroundColor" Value="#1F2338" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
                         <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
                             <Border Grid.Column="0" BackgroundColor="#1F2937" StrokeShape="RoundRectangle 10" WidthRequest="40" HeightRequest="40" StrokeThickness="0" VerticalOptions="Center">
                                 <Label Text="📄" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
@@ -144,47 +222,31 @@
                 </VerticalStackLayout>
 
             </VerticalStackLayout>
-            <!-- ЭТОТ ТЕГ БЫЛ ПРОПУЩЕН, Я ЕГО ДОБАВИЛ -->
         </ScrollView>
 
-        <!-- Нижняя навигационная панель (Таббар) -->
-        <Border Grid.Row="1"
-                BackgroundColor="#111322"
-                Stroke="#272B44"
-                StrokeThickness="1"
-                Padding="10, 8">
+        <!-- ==================== ТАББАР (СТАТИЧНЫЙ) ==================== -->
+        <Border Grid.Row="2" BackgroundColor="#111322" Stroke="#272B44" StrokeThickness="1" Padding="10, 8">
             <Grid ColumnDefinitions="*, *, *, *, *" HorizontalOptions="Fill">
-
-                <!-- Главная -->
                 <VerticalStackLayout Grid.Column="0" HorizontalOptions="Center" Spacing="2">
                     <Label Text="🏠" FontSize="18" HorizontalOptions="Center" TextColor="#34D399" />
                     <Label Text="Главная" FontSize="11" TextColor="#34D399" HorizontalOptions="Center" />
                 </VerticalStackLayout>
-
-                <!-- Шаблоны -->
                 <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center" Spacing="2">
                     <Label Text="📋" FontSize="18" HorizontalOptions="Center" TextColor="#8B90B3" />
                     <Label Text="Шаблоны" FontSize="11" TextColor="#8B90B3" HorizontalOptions="Center" />
                 </VerticalStackLayout>
-
-                <!-- Скан -->
                 <VerticalStackLayout Grid.Column="2" HorizontalOptions="Center" Spacing="2">
                     <Label Text="📷" FontSize="18" HorizontalOptions="Center" TextColor="#8B90B3" />
                     <Label Text="Скан" FontSize="11" TextColor="#8B90B3" HorizontalOptions="Center" />
                 </VerticalStackLayout>
-
-                <!-- Проверка -->
                 <VerticalStackLayout Grid.Column="3" HorizontalOptions="Center" Spacing="2">
                     <Label Text="🛡️" FontSize="18" HorizontalOptions="Center" TextColor="#8B90B3" />
                     <Label Text="Проверка" FontSize="11" TextColor="#8B90B3" HorizontalOptions="Center" />
                 </VerticalStackLayout>
-
-                <!-- Профиль -->
                 <VerticalStackLayout Grid.Column="4" HorizontalOptions="Center" Spacing="2">
                     <Label Text="👤" FontSize="18" HorizontalOptions="Center" TextColor="#8B90B3" />
                     <Label Text="Профиль" FontSize="11" TextColor="#8B90B3" HorizontalOptions="Center" />
                 </VerticalStackLayout>
-
             </Grid>
         </Border>
 
