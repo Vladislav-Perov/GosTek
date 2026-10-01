@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="GosTek.MainPage"
+             x:Class="GosTek.Views.MainPage"
              Title="Главная"
              BackgroundColor="#0D0F1A"
              Shell.NavBarIsVisible="False">
@@ -11,8 +11,8 @@
         <!-- Основной прокручиваемый контент -->
         <ScrollView Grid.Row="0">
 
-                <!-- Весь контент лежит строго в центральной колонке (индекс 1) -->
-                <VerticalStackLayout Grid.Column="1" Spacing="20">
+            <!-- Весь контент лежит строго в центральной колонке (индекс 1) -->
+            <VerticalStackLayout Grid.Column="1" Spacing="20">
 
                 <!-- Шапка с логотипом -->
                 <HorizontalStackLayout Spacing="10" Margin="0, 0, 0, 10">
@@ -144,7 +144,7 @@
                 </VerticalStackLayout>
 
             </VerticalStackLayout>
-            </Grid>
+            <!-- ЭТОТ ТЕГ БЫЛ ПРОПУЩЕН, Я ЕГО ДОБАВИЛ -->
         </ScrollView>
 
         <!-- Нижняя навигационная панель (Таббар) -->
