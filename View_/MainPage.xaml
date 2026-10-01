@@ -10,7 +10,9 @@
 
         <!-- Основной прокручиваемый контент -->
         <ScrollView Grid.Row="0">
-            <VerticalStackLayout Spacing="20" Padding="20, 25, 20, 30">
+
+                <!-- Весь контент лежит строго в центральной колонке (индекс 1) -->
+                <VerticalStackLayout Grid.Column="1" Spacing="20">
 
                 <!-- Шапка с логотипом -->
                 <HorizontalStackLayout Spacing="10" Margin="0, 0, 0, 10">
@@ -64,7 +66,6 @@
                             Stroke="#272B44"
                             StrokeThickness="1">
                         <VerticalStackLayout Spacing="12">
-                            <Label Text="🛡️" FontSize="20" />
                             <VerticalStackLayout Spacing="4">
                                 <Label Text="Проверить" FontSize="16" FontAttributes="Bold" TextColor="White" />
                                 <Label Text="Свой документ на ошибки оформления" FontSize="12" TextColor="#8B90B3" LineBreakMode="WordWrap" />
@@ -143,6 +144,7 @@
                 </VerticalStackLayout>
 
             </VerticalStackLayout>
+            </Grid>
         </ScrollView>
 
         <!-- Нижняя навигационная панель (Таббар) -->
