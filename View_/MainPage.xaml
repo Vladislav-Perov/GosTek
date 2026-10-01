@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GosTek.MainPage"
+             Title="Главная"
+             BackgroundColor="#0D0F1A"
+             Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="*, Auto">
+
+        <!-- Основной прокручиваемый контент -->
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Spacing="20" Padding="20, 25, 20, 30">
+
+                <!-- Шапка с логотипом -->
+                <HorizontalStackLayout Spacing="10" Margin="0, 0, 0, 10">
+                    <Border BackgroundColor="#10B981" 
+                            StrokeShape="RoundRectangle 8" 
+                            WidthRequest="32" 
+                            HeightRequest="32" 
+                            StrokeThickness="0">
+                        <Label Text="📄" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                    <Label Text="GosTek" 
+                           FontSize="22" 
+                           FontAttributes="Bold" 
+                           TextColor="White" 
+                           VerticalOptions="Center" />
+                </HorizontalStackLayout>
+
+                <!-- Заголовок -->
+                <Label Text="Что оформим сегодня?" 
+                       FontSize="26" 
+                       FontAttributes="Bold" 
+                       TextColor="White" />
+
+                <!-- Главная зеленая карточка: Создать документ -->
+                <Border BackgroundColor="#34D399"
+                        StrokeShape="RoundRectangle 20"
+                        Padding="20"
+                        StrokeThickness="0">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="📄" FontSize="24" />
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Создать документ" 
+                                   FontSize="20" 
+                                   FontAttributes="Bold" 
+                                   TextColor="#064E3B" />
+                            <Label Text="Выберите шаблон, заполните поля. Файл Word или PDF будет готов." 
+                                   FontSize="14" 
+                                   TextColor="#065F46" 
+                                   LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Две карточки в ряд: Проверить и Сканировать -->
+                <Grid ColumnDefinitions="*, *" ColumnSpacing="12">
+                    <!-- Проверить -->
+                    <Border Grid.Column="0"
+                            BackgroundColor="#161929"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="16"
+                            Stroke="#272B44"
+                            StrokeThickness="1">
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="🛡️" FontSize="20" />
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="Проверить" FontSize="16" FontAttributes="Bold" TextColor="White" />
+                                <Label Text="Свой документ на ошибки оформления" FontSize="12" TextColor="#8B90B3" LineBreakMode="WordWrap" />
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Сканировать -->
+                    <Border Grid.Column="1"
+                            BackgroundColor="#161929"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="16"
+                            Stroke="#272B44"
+                            StrokeThickness="1">
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="📷" FontSize="20" />
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="Сканировать" FontSize="16" FontAttributes="Bold" TextColor="White" />
+                                <Label Text="Из фото в данные или текст" FontSize="12" TextColor="#8B90B3" LineBreakMode="WordWrap" />
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+                </Grid>
+
+                <!-- Карточка профиля с прогресс-баром -->
+                <Border BackgroundColor="#161929"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="16"
+                        Stroke="#272B44"
+                        StrokeThickness="1">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Мой профиль" FontSize="16" FontAttributes="Bold" TextColor="White" />
+                        <!-- Прогресс-бар -->
+                        <ProgressBar Progress="0.8" 
+                                     ProgressColor="#34D399" 
+                                     BackgroundColor="#272B44" 
+                                     HeightRequest="6" />
+                        <Label Text="Заполнено на 80%. Не хватает расчётного счёта." 
+                               FontSize="12" 
+                               TextColor="#8B90B3" 
+                               LineBreakMode="WordWrap" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Секция: Быстрый старт -->
+                <VerticalStackLayout Spacing="12" Margin="0, 10, 0, 0">
+                    <Label Text="Быстрый старт" FontSize="18" FontAttributes="Bold" TextColor="White" />
+
+                    <!-- Элемент быстрого старта 1 -->
+                    <Border BackgroundColor="#161929" StrokeShape="RoundRectangle 16" Padding="14" Stroke="#272B44" StrokeThickness="1">
+                        <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
+                            <Border Grid.Column="0" BackgroundColor="#1F2937" StrokeShape="RoundRectangle 10" WidthRequest="40" HeightRequest="40" StrokeThickness="0" VerticalOptions="Center">
+                                <Label Text="📄" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                <Label Text="Объяснительная записка" FontSize="15" FontAttributes="Bold" TextColor="White" />
+                                <Label Text="Причина опоздания, нарушения срока, отсутствия" FontSize="12" TextColor="#8B90B3" LineBreakMode="TailTruncation" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="2" Text="›" FontSize="20" TextColor="#8B90B3" VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Элемент быстрого старта 2 -->
+                    <Border BackgroundColor="#161929" StrokeShape="RoundRectangle 16" Padding="14" Stroke="#272B44" StrokeThickness="1">
+                        <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
+                            <Border Grid.Column="0" BackgroundColor="#1F2937" StrokeShape="RoundRectangle 10" WidthRequest="40" HeightRequest="40" StrokeThickness="0" VerticalOptions="Center">
+                                <Label Text="📄" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                <Label Text="Заявление о регистрации ИП" FontSize="15" FontAttributes="Bold" TextColor="White" />
+                                <Label Text="Для подачи в регистрирующий орган" FontSize="12" TextColor="#8B90B3" LineBreakMode="TailTruncation" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="2" Text="›" FontSize="20" TextColor="#8B90B3" VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Нижняя навигационная панель (Таббар) -->
+        <Border Grid.Row="1"
+                BackgroundColor="#111322"
+                Stroke="#272B44"
+                StrokeThickness="1"
+                Padding="10, 8">
+            <Grid ColumnDefinitions="*, *, *, *, *" HorizontalOptions="Fill">
+
+                <!-- Главная -->
+                <VerticalStackLayout Grid.Column="0" HorizontalOptions="Center" Spacing="2">
+                    <Label Text="🏠" FontSize="18" HorizontalOptions="Center" TextColor="#34D399" />
+                    <Label Text="Главная" FontSize="11" TextColor="#34D399" HorizontalOptions="Center" />
+                </VerticalStackLayout>
+
+                <!-- Шаблоны -->
+                <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center" Spacing="2">
+                    <Label Text="📋" FontSize="18" HorizontalOptions="Center" TextColor="#8B90B3" />
+                    <Label Text="Шаблоны" FontSize="11" TextColor="#8B90B3" HorizontalOptions="Center" />
+                </VerticalStackLayout>
+
+                <!-- Скан -->
+                <VerticalStackLayout Grid.Column="2" HorizontalOptions="Center" Spacing="2">
+                    <Label Text="📷" FontSize="18" HorizontalOptions="Center" TextColor="#8B90B3" />
+                    <Label Text="Скан" FontSize="11" TextColor="#8B90B3" HorizontalOptions="Center" />
+                </VerticalStackLayout>
+
+                <!-- Проверка -->
+                <VerticalStackLayout Grid.Column="3" HorizontalOptions="Center" Spacing="2">
+                    <Label Text="🛡️" FontSize="18" HorizontalOptions="Center" TextColor="#8B90B3" />
+                    <Label Text="Проверка" FontSize="11" TextColor="#8B90B3" HorizontalOptions="Center" />
+                </VerticalStackLayout>
+
+                <!-- Профиль -->
+                <VerticalStackLayout Grid.Column="4" HorizontalOptions="Center" Spacing="2">
+                    <Label Text="👤" FontSize="18" HorizontalOptions="Center" TextColor="#8B90B3" />
+                    <Label Text="Профиль" FontSize="11" TextColor="#8B90B3" HorizontalOptions="Center" />
+                </VerticalStackLayout>
+
+            </Grid>
+        </Border>
+
+    </Grid>
+</ContentPage>
