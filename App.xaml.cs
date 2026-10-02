@@ -5,6 +5,7 @@
         public App()
         {
             InitializeComponent();
+            ThemeService.Init();
         }
 
         protected override Window CreateWindow(IActivationState? activationState)
