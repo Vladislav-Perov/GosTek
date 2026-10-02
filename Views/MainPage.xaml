@@ -291,8 +291,8 @@
             </VerticalStackLayout>
         </ScrollView>
 
-        <!-- ==================== ТАББАР ==================== -->
-        <Border Grid.Row="2" BackgroundColor="{DynamicResource TabBarBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" Padding="4, 8">
+        <!-- ==================== ТАББАР (СТАТИЧНЫЙ) ==================== -->
+        <Border Grid.Row="2" BackgroundColor="#111322" Stroke="#272B44" StrokeThickness="1" Padding="10, 8">
             <Grid ColumnDefinitions="*, *, *, *, *" HorizontalOptions="Fill">
 
                 <Grid.Resources>
