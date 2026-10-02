@@ -291,79 +291,75 @@
             </VerticalStackLayout>
         </ScrollView>
 
-        <!-- ==================== ТАББАР (СТАТИЧНЫЙ) ==================== -->
-        <Border Grid.Row="2" BackgroundColor="#111322" Stroke="#272B44" StrokeThickness="1" Padding="10, 8">
+        <!-- ==================== ТАББАР ==================== -->
+        <Border Grid.Row="2" BackgroundColor="{DynamicResource TabBarBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" Padding="4, 8">
             <Grid ColumnDefinitions="*, *, *, *, *" HorizontalOptions="Fill">
 
-                <Grid.Resources>
-                    <Style x:Key="TabText" TargetType="Label">
-                        <Setter Property="FontSize" Value="10" />
-                        <Setter Property="LineBreakMode" Value="NoWrap" />
-                        <Setter Property="HorizontalOptions" Value="Center" />
-                        <Setter Property="HorizontalTextAlignment" Value="Center" />
-                        <Setter Property="TextColor" Value="{DynamicResource TextSecondary}" />
-                    </Style>
-                    <Style x:Key="TabIcon" TargetType="Label">
-                        <Setter Property="FontSize" Value="18" />
-                        <Setter Property="HorizontalOptions" Value="Center" />
-                    </Style>
-                </Grid.Resources>
-
-                <!-- Главная (активная) -->
+                <!-- Главная (активная вкладка) -->
                 <Border Grid.Column="0" Margin="2,0"
-                BackgroundColor="{DynamicResource TabActiveBg}"
-                StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="2,6">
+                        BackgroundColor="{DynamicResource TabActiveBg}"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 12"
+                        Padding="2,6">
                     <VerticalStackLayout Spacing="2">
-                        <Label Text="🏠" Style="{StaticResource TabIcon}" />
-                        <Label Text="Главная" Style="{StaticResource TabText}" TextColor="{DynamicResource AccentGreen}" />
+                        <Label Text="🏠" FontSize="18" HorizontalOptions="Center" TextColor="{DynamicResource AccentGreen}" />
+                        <Label Text="Главная" FontSize="10" LineBreakMode="NoWrap" HorizontalOptions="Center" TextColor="{DynamicResource AccentGreen}" />
                     </VerticalStackLayout>
                 </Border>
 
                 <Border Grid.Column="1" Margin="2,0" StyleClass="HoverTab"
-                BackgroundColor="Transparent"
-                StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="2,6">
+                        BackgroundColor="Transparent"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 12"
+                        Padding="2,6">
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="templates" />
                     </Border.GestureRecognizers>
                     <VerticalStackLayout Spacing="2">
-                        <Label Text="📋" Style="{StaticResource TabIcon}" />
-                        <Label Text="Шаблоны" Style="{StaticResource TabText}" />
+                        <Label Text="📋" FontSize="18" HorizontalOptions="Center" TextColor="{DynamicResource TextSecondary}" />
+                        <Label Text="Шаблоны" FontSize="10" LineBreakMode="NoWrap" HorizontalOptions="Center" TextColor="{DynamicResource TextSecondary}" />
                     </VerticalStackLayout>
                 </Border>
 
                 <Border Grid.Column="2" Margin="2,0" StyleClass="HoverTab"
-                BackgroundColor="Transparent"
-                StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="2,6">
+                        BackgroundColor="Transparent"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 12"
+                        Padding="2,6">
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="scan" />
                     </Border.GestureRecognizers>
                     <VerticalStackLayout Spacing="2">
-                        <Label Text="📷" Style="{StaticResource TabIcon}" />
-                        <Label Text="Скан" Style="{StaticResource TabText}" />
+                        <Label Text="📷" FontSize="18" HorizontalOptions="Center" TextColor="{DynamicResource TextSecondary}" />
+                        <Label Text="Скан" FontSize="10" LineBreakMode="NoWrap" HorizontalOptions="Center" TextColor="{DynamicResource TextSecondary}" />
                     </VerticalStackLayout>
                 </Border>
 
                 <Border Grid.Column="3" Margin="2,0" StyleClass="HoverTab"
-                BackgroundColor="Transparent"
-                StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="2,6">
+                        BackgroundColor="Transparent"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 12"
+                        Padding="2,6">
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="check" />
                     </Border.GestureRecognizers>
                     <VerticalStackLayout Spacing="2">
-                        <Label Text="🛡️" Style="{StaticResource TabIcon}" />
-                        <Label Text="Проверка" Style="{StaticResource TabText}" />
+                        <Label Text="🛡️" FontSize="18" HorizontalOptions="Center" TextColor="{DynamicResource TextSecondary}" />
+                        <Label Text="Проверка" FontSize="10" LineBreakMode="NoWrap" HorizontalOptions="Center" TextColor="{DynamicResource TextSecondary}" />
                     </VerticalStackLayout>
                 </Border>
 
                 <Border Grid.Column="4" Margin="2,0" StyleClass="HoverTab"
-                BackgroundColor="Transparent"
-                StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="2,6">
+                        BackgroundColor="Transparent"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 12"
+                        Padding="2,6">
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="profile" />
                     </Border.GestureRecognizers>
                     <VerticalStackLayout Spacing="2">
-                        <Label Text="👤" Style="{StaticResource TabIcon}" />
-                        <Label Text="Профиль" Style="{StaticResource TabText}" />
+                        <Label Text="👤" FontSize="18" HorizontalOptions="Center" TextColor="{DynamicResource TextSecondary}" />
+                        <Label Text="Профиль" FontSize="10" LineBreakMode="NoWrap" HorizontalOptions="Center" TextColor="{DynamicResource TextSecondary}" />
                     </VerticalStackLayout>
                 </Border>
 
