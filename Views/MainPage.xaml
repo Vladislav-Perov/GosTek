@@ -3,35 +3,145 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="GosTek.Views.MainPage"
              Title="Главная"
-             BackgroundColor="#0D0F1A"
+             BackgroundColor="{DynamicResource PageBg}"
              Shell.NavBarIsVisible="False">
+
+    <ContentPage.Resources>
+
+        <!-- Обычная карточка -->
+        <Style TargetType="Border" Class="HoverCard">
+            <Setter Property="VisualStateManager.VisualStateGroups">
+                <VisualStateGroupList>
+                    <VisualStateGroup Name="CommonStates">
+                        <VisualState Name="Normal">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="{DynamicResource CardBg}" />
+                                <Setter Property="Stroke" Value="{DynamicResource CardStroke}" />
+                                <Setter Property="Scale" Value="1" />
+                            </VisualState.Setters>
+                        </VisualState>
+                        <VisualState Name="PointerOver">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="{DynamicResource CardHoverBg}" />
+                                <Setter Property="Stroke" Value="{DynamicResource AccentGreen}" />
+                                <Setter Property="Scale" Value="1.02" />
+                            </VisualState.Setters>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateGroupList>
+            </Setter>
+        </Style>
+
+        <!-- Главная зелёная карточка -->
+        <Style TargetType="Border" Class="HoverGreen">
+            <Setter Property="VisualStateManager.VisualStateGroups">
+                <VisualStateGroupList>
+                    <VisualStateGroup Name="CommonStates">
+                        <VisualState Name="Normal">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="#34D399" />
+                                <Setter Property="Scale" Value="1" />
+                            </VisualState.Setters>
+                        </VisualState>
+                        <VisualState Name="PointerOver">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="#4FE3AF" />
+                                <Setter Property="Scale" Value="1.02" />
+                            </VisualState.Setters>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateGroupList>
+            </Setter>
+        </Style>
+
+        <!-- Пункт таббара -->
+        <Style TargetType="Border" Class="HoverTab">
+            <Setter Property="VisualStateManager.VisualStateGroups">
+                <VisualStateGroupList>
+                    <VisualStateGroup Name="CommonStates">
+                        <VisualState Name="Normal">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="Transparent" />
+                                <Setter Property="Scale" Value="1" />
+                            </VisualState.Setters>
+                        </VisualState>
+                        <VisualState Name="PointerOver">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="{DynamicResource CardHoverBg}" />
+                                <Setter Property="Scale" Value="1.08" />
+                            </VisualState.Setters>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateGroupList>
+            </Setter>
+        </Style>
+
+    </ContentPage.Resources>
 
     <Grid RowDefinitions="Auto, *, Auto">
 
-        <!-- ==================== ШАПКА (СТАТИЧНАЯ) ==================== -->
-        <VerticalStackLayout Grid.Row="0" 
-                             Padding="20, 30, 20, 10"
-                             Spacing="5"
-                             MaximumWidthRequest="700"
-                             HorizontalOptions="Center">
+        <!-- ==================== ШАПКА ==================== -->
+        <Grid Grid.Row="0" Padding="20, 15, 12, 10">
 
-            <!-- Название приложения (По центру, зеленый акцент) -->
-            <Label Text="GosTek" 
-                   FontSize="28" 
-                   FontAttributes="Bold" 
-                   TextColor="#10B981" 
-                   HorizontalOptions="Center" />
+            <VerticalStackLayout HorizontalOptions="Center"
+                                 VerticalOptions="Center"
+                                 Spacing="5">
+                <Label Text="GosTek"
+                       FontSize="28"
+                       FontAttributes="Bold"
+                       TextColor="{DynamicResource BrandGreen}"
+                       HorizontalOptions="Center" />
+                <Label x:Name="SubtitleLabel"
+                       Text="Что оформим сегодня?"
+                       FontSize="22"
+                       FontAttributes="Bold"
+                       TextColor="{DynamicResource TextPrimary}"
+                       HorizontalOptions="Center"
+                       HorizontalTextAlignment="Center" />
+            </VerticalStackLayout>
 
-            <!-- Подзаголовок (По центру, белый) -->
-            <Label Text="Что оформим сегодня?" 
-                   FontSize="22" 
-                   FontAttributes="Bold" 
-                   TextColor="White" 
-                   HorizontalOptions="Center" />
-        </VerticalStackLayout>
+            <!-- Переключатель темы -->
+            <Border StyleClass="HoverCard"
+                    HorizontalOptions="End"
+                    VerticalOptions="Start"
+                    BackgroundColor="{DynamicResource CardBg}"
+                    Stroke="{DynamicResource CardStroke}"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 16"
+                    Padding="10,5">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnThemeToggleTapped" />
+                </Border.GestureRecognizers>
+
+                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                    <Label x:Name="ThemeIcon"
+                           Text="🌙"
+                           FontSize="16"
+                           VerticalOptions="Center" />
+
+                    <Border x:Name="ToggleTrack"
+                            WidthRequest="40"
+                            HeightRequest="22"
+                            BackgroundColor="{DynamicResource ToggleTrackBg}"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 11"
+                            VerticalOptions="Center">
+                        <Border x:Name="ToggleThumb"
+                                WidthRequest="16"
+                                HeightRequest="16"
+                                BackgroundColor="White"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 8"
+                                HorizontalOptions="Start"
+                                VerticalOptions="Center"
+                                Margin="3,0,0,0" />
+                    </Border>
+                </HorizontalStackLayout>
+            </Border>
+        </Grid>
 
         <!-- ==================== СКРОЛЛИРУЕМЫЙ КОНТЕНТ ==================== -->
-        <ScrollView Grid.Row="1" 
+        <ScrollView Grid.Row="1"
                     VerticalScrollBarVisibility="Never"
                     Padding="20, 10, 20, 20">
 
@@ -40,183 +150,140 @@
                                  HorizontalOptions="Center">
 
                 <!-- Главная зеленая карточка -->
-                <Border BackgroundColor="#34D399"
+                <Border StyleClass="HoverGreen"
+                        BackgroundColor="#34D399"
                         StrokeShape="RoundRectangle 20"
                         Padding="20"
                         StrokeThickness="0">
                     <Border.Shadow>
                         <Shadow Brush="Black" Offset="0,4" Radius="8" Opacity="0.15" />
                     </Border.Shadow>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="create" />
+                    </Border.GestureRecognizers>
                     <VerticalStackLayout Spacing="12">
                         <Label Text="📄" FontSize="24" />
                         <VerticalStackLayout Spacing="4">
                             <Label Text="Создать документ" FontSize="20" FontAttributes="Bold" TextColor="#064E3B" />
-                            <Label Text="Выберите шаблон, заполните поля. Файл Word или PDF будет готов." 
+                            <Label Text="Выберите шаблон, заполните поля. Файл Word или PDF будет готов."
                                    FontSize="14" TextColor="#065F46" LineBreakMode="WordWrap" />
                         </VerticalStackLayout>
                     </VerticalStackLayout>
                 </Border>
 
-                <!-- Две карточки в ряд: Проверить и Сканировать -->
+                <!-- Две карточки в ряд -->
                 <Grid ColumnDefinitions="*, *" ColumnSpacing="12">
-                    <!-- Проверить -->
                     <Border Grid.Column="0" VerticalOptions="Fill"
-                            StrokeShape="RoundRectangle 16" Padding="16" Stroke="#272B44" StrokeThickness="1">
+                            StyleClass="HoverCard"
+                            BackgroundColor="{DynamicResource CardBg}"
+                            StrokeShape="RoundRectangle 16" Padding="16"
+                            Stroke="{DynamicResource CardStroke}" StrokeThickness="1">
                         <Border.Shadow>
                             <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
                         </Border.Shadow>
-                        <Border.BackgroundColor>
-                            <Color>#161929</Color>
-                        </Border.BackgroundColor>
-                        <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroup Name="CommonStates">
-                                <VisualState Name="Normal">
-                                    <VisualState.Setters>
-                                        <Setter Property="BackgroundColor" Value="#161929" />
-                                    </VisualState.Setters>
-                                </VisualState>
-                                <VisualState Name="PointerOver">
-                                    <VisualState.Setters>
-                                        <Setter Property="BackgroundColor" Value="#1F2338" />
-                                    </VisualState.Setters>
-                                </VisualState>
-                            </VisualStateGroup>
-                        </VisualStateManager.VisualStateGroups>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="check" />
+                        </Border.GestureRecognizers>
                         <VerticalStackLayout Spacing="12" HorizontalOptions="Fill">
                             <Label Text="✔️" FontSize="20" />
                             <VerticalStackLayout Spacing="4" HorizontalOptions="Fill">
-                                <Label Text="Проверить" FontSize="16" FontAttributes="Bold" TextColor="White" />
-                                <Label Text="Документ на ошибки оформления" FontSize="12" TextColor="#8B90B3" LineBreakMode="WordWrap" HorizontalOptions="Fill" />
+                                <Label Text="Проверить" FontSize="16" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
+                                <Label Text="Документ на ошибки оформления" FontSize="12" TextColor="{DynamicResource TextSecondary}" LineBreakMode="WordWrap" HorizontalOptions="Fill" />
                             </VerticalStackLayout>
                         </VerticalStackLayout>
                     </Border>
 
-                    <!-- Сканировать -->
                     <Border Grid.Column="1" VerticalOptions="Fill"
-                            StrokeShape="RoundRectangle 16" Padding="16" Stroke="#272B44" StrokeThickness="1">
+                            StyleClass="HoverCard"
+                            BackgroundColor="{DynamicResource CardBg}"
+                            StrokeShape="RoundRectangle 16" Padding="16"
+                            Stroke="{DynamicResource CardStroke}" StrokeThickness="1">
                         <Border.Shadow>
                             <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
                         </Border.Shadow>
-                        <Border.BackgroundColor>
-                            <Color>#161929</Color>
-                        </Border.BackgroundColor>
-                        <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroup Name="CommonStates">
-                                <VisualState Name="Normal">
-                                    <VisualState.Setters>
-                                        <Setter Property="BackgroundColor" Value="#161929" />
-                                    </VisualState.Setters>
-                                </VisualState>
-                                <VisualState Name="PointerOver">
-                                    <VisualState.Setters>
-                                        <Setter Property="BackgroundColor" Value="#1F2338" />
-                                    </VisualState.Setters>
-                                </VisualState>
-                            </VisualStateGroup>
-                        </VisualStateManager.VisualStateGroups>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="scan" />
+                        </Border.GestureRecognizers>
                         <VerticalStackLayout Spacing="12">
                             <Label Text="📷" FontSize="20" />
                             <VerticalStackLayout Spacing="4">
-                                <Label Text="Сканировать" FontSize="16" FontAttributes="Bold" TextColor="White" />
-                                <Label Text="Из фото в данные или текст" FontSize="12" TextColor="#8B90B3" LineBreakMode="WordWrap" />
+                                <Label Text="Сканировать" FontSize="16" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
+                                <Label Text="Из фото в данные или текст" FontSize="12" TextColor="{DynamicResource TextSecondary}" LineBreakMode="WordWrap" />
                             </VerticalStackLayout>
                         </VerticalStackLayout>
                     </Border>
                 </Grid>
 
-                <!-- Разделитель -->
-                <BoxView HeightRequest="1" Color="#1F2338" Margin="0, 4" />
+                <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 4" />
 
-                <!-- Карточка профиля с прогресс-баром -->
-                <Border BackgroundColor="#161929" StrokeShape="RoundRectangle 16" Padding="16" Stroke="#272B44" StrokeThickness="1">
+                <!-- Карточка профиля -->
+                <Border StyleClass="HoverCard"
+                        BackgroundColor="{DynamicResource CardBg}"
+                        StrokeShape="RoundRectangle 16" Padding="16"
+                        Stroke="{DynamicResource CardStroke}" StrokeThickness="1">
                     <Border.Shadow>
                         <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
                     </Border.Shadow>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="profile" />
+                    </Border.GestureRecognizers>
                     <VerticalStackLayout Spacing="12">
-                        <Label Text="Мой профиль" FontSize="16" FontAttributes="Bold" TextColor="White" />
-
-                        <!-- Прогресс-бар с текстом НАД линией -->
+                        <Label Text="Мой профиль" FontSize="16" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
                         <VerticalStackLayout Spacing="4">
-                            <Label Text="80%" TextColor="White" FontSize="12" FontAttributes="Bold" HorizontalOptions="End" />
-                            <ProgressBar Progress="0.8" ProgressColor="#34D399" BackgroundColor="#272B44" HeightRequest="12" VerticalOptions="Center" />
+                            <Label Text="80%" TextColor="{DynamicResource TextPrimary}" FontSize="12" FontAttributes="Bold" HorizontalOptions="End" />
+                            <ProgressBar Progress="0.8" ProgressColor="{DynamicResource AccentGreen}" BackgroundColor="{DynamicResource CardStroke}" HeightRequest="12" VerticalOptions="Center" />
                         </VerticalStackLayout>
-
-                        <Label Text="Заполнено на 80%. Не хватает расчётного счёта." FontSize="12" TextColor="#8B90B3" LineBreakMode="WordWrap" />
+                        <Label Text="Заполнено на 80%. Не хватает расчётного счёта." FontSize="12" TextColor="{DynamicResource TextSecondary}" LineBreakMode="WordWrap" />
                     </VerticalStackLayout>
                 </Border>
 
-                <!-- Разделитель -->
-                <BoxView HeightRequest="1" Color="#1F2338" Margin="0, 4" />
+                <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 4" />
 
-                <!-- Секция: Быстрый старт -->
+                <!-- Быстрый старт -->
                 <VerticalStackLayout Spacing="12">
-                    <Label Text="Быстрый старт" FontSize="18" FontAttributes="Bold" TextColor="White" />
+                    <Label Text="Быстрый старт" FontSize="18" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
 
-                    <!-- Элемент 1 -->
-                    <Border StrokeShape="RoundRectangle 16" Padding="14" Stroke="#272B44" StrokeThickness="1">
+                    <Border StyleClass="HoverCard"
+                            BackgroundColor="{DynamicResource CardBg}"
+                            StrokeShape="RoundRectangle 16" Padding="14"
+                            Stroke="{DynamicResource CardStroke}" StrokeThickness="1">
                         <Border.Shadow>
                             <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
                         </Border.Shadow>
-                        <Border.BackgroundColor>
-                            <Color>#161929</Color>
-                        </Border.BackgroundColor>
-                        <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroup Name="CommonStates">
-                                <VisualState Name="Normal">
-                                    <VisualState.Setters>
-                                        <Setter Property="BackgroundColor" Value="#161929" />
-                                    </VisualState.Setters>
-                                </VisualState>
-                                <VisualState Name="PointerOver">
-                                    <VisualState.Setters>
-                                        <Setter Property="BackgroundColor" Value="#1F2338" />
-                                    </VisualState.Setters>
-                                </VisualState>
-                            </VisualStateGroup>
-                        </VisualStateManager.VisualStateGroups>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="explanatory" />
+                        </Border.GestureRecognizers>
                         <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
-                            <Border Grid.Column="0" BackgroundColor="#1F2937" StrokeShape="RoundRectangle 10" WidthRequest="40" HeightRequest="40" StrokeThickness="0" VerticalOptions="Center">
+                            <Border Grid.Column="0" BackgroundColor="{DynamicResource IconBoxBg}" StrokeShape="RoundRectangle 10" WidthRequest="40" HeightRequest="40" StrokeThickness="0" VerticalOptions="Center">
                                 <Label Text="📄" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                <Label Text="Объяснительная записка" FontSize="15" FontAttributes="Bold" TextColor="White" />
-                                <Label Text="Причина опоздания, нарушения срока, отсутствия" FontSize="12" TextColor="#8B90B3" LineBreakMode="TailTruncation" />
+                                <Label Text="Объяснительная записка" FontSize="15" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
+                                <Label Text="Причина опоздания, нарушения срока, отсутствия" FontSize="12" TextColor="{DynamicResource TextSecondary}" LineBreakMode="TailTruncation" />
                             </VerticalStackLayout>
-                            <Label Grid.Column="2" Text="›" FontSize="20" TextColor="#8B90B3" VerticalOptions="Center" />
+                            <Label Grid.Column="2" Text="›" FontSize="20" TextColor="{DynamicResource TextSecondary}" VerticalOptions="Center" />
                         </Grid>
                     </Border>
 
-                    <!-- Элемент 2 -->
-                    <Border StrokeShape="RoundRectangle 16" Padding="14" Stroke="#272B44" StrokeThickness="1">
+                    <Border StyleClass="HoverCard"
+                            BackgroundColor="{DynamicResource CardBg}"
+                            StrokeShape="RoundRectangle 16" Padding="14"
+                            Stroke="{DynamicResource CardStroke}" StrokeThickness="1">
                         <Border.Shadow>
                             <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
                         </Border.Shadow>
-                        <Border.BackgroundColor>
-                            <Color>#161929</Color>
-                        </Border.BackgroundColor>
-                        <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroup Name="CommonStates">
-                                <VisualState Name="Normal">
-                                    <VisualState.Setters>
-                                        <Setter Property="BackgroundColor" Value="#161929" />
-                                    </VisualState.Setters>
-                                </VisualState>
-                                <VisualState Name="PointerOver">
-                                    <VisualState.Setters>
-                                        <Setter Property="BackgroundColor" Value="#1F2338" />
-                                    </VisualState.Setters>
-                                </VisualState>
-                            </VisualStateGroup>
-                        </VisualStateManager.VisualStateGroups>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="ip" />
+                        </Border.GestureRecognizers>
                         <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
-                            <Border Grid.Column="0" BackgroundColor="#1F2937" StrokeShape="RoundRectangle 10" WidthRequest="40" HeightRequest="40" StrokeThickness="0" VerticalOptions="Center">
+                            <Border Grid.Column="0" BackgroundColor="{DynamicResource IconBoxBg}" StrokeShape="RoundRectangle 10" WidthRequest="40" HeightRequest="40" StrokeThickness="0" VerticalOptions="Center">
                                 <Label Text="📄" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                <Label Text="Заявление о регистрации ИП" FontSize="15" FontAttributes="Bold" TextColor="White" />
-                                <Label Text="Для подачи в регистрирующий орган" FontSize="12" TextColor="#8B90B3" LineBreakMode="TailTruncation" />
+                                <Label Text="Заявление о регистрации ИП" FontSize="15" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
+                                <Label Text="Для подачи в регистрирующий орган" FontSize="12" TextColor="{DynamicResource TextSecondary}" LineBreakMode="TailTruncation" />
                             </VerticalStackLayout>
-                            <Label Grid.Column="2" Text="›" FontSize="20" TextColor="#8B90B3" VerticalOptions="Center" />
+                            <Label Grid.Column="2" Text="›" FontSize="20" TextColor="{DynamicResource TextSecondary}" VerticalOptions="Center" />
                         </Grid>
                     </Border>
                 </VerticalStackLayout>
@@ -224,29 +291,82 @@
             </VerticalStackLayout>
         </ScrollView>
 
-        <!-- ==================== ТАББАР (СТАТИЧНЫЙ) ==================== -->
-        <Border Grid.Row="2" BackgroundColor="#111322" Stroke="#272B44" StrokeThickness="1" Padding="10, 8">
+        <!-- ==================== ТАББАР ==================== -->
+        <Border Grid.Row="2" BackgroundColor="{DynamicResource TabBarBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" Padding="4, 8">
             <Grid ColumnDefinitions="*, *, *, *, *" HorizontalOptions="Fill">
-                <VerticalStackLayout Grid.Column="0" HorizontalOptions="Center" Spacing="2">
-                    <Label Text="🏠" FontSize="18" HorizontalOptions="Center" TextColor="#34D399" />
-                    <Label Text="Главная" FontSize="11" TextColor="#34D399" HorizontalOptions="Center" />
-                </VerticalStackLayout>
-                <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center" Spacing="2">
-                    <Label Text="📋" FontSize="18" HorizontalOptions="Center" TextColor="#8B90B3" />
-                    <Label Text="Шаблоны" FontSize="11" TextColor="#8B90B3" HorizontalOptions="Center" />
-                </VerticalStackLayout>
-                <VerticalStackLayout Grid.Column="2" HorizontalOptions="Center" Spacing="2">
-                    <Label Text="📷" FontSize="18" HorizontalOptions="Center" TextColor="#8B90B3" />
-                    <Label Text="Скан" FontSize="11" TextColor="#8B90B3" HorizontalOptions="Center" />
-                </VerticalStackLayout>
-                <VerticalStackLayout Grid.Column="3" HorizontalOptions="Center" Spacing="2">
-                    <Label Text="🛡️" FontSize="18" HorizontalOptions="Center" TextColor="#8B90B3" />
-                    <Label Text="Проверка" FontSize="11" TextColor="#8B90B3" HorizontalOptions="Center" />
-                </VerticalStackLayout>
-                <VerticalStackLayout Grid.Column="4" HorizontalOptions="Center" Spacing="2">
-                    <Label Text="👤" FontSize="18" HorizontalOptions="Center" TextColor="#8B90B3" />
-                    <Label Text="Профиль" FontSize="11" TextColor="#8B90B3" HorizontalOptions="Center" />
-                </VerticalStackLayout>
+
+                <Grid.Resources>
+                    <Style x:Key="TabText" TargetType="Label">
+                        <Setter Property="FontSize" Value="10" />
+                        <Setter Property="LineBreakMode" Value="NoWrap" />
+                        <Setter Property="HorizontalOptions" Value="Center" />
+                        <Setter Property="HorizontalTextAlignment" Value="Center" />
+                        <Setter Property="TextColor" Value="{DynamicResource TextSecondary}" />
+                    </Style>
+                    <Style x:Key="TabIcon" TargetType="Label">
+                        <Setter Property="FontSize" Value="18" />
+                        <Setter Property="HorizontalOptions" Value="Center" />
+                    </Style>
+                </Grid.Resources>
+
+                <!-- Главная (активная) -->
+                <Border Grid.Column="0" Margin="2,0"
+                BackgroundColor="{DynamicResource TabActiveBg}"
+                StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="2,6">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="🏠" Style="{StaticResource TabIcon}" />
+                        <Label Text="Главная" Style="{StaticResource TabText}" TextColor="{DynamicResource AccentGreen}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Column="1" Margin="2,0" StyleClass="HoverTab"
+                BackgroundColor="Transparent"
+                StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="2,6">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="templates" />
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="📋" Style="{StaticResource TabIcon}" />
+                        <Label Text="Шаблоны" Style="{StaticResource TabText}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Column="2" Margin="2,0" StyleClass="HoverTab"
+                BackgroundColor="Transparent"
+                StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="2,6">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="scan" />
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="📷" Style="{StaticResource TabIcon}" />
+                        <Label Text="Скан" Style="{StaticResource TabText}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Column="3" Margin="2,0" StyleClass="HoverTab"
+                BackgroundColor="Transparent"
+                StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="2,6">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="check" />
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="🛡️" Style="{StaticResource TabIcon}" />
+                        <Label Text="Проверка" Style="{StaticResource TabText}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Column="4" Margin="2,0" StyleClass="HoverTab"
+                BackgroundColor="Transparent"
+                StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="2,6">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="profile" />
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="👤" Style="{StaticResource TabIcon}" />
+                        <Label Text="Профиль" Style="{StaticResource TabText}" />
+                    </VerticalStackLayout>
+                </Border>
+
             </Grid>
         </Border>
 
