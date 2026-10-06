@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:views="clr-namespace:GosTek.Views"
              x:Class="GosTek.Views.MainPage"
              Title="Главная"
              BackgroundColor="{DynamicResource PageBg}"
@@ -8,7 +9,7 @@
 
     <ContentPage.Resources>
 
-        <!-- Обычная карточка -->
+        <!-- Обычная карточка с эффектом наведения -->
         <Style TargetType="Border" Class="HoverCard">
             <Setter Property="VisualStateManager.VisualStateGroups">
                 <VisualStateGroupList>
@@ -54,28 +55,6 @@
             </Setter>
         </Style>
 
-        <!-- Пункт таббара -->
-        <Style TargetType="Border" Class="HoverTab">
-            <Setter Property="VisualStateManager.VisualStateGroups">
-                <VisualStateGroupList>
-                    <VisualStateGroup Name="CommonStates">
-                        <VisualState Name="Normal">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="Transparent" />
-                                <Setter Property="Scale" Value="1" />
-                            </VisualState.Setters>
-                        </VisualState>
-                        <VisualState Name="PointerOver">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="{DynamicResource CardHoverBg}" />
-                                <Setter Property="Scale" Value="1.08" />
-                            </VisualState.Setters>
-                        </VisualState>
-                    </VisualStateGroup>
-                </VisualStateGroupList>
-            </Setter>
-        </Style>
-
     </ContentPage.Resources>
 
     <Grid RowDefinitions="Auto, *, Auto">
@@ -87,7 +66,7 @@
                                  VerticalOptions="Center"
                                  Spacing="5">
                 <Label Text="GosTek"
-                       FontSize="28"
+                       FontSize="43"
                        FontAttributes="Bold"
                        TextColor="{DynamicResource BrandGreen}"
                        HorizontalOptions="Center" />
@@ -104,8 +83,6 @@
             <Border StyleClass="HoverCard"
                     HorizontalOptions="End"
                     VerticalOptions="Start"
-                    BackgroundColor="{DynamicResource CardBg}"
-                    Stroke="{DynamicResource CardStroke}"
                     StrokeThickness="1"
                     StrokeShape="RoundRectangle 16"
                     Padding="10,5">
@@ -119,8 +96,7 @@
                            FontSize="16"
                            VerticalOptions="Center" />
 
-                    <Border x:Name="ToggleTrack"
-                            WidthRequest="40"
+                    <Border WidthRequest="40"
                             HeightRequest="22"
                             BackgroundColor="{DynamicResource ToggleTrackBg}"
                             StrokeThickness="0"
@@ -140,7 +116,7 @@
             </Border>
         </Grid>
 
-        <!-- ==================== СКРОЛЛИРУЕМЫЙ КОНТЕНТ ==================== -->
+        <!-- ==================== КОНТЕНТ ==================== -->
         <ScrollView Grid.Row="1"
                     VerticalScrollBarVisibility="Never"
                     Padding="20, 10, 20, 20">
@@ -149,9 +125,8 @@
                                  MaximumWidthRequest="700"
                                  HorizontalOptions="Center">
 
-                <!-- Главная зеленая карточка -->
+                <!-- Главная зелёная карточка -->
                 <Border StyleClass="HoverGreen"
-                        BackgroundColor="#34D399"
                         StrokeShape="RoundRectangle 20"
                         Padding="20"
                         StrokeThickness="0">
@@ -175,9 +150,8 @@
                 <Grid ColumnDefinitions="*, *" ColumnSpacing="12">
                     <Border Grid.Column="0" VerticalOptions="Fill"
                             StyleClass="HoverCard"
-                            BackgroundColor="{DynamicResource CardBg}"
                             StrokeShape="RoundRectangle 16" Padding="16"
-                            Stroke="{DynamicResource CardStroke}" StrokeThickness="1">
+                            StrokeThickness="1">
                         <Border.Shadow>
                             <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
                         </Border.Shadow>
@@ -195,9 +169,8 @@
 
                     <Border Grid.Column="1" VerticalOptions="Fill"
                             StyleClass="HoverCard"
-                            BackgroundColor="{DynamicResource CardBg}"
                             StrokeShape="RoundRectangle 16" Padding="16"
-                            Stroke="{DynamicResource CardStroke}" StrokeThickness="1">
+                            StrokeThickness="1">
                         <Border.Shadow>
                             <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
                         </Border.Shadow>
@@ -218,9 +191,8 @@
 
                 <!-- Карточка профиля -->
                 <Border StyleClass="HoverCard"
-                        BackgroundColor="{DynamicResource CardBg}"
                         StrokeShape="RoundRectangle 16" Padding="16"
-                        Stroke="{DynamicResource CardStroke}" StrokeThickness="1">
+                        StrokeThickness="1">
                     <Border.Shadow>
                         <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
                     </Border.Shadow>
@@ -228,7 +200,7 @@
                         <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="profile" />
                     </Border.GestureRecognizers>
                     <VerticalStackLayout Spacing="12">
-                        <Label Text="Мой профиль" FontSize="16" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
+                        <Label Text="Мой профиль 👤" FontSize="16" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
                         <VerticalStackLayout Spacing="4">
                             <Label Text="80%" TextColor="{DynamicResource TextPrimary}" FontSize="12" FontAttributes="Bold" HorizontalOptions="End" />
                             <ProgressBar Progress="0.8" ProgressColor="{DynamicResource AccentGreen}" BackgroundColor="{DynamicResource CardStroke}" HeightRequest="12" VerticalOptions="Center" />
@@ -244,9 +216,8 @@
                     <Label Text="Быстрый старт" FontSize="18" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
 
                     <Border StyleClass="HoverCard"
-                            BackgroundColor="{DynamicResource CardBg}"
                             StrokeShape="RoundRectangle 16" Padding="14"
-                            Stroke="{DynamicResource CardStroke}" StrokeThickness="1">
+                            StrokeThickness="1">
                         <Border.Shadow>
                             <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
                         </Border.Shadow>
@@ -266,9 +237,8 @@
                     </Border>
 
                     <Border StyleClass="HoverCard"
-                            BackgroundColor="{DynamicResource CardBg}"
                             StrokeShape="RoundRectangle 16" Padding="14"
-                            Stroke="{DynamicResource CardStroke}" StrokeThickness="1">
+                            StrokeThickness="1">
                         <Border.Shadow>
                             <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
                         </Border.Shadow>
@@ -292,79 +262,7 @@
         </ScrollView>
 
         <!-- ==================== ТАББАР ==================== -->
-        <Border Grid.Row="2" BackgroundColor="{DynamicResource TabBarBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" Padding="4, 8">
-            <Grid ColumnDefinitions="*, *, *, *, *" HorizontalOptions="Fill">
-
-                <!-- Главная (активная вкладка) -->
-                <Border Grid.Column="0" Margin="2,0"
-                        BackgroundColor="{DynamicResource TabActiveBg}"
-                        StrokeThickness="0"
-                        StrokeShape="RoundRectangle 12"
-                        Padding="2,6">
-                    <VerticalStackLayout Spacing="2">
-                        <Label Text="🏠" FontSize="18" HorizontalOptions="Center" TextColor="{DynamicResource AccentGreen}" />
-                        <Label Text="Главная" FontSize="10" LineBreakMode="NoWrap" HorizontalOptions="Center" TextColor="{DynamicResource AccentGreen}" />
-                    </VerticalStackLayout>
-                </Border>
-
-                <Border Grid.Column="1" Margin="2,0" StyleClass="HoverTab"
-                        BackgroundColor="Transparent"
-                        StrokeThickness="0"
-                        StrokeShape="RoundRectangle 12"
-                        Padding="2,6">
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="templates" />
-                    </Border.GestureRecognizers>
-                    <VerticalStackLayout Spacing="2">
-                        <Label Text="📋" FontSize="18" HorizontalOptions="Center" TextColor="{DynamicResource TextSecondary}" />
-                        <Label Text="Шаблоны" FontSize="10" LineBreakMode="NoWrap" HorizontalOptions="Center" TextColor="{DynamicResource TextSecondary}" />
-                    </VerticalStackLayout>
-                </Border>
-
-                <Border Grid.Column="2" Margin="2,0" StyleClass="HoverTab"
-                        BackgroundColor="Transparent"
-                        StrokeThickness="0"
-                        StrokeShape="RoundRectangle 12"
-                        Padding="2,6">
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="scan" />
-                    </Border.GestureRecognizers>
-                    <VerticalStackLayout Spacing="2">
-                        <Label Text="📷" FontSize="18" HorizontalOptions="Center" TextColor="{DynamicResource TextSecondary}" />
-                        <Label Text="Скан" FontSize="10" LineBreakMode="NoWrap" HorizontalOptions="Center" TextColor="{DynamicResource TextSecondary}" />
-                    </VerticalStackLayout>
-                </Border>
-
-                <Border Grid.Column="3" Margin="2,0" StyleClass="HoverTab"
-                        BackgroundColor="Transparent"
-                        StrokeThickness="0"
-                        StrokeShape="RoundRectangle 12"
-                        Padding="2,6">
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="check" />
-                    </Border.GestureRecognizers>
-                    <VerticalStackLayout Spacing="2">
-                        <Label Text="🛡️" FontSize="18" HorizontalOptions="Center" TextColor="{DynamicResource TextSecondary}" />
-                        <Label Text="Проверка" FontSize="10" LineBreakMode="NoWrap" HorizontalOptions="Center" TextColor="{DynamicResource TextSecondary}" />
-                    </VerticalStackLayout>
-                </Border>
-
-                <Border Grid.Column="4" Margin="2,0" StyleClass="HoverTab"
-                        BackgroundColor="Transparent"
-                        StrokeThickness="0"
-                        StrokeShape="RoundRectangle 12"
-                        Padding="2,6">
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="profile" />
-                    </Border.GestureRecognizers>
-                    <VerticalStackLayout Spacing="2">
-                        <Label Text="👤" FontSize="18" HorizontalOptions="Center" TextColor="{DynamicResource TextSecondary}" />
-                        <Label Text="Профиль" FontSize="10" LineBreakMode="NoWrap" HorizontalOptions="Center" TextColor="{DynamicResource TextSecondary}" />
-                    </VerticalStackLayout>
-                </Border>
-
-            </Grid>
-        </Border>
+        <views:AppTabBar x:Name="BottomTabs" Grid.Row="2" ActiveTab="home" />
 
     </Grid>
 </ContentPage>

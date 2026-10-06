@@ -4,7 +4,6 @@ public partial class MainPage : ContentPage
 {
     private int _lastSubtitleIndex = -1;
 
-    // ===== Случайные подзаголовки под GosTek =====
     private static readonly string[] Subtitles =
     {
         "Какой документ оформим сегодня?",
@@ -21,43 +20,21 @@ public partial class MainPage : ContentPage
         "Готовы создать новый документ?",
     };
 
-    // Ключ -> (заголовок, что здесь будет)
-    private static readonly Dictionary<string, (string Title, string Text)> Stubs = new() {
-        ["create"] = ("📄 Создание документа",
-            "Скоро здесь появится выбор шаблона и форма для заполнения полей. На выходе вы получите готовый файл Word или PDF."),
-
-        ["check"] = ("✔️ Проверка документа",
-            "Скоро здесь можно будет загрузить документ и получить список ошибок оформления: поля, шрифты, реквизиты и отступы."),
-
-        ["scan"] = ("📷 Сканирование",
-            "Скоро здесь появится сканирование документа камерой с распознаванием текста и автозаполнением данных."),
-
-        ["profile"] = ("👤 Мой профиль",
-            "Скоро здесь будут ваши данные и реквизиты, в том числе расчётный счёт, который сейчас не заполнен."),
-
-        ["templates"] = ("📋 Шаблоны",
-            "Скоро здесь появится каталог шаблонов документов с поиском и категориями."),
-
-        ["explanatory"] = ("📄 Объяснительная записка",
-            "Скоро здесь будет готовый шаблон: причина опоздания, нарушения срока или отсутствия."),
-
-        ["ip"] = ("📄 Заявление о регистрации ИП",
-            "Скоро здесь будет шаблон заявления для подачи в регистрирующий орган."),
-    };
-
     public MainPage()
     {
         InitializeComponent();
-        SyncToggleVisual(animated: false);
     }
 
     protected override void OnAppearing()
     {
         base.OnAppearing();
         ShowRandomSubtitle();
-        SyncToggleVisual(animated: false);
+        SyncToggleVisual(animated: false);   // подхватить тему, выбранную на другой странице
+        BottomTabs.ResetHover();             // сбросить «залипшее» наведение таббара
     }
 
+    // ===== Подзаголовок =====
+    // Случайная фраза, не повторяющая предыдущую
     private void ShowRandomSubtitle()
     {
         int index;
@@ -70,31 +47,24 @@ public partial class MainPage : ContentPage
         SubtitleLabel.Text = Subtitles[index];
     }
 
-    // ===== Общая заглушка "Скоро будет добавлено" =====
+    // ===== Заглушки =====
     private async void OnStubTapped(object? sender, TappedEventArgs e)
     {
-        var key = e.Parameter as string;
-
-        if (key is not null && Stubs.TryGetValue(key, out var stub))
-            await DisplayAlertAsync(stub.Title, stub.Text, "Понятно");
-        else
-            await DisplayAlertAsync("Скоро", "Этот раздел скоро будет добавлен.", "Понятно");
+        await Stubs.ShowAsync(e.Parameter as string);
     }
 
     // ===== Переключатель темы =====
     private void OnThemeToggleTapped(object? sender, TappedEventArgs e)
     {
-        ThemeService.Toggle();          // меняет цвета на всей странице
+        ThemeService.Toggle();
         SyncToggleVisual(animated: true);
     }
 
-    // Иконка и положение ползунка по текущей теме
     private void SyncToggleVisual(bool animated)
     {
         bool dark = ThemeService.IsDark;
         ThemeIcon.Text = dark ? "🌙" : "☀️";
 
-        // 40 (дорожка) - 16 (ползунок) - 3 - 3 (отступы) = 18
         double target = dark ? 0 : 18;
 
         if (animated)
