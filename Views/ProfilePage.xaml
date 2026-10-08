@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:views="clr-namespace:GosTek.Views"
+             x:Class="GosTek.Views.ProfilePage"
+             Title="Профиль"
+             BackgroundColor="{DynamicResource PageBg}"
+             Shell.NavBarIsVisible="False">
+
+    <ContentPage.Resources>
+
+        <!-- Карточка с эффектом наведения -->
+        <Style TargetType="Border" Class="HoverCard">
+            <Setter Property="VisualStateManager.VisualStateGroups">
+                <VisualStateGroupList>
+                    <VisualStateGroup Name="CommonStates">
+                        <VisualState Name="Normal">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="{DynamicResource CardBg}" />
+                                <Setter Property="Stroke" Value="{DynamicResource CardStroke}" />
+                                <Setter Property="Scale" Value="1" />
+                            </VisualState.Setters>
+                        </VisualState>
+                        <VisualState Name="PointerOver">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="{DynamicResource CardHoverBg}" />
+                                <Setter Property="Stroke" Value="{DynamicResource AccentGreen}" />
+                                <Setter Property="Scale" Value="1.02" />
+                            </VisualState.Setters>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateGroupList>
+            </Setter>
+        </Style>
+
+        <!-- Зелёная кнопка «Сохранить» -->
+        <Style TargetType="Border" Class="HoverGreen">
+            <Setter Property="VisualStateManager.VisualStateGroups">
+                <VisualStateGroupList>
+                    <VisualStateGroup Name="CommonStates">
+                        <VisualState Name="Normal">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="{DynamicResource AccentGreen}" />
+                                <Setter Property="Scale" Value="1" />
+                            </VisualState.Setters>
+                        </VisualState>
+                        <VisualState Name="PointerOver">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="#4FE3AF" />
+                                <Setter Property="Scale" Value="1.02" />
+                            </VisualState.Setters>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateGroupList>
+            </Setter>
+        </Style>
+
+        <!-- Поле ввода: рамка, подпись, сам Entry -->
+        <Style TargetType="Border" Class="FieldBox">
+            <Setter Property="BackgroundColor" Value="{DynamicResource CardBg}" />
+            <Setter Property="Stroke" Value="{DynamicResource CardStroke}" />
+            <Setter Property="StrokeThickness" Value="1" />
+            <Setter Property="StrokeShape" Value="RoundRectangle 14" />
+            <Setter Property="Padding" Value="16,0" />
+        </Style>
+
+        <Style TargetType="Entry" Class="FieldEntry">
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="TextColor" Value="{DynamicResource TextPrimary}" />
+            <Setter Property="PlaceholderColor" Value="{DynamicResource TextSecondary}" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="HeightRequest" Value="50" />
+        </Style>
+
+        <Style TargetType="Label" Class="FieldLabel">
+            <Setter Property="TextColor" Value="{DynamicResource TextSecondary}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontAttributes" Value="Bold" />
+        </Style>
+
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto, *, Auto, Auto">
+
+        <!-- ==================== ШАПКА ==================== -->
+        <Grid Grid.Row="0" Padding="20, 15, 20, 10">
+            <Label Text="Мой профиль"
+                   FontSize="26"
+                   FontAttributes="Bold"
+                   VerticalOptions="Center"
+                   TextColor="{DynamicResource TextPrimary}" />
+
+            <!-- Переключатель темы -->
+            <Border StyleClass="HoverCard"
+                    HorizontalOptions="End"
+                    VerticalOptions="Center"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 16"
+                    Padding="10,5">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnThemeToggleTapped" />
+                </Border.GestureRecognizers>
+
+                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                    <Label x:Name="ThemeIcon"
+                           Text="🌙"
+                           FontSize="16"
+                           VerticalOptions="Center" />
+
+                    <Border WidthRequest="40"
+                            HeightRequest="22"
+                            BackgroundColor="{DynamicResource ToggleTrackBg}"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 11"
+                            VerticalOptions="Center">
+                        <Border x:Name="ToggleThumb"
+                                WidthRequest="16"
+                                HeightRequest="16"
+                                BackgroundColor="White"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 8"
+                                HorizontalOptions="Start"
+                                VerticalOptions="Center"
+                                Margin="3,0,0,0" />
+                    </Border>
+                </HorizontalStackLayout>
+            </Border>
+        </Grid>
+
+        <!-- ==================== КОНТЕНТ ==================== -->
+        <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
+            <VerticalStackLayout Padding="20, 6, 20, 20"
+                                 Spacing="16"
+                                 MaximumWidthRequest="700"
+                                 HorizontalOptions="Fill">
+
+                <!-- Прогресс заполнения -->
+                <Border BackgroundColor="{DynamicResource CardBg}"
+                        Stroke="{DynamicResource CardStroke}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="16">
+                    <VerticalStackLayout Spacing="10">
+                        <Label x:Name="ProgressTitle"
+                               Text="Заполнено на 0%"
+                               FontSize="17"
+                               FontAttributes="Bold"
+                               TextColor="{DynamicResource TextPrimary}" />
+                        <ProgressBar x:Name="FillProgress"
+                                     Progress="0"
+                                     ProgressColor="{DynamicResource AccentGreen}"
+                                     BackgroundColor="{DynamicResource CardStroke}"
+                                     HeightRequest="8" />
+                        <Label x:Name="ProgressHint"
+                               FontSize="13"
+                               TextColor="{DynamicResource TextSecondary}"
+                               LineBreakMode="WordWrap" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Пояснение про хранение -->
+                <Grid ColumnDefinitions="Auto, *" ColumnSpacing="12" Padding="4,0">
+                    <Label Grid.Column="0" Text="🔒" FontSize="18" VerticalOptions="Start" />
+                    <Label Grid.Column="1"
+                           Text="Данные хранятся только на этом устройстве в зашифрованном виде."
+                           FontSize="13"
+                           TextColor="{DynamicResource TextSecondary}"
+                           LineBreakMode="WordWrap"
+                           VerticalOptions="Center" />
+                </Grid>
+
+                <!-- ФИО -->
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="ФИО" StyleClass="FieldLabel" />
+                    <Border StyleClass="FieldBox">
+                        <Entry x:Name="FullNameEntry" StyleClass="FieldEntry"
+                               Placeholder="Фамилия Имя Отчество"
+                               Keyboard="Text" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- Наименование -->
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Наименование" StyleClass="FieldLabel" />
+                    <Border StyleClass="FieldBox">
+                        <Entry x:Name="OrgNameEntry" StyleClass="FieldEntry"
+                               Placeholder="Например, ИП Иванов И. И."
+                               Keyboard="Text" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- УНП -->
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="УНП" StyleClass="FieldLabel" />
+                    <Border StyleClass="FieldBox">
+                        <Entry x:Name="UnpEntry" StyleClass="FieldEntry"
+                               Placeholder="9 цифр"
+                               Keyboard="Numeric"
+                               MaxLength="9" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- Юридический адрес -->
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Юридический адрес" StyleClass="FieldLabel" />
+                    <Border StyleClass="FieldBox">
+                        <Entry x:Name="AddressEntry" StyleClass="FieldEntry"
+                               Placeholder="Город, улица, дом, квартира"
+                               Keyboard="Text" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- Телефон -->
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Телефон" StyleClass="FieldLabel" />
+                    <Border StyleClass="FieldBox">
+                        <Entry x:Name="PhoneEntry" StyleClass="FieldEntry"
+                               Placeholder="+375 29 000-00-00"
+                               Keyboard="Telephone"
+                               MaxLength="20" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- Паспорт -->
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Паспорт" StyleClass="FieldLabel" />
+                    <Border StyleClass="FieldBox">
+                        <Entry x:Name="PassportEntry" StyleClass="FieldEntry"
+                               Placeholder="Серия и номер"
+                               Keyboard="Text"
+                               MaxLength="12" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- Расчётный счёт -->
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Расчётный счёт" StyleClass="FieldLabel" />
+                    <Border StyleClass="FieldBox">
+                        <Entry x:Name="AccountEntry" StyleClass="FieldEntry"
+                               Placeholder="Введите номер счёта"
+                               Keyboard="Text"
+                               MaxLength="34" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- Заполнить по фото паспорта -->
+                <Border StyleClass="HoverCard"
+                        StrokeShape="RoundRectangle 14"
+                        StrokeThickness="1"
+                        Padding="16,14">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnPassportScanTapped" />
+                    </Border.GestureRecognizers>
+                    <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                        <Label Text="📷" FontSize="18" VerticalOptions="Center" />
+                        <Label Text="Заполнить по фото паспорта"
+                               FontSize="15"
+                               FontAttributes="Bold"
+                               TextColor="{DynamicResource TextPrimary}"
+                               VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- ==================== КНОПКА «СОХРАНИТЬ» ==================== -->
+        <VerticalStackLayout Grid.Row="2" Spacing="0">
+            <BoxView HeightRequest="1" Color="{DynamicResource Divider}" />
+            <Border StyleClass="HoverGreen"
+                    StrokeShape="RoundRectangle 16"
+                    StrokeThickness="0"
+                    Padding="0,16"
+                    Margin="20,12"
+                    MaximumWidthRequest="700">
+                <Border.Shadow>
+                    <Shadow Brush="Black" Offset="0,4" Radius="8" Opacity="0.15" />
+                </Border.Shadow>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnSaveTapped" />
+                </Border.GestureRecognizers>
+                <Label Text="Сохранить"
+                       FontSize="17"
+                       FontAttributes="Bold"
+                       TextColor="#064E3B"
+                       HorizontalOptions="Center" />
+            </Border>
+        </VerticalStackLayout>
+
+        <!-- ==================== ТАББАР ==================== -->
+        <views:AppTabBar x:Name="BottomTabs" Grid.Row="3" ActiveTab="profile" />
+
+    </Grid>
+</ContentPage>

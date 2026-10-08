@@ -197,15 +197,15 @@
                         <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
                     </Border.Shadow>
                     <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="profile" />
+                        <TapGestureRecognizer Tapped="OnProfileTapped"/>
                     </Border.GestureRecognizers>
                     <VerticalStackLayout Spacing="12">
                         <Label Text="Мой профиль 👤" FontSize="16" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
                         <VerticalStackLayout Spacing="4">
-                            <Label Text="80%" TextColor="{DynamicResource TextPrimary}" FontSize="12" FontAttributes="Bold" HorizontalOptions="End" />
-                            <ProgressBar Progress="0.8" ProgressColor="{DynamicResource AccentGreen}" BackgroundColor="{DynamicResource CardStroke}" HeightRequest="12" VerticalOptions="Center" />
+                            <Label x:Name="ProfilePercentLabel" Text="0%" TextColor="{DynamicResource TextPrimary}" FontSize="12" FontAttributes="Bold" HorizontalOptions="End" />
+                            <ProgressBar x:Name="ProfileProgress" Progress="0" ProgressColor="{DynamicResource AccentGreen}" BackgroundColor="{DynamicResource CardStroke}" HeightRequest="12" VerticalOptions="Center" />
                         </VerticalStackLayout>
-                        <Label Text="Заполнено на 80%. Не хватает расчётного счёта." FontSize="12" TextColor="{DynamicResource TextSecondary}" LineBreakMode="WordWrap" />
+                        <Label x:Name="ProfileHintLabel" Text="" FontSize="12" TextColor="{DynamicResource TextSecondary}" LineBreakMode="WordWrap" />
                     </VerticalStackLayout>
                 </Border>
 

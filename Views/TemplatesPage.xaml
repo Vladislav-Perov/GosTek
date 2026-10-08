@@ -33,51 +33,34 @@
             </Setter>
         </Style>
 
-        <!-- Строка списка: подсветка фона при наведении -->
-        <Style TargetType="Border" Class="HoverRow">
-            <Setter Property="VisualStateManager.VisualStateGroups">
-                <VisualStateGroupList>
-                    <VisualStateGroup Name="CommonStates">
-                        <VisualState Name="Normal">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="Transparent" />
-                            </VisualState.Setters>
-                        </VisualState>
-                        <VisualState Name="PointerOver">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="{DynamicResource CardHoverBg}" />
-                            </VisualState.Setters>
-                        </VisualState>
-                    </VisualStateGroup>
-                </VisualStateGroupList>
-            </Setter>
-        </Style>
-
-        <!-- Шаблон строки списка -->
+        <!-- Шаблон строки списка: карточка как «Быстрый старт» на главной -->
         <DataTemplate x:Key="TemplateRow" x:DataType="views:TemplateItem">
-            <VerticalStackLayout Spacing="0">
-                <Border StyleClass="HoverRow" StrokeThickness="0" Padding="0,14">
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnTemplateTapped" CommandParameter="{Binding Id}" />
-                    </Border.GestureRecognizers>
-                    <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="14">
-                        <Border Grid.Column="0" BackgroundColor="{DynamicResource IconBoxBg}"
-                                StrokeShape="RoundRectangle 14" StrokeThickness="0"
-                                WidthRequest="52" HeightRequest="52" VerticalOptions="Center">
-                            <Label Text="📄" FontSize="22" HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Border>
-                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                            <Label Text="{Binding Title}" FontSize="16" FontAttributes="Bold"
-                                   TextColor="{DynamicResource TextPrimary}" />
-                            <Label Text="{Binding Description}" FontSize="13"
-                                   TextColor="{DynamicResource TextSecondary}" LineBreakMode="WordWrap" />
-                        </VerticalStackLayout>
-                        <Label Grid.Column="2" Text="›" FontSize="24"
-                               TextColor="{DynamicResource TextSecondary}" VerticalOptions="Center" />
-                    </Grid>
-                </Border>
-                <BoxView HeightRequest="1" Color="{DynamicResource Divider}" />
-            </VerticalStackLayout>
+            <Border StyleClass="HoverCard"
+                    StrokeShape="RoundRectangle 16"
+                    StrokeThickness="1"
+                    Padding="14">
+                <Border.Shadow>
+                    <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
+                </Border.Shadow>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnTemplateTapped" CommandParameter="{Binding Id}" />
+                </Border.GestureRecognizers>
+                <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
+                    <Border Grid.Column="0" BackgroundColor="{DynamicResource IconBoxBg}"
+                            StrokeShape="RoundRectangle 10" StrokeThickness="0"
+                            WidthRequest="40" HeightRequest="40" VerticalOptions="Center">
+                        <Label Text="📄" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                    <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                        <Label Text="{Binding Title}" FontSize="15" FontAttributes="Bold"
+                               TextColor="{DynamicResource TextPrimary}" />
+                        <Label Text="{Binding Description}" FontSize="12"
+                               TextColor="{DynamicResource TextSecondary}" LineBreakMode="TailTruncation" />
+                    </VerticalStackLayout>
+                    <Label Grid.Column="2" Text="›" FontSize="20"
+                           TextColor="{DynamicResource TextSecondary}" VerticalOptions="Center" />
+                </Grid>
+            </Border>
         </DataTemplate>
 
     </ContentPage.Resources>
@@ -191,7 +174,7 @@
         <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
             <VerticalStackLayout MaximumWidthRequest="700"
                                  HorizontalOptions="Fill"
-                                 Padding="20,0,20,20"
+                                 Padding="24,4,24,20"
                                  Spacing="0">
 
                 <!-- Недавние (показываются, когда нет поиска и фильтра) -->
@@ -199,16 +182,16 @@
                     <Label Text="Недавние"
                            FontSize="18" FontAttributes="Bold"
                            TextColor="{DynamicResource TextPrimary}"
-                           Margin="0,6,0,4" />
-                    <VerticalStackLayout x:Name="RecentList"
+                           Margin="0,6,0,12" />
+                    <VerticalStackLayout x:Name="RecentList" Spacing="12"
                                          BindableLayout.ItemTemplate="{StaticResource TemplateRow}" />
                     <Label Text="Все шаблоны"
                            FontSize="18" FontAttributes="Bold"
                            TextColor="{DynamicResource TextPrimary}"
-                           Margin="0,22,0,4" />
+                           Margin="0,22,0,12" />
                 </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="ResultsList"
+                <VerticalStackLayout x:Name="ResultsList" Spacing="12"
                                      BindableLayout.ItemTemplate="{StaticResource TemplateRow}" />
 
                 <Label x:Name="EmptyLabel"

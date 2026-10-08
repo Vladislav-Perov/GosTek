@@ -22,6 +22,7 @@ public partial class AppTabBar : ContentView
     private static readonly Dictionary<string, string> Routes = new() {
         ["home"] = "//MainPage",
         ["templates"] = "//TemplatesPage",
+        ["profile"] = "//ProfilePage",
     };
 
     private readonly List<(string Key, Border Border)> _tabs;

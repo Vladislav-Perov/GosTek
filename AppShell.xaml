@@ -16,5 +16,8 @@
         Title="Templates"
         ContentTemplate="{DataTemplate views:TemplatesPage}"
         Route="TemplatesPage" />
-
+    <ShellContent
+        Title="Profile"
+        ContentTemplate="{DataTemplate views:ProfilePage}"
+        Route="ProfilePage" />
 </Shell>

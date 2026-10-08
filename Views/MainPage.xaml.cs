@@ -25,14 +25,25 @@ public partial class MainPage : ContentPage
         InitializeComponent();
     }
 
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
         ShowRandomSubtitle();
         SyncToggleVisual(animated: false);   // подхватить тему, выбранную на другой странице
         BottomTabs.ResetHover();             // сбросить «залипшее» наведение таббара
-    }
 
+        await RefreshProfileCardAsync();     // обновить плашку профиля
+    }
+    // ===== Плашка «Мой профиль»: те же данные и правила, что на странице профиля =====
+    private async Task RefreshProfileCardAsync()
+    {
+        var profile = await ProfileStorage.LoadAsync();
+        var summary = ProfileRules.Summarize(ProfileRules.ToValues(profile));
+
+        ProfilePercentLabel.Text = $"{summary.Percent}%";
+        ProfileProgress.Progress = summary.Progress;
+        ProfileHintLabel.Text = $"Заполнено на {summary.Percent}%. {summary.Hint}";
+    }
     // ===== Подзаголовок =====
     // Случайная фраза, не повторяющая предыдущую
     private void ShowRandomSubtitle()
@@ -52,7 +63,11 @@ public partial class MainPage : ContentPage
     {
         await Stubs.ShowAsync(e.Parameter as string);
     }
-
+    // ===== Переход в профиль =====
+    private async void OnProfileTapped(object? sender, TappedEventArgs e)
+    {
+        await Shell.Current.GoToAsync("//ProfilePage");
+    }
     // ===== Переключатель темы =====
     private void OnThemeToggleTapped(object? sender, TappedEventArgs e)
     {
