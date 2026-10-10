@@ -242,25 +242,6 @@
                                MaxLength="34" />
                     </Border>
                 </VerticalStackLayout>
-
-                <!-- Заполнить по фото паспорта -->
-                <Border StyleClass="HoverCard"
-                        StrokeShape="RoundRectangle 14"
-                        StrokeThickness="1"
-                        Padding="16,14">
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnPassportScanTapped" />
-                    </Border.GestureRecognizers>
-                    <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
-                        <Label Text="📷" FontSize="18" VerticalOptions="Center" />
-                        <Label Text="Заполнить по фото паспорта"
-                               FontSize="15"
-                               FontAttributes="Bold"
-                               TextColor="{DynamicResource TextPrimary}"
-                               VerticalOptions="Center" />
-                    </HorizontalStackLayout>
-                </Border>
-
             </VerticalStackLayout>
         </ScrollView>
 

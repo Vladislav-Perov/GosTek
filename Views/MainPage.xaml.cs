@@ -63,6 +63,15 @@ public partial class MainPage : ContentPage
     {
         await Stubs.ShowAsync(e.Parameter as string);
     }
+    // ===== Открыть шаблон из «Быстрого старта» =====
+    private async void OnTemplateTapped(object? sender, TappedEventArgs e)
+    {
+        if (e.Parameter is not string id)
+            return;
+
+        TemplatesPage.AddRecent(id);
+        await Shell.Current.GoToAsync($"FieldsPage?id={id}");
+    }
     // ===== Переход в профиль =====
     private async void OnProfileTapped(object? sender, TappedEventArgs e)
     {

@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GosTek.Views.FieldsPage"
+             Title="Шаблон"
+             BackgroundColor="{DynamicResource PageBg}"
+             Shell.NavBarIsVisible="False"
+             SizeChanged="OnPageSizeChanged">
+
+    <ContentPage.Resources>
+
+        <!-- Карточка с эффектом наведения -->
+        <Style TargetType="Border" Class="HoverCard">
+            <Setter Property="VisualStateManager.VisualStateGroups">
+                <VisualStateGroupList>
+                    <VisualStateGroup Name="CommonStates">
+                        <VisualState Name="Normal">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="{DynamicResource CardBg}" />
+                                <Setter Property="Stroke" Value="{DynamicResource CardStroke}" />
+                                <Setter Property="Scale" Value="1" />
+                            </VisualState.Setters>
+                        </VisualState>
+                        <VisualState Name="PointerOver">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="{DynamicResource CardHoverBg}" />
+                                <Setter Property="Stroke" Value="{DynamicResource AccentGreen}" />
+                                <Setter Property="Scale" Value="1.02" />
+                            </VisualState.Setters>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateGroupList>
+            </Setter>
+        </Style>
+
+        <!-- Зелёная кнопка -->
+        <Style TargetType="Border" Class="HoverGreen">
+            <Setter Property="VisualStateManager.VisualStateGroups">
+                <VisualStateGroupList>
+                    <VisualStateGroup Name="CommonStates">
+                        <VisualState Name="Normal">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="{DynamicResource AccentGreen}" />
+                                <Setter Property="Scale" Value="1" />
+                            </VisualState.Setters>
+                        </VisualState>
+                        <VisualState Name="PointerOver">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="#4FE3AF" />
+                                <Setter Property="Scale" Value="1.02" />
+                            </VisualState.Setters>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateGroupList>
+            </Setter>
+        </Style>
+
+        <!-- Поле ввода: те же стили, что в профиле -->
+        <Style TargetType="Border" Class="FieldBox">
+            <Setter Property="BackgroundColor" Value="{DynamicResource CardBg}" />
+            <Setter Property="Stroke" Value="{DynamicResource CardStroke}" />
+            <Setter Property="StrokeThickness" Value="1" />
+            <Setter Property="StrokeShape" Value="RoundRectangle 14" />
+            <Setter Property="Padding" Value="16,0" />
+        </Style>
+
+        <Style TargetType="Entry" Class="FieldEntry">
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="TextColor" Value="{DynamicResource TextPrimary}" />
+            <Setter Property="PlaceholderColor" Value="{DynamicResource TextSecondary}" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="HeightRequest" Value="50" />
+        </Style>
+
+        <Style TargetType="Editor" Class="FieldEditor">
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="TextColor" Value="{DynamicResource TextPrimary}" />
+            <Setter Property="PlaceholderColor" Value="{DynamicResource TextSecondary}" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="MinimumHeightRequest" Value="140" />
+        </Style>
+
+        <Style TargetType="Label" Class="FieldLabel">
+            <Setter Property="TextColor" Value="{DynamicResource TextSecondary}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontAttributes" Value="Bold" />
+        </Style>
+
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto, *, Auto">
+
+        <!-- ==================== ШАПКА ==================== -->
+        <Grid Grid.Row="0"
+              Padding="20, 15, 20, 10"
+              ColumnDefinitions="Auto, *"
+              ColumnSpacing="14">
+
+            <Border Grid.Column="0"
+                    StyleClass="HoverCard"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 16"
+                    Padding="14,6"
+                    VerticalOptions="Center">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnBackTapped" />
+                </Border.GestureRecognizers>
+                <Label Text="‹"
+                       FontSize="26"
+                       TextColor="{DynamicResource TextPrimary}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+            </Border>
+
+            <Label x:Name="TitleLabel"
+                   Grid.Column="1"
+                   Text="Шаблон"
+                   FontSize="22"
+                   FontAttributes="Bold"
+                   LineBreakMode="TailTruncation"
+                   VerticalOptions="Center"
+                   TextColor="{DynamicResource TextPrimary}" />
+        </Grid>
+
+        <!-- ==================== ТЕЛО ====================
+             Столбец 0: ввод (+ предпросмотр под полями на узком экране)
+             Столбец 1: предпросмотр справа (ширина 0, пока экран узкий) -->
+        <Grid x:Name="Body" Grid.Row="1" ColumnDefinitions="*, 0">
+
+            <!-- ====== ВВОД ДАННЫХ ====== -->
+            <ScrollView x:Name="FormScroll" Grid.Column="0" VerticalScrollBarVisibility="Never">
+                <VerticalStackLayout Padding="20, 6, 20, 20"
+                                     Spacing="16"
+                                     MaximumWidthRequest="700"
+                                     HorizontalOptions="Fill">
+
+                    <Label Text="Данные"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="{DynamicResource TextPrimary}" />
+
+                    <!-- Заполнить из профиля -->
+                    <VerticalStackLayout Spacing="8">
+                        <Border StyleClass="HoverCard"
+                                StrokeThickness="1"
+                                StrokeShape="RoundRectangle 14"
+                                Padding="0,14">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnFillTapped" />
+                            </Border.GestureRecognizers>
+                            <Label Text="👤  Заполнить из профиля"
+                                   FontSize="15"
+                                   FontAttributes="Bold"
+                                   TextColor="{DynamicResource TextPrimary}"
+                                   HorizontalOptions="Center" />
+                        </Border>
+
+                        <Label x:Name="FillStatusLabel"
+                               IsVisible="False"
+                               FontSize="13"
+                               LineBreakMode="WordWrap"
+                               TextColor="{DynamicResource BrandGreen}" />
+                    </VerticalStackLayout>
+
+                    <!-- Поля шаблона создаются из кода -->
+                    <VerticalStackLayout x:Name="FieldsHost" Spacing="16" />
+
+                    <!-- Предпросмотр сразу под полями (виден только на узком экране) -->
+                    <VerticalStackLayout x:Name="InlinePreview" Spacing="12" Margin="0,8,0,0">
+                        <Label Text="Предпросмотр"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               TextColor="{DynamicResource TextPrimary}" />
+
+                        <Border x:Name="InlinePanel"
+                                BackgroundColor="{DynamicResource CardBg}"
+                                Stroke="{DynamicResource CardStroke}"
+                                StrokeThickness="1"
+                                StrokeShape="RoundRectangle 16"
+                                Padding="14"
+                                SizeChanged="OnPanelSizeChanged">
+                            <Border x:Name="InlineSheet"
+                                    BackgroundColor="White"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 2"
+                                    HorizontalOptions="Center">
+                                <Border.Shadow>
+                                    <Shadow Brush="Black" Offset="0,2" Radius="10" Opacity="0.25" />
+                                </Border.Shadow>
+                            </Border>
+                        </Border>
+
+                        <Label Text="Серые места — поля, которые ещё не заполнены."
+                               FontSize="13"
+                               LineBreakMode="WordWrap"
+                               TextColor="{DynamicResource TextSecondary}" />
+                    </VerticalStackLayout>
+
+                </VerticalStackLayout>
+            </ScrollView>
+
+            <!-- ====== ПРЕДПРОСМОТР СПРАВА (широкий экран) ====== -->
+            <ScrollView x:Name="SideScroll"
+                        Grid.Column="1"
+                        IsVisible="False"
+                        VerticalScrollBarVisibility="Never">
+                <VerticalStackLayout Padding="20, 6, 20, 20"
+                                     Spacing="12"
+                                     MaximumWidthRequest="700"
+                                     HorizontalOptions="Fill">
+
+                    <Label Text="Предпросмотр"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="{DynamicResource TextPrimary}" />
+
+                    <Border x:Name="SidePanel"
+                            BackgroundColor="{DynamicResource CardBg}"
+                            Stroke="{DynamicResource CardStroke}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="14"
+                            SizeChanged="OnPanelSizeChanged">
+                        <Border x:Name="SideSheet"
+                                BackgroundColor="White"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 2"
+                                HorizontalOptions="Center">
+                            <Border.Shadow>
+                                <Shadow Brush="Black" Offset="0,2" Radius="10" Opacity="0.25" />
+                            </Border.Shadow>
+                        </Border>
+                    </Border>
+
+                    <Label Text="Серые места — поля, которые ещё не заполнены."
+                           FontSize="13"
+                           LineBreakMode="WordWrap"
+                           TextColor="{DynamicResource TextSecondary}" />
+
+                </VerticalStackLayout>
+            </ScrollView>
+
+            <!-- Линия между частями на широком экране -->
+            <BoxView x:Name="PaneDivider"
+                     Grid.Column="1"
+                     IsVisible="False"
+                     WidthRequest="1"
+                     HorizontalOptions="Start"
+                     Color="{DynamicResource Divider}" />
+
+        </Grid>
+
+        <!-- ==================== КНОПКА ВНИЗУ ==================== -->
+        <VerticalStackLayout Grid.Row="2" Spacing="0">
+            <BoxView HeightRequest="1" Color="{DynamicResource Divider}" />
+            <Border StyleClass="HoverGreen"
+                    StrokeShape="RoundRectangle 16"
+                    StrokeThickness="0"
+                    Padding="0,16"
+                    Margin="20,12"
+                    MaximumWidthRequest="700">
+                <Border.Shadow>
+                    <Shadow Brush="Black" Offset="0,4" Radius="8" Opacity="0.15" />
+                </Border.Shadow>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnBuildTapped" />
+                </Border.GestureRecognizers>
+                <Label Text="Собрать документ"
+                       FontSize="17"
+                       FontAttributes="Bold"
+                       TextColor="#064E3B"
+                       HorizontalOptions="Center" />
+            </Border>
+        </VerticalStackLayout>
+
+        <!-- ==================== ШТОРКА «СОБРАТЬ ДОКУМЕНТ» ==================== -->
+        <Grid x:Name="ExportOverlay"
+              Grid.RowSpan="3"
+              IsVisible="False"
+              BackgroundColor="#99000000">
+            <Grid.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnExportCloseTapped" />
+            </Grid.GestureRecognizers>
+
+            <Border VerticalOptions="End"
+                    MaximumWidthRequest="700"
+                    BackgroundColor="{DynamicResource PageBg}"
+                    Stroke="{DynamicResource CardStroke}"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 24,24,0,0"
+                    Padding="18,10,18,22">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnSheetTapped" />
+                </Border.GestureRecognizers>
+
+                <VerticalStackLayout Spacing="14">
+
+                    <BoxView WidthRequest="40"
+                             HeightRequest="4"
+                             CornerRadius="2"
+                             Color="{DynamicResource CardStroke}"
+                             HorizontalOptions="Center" />
+
+                    <Label Text="Собрать документ"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           TextColor="{DynamicResource TextPrimary}" />
+
+                    <!-- Имя файла -->
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Имя файла" StyleClass="FieldLabel" />
+                        <Border StyleClass="FieldBox">
+                            <Entry x:Name="FileNameEntry" StyleClass="FieldEntry" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- Word -->
+                    <Border StyleClass="HoverCard" StrokeShape="RoundRectangle 16" StrokeThickness="1" Padding="14">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnExportDocxTapped" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
+                            <Border Grid.Column="0" BackgroundColor="{DynamicResource IconBoxBg}"
+                                    StrokeShape="RoundRectangle 10" StrokeThickness="0"
+                                    WidthRequest="40" HeightRequest="40" VerticalOptions="Center">
+                                <Label Text="📝" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                <Label Text="Документ Word (.docx)" FontSize="15" FontAttributes="Bold"
+                                       TextColor="{DynamicResource TextPrimary}" />
+                                <Label Text="Можно править в Word и LibreOffice" FontSize="12"
+                                       TextColor="{DynamicResource TextSecondary}" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="2" Text="›" FontSize="20"
+                                   TextColor="{DynamicResource TextSecondary}" VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- PDF -->
+                    <Border StyleClass="HoverCard" StrokeShape="RoundRectangle 16" StrokeThickness="1" Padding="14">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnExportPdfTapped" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
+                            <Border Grid.Column="0" BackgroundColor="{DynamicResource IconBoxBg}"
+                                    StrokeShape="RoundRectangle 10" StrokeThickness="0"
+                                    WidthRequest="40" HeightRequest="40" VerticalOptions="Center">
+                                <Label Text="📕" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                <Label Text="PDF" FontSize="15" FontAttributes="Bold"
+                                       TextColor="{DynamicResource TextPrimary}" />
+                                <Label Text="Готов к печати" FontSize="12"
+                                       TextColor="{DynamicResource TextSecondary}" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="2" Text="›" FontSize="20"
+                                   TextColor="{DynamicResource TextSecondary}" VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Поделиться -->
+                    <Border StyleClass="HoverCard" StrokeShape="RoundRectangle 16" StrokeThickness="1" Padding="14">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnExportShareTapped" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
+                            <Border Grid.Column="0" BackgroundColor="{DynamicResource IconBoxBg}"
+                                    StrokeShape="RoundRectangle 10" StrokeThickness="0"
+                                    WidthRequest="40" HeightRequest="40" VerticalOptions="Center">
+                                <Label Text="📤" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                <Label Text="Поделиться" FontSize="15" FontAttributes="Bold"
+                                       TextColor="{DynamicResource TextPrimary}" />
+                                <Label Text="Отправить в мессенджер или на почту" FontSize="12"
+                                       TextColor="{DynamicResource TextSecondary}" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="2" Text="›" FontSize="20"
+                                   TextColor="{DynamicResource TextSecondary}" VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
+    </Grid>
+</ContentPage>

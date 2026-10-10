@@ -1,5 +1,6 @@
 namespace GosTek.Views;
 
+using WordText = DocumentFormat.OpenXml.Wordprocessing.Text;
 public record TemplateItem(string Id, string Title, string Description, string Category);
 
 public partial class TemplatesPage : ContentPage
@@ -126,6 +127,7 @@ public partial class TemplatesPage : ContentPage
     }
 
     // ===== Нажатие на шаблон =====
+    // ===== Нажатие на шаблон =====
     private async void OnTemplateTapped(object? sender, TappedEventArgs e)
     {
         if (e.Parameter is not string id)
@@ -135,13 +137,16 @@ public partial class TemplatesPage : ContentPage
         if (item is null)
             return;
 
+        // Шаблоны без описания полей пока открываются заглушкой
+        if (GosTek.Models.TemplateCatalog.Find(id) is null) {
+            await DisplayAlertAsync("📄 " + item.Title,
+                "Этот шаблон скоро будет добавлен.",
+                "Понятно");
+            return;
+        }
+
         AddRecent(id);
-
-        await DisplayAlertAsync("📄 " + item.Title,
-            "Скоро здесь будет форма заполнения этого шаблона.",
-            "Понятно");
-
-        ApplyFilter();
+        await Shell.Current.GoToAsync($"FieldsPage?id={id}");
     }
 
     // ===== Недавние (хранятся в Preferences) =====
@@ -154,7 +159,7 @@ public partial class TemplatesPage : ContentPage
             .ToList();
     }
 
-    private static void AddRecent(string id)
+    public static void AddRecent(string id)
     {
         var ids = Preferences.Get(RecentKey, "")
             .Split(',', StringSplitOptions.RemoveEmptyEntries)

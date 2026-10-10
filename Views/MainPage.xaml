@@ -66,10 +66,18 @@
                                  VerticalOptions="Center"
                                  Spacing="5">
                 <Label Text="GosTek"
-                       FontSize="43"
+                       FontSize="52"
                        FontAttributes="Bold"
+                       CharacterSpacing="1"
                        TextColor="{DynamicResource BrandGreen}"
-                       HorizontalOptions="Center" />
+                       HorizontalOptions="Center">
+                    <Label.Shadow>
+                        <Shadow Brush="Black"
+                                Offset="0,3"
+                                Radius="6"
+                                Opacity="0.25" />
+                    </Label.Shadow>
+                </Label>
                 <Label x:Name="SubtitleLabel"
                        Text="Что оформим сегодня?"
                        FontSize="22"
@@ -222,7 +230,7 @@
                             <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
                         </Border.Shadow>
                         <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="explanatory" />
+                            <TapGestureRecognizer Tapped="OnTemplateTapped" CommandParameter="explanatory" />
                         </Border.GestureRecognizers>
                         <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
                             <Border Grid.Column="0" BackgroundColor="{DynamicResource IconBoxBg}" StrokeShape="RoundRectangle 10" WidthRequest="40" HeightRequest="40" StrokeThickness="0" VerticalOptions="Center">
@@ -243,7 +251,7 @@
                             <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
                         </Border.Shadow>
                         <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="ip" />
+                            <TapGestureRecognizer Tapped="OnTemplateTapped" CommandParameter="ip" />
                         </Border.GestureRecognizers>
                         <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
                             <Border Grid.Column="0" BackgroundColor="{DynamicResource IconBoxBg}" StrokeShape="RoundRectangle 10" WidthRequest="40" HeightRequest="40" StrokeThickness="0" VerticalOptions="Center">
