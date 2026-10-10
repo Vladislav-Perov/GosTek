@@ -1,61 +1,12 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:views="clr-namespace:GosTek.Views"
+             xmlns:models="clr-namespace:GosTek.Models"
              x:Class="GosTek.Views.MainPage"
              Title="Главная"
              BackgroundColor="{DynamicResource PageBg}"
              Shell.NavBarIsVisible="False">
-
-    <ContentPage.Resources>
-
-        <!-- Обычная карточка с эффектом наведения -->
-        <Style TargetType="Border" Class="HoverCard">
-            <Setter Property="VisualStateManager.VisualStateGroups">
-                <VisualStateGroupList>
-                    <VisualStateGroup Name="CommonStates">
-                        <VisualState Name="Normal">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="{DynamicResource CardBg}" />
-                                <Setter Property="Stroke" Value="{DynamicResource CardStroke}" />
-                                <Setter Property="Scale" Value="1" />
-                            </VisualState.Setters>
-                        </VisualState>
-                        <VisualState Name="PointerOver">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="{DynamicResource CardHoverBg}" />
-                                <Setter Property="Stroke" Value="{DynamicResource AccentGreen}" />
-                                <Setter Property="Scale" Value="1.02" />
-                            </VisualState.Setters>
-                        </VisualState>
-                    </VisualStateGroup>
-                </VisualStateGroupList>
-            </Setter>
-        </Style>
-
-        <!-- Главная зелёная карточка -->
-        <Style TargetType="Border" Class="HoverGreen">
-            <Setter Property="VisualStateManager.VisualStateGroups">
-                <VisualStateGroupList>
-                    <VisualStateGroup Name="CommonStates">
-                        <VisualState Name="Normal">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="#34D399" />
-                                <Setter Property="Scale" Value="1" />
-                            </VisualState.Setters>
-                        </VisualState>
-                        <VisualState Name="PointerOver">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="#4FE3AF" />
-                                <Setter Property="Scale" Value="1.02" />
-                            </VisualState.Setters>
-                        </VisualState>
-                    </VisualStateGroup>
-                </VisualStateGroupList>
-            </Setter>
-        </Style>
-
-    </ContentPage.Resources>
 
     <Grid RowDefinitions="Auto, *, Auto">
 
@@ -88,40 +39,7 @@
             </VerticalStackLayout>
 
             <!-- Переключатель темы -->
-            <Border StyleClass="HoverCard"
-                    HorizontalOptions="End"
-                    VerticalOptions="Start"
-                    StrokeThickness="1"
-                    StrokeShape="RoundRectangle 16"
-                    Padding="10,5">
-                <Border.GestureRecognizers>
-                    <TapGestureRecognizer Tapped="OnThemeToggleTapped" />
-                </Border.GestureRecognizers>
-
-                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
-                    <Label x:Name="ThemeIcon"
-                           Text="🌙"
-                           FontSize="16"
-                           VerticalOptions="Center" />
-
-                    <Border WidthRequest="40"
-                            HeightRequest="22"
-                            BackgroundColor="{DynamicResource ToggleTrackBg}"
-                            StrokeThickness="0"
-                            StrokeShape="RoundRectangle 11"
-                            VerticalOptions="Center">
-                        <Border x:Name="ToggleThumb"
-                                WidthRequest="16"
-                                HeightRequest="16"
-                                BackgroundColor="White"
-                                StrokeThickness="0"
-                                StrokeShape="RoundRectangle 8"
-                                HorizontalOptions="Start"
-                                VerticalOptions="Center"
-                                Margin="3,0,0,0" />
-                    </Border>
-                </HorizontalStackLayout>
-            </Border>
+            <views:ThemeToggle HorizontalOptions="End" VerticalOptions="Start" />
         </Grid>
 
         <!-- ==================== КОНТЕНТ ==================== -->
@@ -223,47 +141,17 @@
                 <VerticalStackLayout Spacing="12">
                     <Label Text="Быстрый старт" FontSize="18" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
 
-                    <Border StyleClass="HoverCard"
-                            StrokeShape="RoundRectangle 16" Padding="14"
-                            StrokeThickness="1">
-                        <Border.Shadow>
-                            <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
-                        </Border.Shadow>
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnTemplateTapped" CommandParameter="explanatory" />
-                        </Border.GestureRecognizers>
-                        <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
-                            <Border Grid.Column="0" BackgroundColor="{DynamicResource IconBoxBg}" StrokeShape="RoundRectangle 10" WidthRequest="40" HeightRequest="40" StrokeThickness="0" VerticalOptions="Center">
-                                <Label Text="📄" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
-                            </Border>
-                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                <Label Text="Объяснительная записка" FontSize="15" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
-                                <Label Text="Причина опоздания, нарушения срока, отсутствия" FontSize="12" TextColor="{DynamicResource TextSecondary}" LineBreakMode="TailTruncation" />
-                            </VerticalStackLayout>
-                            <Label Grid.Column="2" Text="›" FontSize="20" TextColor="{DynamicResource TextSecondary}" VerticalOptions="Center" />
-                        </Grid>
-                    </Border>
-
-                    <Border StyleClass="HoverCard"
-                            StrokeShape="RoundRectangle 16" Padding="14"
-                            StrokeThickness="1">
-                        <Border.Shadow>
-                            <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
-                        </Border.Shadow>
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnTemplateTapped" CommandParameter="ip" />
-                        </Border.GestureRecognizers>
-                        <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
-                            <Border Grid.Column="0" BackgroundColor="{DynamicResource IconBoxBg}" StrokeShape="RoundRectangle 10" WidthRequest="40" HeightRequest="40" StrokeThickness="0" VerticalOptions="Center">
-                                <Label Text="📄" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
-                            </Border>
-                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                <Label Text="Заявление о регистрации ИП" FontSize="15" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
-                                <Label Text="Для подачи в регистрирующий орган" FontSize="12" TextColor="{DynamicResource TextSecondary}" LineBreakMode="TailTruncation" />
-                            </VerticalStackLayout>
-                            <Label Grid.Column="2" Text="›" FontSize="20" TextColor="{DynamicResource TextSecondary}" VerticalOptions="Center" />
-                        </Grid>
-                    </Border>
+                    <!-- Первые шаблоны из каталога (MainPage.xaml.cs) -->
+                    <VerticalStackLayout x:Name="QuickStartList" Spacing="12">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="models:TemplateItem">
+                                <views:ListRow Icon="📄"
+                                               Title="{Binding Title}"
+                                               Subtitle="{Binding Description}"
+                                               Tapped="OnTemplateTapped" />
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
                 </VerticalStackLayout>
 
             </VerticalStackLayout>

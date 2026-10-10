@@ -1,3 +1,5 @@
+﻿using Microsoft.Maui.Controls.Shapes;
+
 namespace GosTek.Views;
 
 /// <summary>
@@ -7,6 +9,18 @@ namespace GosTek.Views;
 public partial class AppTabBar : ContentView
 {
     private const double HoverScale = 1.08;
+
+    // Route = null: перехода пока нет, вкладка показывает заглушку
+    private sealed record Tab(string Key, string Icon, string Title, string? Route);
+
+    private static readonly Tab[] TabList =
+    {
+        new("home",      "🏠",  "Главная",  "//MainPage"),
+        new("templates", "📋",  "Шаблоны",  "//TemplatesPage"),
+        new("scan",      "📷",  "Скан",     null),
+        new("check",     "🛡️", "Проверка", null),
+        new("profile",   "👤",  "Профиль",  "//ProfilePage"),
+    };
 
     public static readonly BindableProperty ActiveTabProperty = BindableProperty.Create(
         nameof(ActiveTab), typeof(string), typeof(AppTabBar), string.Empty,
@@ -18,31 +32,21 @@ public partial class AppTabBar : ContentView
         set => SetValue(ActiveTabProperty, value);
     }
 
-    // Вкладки, у которых есть реальный переход. Остальные показывают заглушку.
-    private static readonly Dictionary<string, string> Routes = new() {
-        ["home"] = "//MainPage",
-        ["templates"] = "//TemplatesPage",
-        ["profile"] = "//ProfilePage",
-    };
-
-    private readonly List<(string Key, Border Border)> _tabs;
+    private readonly List<(string Key, Border Border)> _tabs = new();
     private string? _hoveredKey;
 
     public AppTabBar()
     {
         InitializeComponent();
 
-        _tabs = new()
-        {
-            ("home", TabHome),
-            ("templates", TabTemplates),
-            ("scan", TabScan),
-            ("check", TabCheck),
-            ("profile", TabProfile),
-        };
+        for (int i = 0; i < TabList.Length; i++) {
+            var border = CreateTab(TabList[i]);
+            Grid.SetColumn(border, i);
 
-        foreach (var (key, border) in _tabs)
-            AttachGestures(key, border);
+            TabsGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+            TabsGrid.Children.Add(border);
+            _tabs.Add((TabList[i].Key, border));
+        }
 
         ApplyStates();
     }
@@ -57,34 +61,52 @@ public partial class AppTabBar : ContentView
         ApplyStates();
     }
 
-    // ===== Жесты =====
-    private void AttachGestures(string key, Border border)
+    // Вкладка: иконка и подпись в скруглённой рамке + жесты. Цвета выставляет ApplyStates
+    private Border CreateTab(Tab tab)
     {
+        var content = new VerticalStackLayout { Spacing = 2 };
+        content.Children.Add(new Label { Text = tab.Icon, FontSize = 18, HorizontalOptions = LayoutOptions.Center });
+        content.Children.Add(new Label {
+            Text = tab.Title,
+            FontSize = 10,
+            LineBreakMode = LineBreakMode.NoWrap,
+            HorizontalOptions = LayoutOptions.Center,
+        });
+
+        var border = new Border {
+            Margin = new Thickness(2, 0),
+            StrokeThickness = 0,
+            StrokeShape = new RoundRectangle { CornerRadius = 12 },
+            Padding = new Thickness(2, 6),
+            Content = content,
+        };
+
         var tap = new TapGestureRecognizer();
-        tap.Tapped += async (_, _) => await OnTabTappedAsync(key);
+        tap.Tapped += async (_, _) => await OnTabTappedAsync(tab);
 
         var pointer = new PointerGestureRecognizer();
-        pointer.PointerEntered += (_, _) => SetHover(key);
+        pointer.PointerEntered += (_, _) => SetHover(tab.Key);
         pointer.PointerExited += (_, _) => {
-            if (_hoveredKey == key)
+            if (_hoveredKey == tab.Key)
                 SetHover(null);
         };
 
         border.GestureRecognizers.Add(tap);
         border.GestureRecognizers.Add(pointer);
+        return border;
     }
 
-    private async Task OnTabTappedAsync(string key)
+    private async Task OnTabTappedAsync(Tab tab)
     {
-        if (key == ActiveTab)
+        if (tab.Key == ActiveTab)
             return;
 
         ResetHover();
 
-        if (Routes.TryGetValue(key, out var route))
-            await Shell.Current.GoToAsync(route);
+        if (tab.Route is not null)
+            await Shell.Current.GoToAsync(tab.Route);
         else
-            await Stubs.ShowAsync(key);
+            await Stubs.ShowAsync(tab.Key);
     }
 
     private void SetHover(string? key)
@@ -96,10 +118,6 @@ public partial class AppTabBar : ContentView
     // ===== Внешний вид: обычная / наведённая / активная вкладка =====
     private void ApplyStates()
     {
-        // _tabs ещё не создан, пока свойство задаётся из конструктора базового класса
-        if (_tabs is null)
-            return;
-
         foreach (var (key, border) in _tabs) {
             bool active = key == ActiveTab;
             bool hover = key == _hoveredKey;

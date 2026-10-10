@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace GosTek;
 
@@ -36,11 +33,4 @@ public static class ProfileStorage
 
     public static Task SaveAsync(ProfileData profile)
         => SecureStorage.Default.SetAsync(Key, JsonSerializer.Serialize(profile));
-
-    /// <summary>Доля заполненных полей, 0..1 (пригодится для главной страницы).</summary>
-    public static double Completeness(ProfileData p)
-    {
-        var values = new[] { p.FullName, p.OrgName, p.Unp, p.Address, p.Phone, p.Passport, p.Account };
-        return (double)values.Count(v => !string.IsNullOrWhiteSpace(v)) / values.Length;
-    }
 }

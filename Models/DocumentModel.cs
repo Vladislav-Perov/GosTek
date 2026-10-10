@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace GosTek.Models;
+﻿namespace GosTek.Models;
 
 /// <summary>Откуда поле берёт значение при нажатии «Заполнить из профиля».</summary>
 public enum ProfileSource { None, FullName, ShortName, Passport, Address }
@@ -18,10 +12,27 @@ public record TemplateField(
 
 public record TemplateDef(string Id, string Title, TemplateField[] Fields);
 
+/// <summary>Строка в списке шаблонов (экран «Шаблоны» и «Быстрый старт» на главной).</summary>
+public record TemplateItem(string Id, string Title, string Description, string Category);
+
 public static class TemplateCatalog
 {
-    // Id совпадают с Id в списке TemplatesPage
-    private static readonly TemplateDef[] All =
+    /// <summary>
+    /// Все шаблоны для списков. Если для шаблона нет описания полей в Defs,
+    /// при нажатии показывается заглушка «скоро будет добавлен».
+    /// </summary>
+    public static readonly TemplateItem[] Items =
+    {
+        new("explanatory", "Объяснительная записка",   "Причина опоздания, нарушения срока, отсутствия", "Организация"),
+        new("ip",          "Заявление о регистрации ИП", "Для подачи в регистрирующий орган",           "Предприниматель"),
+        new("title",       "Титульный лист работы",    "Курсовая, дипломная, отчёт по практике",         "Учёба"),
+        new("contract",    "Договор оказания услуг",   "С реквизитами заказчика и исполнителя",          "Предприниматель"),
+        new("proxy",       "Доверенность",             "На получение товара или представление интересов", "Организация"),
+        new("practice",    "Отчёт по практике",        "Структура по требованиям кафедры",               "Учёба"),
+    };
+
+    // Id совпадают с Id в Items
+    private static readonly TemplateDef[] Defs =
     {
         new("explanatory", "Объяснительная записка", new TemplateField[] {
             new("pos",     "Кому (должность)",         "Начальнику инспекции"),
@@ -51,7 +62,7 @@ public static class TemplateCatalog
     };
 
     /// <summary>null, если описания полей для этого шаблона ещё нет.</summary>
-    public static TemplateDef? Find(string? id) => All.FirstOrDefault(t => t.Id == id);
+    public static TemplateDef? Find(string? id) => Defs.FirstOrDefault(t => t.Id == id);
 
     public static string FromProfile(ProfileSource source, ProfileData p) => source switch {
         ProfileSource.FullName => p.FullName,
@@ -79,7 +90,7 @@ public static class TemplateCatalog
 /// <summary>
 /// Введённые значения полей, пока приложение открыто. Только в памяти:
 /// там паспорт и адрес, на диск без шифрования их класть не стоит.
-/// Предпросмотр и экспорт будут читать отсюда.
+/// Предпросмотр и экспорт читают отсюда.
 /// </summary>
 public static class DraftStore
 {
@@ -87,10 +98,9 @@ public static class DraftStore
 
     public static Dictionary<string, string> For(string templateId)
     {
-        if (!Data.TryGetValue(templateId, out var draft)) {
-            draft = new Dictionary<string, string>();
-            Data[templateId] = draft;
-        }
+        if (!Data.TryGetValue(templateId, out var draft))
+            Data[templateId] = draft = new Dictionary<string, string>();
+
         return draft;
     }
 }

@@ -1,92 +1,12 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:views="clr-namespace:GosTek.Views"
              x:Class="GosTek.Views.FieldsPage"
              Title="Шаблон"
              BackgroundColor="{DynamicResource PageBg}"
              Shell.NavBarIsVisible="False"
              SizeChanged="OnPageSizeChanged">
-
-    <ContentPage.Resources>
-
-        <!-- Карточка с эффектом наведения -->
-        <Style TargetType="Border" Class="HoverCard">
-            <Setter Property="VisualStateManager.VisualStateGroups">
-                <VisualStateGroupList>
-                    <VisualStateGroup Name="CommonStates">
-                        <VisualState Name="Normal">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="{DynamicResource CardBg}" />
-                                <Setter Property="Stroke" Value="{DynamicResource CardStroke}" />
-                                <Setter Property="Scale" Value="1" />
-                            </VisualState.Setters>
-                        </VisualState>
-                        <VisualState Name="PointerOver">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="{DynamicResource CardHoverBg}" />
-                                <Setter Property="Stroke" Value="{DynamicResource AccentGreen}" />
-                                <Setter Property="Scale" Value="1.02" />
-                            </VisualState.Setters>
-                        </VisualState>
-                    </VisualStateGroup>
-                </VisualStateGroupList>
-            </Setter>
-        </Style>
-
-        <!-- Зелёная кнопка -->
-        <Style TargetType="Border" Class="HoverGreen">
-            <Setter Property="VisualStateManager.VisualStateGroups">
-                <VisualStateGroupList>
-                    <VisualStateGroup Name="CommonStates">
-                        <VisualState Name="Normal">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="{DynamicResource AccentGreen}" />
-                                <Setter Property="Scale" Value="1" />
-                            </VisualState.Setters>
-                        </VisualState>
-                        <VisualState Name="PointerOver">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="#4FE3AF" />
-                                <Setter Property="Scale" Value="1.02" />
-                            </VisualState.Setters>
-                        </VisualState>
-                    </VisualStateGroup>
-                </VisualStateGroupList>
-            </Setter>
-        </Style>
-
-        <!-- Поле ввода: те же стили, что в профиле -->
-        <Style TargetType="Border" Class="FieldBox">
-            <Setter Property="BackgroundColor" Value="{DynamicResource CardBg}" />
-            <Setter Property="Stroke" Value="{DynamicResource CardStroke}" />
-            <Setter Property="StrokeThickness" Value="1" />
-            <Setter Property="StrokeShape" Value="RoundRectangle 14" />
-            <Setter Property="Padding" Value="16,0" />
-        </Style>
-
-        <Style TargetType="Entry" Class="FieldEntry">
-            <Setter Property="BackgroundColor" Value="Transparent" />
-            <Setter Property="TextColor" Value="{DynamicResource TextPrimary}" />
-            <Setter Property="PlaceholderColor" Value="{DynamicResource TextSecondary}" />
-            <Setter Property="FontSize" Value="16" />
-            <Setter Property="HeightRequest" Value="50" />
-        </Style>
-
-        <Style TargetType="Editor" Class="FieldEditor">
-            <Setter Property="BackgroundColor" Value="Transparent" />
-            <Setter Property="TextColor" Value="{DynamicResource TextPrimary}" />
-            <Setter Property="PlaceholderColor" Value="{DynamicResource TextSecondary}" />
-            <Setter Property="FontSize" Value="16" />
-            <Setter Property="MinimumHeightRequest" Value="140" />
-        </Style>
-
-        <Style TargetType="Label" Class="FieldLabel">
-            <Setter Property="TextColor" Value="{DynamicResource TextSecondary}" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="FontAttributes" Value="Bold" />
-        </Style>
-
-    </ContentPage.Resources>
 
     <Grid RowDefinitions="Auto, *, Auto">
 
@@ -314,71 +234,20 @@
                         </Border>
                     </VerticalStackLayout>
 
-                    <!-- Word -->
-                    <Border StyleClass="HoverCard" StrokeShape="RoundRectangle 16" StrokeThickness="1" Padding="14">
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnExportDocxTapped" />
-                        </Border.GestureRecognizers>
-                        <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
-                            <Border Grid.Column="0" BackgroundColor="{DynamicResource IconBoxBg}"
-                                    StrokeShape="RoundRectangle 10" StrokeThickness="0"
-                                    WidthRequest="40" HeightRequest="40" VerticalOptions="Center">
-                                <Label Text="📝" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
-                            </Border>
-                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                <Label Text="Документ Word (.docx)" FontSize="15" FontAttributes="Bold"
-                                       TextColor="{DynamicResource TextPrimary}" />
-                                <Label Text="Можно править в Word и LibreOffice" FontSize="12"
-                                       TextColor="{DynamicResource TextSecondary}" />
-                            </VerticalStackLayout>
-                            <Label Grid.Column="2" Text="›" FontSize="20"
-                                   TextColor="{DynamicResource TextSecondary}" VerticalOptions="Center" />
-                        </Grid>
-                    </Border>
+                    <views:ListRow Icon="📝"
+                                   Title="Документ Word (.docx)"
+                                   Subtitle="Можно править в Word и LibreOffice"
+                                   Tapped="OnExportDocxTapped" />
 
-                    <!-- PDF -->
-                    <Border StyleClass="HoverCard" StrokeShape="RoundRectangle 16" StrokeThickness="1" Padding="14">
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnExportPdfTapped" />
-                        </Border.GestureRecognizers>
-                        <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
-                            <Border Grid.Column="0" BackgroundColor="{DynamicResource IconBoxBg}"
-                                    StrokeShape="RoundRectangle 10" StrokeThickness="0"
-                                    WidthRequest="40" HeightRequest="40" VerticalOptions="Center">
-                                <Label Text="📕" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
-                            </Border>
-                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                <Label Text="PDF" FontSize="15" FontAttributes="Bold"
-                                       TextColor="{DynamicResource TextPrimary}" />
-                                <Label Text="Готов к печати" FontSize="12"
-                                       TextColor="{DynamicResource TextSecondary}" />
-                            </VerticalStackLayout>
-                            <Label Grid.Column="2" Text="›" FontSize="20"
-                                   TextColor="{DynamicResource TextSecondary}" VerticalOptions="Center" />
-                        </Grid>
-                    </Border>
+                    <views:ListRow Icon="📕"
+                                   Title="PDF"
+                                   Subtitle="Готов к печати"
+                                   Tapped="OnExportPdfTapped" />
 
-                    <!-- Поделиться -->
-                    <Border StyleClass="HoverCard" StrokeShape="RoundRectangle 16" StrokeThickness="1" Padding="14">
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnExportShareTapped" />
-                        </Border.GestureRecognizers>
-                        <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
-                            <Border Grid.Column="0" BackgroundColor="{DynamicResource IconBoxBg}"
-                                    StrokeShape="RoundRectangle 10" StrokeThickness="0"
-                                    WidthRequest="40" HeightRequest="40" VerticalOptions="Center">
-                                <Label Text="📤" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
-                            </Border>
-                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                <Label Text="Поделиться" FontSize="15" FontAttributes="Bold"
-                                       TextColor="{DynamicResource TextPrimary}" />
-                                <Label Text="Отправить в мессенджер или на почту" FontSize="12"
-                                       TextColor="{DynamicResource TextSecondary}" />
-                            </VerticalStackLayout>
-                            <Label Grid.Column="2" Text="›" FontSize="20"
-                                   TextColor="{DynamicResource TextSecondary}" VerticalOptions="Center" />
-                        </Grid>
-                    </Border>
+                    <views:ListRow Icon="📤"
+                                   Title="Поделиться"
+                                   Subtitle="Отправить в мессенджер или на почту"
+                                   Tapped="OnExportShareTapped" />
 
                 </VerticalStackLayout>
             </Border>

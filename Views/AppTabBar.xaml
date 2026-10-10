@@ -1,55 +1,13 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="GosTek.Views.AppTabBar">
 
-    <!-- Цвета иконок/текста и фон вкладок выставляются в коде (AppTabBar.xaml.cs) -->
     <Border BackgroundColor="{DynamicResource TabBarBg}"
             Stroke="{DynamicResource CardStroke}"
             StrokeThickness="1"
             Padding="4, 8">
-        <Grid ColumnDefinitions="*, *, *, *, *" HorizontalOptions="Fill">
-
-            <Border x:Name="TabHome" Grid.Column="0" Margin="2,0"
-                    StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="2,6">
-                <VerticalStackLayout Spacing="2">
-                    <Label Text="🏠" FontSize="18" HorizontalOptions="Center" />
-                    <Label Text="Главная" FontSize="10" LineBreakMode="NoWrap" HorizontalOptions="Center" />
-                </VerticalStackLayout>
-            </Border>
-
-            <Border x:Name="TabTemplates" Grid.Column="1" Margin="2,0"
-                    StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="2,6">
-                <VerticalStackLayout Spacing="2">
-                    <Label Text="📋" FontSize="18" HorizontalOptions="Center" />
-                    <Label Text="Шаблоны" FontSize="10" LineBreakMode="NoWrap" HorizontalOptions="Center" />
-                </VerticalStackLayout>
-            </Border>
-
-            <Border x:Name="TabScan" Grid.Column="2" Margin="2,0"
-                    StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="2,6">
-                <VerticalStackLayout Spacing="2">
-                    <Label Text="📷" FontSize="18" HorizontalOptions="Center" />
-                    <Label Text="Скан" FontSize="10" LineBreakMode="NoWrap" HorizontalOptions="Center" />
-                </VerticalStackLayout>
-            </Border>
-
-            <Border x:Name="TabCheck" Grid.Column="3" Margin="2,0"
-                    StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="2,6">
-                <VerticalStackLayout Spacing="2">
-                    <Label Text="🛡️" FontSize="18" HorizontalOptions="Center" />
-                    <Label Text="Проверка" FontSize="10" LineBreakMode="NoWrap" HorizontalOptions="Center" />
-                </VerticalStackLayout>
-            </Border>
-
-            <Border x:Name="TabProfile" Grid.Column="4" Margin="2,0"
-                    StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="2,6">
-                <VerticalStackLayout Spacing="2">
-                    <Label Text="👤" FontSize="18" HorizontalOptions="Center" />
-                    <Label Text="Профиль" FontSize="10" LineBreakMode="NoWrap" HorizontalOptions="Center" />
-                </VerticalStackLayout>
-            </Border>
-
-        </Grid>
+        <!-- Вкладки создаются из кода (AppTabBar.xaml.cs, список TabList) -->
+        <Grid x:Name="TabsGrid" HorizontalOptions="Fill" />
     </Border>
 </ContentView>

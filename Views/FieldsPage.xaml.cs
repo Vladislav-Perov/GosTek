@@ -1,5 +1,8 @@
-using GosTek.Models;
+﻿using GosTek.Models;
 using Microsoft.Maui.Controls.Shapes;
+
+// В Shapes есть одноимённый Path
+using Path = System.IO.Path;
 
 namespace GosTek.Views;
 
@@ -9,8 +12,6 @@ public partial class FieldsPage : ContentPage
     // Ширина окна от этого значения: ввод слева, предпросмотр справа.
     // Уже: предпросмотр сразу под полями (телефон).
     private const double WideBreakpoint = 800;
-
-    private static readonly Color ErrorColor = Color.FromArgb("#EF4444");
 
     // Лист всегда «бумажный», независимо от темы приложения
     private static readonly Color Ink = Color.FromArgb("#1B1B1F");
@@ -165,7 +166,7 @@ public partial class FieldsPage : ContentPage
         var error = new Label {
             Text = "Заполните поле",
             FontSize = 12,
-            TextColor = ErrorColor,
+            TextColor = ThemeService.ErrorColor,
             IsVisible = false,
         };
 
@@ -222,7 +223,7 @@ public partial class FieldsPage : ContentPage
     private static void Mark(FieldUi f, bool invalid)
     {
         if (invalid) {
-            f.Box.Stroke = new SolidColorBrush(ErrorColor);
+            f.Box.Stroke = new SolidColorBrush(ThemeService.ErrorColor);
             f.Box.StrokeThickness = 1.5;
         } else {
             // Вернуть рамку из стиля FieldBox (цвет подхватывает тему)
@@ -315,10 +316,11 @@ public partial class FieldsPage : ContentPage
             return;
         }
 
-            // Все поля заполнены: открываем шторку экспорта
-            FileNameEntry.Text = DefaultFileName();
-            ExportOverlay.IsVisible = true;
+        // Все поля заполнены: открываем шторку экспорта
+        FileNameEntry.Text = DefaultFileName();
+        ExportOverlay.IsVisible = true;
     }
+
     // =====================================================================
     //  ЭКСПОРТ
     // =====================================================================
@@ -327,7 +329,7 @@ public partial class FieldsPage : ContentPage
 
     private void OnExportCloseTapped(object? sender, TappedEventArgs e) => CloseExport();
 
-    // Нажатие на саму шторку не должно её закрывать
+    // Нажатие на саму шторку не должно её закрывать (жест перехватывает нажатие у подложки)
     private void OnSheetTapped(object? sender, TappedEventArgs e) { }
 
     private string DefaultFileName() => _template!.Title.Replace(' ', '_');
@@ -367,7 +369,7 @@ public partial class FieldsPage : ContentPage
             File = new ShareFile(path),
         });
 
-    private async void OnExportDocxTapped(object? sender, TappedEventArgs e)
+    private async void OnExportDocxTapped(object? sender, EventArgs e)
     {
         if (_template is null)
             return;
@@ -387,7 +389,7 @@ public partial class FieldsPage : ContentPage
         }
     }
 
-    private async void OnExportShareTapped(object? sender, TappedEventArgs e)
+    private async void OnExportShareTapped(object? sender, EventArgs e)
     {
         if (_template is null)
             return;
@@ -401,12 +403,14 @@ public partial class FieldsPage : ContentPage
         }
     }
 
-    private async void OnExportPdfTapped(object? sender, TappedEventArgs e)
+    // Заглушка: PDF пока не делаем
+    private async void OnExportPdfTapped(object? sender, EventArgs e)
     {
         await DisplayAlertAsync("📕 PDF",
             "Сохранение в PDF добавим следующим шагом. Пока можно собрать Word и распечатать из него.",
             "Понятно");
     }
+
     // =====================================================================
     //  ПРЕДПРОСМОТР
     // =====================================================================

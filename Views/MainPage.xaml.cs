@@ -1,3 +1,5 @@
+﻿using GosTek.Models;
+
 namespace GosTek.Views;
 
 public partial class MainPage : ContentPage
@@ -23,77 +25,60 @@ public partial class MainPage : ContentPage
     public MainPage()
     {
         InitializeComponent();
+
+        // «Быстрый старт»: первые два шаблона каталога
+        BindableLayout.SetItemsSource(QuickStartList, TemplateCatalog.Items.Take(2).ToList());
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
         ShowRandomSubtitle();
-        SyncToggleVisual(animated: false);   // подхватить тему, выбранную на другой странице
-        BottomTabs.ResetHover();             // сбросить «залипшее» наведение таббара
+        BottomTabs.ResetHover();   // сбросить «залипшее» наведение таббара
 
-        await RefreshProfileCardAsync();     // обновить плашку профиля
+        await RefreshProfileCardAsync();
     }
+
     // ===== Плашка «Мой профиль»: те же данные и правила, что на странице профиля =====
     private async Task RefreshProfileCardAsync()
     {
         var profile = await ProfileStorage.LoadAsync();
-        var summary = ProfileRules.Summarize(ProfileRules.ToValues(profile));
+        var summary = ProfileRules.Summarize(profile);
 
         ProfilePercentLabel.Text = $"{summary.Percent}%";
         ProfileProgress.Progress = summary.Progress;
         ProfileHintLabel.Text = $"Заполнено на {summary.Percent}%. {summary.Hint}";
     }
-    // ===== Подзаголовок =====
-    // Случайная фраза, не повторяющая предыдущую
+
+    // ===== Подзаголовок: случайная фраза, не повторяющая предыдущую =====
     private void ShowRandomSubtitle()
     {
         int index;
         do {
             index = Random.Shared.Next(Subtitles.Length);
         }
-        while (index == _lastSubtitleIndex && Subtitles.Length > 1);
+        while (index == _lastSubtitleIndex);
 
         _lastSubtitleIndex = index;
         SubtitleLabel.Text = Subtitles[index];
     }
 
-    // ===== Заглушки =====
+    // ===== Заглушки (create, check, scan) =====
     private async void OnStubTapped(object? sender, TappedEventArgs e)
     {
         await Stubs.ShowAsync(e.Parameter as string);
     }
-    // ===== Открыть шаблон из «Быстрого старта» =====
-    private async void OnTemplateTapped(object? sender, TappedEventArgs e)
-    {
-        if (e.Parameter is not string id)
-            return;
 
-        TemplatesPage.AddRecent(id);
-        await Shell.Current.GoToAsync($"FieldsPage?id={id}");
+    // ===== Шаблон из «Быстрого старта» =====
+    private async void OnTemplateTapped(object? sender, EventArgs e)
+    {
+        if (sender is ListRow { BindingContext: TemplateItem item })
+            await TemplatesPage.OpenAsync(item);
     }
+
     // ===== Переход в профиль =====
     private async void OnProfileTapped(object? sender, TappedEventArgs e)
     {
         await Shell.Current.GoToAsync("//ProfilePage");
-    }
-    // ===== Переключатель темы =====
-    private void OnThemeToggleTapped(object? sender, TappedEventArgs e)
-    {
-        ThemeService.Toggle();
-        SyncToggleVisual(animated: true);
-    }
-
-    private void SyncToggleVisual(bool animated)
-    {
-        bool dark = ThemeService.IsDark;
-        ThemeIcon.Text = dark ? "🌙" : "☀️";
-
-        double target = dark ? 0 : 18;
-
-        if (animated)
-            _ = ToggleThumb.TranslateToAsync(target, 0, 150, Easing.CubicInOut);
-        else
-            ToggleThumb.TranslationX = target;
     }
 }

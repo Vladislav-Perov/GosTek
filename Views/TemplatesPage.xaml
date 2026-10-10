@@ -1,68 +1,21 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:views="clr-namespace:GosTek.Views"
+             xmlns:models="clr-namespace:GosTek.Models"
              x:Class="GosTek.Views.TemplatesPage"
              Title="Шаблоны"
              BackgroundColor="{DynamicResource PageBg}"
              Shell.NavBarIsVisible="False">
 
     <ContentPage.Resources>
-
-        <!-- Карточка с эффектом наведения -->
-        <Style TargetType="Border" Class="HoverCard">
-            <Setter Property="VisualStateManager.VisualStateGroups">
-                <VisualStateGroupList>
-                    <VisualStateGroup Name="CommonStates">
-                        <VisualState Name="Normal">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="{DynamicResource CardBg}" />
-                                <Setter Property="Stroke" Value="{DynamicResource CardStroke}" />
-                                <Setter Property="Scale" Value="1" />
-                            </VisualState.Setters>
-                        </VisualState>
-                        <VisualState Name="PointerOver">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="{DynamicResource CardHoverBg}" />
-                                <Setter Property="Stroke" Value="{DynamicResource AccentGreen}" />
-                                <Setter Property="Scale" Value="1.02" />
-                            </VisualState.Setters>
-                        </VisualState>
-                    </VisualStateGroup>
-                </VisualStateGroupList>
-            </Setter>
-        </Style>
-
-        <!-- Шаблон строки списка: карточка как «Быстрый старт» на главной -->
-        <DataTemplate x:Key="TemplateRow" x:DataType="views:TemplateItem">
-            <Border StyleClass="HoverCard"
-                    StrokeShape="RoundRectangle 16"
-                    StrokeThickness="1"
-                    Padding="14">
-                <Border.Shadow>
-                    <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
-                </Border.Shadow>
-                <Border.GestureRecognizers>
-                    <TapGestureRecognizer Tapped="OnTemplateTapped" CommandParameter="{Binding Id}" />
-                </Border.GestureRecognizers>
-                <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
-                    <Border Grid.Column="0" BackgroundColor="{DynamicResource IconBoxBg}"
-                            StrokeShape="RoundRectangle 10" StrokeThickness="0"
-                            WidthRequest="40" HeightRequest="40" VerticalOptions="Center">
-                        <Label Text="📄" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
-                    </Border>
-                    <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                        <Label Text="{Binding Title}" FontSize="15" FontAttributes="Bold"
-                               TextColor="{DynamicResource TextPrimary}" />
-                        <Label Text="{Binding Description}" FontSize="12"
-                               TextColor="{DynamicResource TextSecondary}" LineBreakMode="TailTruncation" />
-                    </VerticalStackLayout>
-                    <Label Grid.Column="2" Text="›" FontSize="20"
-                           TextColor="{DynamicResource TextSecondary}" VerticalOptions="Center" />
-                </Grid>
-            </Border>
+        <!-- Строка списка: карточка как «Быстрый старт» на главной -->
+        <DataTemplate x:Key="TemplateRow" x:DataType="models:TemplateItem">
+            <views:ListRow Icon="📄"
+                           Title="{Binding Title}"
+                           Subtitle="{Binding Description}"
+                           Tapped="OnTemplateTapped" />
         </DataTemplate>
-
     </ContentPage.Resources>
 
     <Grid RowDefinitions="Auto, *, Auto">
@@ -80,40 +33,7 @@
                        VerticalOptions="Center"
                        TextColor="{DynamicResource TextPrimary}" />
 
-                <Border StyleClass="HoverCard"
-                        HorizontalOptions="End"
-                        VerticalOptions="Center"
-                        StrokeThickness="1"
-                        StrokeShape="RoundRectangle 16"
-                        Padding="10,5">
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnThemeToggleTapped" />
-                    </Border.GestureRecognizers>
-
-                    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
-                        <Label x:Name="ThemeIcon"
-                               Text="🌙"
-                               FontSize="16"
-                               VerticalOptions="Center" />
-
-                        <Border WidthRequest="40"
-                                HeightRequest="22"
-                                BackgroundColor="{DynamicResource ToggleTrackBg}"
-                                StrokeThickness="0"
-                                StrokeShape="RoundRectangle 11"
-                                VerticalOptions="Center">
-                            <Border x:Name="ToggleThumb"
-                                    WidthRequest="16"
-                                    HeightRequest="16"
-                                    BackgroundColor="White"
-                                    StrokeThickness="0"
-                                    StrokeShape="RoundRectangle 8"
-                                    HorizontalOptions="Start"
-                                    VerticalOptions="Center"
-                                    Margin="3,0,0,0" />
-                        </Border>
-                    </HorizontalStackLayout>
-                </Border>
+                <views:ThemeToggle HorizontalOptions="End" VerticalOptions="Center" />
             </Grid>
 
             <!-- Поиск -->
@@ -133,40 +53,10 @@
                        TextChanged="OnSearchChanged" />
             </Border>
 
-            <!-- Категории (чипы) -->
+            <!-- Категории (чипы создаются из кода) -->
             <ScrollView Orientation="Horizontal"
                         HorizontalScrollBarVisibility="Never">
-                <HorizontalStackLayout Spacing="8">
-
-                    <Border x:Name="ChipAll" StrokeShape="RoundRectangle 18" Padding="16,8">
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnChipTapped" CommandParameter="all" />
-                        </Border.GestureRecognizers>
-                        <Label x:Name="ChipAllLabel" Text="Все" FontSize="14" />
-                    </Border>
-
-                    <Border x:Name="ChipBiz" StrokeShape="RoundRectangle 18" Padding="16,8">
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnChipTapped" CommandParameter="biz" />
-                        </Border.GestureRecognizers>
-                        <Label x:Name="ChipBizLabel" Text="Предприниматель" FontSize="14" />
-                    </Border>
-
-                    <Border x:Name="ChipOrg" StrokeShape="RoundRectangle 18" Padding="16,8">
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnChipTapped" CommandParameter="org" />
-                        </Border.GestureRecognizers>
-                        <Label x:Name="ChipOrgLabel" Text="Организация" FontSize="14" />
-                    </Border>
-
-                    <Border x:Name="ChipStudy" StrokeShape="RoundRectangle 18" Padding="16,8">
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnChipTapped" CommandParameter="study" />
-                        </Border.GestureRecognizers>
-                        <Label x:Name="ChipStudyLabel" Text="Учёба" FontSize="14" />
-                    </Border>
-
-                </HorizontalStackLayout>
+                <HorizontalStackLayout x:Name="ChipsHost" Spacing="8" />
             </ScrollView>
         </VerticalStackLayout>
 

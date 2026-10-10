@@ -1,14 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace GosTek;
+﻿namespace GosTek;
 
 public static class ThemeService
 {
     private const string PrefKey = "app_theme_dark";
 
+    /// <summary>Цвет ошибки и подсветки пустых полей (одинаков в обеих темах).</summary>
+    public static readonly Color ErrorColor = Color.FromArgb("#EF4444");
+
     public static bool IsDark { get; private set; } = true;
+
+    /// <summary>Тема переключена. На это событие подписан ThemeToggle.</summary>
+    public static event Action? Changed;
+
+    // Ключ ресурса, цвет в тёмной теме, цвет в светлой
+    private static readonly (string Key, string Dark, string Light)[] Palette = {
+        ("PageBg",        "#0F172A", "#F8FAFC"),
+        ("CardBg",        "#1E293B", "#FFFFFF"),
+        ("CardHoverBg",   "#273449", "#F1F5F9"),
+        ("CardStroke",    "#334155", "#E2E8F0"),
+        ("TextPrimary",   "#F1F5F9", "#0F172A"),
+        ("TextSecondary", "#94A3B8", "#64748B"),
+        ("BrandGreen",    "#34D399", "#059669"),
+        ("AccentGreen",   "#34D399", "#10B981"),
+        ("Divider",       "#334155", "#E2E8F0"),
+        ("IconBoxBg",     "#064E3B", "#D1FAE5"),
+        ("TabBarBg",      "#111C30", "#FFFFFF"),
+        ("TabActiveBg",   "#143A33", "#D1FAE5"),
+        ("ToggleTrackBg", "#475569", "#CBD5E1"),
+    };
 
     // Вызвать один раз при старте приложения
     public static void Init()
@@ -22,6 +41,7 @@ public static class ThemeService
         IsDark = !IsDark;
         Preferences.Default.Set(PrefKey, IsDark);
         Apply();
+        Changed?.Invoke();
     }
 
     private static void Apply()
@@ -29,42 +49,9 @@ public static class ThemeService
         var app = Application.Current;
         if (app is null) return;
 
-        var palette = IsDark ? Dark : Light;
-        foreach (var (key, value) in palette)
-            app.Resources[key] = value;
+        foreach (var (key, dark, light) in Palette)
+            app.Resources[key] = Color.FromArgb(IsDark ? dark : light);
 
         app.UserAppTheme = IsDark ? AppTheme.Dark : AppTheme.Light;
     }
-
-    private static readonly Dictionary<string, Color> Dark = new() {
-        ["PageBg"] = Color.FromArgb("#0F172A"),
-        ["CardBg"] = Color.FromArgb("#1E293B"),
-        ["CardHoverBg"] = Color.FromArgb("#273449"),
-        ["CardStroke"] = Color.FromArgb("#334155"),
-        ["TextPrimary"] = Color.FromArgb("#F1F5F9"),
-        ["TextSecondary"] = Color.FromArgb("#94A3B8"),
-        ["BrandGreen"] = Color.FromArgb("#34D399"),
-        ["AccentGreen"] = Color.FromArgb("#34D399"),
-        ["Divider"] = Color.FromArgb("#334155"),
-        ["IconBoxBg"] = Color.FromArgb("#064E3B"),
-        ["TabBarBg"] = Color.FromArgb("#111C30"),
-        ["TabActiveBg"] = Color.FromArgb("#143A33"),
-        ["ToggleTrackBg"] = Color.FromArgb("#475569"),
-    };
-
-    private static readonly Dictionary<string, Color> Light = new() {
-        ["PageBg"] = Color.FromArgb("#F8FAFC"),
-        ["CardBg"] = Color.FromArgb("#FFFFFF"),
-        ["CardHoverBg"] = Color.FromArgb("#F1F5F9"),
-        ["CardStroke"] = Color.FromArgb("#E2E8F0"),
-        ["TextPrimary"] = Color.FromArgb("#0F172A"),
-        ["TextSecondary"] = Color.FromArgb("#64748B"),
-        ["BrandGreen"] = Color.FromArgb("#059669"),
-        ["AccentGreen"] = Color.FromArgb("#10B981"),
-        ["Divider"] = Color.FromArgb("#E2E8F0"),
-        ["IconBoxBg"] = Color.FromArgb("#D1FAE5"),
-        ["TabBarBg"] = Color.FromArgb("#FFFFFF"),
-        ["TabActiveBg"] = Color.FromArgb("#D1FAE5"),
-        ["ToggleTrackBg"] = Color.FromArgb("#CBD5E1"),
-    };
 }

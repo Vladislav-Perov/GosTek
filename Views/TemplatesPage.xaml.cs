@@ -1,46 +1,27 @@
-namespace GosTek.Views;
+﻿using GosTek.Models;
+using Microsoft.Maui.Controls.Shapes;
 
-using WordText = DocumentFormat.OpenXml.Wordprocessing.Text;
-public record TemplateItem(string Id, string Title, string Description, string Category);
+namespace GosTek.Views;
 
 public partial class TemplatesPage : ContentPage
 {
     private const string RecentKey = "recent_templates";
     private const int RecentMax = 3;
 
-    // Ключ чипа -> название категории (null = без фильтра)
-    private static readonly Dictionary<string, string?> CategoryNames = new() {
-        ["all"] = null,
-        ["biz"] = "Предприниматель",
-        ["org"] = "Организация",
-        ["study"] = "Учёба",
-    };
+    // Категории для чипов; null = «Все» (без фильтра)
+    private static readonly string?[] Categories = { null, "Предприниматель", "Организация", "Учёба" };
 
-    private static readonly List<TemplateItem> AllTemplates = new()
-    {
-        new("explanatory", "Объяснительная записка", "Причина опоздания, нарушения срока, отсутствия", "Организация"),
-        new("ip",          "Заявление о регистрации ИП", "Для подачи в регистрирующий орган", "Предприниматель"),
-        new("title",       "Титульный лист работы", "Курсовая, дипломная, отчёт по практике", "Учёба"),
-        new("contract",    "Договор оказания услуг", "С реквизитами заказчика и исполнителя", "Предприниматель"),
-        new("proxy",       "Доверенность", "На получение товара или представление интересов", "Организация"),
-        new("practice",    "Отчёт по практике", "Структура по требованиям кафедры", "Учёба"),
-    };
+    private readonly List<(string? Category, Border Chip, Label Text)> _chips = new();
 
-    private readonly Dictionary<string, (Border Chip, Label Text)> _chips;
-
-    private string _category = "all";
+    private string? _category;   // null = «Все»
     private string _query = "";
 
     public TemplatesPage()
     {
         InitializeComponent();
 
-        _chips = new() {
-            ["all"] = (ChipAll, ChipAllLabel),
-            ["biz"] = (ChipBiz, ChipBizLabel),
-            ["org"] = (ChipOrg, ChipOrgLabel),
-            ["study"] = (ChipStudy, ChipStudyLabel),
-        };
+        foreach (var category in Categories)
+            CreateChip(category);
 
         UpdateChips();
     }
@@ -49,28 +30,7 @@ public partial class TemplatesPage : ContentPage
     {
         base.OnAppearing();
         ApplyFilter();
-        SyncToggleVisual(animated: false);   // подхватить тему, выбранную на другой странице
-        BottomTabs.ResetHover();             // сбросить «залипшее» наведение таббара
-    }
-
-    // ===== Переключатель темы =====
-    private void OnThemeToggleTapped(object? sender, TappedEventArgs e)
-    {
-        ThemeService.Toggle();
-        SyncToggleVisual(animated: true);
-    }
-
-    private void SyncToggleVisual(bool animated)
-    {
-        bool dark = ThemeService.IsDark;
-        ThemeIcon.Text = dark ? "🌙" : "☀️";
-
-        double target = dark ? 0 : 18;
-
-        if (animated)
-            _ = ToggleThumb.TranslateToAsync(target, 0, 150, Easing.CubicInOut);
-        else
-            ToggleThumb.TranslationX = target;
+        BottomTabs.ResetHover();   // сбросить «залипшее» наведение таббара
     }
 
     // ===== Поиск =====
@@ -81,20 +41,31 @@ public partial class TemplatesPage : ContentPage
     }
 
     // ===== Категории =====
-    private void OnChipTapped(object? sender, TappedEventArgs e)
+    private void CreateChip(string? category)
     {
-        if (e.Parameter is not string key || !CategoryNames.ContainsKey(key))
-            return;
+        var label = new Label { Text = category ?? "Все", FontSize = 14 };
+        var chip = new Border {
+            StrokeShape = new RoundRectangle { CornerRadius = 18 },
+            Padding = new Thickness(16, 8),
+            Content = label,
+        };
 
-        _category = key;
-        UpdateChips();
-        ApplyFilter();
+        var tap = new TapGestureRecognizer();
+        tap.Tapped += (_, _) => {
+            _category = category;
+            UpdateChips();
+            ApplyFilter();
+        };
+        chip.GestureRecognizers.Add(tap);
+
+        ChipsHost.Children.Add(chip);
+        _chips.Add((category, chip, label));
     }
 
     private void UpdateChips()
     {
-        foreach (var (key, (chip, label)) in _chips) {
-            bool active = key == _category;
+        foreach (var (category, chip, label) in _chips) {
+            bool active = category == _category;
 
             chip.SetDynamicResource(VisualElement.BackgroundColorProperty, active ? "TextPrimary" : "CardBg");
             chip.SetDynamicResource(Border.StrokeProperty, "CardStroke");
@@ -108,10 +79,8 @@ public partial class TemplatesPage : ContentPage
     // ===== Фильтрация =====
     private void ApplyFilter()
     {
-        string? categoryName = CategoryNames[_category];
-
-        var results = AllTemplates
-            .Where(t => categoryName is null || t.Category == categoryName)
+        var results = TemplateCatalog.Items
+            .Where(t => _category is null || t.Category == _category)
             .Where(t => _query.Length == 0
                      || t.Title.Contains(_query, StringComparison.CurrentCultureIgnoreCase)
                      || t.Description.Contains(_query, StringComparison.CurrentCultureIgnoreCase))
@@ -123,47 +92,43 @@ public partial class TemplatesPage : ContentPage
         // «Недавние» — только когда нет ни поиска, ни фильтра
         var recent = LoadRecent();
         BindableLayout.SetItemsSource(RecentList, recent);
-        RecentSection.IsVisible = _query.Length == 0 && _category == "all" && recent.Count > 0;
+        RecentSection.IsVisible = _query.Length == 0 && _category is null && recent.Count > 0;
     }
 
     // ===== Нажатие на шаблон =====
-    // ===== Нажатие на шаблон =====
-    private async void OnTemplateTapped(object? sender, TappedEventArgs e)
+    private async void OnTemplateTapped(object? sender, EventArgs e)
     {
-        if (e.Parameter is not string id)
-            return;
+        if (sender is ListRow { BindingContext: TemplateItem item })
+            await OpenAsync(item);
+    }
 
-        var item = AllTemplates.FirstOrDefault(t => t.Id == id);
-        if (item is null)
-            return;
-
-        // Шаблоны без описания полей пока открываются заглушкой
-        if (GosTek.Models.TemplateCatalog.Find(id) is null) {
-            await DisplayAlertAsync("📄 " + item.Title,
-                "Этот шаблон скоро будет добавлен.",
-                "Понятно");
+    /// <summary>Открыть шаблон (и с этой страницы, и с главной). Без описания полей — заглушка.</summary>
+    public static async Task OpenAsync(TemplateItem item)
+    {
+        if (TemplateCatalog.Find(item.Id) is null) {
+            await Stubs.ShowTemplateAsync(item.Title);
             return;
         }
 
-        AddRecent(id);
-        await Shell.Current.GoToAsync($"FieldsPage?id={id}");
+        AddRecent(item.Id);
+        await Shell.Current.GoToAsync($"FieldsPage?id={item.Id}");
     }
 
     // ===== Недавние (хранятся в Preferences) =====
-    private static List<TemplateItem> LoadRecent()
-    {
-        return Preferences.Get(RecentKey, "")
+    private static List<string> LoadRecentIds()
+        => Preferences.Get(RecentKey, "")
             .Split(',', StringSplitOptions.RemoveEmptyEntries)
-            .Select(id => AllTemplates.FirstOrDefault(t => t.Id == id))
+            .ToList();
+
+    private static List<TemplateItem> LoadRecent()
+        => LoadRecentIds()
+            .Select(id => TemplateCatalog.Items.FirstOrDefault(t => t.Id == id))
             .OfType<TemplateItem>()
             .ToList();
-    }
 
-    public static void AddRecent(string id)
+    private static void AddRecent(string id)
     {
-        var ids = Preferences.Get(RecentKey, "")
-            .Split(',', StringSplitOptions.RemoveEmptyEntries)
-            .ToList();
+        var ids = LoadRecentIds();
 
         ids.Remove(id);
         ids.Insert(0, id);

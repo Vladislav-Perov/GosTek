@@ -1,18 +1,17 @@
-﻿using Android.Hardware;
-using DocumentFormat.OpenXml;
+﻿using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using GosTek.Models;
-using Microsoft.Maui.Controls.Platform;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using static Android.Icu.Util.LocaleData;
-using static System.Net.Mime.MediaTypeNames;
+
+// В MAUI есть одноимённый FontSize
+using FontSize = DocumentFormat.OpenXml.Wordprocessing.FontSize;
 
 namespace GosTek;
 
-/// <summary>Собирает .docx по шаблону и введённым значениям (тот же вид, что в предпросмотре).</summary>
+/// <summary>
+/// Собирает .docx по шаблону и введённым значениям (тот же вид, что в предпросмотре).
+/// Разметка здесь своя, а не общая с предпросмотром: Word и экран рисуются разными средствами.
+/// </summary>
 public static class DocxExporter
 {
     private const string FontName = "Times New Roman";
@@ -21,12 +20,13 @@ public static class DocxExporter
     private const int TextWidth = 9638;         // ширина текста между полями (twips)
     private const int FirstLineIndent = 709;    // абзацный отступ 1,25 см
     private const int OneAndHalf = 360;         // полуторный интервал
+    private const string Blank = "__________";  // линия для ручного заполнения
 
     public static void Save(TemplateDef template, IReadOnlyDictionary<string, string> values, string path)
     {
         // Пустое значение превращаем в линию для ручного заполнения
         string V(string id) =>
-            values.TryGetValue(id, out var v) && !string.IsNullOrWhiteSpace(v) ? v.Trim() : "__________";
+            values.TryGetValue(id, out var v) && !string.IsNullOrWhiteSpace(v) ? v.Trim() : Blank;
 
         using var doc = WordprocessingDocument.Create(path, WordprocessingDocumentType.Document);
         var main = doc.AddMainDocumentPart();
@@ -45,7 +45,7 @@ public static class DocxExporter
                         StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
                     if (paragraphs.Length == 0)
-                        body.Append(P("__________", JustificationValues.Both, firstLine: FirstLineIndent, line: OneAndHalf));
+                        body.Append(P(Blank, JustificationValues.Both, firstLine: FirstLineIndent, line: OneAndHalf));
                     else
                         foreach (var p in paragraphs)
                             body.Append(P(p, JustificationValues.Both, firstLine: FirstLineIndent, line: OneAndHalf));
@@ -96,7 +96,7 @@ public static class DocxExporter
     private static Paragraph Signature(IReadOnlyDictionary<string, string> values)
     {
         values.TryGetValue("fio", out var fio);
-        var who = string.IsNullOrWhiteSpace(fio) ? "__________" : TemplateCatalog.ShortName(fio);
+        var who = string.IsNullOrWhiteSpace(fio) ? Blank : TemplateCatalog.ShortName(fio);
 
         var props = new ParagraphProperties(
             new Tabs(new TabStop { Val = TabStopValues.Right, Position = TextWidth }),

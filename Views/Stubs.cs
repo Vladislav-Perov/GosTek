@@ -9,27 +9,28 @@ public static class Stubs
 
         ["scan"] = ("📷 Сканирование",
             "Скоро здесь появится сканирование документа камерой с распознаванием текста и автозаполнением данных."),
-
-        ["profile"] = ("👤 Мой профиль",
-            "Скоро здесь будут ваши данные и реквизиты, в том числе расчётный счёт, который сейчас не заполнен."),
-
-        ["explanatory"] = ("📄 Объяснительная записка",
-            "Скоро здесь будет готовый шаблон: причина опоздания, нарушения срока или отсутствия."),
-
-        ["ip"] = ("📄 Заявление о регистрации ИП",
-            "Скоро здесь будет шаблон заявления для подачи в регистрирующий орган."),
     };
 
+    /// <summary>Заглушка раздела по ключу; для неизвестного ключа — общее «Скоро».</summary>
     public static Task ShowAsync(string? key)
     {
-        var page = Application.Current?.Windows.FirstOrDefault()?.Page;
-        if (page is null)
-            return Task.CompletedTask;
-
         var (title, text) = key is not null && Items.TryGetValue(key, out var item)
             ? item
             : ("Скоро", "Этот раздел скоро будет добавлен.");
 
-        return page.DisplayAlertAsync(title, text, "Понятно");
+        return Alert(title, text);
+    }
+
+    /// <summary>Заглушка шаблона, для которого ещё нет описания полей.</summary>
+    public static Task ShowTemplateAsync(string title)
+        => Alert("📄 " + title, "Этот шаблон скоро будет добавлен.");
+
+    private static Task Alert(string title, string text)
+    {
+        var page = Application.Current?.Windows.FirstOrDefault()?.Page;
+
+        return page is null
+            ? Task.CompletedTask
+            : page.DisplayAlertAsync(title, text, "Понятно");
     }
 }
