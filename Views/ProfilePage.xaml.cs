@@ -94,7 +94,7 @@ public partial class ProfilePage : ContentPage
     // ===== Загрузка =====
     private async Task LoadAsync()
     {
-        var profile = await ProfileStorage.LoadAsync();
+        var (profile, status) = await ProfileStorage.LoadWithStatusAsync();
 
         foreach (var f in _fields)
             f.Entry.Text = ProfileRules.Get(profile, f.Field);
@@ -103,6 +103,13 @@ public partial class ProfilePage : ContentPage
             ApplyValidation(f);
 
         UpdateProgress(animated: false);
+
+        // Не показываем пустую форму молча: иначе «Сохранить» тихо затрёт старые данные
+        if (status == ProfileLoadStatus.Failed)
+            await DisplayAlertAsync("Профиль не прочитан",
+                "Не удалось прочитать сохранённый профиль: возможно, данные повреждены или перенесены с другого устройства. " +
+                "Если сохранить новые данные, старые будут заменены.",
+                "Понятно");
     }
 
     // Значения из формы. normalize = true: в виде для сохранения (паспорт, счёт)

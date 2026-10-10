@@ -38,6 +38,22 @@
                        HorizontalTextAlignment="Center" />
             </VerticalStackLayout>
 
+            <!-- Настройки: открывают боковую панель -->
+            <Border StyleClass="HoverCard"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 16"
+                    Padding="10,5"
+                    HorizontalOptions="Start"
+                    VerticalOptions="Start"
+                    AutomationProperties.Name="Настройки">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnSettingsTapped" />
+                </Border.GestureRecognizers>
+                <Label Text="⚙️"
+                       FontSize="16"
+                       VerticalOptions="Center" />
+            </Border>
+
             <!-- Переключатель темы -->
             <views:ThemeToggle HorizontalOptions="End" VerticalOptions="Start" />
         </Grid>
@@ -159,6 +175,9 @@
 
         <!-- ==================== ТАББАР ==================== -->
         <views:AppTabBar x:Name="BottomTabs" Grid.Row="2" ActiveTab="home" />
+
+        <!-- ==================== ПАНЕЛЬ НАСТРОЕК (поверх всего) ==================== -->
+        <views:SettingsPanel x:Name="Settings" Grid.RowSpan="3" />
 
     </Grid>
 </ContentPage>

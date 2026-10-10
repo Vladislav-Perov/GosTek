@@ -126,6 +126,9 @@ public partial class TemplatesPage : ContentPage
             .OfType<TemplateItem>()
             .ToList();
 
+    /// <summary>Очистить список «Недавние» (настройки: «Удалить все данные»).</summary>
+    public static void ClearRecent() => Preferences.Remove(RecentKey);
+
     private static void AddRecent(string id)
     {
         var ids = LoadRecentIds();

@@ -103,4 +103,7 @@ public static class DraftStore
 
         return draft;
     }
+
+    /// <summary>Забыть все введённые значения (кнопка «Удалить все данные»).</summary>
+    public static void Clear() => Data.Clear();
 }

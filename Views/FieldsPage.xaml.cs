@@ -332,7 +332,15 @@ public partial class FieldsPage : ContentPage
     // Нажатие на саму шторку не должно её закрывать (жест перехватывает нажатие у подложки)
     private void OnSheetTapped(object? sender, TappedEventArgs e) { }
 
-    private string DefaultFileName() => _template!.Title.Replace(' ', '_');
+    // Имя по умолчанию зависит от настройки: «Шаблон» или «Шаблон_2026-10-10»
+    private string DefaultFileName()
+    {
+        var name = _template!.Title.Replace(' ', '_');
+
+        return SettingsService.Name == NameMode.TemplateDate
+            ? $"{name}_{DateTime.Today:yyyy-MM-dd}"
+            : name;
+    }
 
     private string SafeFileName()
     {
@@ -347,20 +355,35 @@ public partial class FieldsPage : ContentPage
         return string.IsNullOrWhiteSpace(name) ? DefaultFileName() : name;
     }
 
-    // Собирает .docx и возвращает путь к файлу.
-    // Windows: Документы\GosTek. Телефон: временная папка приложения, дальше «Поделиться».
-    private string BuildDocx()
+    // Собирает и сохраняет .docx с учётом настройки «Если файл уже есть».
+    // Возвращает null, если пользователь отказался (шторка остаётся открытой).
+    private async Task<SaveResult?> SaveDocxAsync()
     {
-#if WINDOWS
-        var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "GosTek");
-#else
-        var folder = FileSystem.CacheDirectory;
-#endif
-        Directory.CreateDirectory(folder);
+        var fileName = SafeFileName() + ".docx";
+        bool overwrite = false;
 
-        var path = Path.Combine(folder, SafeFileName() + ".docx");
-        DocxExporter.Save(_template!, _values, path);
-        return path;
+        if (FileSaveService.Exists(fileName)) {
+            var mode = SettingsService.Conflict;
+
+            if (mode == ConflictMode.Ask) {
+                var answer = await DisplayActionSheetAsync(
+                    $"Файл «{fileName}» уже есть", "Отмена", null, "Добавить номер", "Заменить");
+
+                if (answer == "Добавить номер")
+                    mode = ConflictMode.Number;
+                else if (answer == "Заменить")
+                    mode = ConflictMode.Overwrite;
+                else
+                    return null;
+            }
+
+            if (mode == ConflictMode.Overwrite)
+                overwrite = true;
+            else
+                fileName = FileSaveService.FreeName(fileName);
+        }
+
+        return FileSaveService.Save(_template!, _values, fileName, overwrite);
     }
 
     private static Task ShareFileAsync(string path)
@@ -369,35 +392,70 @@ public partial class FieldsPage : ContentPage
             File = new ShareFile(path),
         });
 
+    // Что делать после сохранения: по настройке или спросить
+    private async Task AfterSaveAsync(SaveResult result)
+    {
+        var action = SettingsService.AfterSave;
+
+        if (action == AfterSaveAction.Ask) {
+            var choice = await DisplayActionSheetAsync(
+                $"✅ Сохранено: {result.Location}", "Закрыть", null, "Открыть", "Поделиться");
+
+            action = choice switch {
+                "Открыть" => AfterSaveAction.Open,
+                "Поделиться" => AfterSaveAction.Share,
+                _ => AfterSaveAction.Nothing,
+            };
+
+            if (action == AfterSaveAction.Nothing)
+                return;
+        }
+
+        switch (action) {
+            case AfterSaveAction.Open:
+                await Launcher.Default.OpenAsync(new OpenFileRequest("Документ", new ReadOnlyFile(result.FilePath)));
+                break;
+
+            case AfterSaveAction.Share:
+                await ShareFileAsync(result.FilePath);
+                break;
+
+            default:
+                await DisplayAlertAsync("✅ Сохранено", result.Location, "Понятно");
+                break;
+        }
+    }
+
     private async void OnExportDocxTapped(object? sender, EventArgs e)
     {
         if (_template is null)
             return;
 
         try {
-            var path = BuildDocx();
+            var result = await SaveDocxAsync();
+            if (result is null)
+                return;
+
             CloseExport();
-#if WINDOWS
-            bool open = await DisplayAlertAsync("✅ Готово", $"Файл сохранён:\n{path}", "Открыть", "Закрыть");
-            if (open)
-                await Launcher.Default.OpenAsync(new OpenFileRequest("Документ", new ReadOnlyFile(path)));
-#else
-            await ShareFileAsync(path);
-#endif
+            await AfterSaveAsync(result);
         } catch (Exception ex) {
             await DisplayAlertAsync("Не удалось сохранить", ex.Message, "Понятно");
         }
     }
 
+    // «Поделиться»: файл тоже сохраняется (по тем же правилам), затем открывается системное окно отправки
     private async void OnExportShareTapped(object? sender, EventArgs e)
     {
         if (_template is null)
             return;
 
         try {
-            var path = BuildDocx();
+            var result = await SaveDocxAsync();
+            if (result is null)
+                return;
+
             CloseExport();
-            await ShareFileAsync(path);
+            await ShareFileAsync(result.FilePath);
         } catch (Exception ex) {
             await DisplayAlertAsync("Не удалось поделиться", ex.Message, "Понятно");
         }

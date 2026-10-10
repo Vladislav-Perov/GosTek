@@ -1,0 +1,249 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GosTek.Views.SettingsPanel"
+             IsVisible="False">
+
+    <!-- Затемнение и панель лежат рядом: нажатие на панель не закрывает её,
+         нажатие на затемнение закрывает -->
+    <Grid>
+
+        <BoxView x:Name="Scrim"
+                 Color="#99000000"
+                 Opacity="0">
+            <BoxView.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnScrimTapped" />
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
+        <Border x:Name="Panel"
+                HorizontalOptions="Start"
+                WidthRequest="340"
+                BackgroundColor="{DynamicResource PageBg}"
+                Stroke="{DynamicResource CardStroke}"
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 0,24,24,0"
+                Padding="0">
+
+            <Grid RowDefinitions="Auto, *">
+
+                <!-- ===== Шапка панели ===== -->
+                <Grid Grid.Row="0"
+                      ColumnDefinitions="*, Auto"
+                      Padding="18,16,12,8">
+                    <Label Text="⚙️ Настройки"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           TextColor="{DynamicResource TextPrimary}"
+                           VerticalOptions="Center" />
+
+                    <Border Grid.Column="1"
+                            StyleClass="HoverCard"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 12"
+                            Padding="12,6">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnCloseTapped" />
+                        </Border.GestureRecognizers>
+                        <Label Text="✕"
+                               FontSize="16"
+                               TextColor="{DynamicResource TextPrimary}"
+                               VerticalOptions="Center" />
+                    </Border>
+                </Grid>
+
+                <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
+                    <VerticalStackLayout Padding="18,6,18,24" Spacing="20">
+
+                        <!-- ===== СОХРАНЕНИЕ ФАЙЛОВ ===== -->
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="СОХРАНЕНИЕ ФАЙЛОВ"
+                                   FontSize="12" FontAttributes="Bold" CharacterSpacing="1"
+                                   TextColor="{DynamicResource BrandGreen}" />
+
+                            <Border BackgroundColor="{DynamicResource CardBg}"
+                                    Stroke="{DynamicResource CardStroke}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 16"
+                                    Padding="14">
+                                <VerticalStackLayout Spacing="18">
+
+                                    <!-- Только ПК: выбор папки -->
+                                    <VerticalStackLayout x:Name="FolderBlock" Spacing="8">
+                                        <Label Text="Папка сохранения" FontSize="14" FontAttributes="Bold"
+                                               TextColor="{DynamicResource TextPrimary}" />
+                                        <Label x:Name="FolderPathLabel" FontSize="12"
+                                               TextColor="{DynamicResource TextSecondary}"
+                                               LineBreakMode="MiddleTruncation" />
+                                        <Grid ColumnDefinitions="*, Auto" ColumnSpacing="8">
+                                            <Border Grid.Column="0"
+                                                    StyleClass="HoverCard"
+                                                    StrokeThickness="1"
+                                                    StrokeShape="RoundRectangle 12"
+                                                    Padding="12,10">
+                                                <Border.GestureRecognizers>
+                                                    <TapGestureRecognizer Tapped="OnPickFolderTapped" />
+                                                </Border.GestureRecognizers>
+                                                <Label Text="Выбрать папку…" FontSize="13" FontAttributes="Bold"
+                                                       TextColor="{DynamicResource TextPrimary}"
+                                                       HorizontalOptions="Center" />
+                                            </Border>
+                                            <Border x:Name="ResetFolderButton"
+                                                    Grid.Column="1"
+                                                    StyleClass="HoverCard"
+                                                    StrokeThickness="1"
+                                                    StrokeShape="RoundRectangle 12"
+                                                    Padding="12,10">
+                                                <Border.GestureRecognizers>
+                                                    <TapGestureRecognizer Tapped="OnResetFolderTapped" />
+                                                </Border.GestureRecognizers>
+                                                <Label Text="По умолчанию" FontSize="13"
+                                                       TextColor="{DynamicResource TextSecondary}"
+                                                       HorizontalOptions="Center" />
+                                            </Border>
+                                        </Grid>
+                                    </VerticalStackLayout>
+
+                                    <!-- Только Android: папка фиксирована -->
+                                    <VerticalStackLayout x:Name="AndroidFolderBlock" Spacing="6">
+                                        <Label Text="Где лежат файлы" FontSize="14" FontAttributes="Bold"
+                                               TextColor="{DynamicResource TextPrimary}" />
+                                        <Label Text="Документы/GosTek. Их можно найти в приложении «Файлы»."
+                                               FontSize="12"
+                                               TextColor="{DynamicResource TextSecondary}"
+                                               LineBreakMode="WordWrap" />
+                                    </VerticalStackLayout>
+
+                                    <VerticalStackLayout Spacing="8">
+                                        <Label Text="Имя файла" FontSize="14" FontAttributes="Bold"
+                                               TextColor="{DynamicResource TextPrimary}" />
+                                        <Grid x:Name="NameHost" />
+                                    </VerticalStackLayout>
+
+                                    <VerticalStackLayout Spacing="8">
+                                        <Label Text="Если файл уже есть" FontSize="14" FontAttributes="Bold"
+                                               TextColor="{DynamicResource TextPrimary}" />
+                                        <Grid x:Name="ConflictHost" />
+                                    </VerticalStackLayout>
+
+                                    <VerticalStackLayout Spacing="8">
+                                        <Label Text="После сохранения" FontSize="14" FontAttributes="Bold"
+                                               TextColor="{DynamicResource TextPrimary}" />
+                                        <Grid x:Name="AfterSaveHost" />
+                                    </VerticalStackLayout>
+
+                                </VerticalStackLayout>
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- ===== ВНЕШНИЙ ВИД ===== -->
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="ВНЕШНИЙ ВИД"
+                                   FontSize="12" FontAttributes="Bold" CharacterSpacing="1"
+                                   TextColor="{DynamicResource BrandGreen}" />
+
+                            <Border BackgroundColor="{DynamicResource CardBg}"
+                                    Stroke="{DynamicResource CardStroke}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 16"
+                                    Padding="14">
+                                <VerticalStackLayout Spacing="8">
+                                    <Label Text="Тема" FontSize="14" FontAttributes="Bold"
+                                           TextColor="{DynamicResource TextPrimary}" />
+                                    <Grid x:Name="ThemeHost" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- ===== ДАННЫЕ И ПРИВАТНОСТЬ ===== -->
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="ДАННЫЕ И ПРИВАТНОСТЬ"
+                                   FontSize="12" FontAttributes="Bold" CharacterSpacing="1"
+                                   TextColor="{DynamicResource BrandGreen}" />
+
+                            <Border BackgroundColor="{DynamicResource CardBg}"
+                                    Stroke="{DynamicResource CardStroke}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 16"
+                                    Padding="14">
+                                <VerticalStackLayout Spacing="12">
+                                    <Label Text="🔒 Данные хранятся только на этом устройстве и никуда не отправляются."
+                                           FontSize="12"
+                                           TextColor="{DynamicResource TextSecondary}"
+                                           LineBreakMode="WordWrap" />
+
+                                    <Border StyleClass="HoverCard"
+                                            StrokeThickness="1"
+                                            StrokeShape="RoundRectangle 12"
+                                            Padding="12,10">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="OnClearTempTapped" />
+                                        </Border.GestureRecognizers>
+                                        <Label Text="Очистить временные файлы" FontSize="13" FontAttributes="Bold"
+                                               TextColor="{DynamicResource TextPrimary}"
+                                               HorizontalOptions="Center" />
+                                    </Border>
+
+                                    <Border StyleClass="HoverCard"
+                                            StrokeThickness="1"
+                                            StrokeShape="RoundRectangle 12"
+                                            Padding="12,10">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="OnDeleteProfileTapped" />
+                                        </Border.GestureRecognizers>
+                                        <Label Text="Удалить мой профиль" FontSize="13" FontAttributes="Bold"
+                                               TextColor="#EF4444"
+                                               HorizontalOptions="Center" />
+                                    </Border>
+
+                                    <Border StyleClass="HoverCard"
+                                            StrokeThickness="1"
+                                            StrokeShape="RoundRectangle 12"
+                                            Padding="12,10">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="OnDeleteAllTapped" />
+                                        </Border.GestureRecognizers>
+                                        <Label Text="Удалить все данные" FontSize="13" FontAttributes="Bold"
+                                               TextColor="#EF4444"
+                                               HorizontalOptions="Center" />
+                                    </Border>
+                                </VerticalStackLayout>
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- ===== О ПРИЛОЖЕНИИ ===== -->
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="О ПРИЛОЖЕНИИ"
+                                   FontSize="12" FontAttributes="Bold" CharacterSpacing="1"
+                                   TextColor="{DynamicResource BrandGreen}" />
+
+                            <Border BackgroundColor="{DynamicResource CardBg}"
+                                    Stroke="{DynamicResource CardStroke}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 16"
+                                    Padding="14">
+                                <VerticalStackLayout Spacing="12">
+                                    <Label x:Name="VersionLabel" FontSize="13"
+                                           TextColor="{DynamicResource TextSecondary}" />
+
+                                    <Border StyleClass="HoverCard"
+                                            StrokeThickness="1"
+                                            StrokeShape="RoundRectangle 12"
+                                            Padding="12,10">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="OnHelpTapped" />
+                                        </Border.GestureRecognizers>
+                                        <Label Text="Как пользоваться" FontSize="13" FontAttributes="Bold"
+                                               TextColor="{DynamicResource TextPrimary}"
+                                               HorizontalOptions="Center" />
+                                    </Border>
+                                </VerticalStackLayout>
+                            </Border>
+                        </VerticalStackLayout>
+
+                    </VerticalStackLayout>
+                </ScrollView>
+            </Grid>
+        </Border>
+    </Grid>
+</ContentView>
