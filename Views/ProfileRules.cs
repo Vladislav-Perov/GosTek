@@ -138,7 +138,7 @@ public static class ProfileRules
         bool by375 = digits.StartsWith("375") && digits.Length == 12;
         bool by80 = digits.StartsWith("80") && digits.Length == 11;
 
-        return by375 || by80 ? null : "Формат: +375 29 000-00-00";
+        return by375 || by80 ? null : "Формат: +375 29 000-00-00 или 80 29 000-00-00";
     }
 
     private static string? ValidatePassport(string v)

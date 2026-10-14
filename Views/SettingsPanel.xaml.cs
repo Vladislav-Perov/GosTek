@@ -206,6 +206,8 @@ public partial class SettingsPanel : ContentView
 
         FolderPathLabel.Text = SettingsService.SaveFolder;
         ResetFolderButton.IsVisible = !SettingsService.IsDefaultFolder;
+        TemplatesPathLabel.Text = SettingsService.TemplatesFolder;
+        ResetTemplatesButton.IsVisible = !SettingsService.IsDefaultTemplatesFolder;
     }
 
     // =====================================================================
@@ -213,6 +215,28 @@ public partial class SettingsPanel : ContentView
     // =====================================================================
 
     private async void OnPickFolderTapped(object? sender, TappedEventArgs e)
+    {
+        var path = await PickFolderAsync();
+        if (path is not null)
+            SettingsService.SaveFolder = path;
+    }
+
+    private void OnResetFolderTapped(object? sender, TappedEventArgs e)
+        => SettingsService.SaveFolder = SettingsService.DefaultFolder;
+
+    // ===== Папка шаблонов =====
+    private async void OnPickTemplatesTapped(object? sender, TappedEventArgs e)
+    {
+        var path = await PickFolderAsync();
+        if (path is not null)
+            SettingsService.TemplatesFolder = path;
+    }
+
+    private void OnResetTemplatesTapped(object? sender, TappedEventArgs e)
+        => SettingsService.TemplatesFolder = SettingsService.DefaultTemplatesFolder;
+
+    // Выбор папки (только Windows)
+    private async Task<string?> PickFolderAsync()
     {
 #if WINDOWS
         try {
@@ -223,23 +247,21 @@ public partial class SettingsPanel : ContentView
 
             // Окну приложения нужно сообщить выбору папки, к кому он привязан
             if (Application.Current?.Windows.FirstOrDefault()?.Handler?.PlatformView is not MauiWinUIWindow window)
-                return;
+                return null;
 
             WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(window));
 
             var folder = await picker.PickSingleFolderAsync();
-            if (folder is not null)
-                SettingsService.SaveFolder = folder.Path;
+            return folder?.Path;
         } catch (Exception ex) {
             await Alert("Не удалось выбрать папку", ex.Message);
+            return null;
         }
 #else
         await Task.CompletedTask;
+        return null;
 #endif
     }
-
-    private void OnResetFolderTapped(object? sender, TappedEventArgs e)
-        => SettingsService.SaveFolder = SettingsService.DefaultFolder;
 
     // =====================================================================
     //  ДАННЫЕ И ПРИВАТНОСТЬ

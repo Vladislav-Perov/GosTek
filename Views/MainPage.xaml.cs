@@ -26,9 +26,6 @@ public partial class MainPage : ContentPage
     {
         InitializeComponent();
 
-        // «Быстрый старт»: первые два шаблона каталога
-        BindableLayout.SetItemsSource(QuickStartList, TemplateCatalog.Items.Take(2).ToList());
-
         // Данные удалили в настройках: обновить плашку профиля
         Settings.DataCleared += async () => await RefreshProfileCardAsync();
     }
@@ -37,6 +34,13 @@ public partial class MainPage : ContentPage
     {
         base.OnAppearing();
         ShowRandomSubtitle();
+
+        // «Быстрый старт»: первые два шаблона из папки шаблонов
+        TemplateCatalog.Refresh();
+        var quick = TemplateCatalog.Items.Take(2).ToList();
+        BindableLayout.SetItemsSource(QuickStartList, quick);
+        QuickStartSection.IsVisible = quick.Count > 0;   // нет шаблонов — нет и блока
+        QuickStartDivider.IsVisible = quick.Count > 0;
         BottomTabs.ResetHover();   // сбросить «залипшее» наведение таббара
 #if WINDOWS
         HookEscape();

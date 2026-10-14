@@ -54,10 +54,43 @@
             </Border>
 
             <!-- Категории (чипы создаются из кода) -->
-            <ScrollView Orientation="Horizontal"
-                        HorizontalScrollBarVisibility="Never">
-                <HorizontalStackLayout x:Name="ChipsHost" Spacing="8" />
-            </ScrollView>
+            <Grid ColumnDefinitions="Auto, *, Auto">
+                <Border x:Name="ChipsLeftArrow" Grid.Column="0" IsVisible="False"
+                        BackgroundColor="{DynamicResource CardBg}"
+                        Stroke="{DynamicResource CardStroke}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="12,4"
+                        Margin="0,0,6,0"
+                        VerticalOptions="Center"
+                        AutomationProperties.Name="Категории влево">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnChipsLeftTapped" />
+                    </Border.GestureRecognizers>
+                    <Label Text="‹" FontSize="20" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
+                </Border>
+
+                <ScrollView x:Name="ChipsScroll" Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalScrollBarVisibility="Default">
+                    <HorizontalStackLayout x:Name="ChipsHost" Spacing="8" Padding="0,0,0,6" />
+                </ScrollView>
+
+                <Border x:Name="ChipsRightArrow" Grid.Column="2" IsVisible="False"
+                        BackgroundColor="{DynamicResource CardBg}"
+                        Stroke="{DynamicResource CardStroke}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="12,4"
+                        Margin="6,0,0,0"
+                        VerticalOptions="Center"
+                        AutomationProperties.Name="Категории вправо">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnChipsRightTapped" />
+                    </Border.GestureRecognizers>
+                    <Label Text="›" FontSize="20" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
+                </Border>
+            </Grid>
         </VerticalStackLayout>
 
         <!-- ==================== СПИСОК ШАБЛОНОВ ==================== -->

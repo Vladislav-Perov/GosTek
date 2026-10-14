@@ -10,61 +10,78 @@ public record TemplateField(
     ProfileSource Source = ProfileSource.None,
     bool Multiline = false);
 
-public record TemplateDef(string Id, string Title, TemplateField[] Fields);
+public record TemplateDef(string Id, string Title, string Category, string FilePath, TemplateField[] Fields);
 
 /// <summary>Строка в списке шаблонов (экран «Шаблоны» и «Быстрый старт» на главной).</summary>
 public record TemplateItem(string Id, string Title, string Description, string Category);
 
+/// <summary>
+/// Каталог шаблонов = .docx файлы из папки, указанной в настройках.
+/// Имя файла: «Категория_Название.docx» (подробнее в TemplateEngine).
+/// </summary>
 public static class TemplateCatalog
 {
+    public const string NoCategory = "Прочее";
+
+    private static Dictionary<string, TemplateDef> _defs = new();
+
+    public static TemplateItem[] Items { get; private set; } = Array.Empty<TemplateItem>();
+
+    public static string[] Categories =>
+        Items.Select(i => i.Category).Distinct().OrderBy(c => c, StringComparer.CurrentCultureIgnoreCase).ToArray();
+
+    /// <summary>Заново просканировать папку шаблонов (вызывается при открытии экранов).</summary>
+    public static void Refresh()
+    {
+        var defs = TemplateEngine.Scan(SettingsService.TemplatesFolder);
+        _defs = defs.ToDictionary(d => d.Id);
+        Items = defs.Select(d => new TemplateItem(d.Id, d.Title,
+            d.Fields.Length == 0 ? "Без полей для заполнения" : $"Полей для заполнения: {d.Fields.Length}",
+            d.Category)).ToArray();
+    }
+
     /// <summary>
-    /// Все шаблоны для списков. Если для шаблона нет описания полей в Defs,
-    /// при нажатии показывается заглушка «скоро будет добавлен».
+    /// Быстрый «отпечаток» папки шаблонов (имена, размеры, даты). Если он изменился,
+    /// в папку добавили, удалили или заменили файл. Работает и на Windows, и на Android.
     /// </summary>
-    public static readonly TemplateItem[] Items =
+    public static string FolderSignature()
     {
-        new("explanatory", "Объяснительная записка",   "Причина опоздания, нарушения срока, отсутствия", "Организация"),
-        new("ip",          "Заявление о регистрации ИП", "Для подачи в регистрирующий орган",           "Предприниматель"),
-        new("title",       "Титульный лист работы",    "Курсовая, дипломная, отчёт по практике",         "Учёба"),
-        new("contract",    "Договор оказания услуг",   "С реквизитами заказчика и исполнителя",          "Предприниматель"),
-        new("proxy",       "Доверенность",             "На получение товара или представление интересов", "Организация"),
-        new("practice",    "Отчёт по практике",        "Структура по требованиям кафедры",               "Учёба"),
-    };
+        try {
+            var folder = SettingsService.TemplatesFolder;
+            if (!Directory.Exists(folder))
+                return "";
 
-    // Id совпадают с Id в Items
-    private static readonly TemplateDef[] Defs =
+            var sb = new System.Text.StringBuilder();
+            foreach (var file in Directory.EnumerateFiles(folder, "*.docx", SearchOption.AllDirectories).OrderBy(f => f)) {
+                if (Path.GetFileName(file).StartsWith("~$"))
+                    continue;
+                var info = new FileInfo(file);
+                sb.Append(file).Append('|').Append(info.Length).Append('|').Append(info.LastWriteTimeUtc.Ticks).Append(';');
+            }
+            return sb.ToString();
+        } catch {
+            return "";
+        }
+    }
+
+    /// <summary>null, если такого шаблона больше нет (файл удалили или переименовали).</summary>
+    public static TemplateDef? Find(string? id)
     {
-        new("explanatory", "Объяснительная записка", new TemplateField[] {
-            new("pos",     "Кому (должность)",         "Начальнику инспекции"),
-            new("org",     "Организация получателя",   "Инспекция МНС по Центральному району г. Минска"),
-            new("fio",     "От кого",                  "Фамилия Имя Отчество", ProfileSource.FullName),
-            new("subject", "Тема",                     "О задержке сдачи отчётности"),
-            new("text",    "Текст объяснения",         "Опишите суть своими словами", Multiline: true),
-        }),
+        if (id is null)
+            return null;
+        if (_defs.Count == 0)
+            Refresh();
+        return _defs.TryGetValue(id, out var d) ? d : null;
+    }
 
-        new("ip", "Заявление о регистрации ИП", new TemplateField[] {
-            new("organ",    "Регистрирующий орган", "Минский горисполком"),
-            new("fio",      "ФИО заявителя",        "Фамилия Имя Отчество", ProfileSource.FullName),
-            new("passport", "Паспорт",              "Серия и номер",        ProfileSource.Passport),
-            new("addr",     "Адрес регистрации",    "Адрес места жительства", ProfileSource.Address),
-            new("activity", "Вид деятельности",     "Разработка программного обеспечения"),
-        }),
+    /// <summary>Значение по умолчанию: сегодняшняя дата для полей вида [Дата-00.00.0000].</summary>
+    public static string? DefaultFor(TemplateField f)
+        => f.Label.Contains("дата", StringComparison.CurrentCultureIgnoreCase)
+           && System.Text.RegularExpressions.Regex.IsMatch(f.Placeholder, @"^[0-9дмгДМГ]{2}\.[0-9дмгДМГ]{2}\.[0-9дмгДМГ]{4}$")
+            ? DateTime.Today.ToString("dd.MM.yyyy")
+            : null;
 
-        new("title", "Титульный лист работы", new TemplateField[] {
-            new("univ",    "Учебное заведение", "БГТУ"),
-            new("faculty", "Факультет",         "Информационных технологий"),
-            new("dept",    "Кафедра",           "Программной инженерии"),
-            new("topic",   "Тема работы",       "Разработка мобильного приложения"),
-            new("student", "Студент",           "Фамилия И. О.", ProfileSource.ShortName),
-            new("head",    "Руководитель",      "Фамилия И. О."),
-            new("year",    "Год",               "2026"),
-        }),
-    };
-
-    /// <summary>null, если описания полей для этого шаблона ещё нет.</summary>
-    public static TemplateDef? Find(string? id) => Defs.FirstOrDefault(t => t.Id == id);
-
-    public static string FromProfile(ProfileSource source, ProfileData p) => source switch {
+        public static string FromProfile(ProfileSource source, ProfileData p) => source switch {
         ProfileSource.FullName => p.FullName,
         ProfileSource.ShortName => ShortName(p.FullName),
         ProfileSource.Passport => p.Passport,

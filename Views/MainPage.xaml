@@ -151,10 +151,10 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 4" />
+                <BoxView x:Name="QuickStartDivider" IsVisible="False" HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 4" />
 
-                <!-- Быстрый старт -->
-                <VerticalStackLayout Spacing="12">
+                <!-- Быстрый старт (скрыт, если шаблонов нет) -->
+                <VerticalStackLayout x:Name="QuickStartSection" IsVisible="False" Spacing="12">
                     <Label Text="Быстрый старт" FontSize="18" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
 
                     <!-- Первые шаблоны из каталога (MainPage.xaml.cs) -->

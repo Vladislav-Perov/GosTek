@@ -16,6 +16,7 @@ public enum AfterSaveAction { Ask, Open, Share, Nothing }
 public static class SettingsService
 {
     private const string KeyFolder = "set_save_folder";
+    private const string KeyTemplates = "set_templates_folder";
     private const string KeyName = "set_name_mode";
     private const string KeyConflict = "set_conflict_mode";
     private const string KeyAfterSave = "set_after_save";
@@ -43,6 +44,33 @@ public static class SettingsService
             Changed?.Invoke();
         }
     }
+
+    /// <summary>Папка шаблонов по умолчанию: Документы\\GosTek\\Шаблоны (на Android: данные приложения).</summary>
+    public static string DefaultTemplatesFolder =>
+#if ANDROID
+        Path.Combine(FileSystem.AppDataDirectory, "Templates");
+#else
+        Path.Combine(DefaultFolder, "Шаблоны");
+#endif
+
+    /// <summary>Папка, из которой берутся шаблоны .docx.</summary>
+    public static string TemplatesFolder
+    {
+        get {
+            var path = Preferences.Default.Get(KeyTemplates, "");
+            return string.IsNullOrWhiteSpace(path) ? DefaultTemplatesFolder : path;
+        }
+        set {
+            if (string.IsNullOrWhiteSpace(value) || value == DefaultTemplatesFolder)
+                Preferences.Default.Remove(KeyTemplates);
+            else
+                Preferences.Default.Set(KeyTemplates, value);
+
+            Changed?.Invoke();
+        }
+    }
+
+    public static bool IsDefaultTemplatesFolder => string.IsNullOrWhiteSpace(Preferences.Default.Get(KeyTemplates, ""));
 
     public static bool IsDefaultFolder => string.IsNullOrWhiteSpace(Preferences.Default.Get(KeyFolder, ""));
 

@@ -23,7 +23,7 @@ public static class Stubs
 
     /// <summary>Заглушка шаблона, для которого ещё нет описания полей.</summary>
     public static Task ShowTemplateAsync(string title)
-        => Alert("📄 " + title, "Этот шаблон скоро будет добавлен.");
+        => Alert("📄 " + title, "Файл шаблона не найден или не открывается. Проверьте папку шаблонов в настройках.");
 
     private static Task Alert(string title, string text)
     {

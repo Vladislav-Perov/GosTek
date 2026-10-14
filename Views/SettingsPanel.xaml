@@ -55,6 +55,57 @@
                 <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
                     <VerticalStackLayout Padding="18,6,18,24" Spacing="20">
 
+                        <!-- ===== ШАБЛОНЫ ===== -->
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="ШАБЛОНЫ"
+                                   FontSize="12" FontAttributes="Bold" CharacterSpacing="1"
+                                   TextColor="{DynamicResource BrandGreen}" />
+
+                            <Border BackgroundColor="{DynamicResource CardBg}"
+                                    Stroke="{DynamicResource CardStroke}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 16"
+                                    Padding="14">
+                                <VerticalStackLayout Spacing="8">
+                                    <Label Text="Папка шаблонов" FontSize="14" FontAttributes="Bold"
+                                           TextColor="{DynamicResource TextPrimary}" />
+                                    <Label x:Name="TemplatesPathLabel" FontSize="12"
+                                           TextColor="{DynamicResource TextSecondary}"
+                                           LineBreakMode="MiddleTruncation" />
+                                    <Grid ColumnDefinitions="*, Auto" ColumnSpacing="8">
+                                        <Border Grid.Column="0"
+                                                StyleClass="HoverCard"
+                                                StrokeThickness="1"
+                                                StrokeShape="RoundRectangle 12"
+                                                Padding="12,10">
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnPickTemplatesTapped" />
+                                            </Border.GestureRecognizers>
+                                            <Label Text="Выбрать папку…" FontSize="13" FontAttributes="Bold"
+                                                   TextColor="{DynamicResource TextPrimary}"
+                                                   HorizontalOptions="Center" />
+                                        </Border>
+                                        <Border x:Name="ResetTemplatesButton"
+                                                Grid.Column="1"
+                                                StyleClass="HoverCard"
+                                                StrokeThickness="1"
+                                                StrokeShape="RoundRectangle 12"
+                                                Padding="12,10">
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnResetTemplatesTapped" />
+                                            </Border.GestureRecognizers>
+                                            <Label Text="По умолчанию" FontSize="13"
+                                                   TextColor="{DynamicResource TextSecondary}"
+                                                   HorizontalOptions="Center" />
+                                        </Border>
+                                    </Grid>
+                                    <Label FontSize="12" LineBreakMode="WordWrap"
+                                           TextColor="{DynamicResource TextSecondary}"
+                                           Text="Шаблоны — файлы .docx. Имя: Категория_Название.docx. В тексте поля пишутся в скобках: [Дата создания-00.00.0000] — до дефиса название поля, после — серый пример. Можно использовать и {фигурные} скобки." />
+                                </VerticalStackLayout>
+                            </Border>
+                        </VerticalStackLayout>
+
                         <!-- ===== СОХРАНЕНИЕ ФАЙЛОВ ===== -->
                         <VerticalStackLayout Spacing="8">
                             <Label Text="СОХРАНЕНИЕ ФАЙЛОВ"

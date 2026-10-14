@@ -29,6 +29,7 @@ public partial class FieldsPage : ContentPage
     private sealed record FieldUi(TemplateField Field, InputView Input, Border Box, Label Error, View Container);
 
     private TemplateDef? _template;
+    private List<PreviewPara> _previewParas = new();
     private readonly List<FieldUi> _fields = new();
     private Dictionary<string, string> _values = new();
 
@@ -113,7 +114,13 @@ public partial class FieldsPage : ContentPage
         var draft = DraftStore.For(_template.Id);
         _values = draft;
 
+        _previewParas = TemplateEngine.ReadPreview(_template.FilePath);
+
         foreach (var field in _template.Fields) {
+            // Поля-даты по умолчанию = сегодня
+            if (!draft.ContainsKey(field.Id) && TemplateCatalog.DefaultFor(field) is { } def)
+                draft[field.Id] = def;
+
             var ui = CreateField(field, draft);
             _fields.Add(ui);
             FieldsHost.Children.Add(ui.Container);
@@ -519,133 +526,42 @@ public partial class FieldsPage : ContentPage
         sheet.Content = BuildSheet(w);
     }
 
+    // Лист строится из абзацев самого шаблона: поля заменяются значениями или серыми подсказками
     private View BuildSheet(double w)
     {
-        double contentW = w * 0.81;
-        var rightBlock = new Thickness(contentW * 0.42, 0, 0, _font * 1.4);   // блок «Кому / от кого»
+        var stack = new VerticalStackLayout { Spacing = _font * 0.25 };
 
-        return _template!.Id switch {
-            "explanatory" => BuildExplanatory(rightBlock),
-            "ip" => BuildIp(rightBlock),
-            "title" => BuildTitle(w),
-            _ => new Label { Text = _template.Title, TextColor = Ink },
-        };
-    }
-
-    private View BuildExplanatory(Thickness rightBlock)
-    {
-        var stack = new VerticalStackLayout { Spacing = _font * 0.6 };
-
-        var to = Para(TextAlignment.Start, Val("pos"), T("\n"), Val("org"), T("\nот "), Val("fio"));
-        to.Margin = rightBlock;
-        stack.Children.Add(to);
-
-        stack.Children.Add(Heading("Объяснительная записка"));
-
-        var subject = Val("subject");
-        subject.FontAttributes = FontAttributes.Italic;
-        stack.Children.Add(Para(TextAlignment.Center, subject));
-
-        // Текст объяснения: каждый абзац отдельно
-        _values.TryGetValue("text", out var text);
-        var paragraphs = (text ?? "").Split(new[] { '\r', '\n' },
-            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-        if (paragraphs.Length == 0)
-            stack.Children.Add(Para(TextAlignment.Start, T(Indent), Val("text")));
-        else
-            foreach (var p in paragraphs)
-                stack.Children.Add(Para(TextAlignment.Start, T(Indent + p)));
-
-        stack.Children.Add(BuildSignature());
-        return stack;
-    }
-
-    private View BuildIp(Thickness rightBlock)
-    {
-        var stack = new VerticalStackLayout { Spacing = _font * 0.6 };
-
-        var to = Para(TextAlignment.Start,
-            Val("organ"), T("\nот "), Val("fio"), T("\nпаспорт "), Val("passport"));
-        to.Margin = rightBlock;
-        stack.Children.Add(to);
-
-        stack.Children.Add(Heading("ЗАЯВЛЕНИЕ"));
-
-        stack.Children.Add(Para(TextAlignment.Start,
-            T(Indent + "Прошу зарегистрировать меня в качестве индивидуального предпринимателя. Адрес места жительства: "),
-            Val("addr"),
-            T(". Предполагаемый вид деятельности: "),
-            Val("activity"),
-            T(".")));
-
-        stack.Children.Add(BuildSignature());
-        return stack;
-    }
-
-    private View BuildTitle(double w)
-    {
-        var g = new Grid { RowSpacing = _font * 0.2 };
-        g.MinimumHeightRequest = w * 297 / 210 - w * 0.17;   // высота листа минус верхнее и нижнее поля
-
-        // Строка 4 (тема) занимает всё свободное место и центрируется по высоте
-        for (int i = 0; i < 7; i++)
-            g.RowDefinitions.Add(new RowDefinition(i == 4 ? GridLength.Star : GridLength.Auto));
-
-        void Put(View view, int row)
-        {
-            Grid.SetRow(view, row);
-            g.Children.Add(view);
+        if (_previewParas.Count == 0) {
+            stack.Children.Add(new Label { Text = _template!.Title, TextColor = Ink, FontFamily = SerifFont });
+            return stack;
         }
 
-        Put(Para(TextAlignment.Center, T("Министерство образования Республики Беларусь")), 0);
+        foreach (var para in _previewParas) {
+            if (para.Blank) {
+                stack.Children.Add(new BoxView { HeightRequest = _font * 0.7, Color = Colors.Transparent });
+                continue;
+            }
 
-        var univ = Val("univ");
-        univ.FontAttributes = FontAttributes.Bold;
-        Put(Para(TextAlignment.Center, univ), 1);
+            var spans = para.Parts
+                .Select(part => part.FieldId is null ? T(part.Text) : Val(part.FieldId))
+                .ToArray();
 
-        Put(Para(TextAlignment.Center, T("Факультет "), Val("faculty")), 2);
-        Put(Para(TextAlignment.Center, T("Кафедра "), Val("dept")), 3);
+            var label = Para(para.Align, spans);
+            label.FontSize = Math.Clamp(_font * para.Pt / 14, 8, 26);
+            if (para.Bold)
+                label.FontAttributes |= FontAttributes.Bold;
+            if (para.Italic)
+                label.FontAttributes |= FontAttributes.Italic;
 
-        var mid = new VerticalStackLayout { VerticalOptions = LayoutOptions.Center, Spacing = _font * 0.4 };
-        mid.Children.Add(Heading("КУРСОВАЯ РАБОТА"));
-        mid.Children.Add(Para(TextAlignment.Center, T("Тема: "), Val("topic")));
-        Put(mid, 4);
+            stack.Children.Add(label);
+        }
 
-        var who = Para(TextAlignment.End,
-            T("Выполнил: "), Val("student"), T("\nРуководитель: "), Val("head"));
-        who.Margin = new Thickness(0, 0, 0, _font * 1.7);
-        Put(who, 5);
-
-        Put(Para(TextAlignment.Center, T("Минск, "), Val("year")), 6);
-        return g;
-    }
-
-    // Дата слева, подпись справа
-    private View BuildSignature()
-    {
-        _values.TryGetValue("fio", out var fio);
-
-        var who = string.IsNullOrWhiteSpace(fio)
-            ? new Span { Text = "подпись", TextColor = GapText, BackgroundColor = GapBg }
-            : T(TemplateCatalog.ShortName(fio));
-
-        var grid = new Grid { Margin = new Thickness(0, _font * 1.6, 0, 0) };
-        grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-        grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
-
-        var date = Para(TextAlignment.Start, T(DateTime.Today.ToString("dd.MM.yyyy")));
-        var sign = Para(TextAlignment.End, T("____________ "), who);
-        Grid.SetColumn(sign, 1);
-
-        grid.Children.Add(date);
-        grid.Children.Add(sign);
-        return grid;
+        return stack;
     }
 
     // ===== Помощники для листа =====
 
-    private TemplateField FieldOf(string id) => _template!.Fields.First(f => f.Id == id);
+    private TemplateField? FieldOf(string id) => _template!.Fields.FirstOrDefault(f => f.Id == id);
 
     // Значение поля. Если пусто, серая плашка с подсказкой
     private Span Val(string id)
@@ -656,7 +572,7 @@ public partial class FieldsPage : ContentPage
             return new Span { Text = v.Trim() };
 
         return new Span {
-            Text = FieldOf(id).Placeholder,
+            Text = FieldOf(id) is { Placeholder.Length: > 0 } fld ? fld.Placeholder : FieldOf(id)?.Label ?? id,
             TextColor = GapText,
             BackgroundColor = GapBg,
         };
