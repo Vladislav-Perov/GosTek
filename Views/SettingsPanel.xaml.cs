@@ -41,6 +41,7 @@ public partial class SettingsPanel : ContentView
         // Папку выбираем только на ПК; на Android она фиксированная
         FolderBlock.IsVisible = IsWindows;
         AndroidFolderBlock.IsVisible = !IsWindows;
+        OpenTemplatesButton.IsVisible = IsWindows;   // на Android папка во внутренней памяти приложения
 
         BuildSegment(NameHost,
             new[] { "Название шаблона", "Название + дата" },
@@ -230,6 +231,21 @@ public partial class SettingsPanel : ContentView
         var path = await PickFolderAsync();
         if (path is not null)
             SettingsService.TemplatesFolder = path;
+    }
+
+    private async void OnOpenTemplatesTapped(object? sender, TappedEventArgs e)
+    {
+#if WINDOWS
+        try {
+            var path = SettingsService.TemplatesFolder;
+            Directory.CreateDirectory(path);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", $"\"{path}\"") { UseShellExecute = true });
+        } catch (Exception ex) {
+            await Alert("Не удалось открыть папку", ex.Message);
+        }
+#else
+        await Task.CompletedTask;
+#endif
     }
 
     private void OnResetTemplatesTapped(object? sender, TappedEventArgs e)

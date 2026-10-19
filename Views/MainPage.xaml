@@ -11,15 +11,16 @@
     <Grid RowDefinitions="Auto, *, Auto">
 
         <!-- ==================== ШАПКА ==================== -->
-        <Grid Grid.Row="0" Padding="20, 15, 12, 10">
+        <Grid Grid.Row="0" Padding="16, 15, 12, 10" RowDefinitions="Auto, Auto" ColumnDefinitions="Auto, *, Auto">
 
-            <VerticalStackLayout HorizontalOptions="Center"
+            <VerticalStackLayout Grid.Row="1" Grid.ColumnSpan="3" Margin="0,-4,0,0" HorizontalOptions="Center"
                                  VerticalOptions="Center"
                                  Spacing="5">
                 <Label Text="GosTek"
                        FontSize="52"
                        FontAttributes="Bold"
                        CharacterSpacing="1"
+                       LineBreakMode="NoWrap"
                        TextColor="{DynamicResource BrandGreen}"
                        HorizontalOptions="Center">
                     <Label.Shadow>
@@ -43,6 +44,7 @@
                     StrokeThickness="1"
                     StrokeShape="RoundRectangle 16"
                     Padding="10,5"
+                    Grid.Column="0"
                     HorizontalOptions="Start"
                     VerticalOptions="Start"
                     AutomationProperties.Name="Настройки">
@@ -55,7 +57,7 @@
             </Border>
 
             <!-- Переключатель темы -->
-            <views:ThemeToggle HorizontalOptions="End" VerticalOptions="Start" />
+            <views:ThemeToggle Grid.Column="2" HorizontalOptions="End" VerticalOptions="Start" />
         </Grid>
 
         <!-- ==================== КОНТЕНТ ==================== -->
@@ -76,7 +78,7 @@
                         <Shadow Brush="Black" Offset="0,4" Radius="8" Opacity="0.15" />
                     </Border.Shadow>
                     <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="create" />
+                        <TapGestureRecognizer Tapped="OnCreateTapped" />
                     </Border.GestureRecognizers>
                     <VerticalStackLayout Spacing="12">
                         <Label Text="📄" FontSize="24" />

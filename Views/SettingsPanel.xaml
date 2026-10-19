@@ -9,7 +9,7 @@
     <Grid>
 
         <BoxView x:Name="Scrim"
-                 Color="#99000000"
+                 Color="#66000000"
                  Opacity="0">
             <BoxView.GestureRecognizers>
                 <TapGestureRecognizer Tapped="OnScrimTapped" />
@@ -24,6 +24,9 @@
                 StrokeThickness="1"
                 StrokeShape="RoundRectangle 0,24,24,0"
                 Padding="0">
+            <Border.Shadow>
+                <Shadow Brush="Black" Offset="4,0" Radius="16" Opacity="0.35" />
+            </Border.Shadow>
 
             <Grid RowDefinitions="Auto, *">
 
@@ -72,6 +75,18 @@
                                     <Label x:Name="TemplatesPathLabel" FontSize="12"
                                            TextColor="{DynamicResource TextSecondary}"
                                            LineBreakMode="MiddleTruncation" />
+                                    <Border x:Name="OpenTemplatesButton"
+                                            StyleClass="HoverCard"
+                                            StrokeThickness="1"
+                                            StrokeShape="RoundRectangle 12"
+                                            Padding="12,10">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="OnOpenTemplatesTapped" />
+                                        </Border.GestureRecognizers>
+                                        <Label Text="Открыть папку с шаблонами" FontSize="13" FontAttributes="Bold"
+                                               TextColor="{DynamicResource TextPrimary}"
+                                               HorizontalOptions="Center" />
+                                    </Border>
                                     <Grid ColumnDefinitions="*, Auto" ColumnSpacing="8">
                                         <Border Grid.Column="0"
                                                 StyleClass="HoverCard"

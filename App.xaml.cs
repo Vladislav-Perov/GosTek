@@ -10,7 +10,13 @@
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            return new Window(new AppShell());
+            var window = new Window(new AppShell());
+#if WINDOWS
+            // Меньше этого окно уменьшить нельзя: иначе элементы шапки наезжают друг на друга
+            window.MinimumWidth = 500;
+            window.MinimumHeight = 700;
+#endif
+            return window;
         }
     }
 }

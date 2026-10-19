@@ -144,6 +144,12 @@ public partial class MainPage : ContentPage
         await Stubs.ShowAsync(e.Parameter as string);
     }
 
+    // ===== «Создать документ» ведёт в каталог шаблонов =====
+    private async void OnCreateTapped(object? sender, TappedEventArgs e)
+    {
+        await Shell.Current.GoToAsync("//TemplatesPage");
+    }
+
     // ===== Шаблон из «Быстрого старта» =====
     private async void OnTemplateTapped(object? sender, EventArgs e)
     {
