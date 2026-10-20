@@ -131,10 +131,10 @@
                     </Border>
                 </Grid>
 
-                <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 4" />
+                <BoxView x:Name="ProfileDivider" HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 4" />
 
-                <!-- Карточка профиля -->
-                <Border StyleClass="HoverCard"
+                <!-- Карточка профиля (скрывается при 100%) -->
+                <Border x:Name="ProfileCard" StyleClass="HoverCard"
                         StrokeShape="RoundRectangle 16" Padding="16"
                         StrokeThickness="1">
                     <Border.Shadow>

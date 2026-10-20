@@ -241,7 +241,7 @@ public partial class SettingsPanel : ContentView
             Directory.CreateDirectory(path);
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", $"\"{path}\"") { UseShellExecute = true });
         } catch (Exception ex) {
-            await Alert("Не удалось открыть папку", ex.Message);
+            await Alert("Не удалось открыть папку", ex.Message, DialogKind.Danger);
         }
 #else
         await Task.CompletedTask;
@@ -270,7 +270,7 @@ public partial class SettingsPanel : ContentView
             var folder = await picker.PickSingleFolderAsync();
             return folder?.Path;
         } catch (Exception ex) {
-            await Alert("Не удалось выбрать папку", ex.Message);
+            await Alert("Не удалось выбрать папку", ex.Message, DialogKind.Danger);
             return null;
         }
 #else
@@ -300,9 +300,9 @@ public partial class SettingsPanel : ContentView
         try {
             ProfileStorage.Clear();
             DataCleared?.Invoke();
-            await Alert("Готово", "Профиль удалён.");
+            await Alert("Готово", "Профиль удалён.", DialogKind.Success);
         } catch (Exception ex) {
-            await Alert("Не удалось удалить", ex.Message);
+            await Alert("Не удалось удалить", ex.Message, DialogKind.Danger);
         }
     }
 
@@ -320,9 +320,9 @@ public partial class SettingsPanel : ContentView
             FileSaveService.ClearTemp();
 
             DataCleared?.Invoke();
-            await Alert("Готово", "Данные удалены.");
+            await Alert("Готово", "Данные удалены.", DialogKind.Success);
         } catch (Exception ex) {
-            await Alert("Не удалось удалить", ex.Message);
+            await Alert("Не удалось удалить", ex.Message, DialogKind.Danger);
         }
     }
 
@@ -343,9 +343,10 @@ public partial class SettingsPanel : ContentView
     //  ДИАЛОГИ
     // =====================================================================
 
-    private static Task Alert(string title, string text)
-        => Shell.Current.DisplayAlertAsync(title, text, "Понятно");
+    private static Task Alert(string title, string text, DialogKind kind = DialogKind.Info)
+        => Dialogs.AlertAsync(title, text, kind);
 
+    // Удаление: красная кнопка, отмена серая
     private static Task<bool> Confirm(string title, string text, string accept)
-        => Shell.Current.DisplayAlertAsync(title, text, accept, "Отмена");
+        => Dialogs.ConfirmAsync(title, text, accept, DialogKind.Delete, danger: true);
 }

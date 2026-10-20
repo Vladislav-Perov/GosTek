@@ -118,6 +118,11 @@ public partial class MainPage : ContentPage
         var (profile, status) = await ProfileStorage.LoadWithStatusAsync();
         var summary = ProfileRules.Summarize(profile);
 
+        // Профиль заполнен полностью: плашка и разделитель над ней не нужны
+        bool complete = status != ProfileLoadStatus.Failed && summary.Percent >= 100;
+        ProfileCard.IsVisible = !complete;
+        ProfileDivider.IsVisible = !complete;
+
         ProfilePercentLabel.Text = $"{summary.Percent}%";
         ProfileProgress.Progress = summary.Progress;
         ProfileHintLabel.Text = status == ProfileLoadStatus.Failed

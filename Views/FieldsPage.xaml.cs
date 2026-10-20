@@ -373,12 +373,15 @@ public partial class FieldsPage : ContentPage
             var mode = SettingsService.Conflict;
 
             if (mode == ConflictMode.Ask) {
-                var answer = await DisplayActionSheetAsync(
-                    $"Файл «{fileName}» уже есть", "Отмена", null, "Добавить номер", "Заменить");
+                var answer = await Dialogs.ChoiceAsync(
+                    $"Файл «{fileName}» уже есть", "Что сделать с новым документом?", DialogKind.Question,
+                    new DialogButton("Добавить номер", DialogButtonStyle.Primary),
+                    new DialogButton("Заменить", DialogButtonStyle.DangerOutline),
+                    new DialogButton("Отмена"));
 
-                if (answer == "Добавить номер")
+                if (answer == 0)
                     mode = ConflictMode.Number;
-                else if (answer == "Заменить")
+                else if (answer == 1)
                     mode = ConflictMode.Overwrite;
                 else
                     return null;
@@ -405,12 +408,15 @@ public partial class FieldsPage : ContentPage
         var action = SettingsService.AfterSave;
 
         if (action == AfterSaveAction.Ask) {
-            var choice = await DisplayActionSheetAsync(
-                $"✅ Сохранено: {result.Location}", "Закрыть", null, "Открыть", "Поделиться");
+            var choice = await Dialogs.ChoiceAsync(
+                "Документ сохранён", result.Location, DialogKind.Success,
+                new DialogButton("Открыть", DialogButtonStyle.Primary),
+                new DialogButton("Поделиться"),
+                new DialogButton("Закрыть"));
 
             action = choice switch {
-                "Открыть" => AfterSaveAction.Open,
-                "Поделиться" => AfterSaveAction.Share,
+                0 => AfterSaveAction.Open,
+                1 => AfterSaveAction.Share,
                 _ => AfterSaveAction.Nothing,
             };
 
@@ -428,7 +434,7 @@ public partial class FieldsPage : ContentPage
                 break;
 
             default:
-                await DisplayAlertAsync("✅ Сохранено", result.Location, "Понятно");
+                await Dialogs.AlertAsync("Сохранено", result.Location, DialogKind.Success);
                 break;
         }
     }
@@ -446,7 +452,7 @@ public partial class FieldsPage : ContentPage
             CloseExport();
             await AfterSaveAsync(result);
         } catch (Exception ex) {
-            await DisplayAlertAsync("Не удалось сохранить", ex.Message, "Понятно");
+            await Dialogs.AlertAsync("Не удалось сохранить", ex.Message, DialogKind.Danger);
         }
     }
 
@@ -464,16 +470,15 @@ public partial class FieldsPage : ContentPage
             CloseExport();
             await ShareFileAsync(result.FilePath);
         } catch (Exception ex) {
-            await DisplayAlertAsync("Не удалось поделиться", ex.Message, "Понятно");
+            await Dialogs.AlertAsync("Не удалось поделиться", ex.Message, DialogKind.Danger);
         }
     }
 
     // Заглушка: PDF пока не делаем
     private async void OnExportPdfTapped(object? sender, EventArgs e)
     {
-        await DisplayAlertAsync("📕 PDF",
-            "Сохранение в PDF добавим следующим шагом. Пока можно собрать Word и распечатать из него.",
-            "Понятно");
+        await Dialogs.AlertAsync("PDF",
+            "Сохранение в PDF добавим следующим шагом. Пока можно собрать Word и распечатать из него.");
     }
 
     // =====================================================================

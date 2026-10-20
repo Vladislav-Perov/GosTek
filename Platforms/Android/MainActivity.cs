@@ -15,9 +15,12 @@ public class MainActivity : MauiAppCompatActivity
 
         // Убираем серые плашки: красим верхний статус-бар и нижнюю навигационную панель 
         // в темно-синий цвет интерфейса приложения (#0C1017)
+        // SetStatusBarColor и SetNavigationBarColor помечены устаревшими с Android 15, но на 10-14 они нужны
+#pragma warning disable CA1422
         if (Window != null) {
             Window.SetStatusBarColor(Android.Graphics.Color.ParseColor("#0C1017"));
             Window.SetNavigationBarColor(Android.Graphics.Color.ParseColor("#0C1017"));
         }
+#pragma warning restore CA1422
     }
 }

@@ -113,14 +113,16 @@ public partial class ProfilePage : ContentPage
     // ===== Выход с несохранёнными данными =====
     private async Task<bool> AskLeaveAsync()
     {
-        const string stay = "Остаться", save = "Сохранить и выйти", discard = "Выйти без сохранения";
+        var choice = await Dialogs.ChoiceAsync(
+            "Есть несохранённые данные", "Сохранить изменения, прежде чем выйти?", DialogKind.Question,
+            new DialogButton("Сохранить и выйти", DialogButtonStyle.Primary),
+            new DialogButton("Выйти без сохранения", DialogButtonStyle.DangerOutline),
+            new DialogButton("Остаться"));
 
-        var choice = await DisplayActionSheetAsync("Есть несохранённые данные", stay, null, save, discard);
-
-        if (choice == save)
+        if (choice == 0)
             return await TrySaveAsync(silent: true);
 
-        return choice == discard;
+        return choice == 1;   // 2 или закрытие окна: остаёмся
     }
 
     private async void OnShellNavigating(object? sender, ShellNavigatingEventArgs e)
@@ -195,10 +197,10 @@ public partial class ProfilePage : ContentPage
 
         // Не показываем пустую форму молча: иначе «Сохранить» тихо затрёт старые данные
         if (status == ProfileLoadStatus.Failed)
-            await DisplayAlertAsync("Профиль не прочитан",
+            await Dialogs.AlertAsync("Профиль не прочитан",
                 "Не удалось прочитать сохранённый профиль: возможно, данные повреждены или перенесены с другого устройства. " +
                 "Если сохранить новые данные, старые будут заменены.",
-                "Понятно");
+                DialogKind.Warning);
     }
 
     // Значения из формы. normalize = true: в виде для сохранения (паспорт, счёт)
@@ -237,18 +239,18 @@ public partial class ProfilePage : ContentPage
             var names = string.Join(", ", invalid.Select(f => ProfileRules.DisplayName(f.Field)));
 
             if (!IgnoreCheck.IsChecked) {
-                await DisplayAlertAsync("Проверьте данные",
+                await Dialogs.AlertAsync("Проверьте данные",
                     "Исправьте поля, выделенные красным: " + names + ".\n" +
                     "Или отметьте «Игнорировать ошибки», чтобы сохранить как есть.",
-                    "Понятно");
+                    DialogKind.Warning);
 
                 invalid[0].Entry.Focus();
                 return false;
             }
 
-            if (!await DisplayAlertAsync("Сохранить с ошибками?",
+            if (!await Dialogs.ConfirmAsync("Сохранить с ошибками?",
                     "Есть ошибки в полях: " + names + ". Документы могут заполниться неверно.",
-                    "Сохранить", "Отмена"))
+                    "Сохранить"))
                 return false;
         }
 
@@ -271,11 +273,11 @@ public partial class ProfilePage : ContentPage
             _baseline = Snapshot();
 
             if (!silent)
-                await DisplayAlertAsync("✅ Готово", "Профиль сохранён на этом устройстве.", "Понятно");
+                await Dialogs.AlertAsync("Готово", "Профиль сохранён на этом устройстве.", DialogKind.Success);
 
             return true;
         } catch (Exception ex) {
-            await DisplayAlertAsync("Не удалось сохранить", ex.Message, "Понятно");
+            await Dialogs.AlertAsync("Не удалось сохранить", ex.Message, DialogKind.Danger);
             return false;
         }
     }

@@ -195,11 +195,11 @@ public static class TemplateEngine
                     foreach (var p in root.Descendants<Paragraph>().ToList())
                         FillParagraph(p, Value);
 
-                doc.MainDocumentPart?.Document.Save();
+                doc.MainDocumentPart?.Document?.Save();
                 foreach (var h in doc.MainDocumentPart?.HeaderParts ?? Enumerable.Empty<HeaderPart>())
-                    h.Header.Save();
+                    h.Header?.Save();
                 foreach (var f in doc.MainDocumentPart?.FooterParts ?? Enumerable.Empty<FooterPart>())
-                    f.Footer.Save();
+                    f.Footer?.Save();
             }
 
             File.WriteAllBytes(path, ms.ToArray());
@@ -285,7 +285,7 @@ public static class TemplateEngine
         try {
             using var ms = CopyToMemory(file);
             using var doc = WordprocessingDocument.Open(ms, false);
-            var body = doc.MainDocumentPart?.Document.Body;
+            var body = doc.MainDocumentPart?.Document?.Body;
             if (body is null)
                 return result;
 
@@ -361,9 +361,11 @@ public static class TemplateEngine
         if (main.Document?.Body is { } body)
             yield return body;
         foreach (var h in main.HeaderParts)
-            yield return h.Header;
+            if (h.Header is { } header)
+                yield return header;
         foreach (var f in main.FooterParts)
-            yield return f.Footer;
+            if (f.Footer is { } footer)
+                yield return footer;
     }
 
     // Text именно этого абзаца (без вложенных, например из надписей)
