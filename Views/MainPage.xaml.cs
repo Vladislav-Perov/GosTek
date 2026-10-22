@@ -143,10 +143,16 @@ public partial class MainPage : ContentPage
         SubtitleLabel.Text = Subtitles[index];
     }
 
-    // ===== Заглушки (create, check) =====
+    // ===== Заглушки (check) =====
     private async void OnStubTapped(object? sender, TappedEventArgs e)
     {
         await Stubs.ShowAsync(e.Parameter as string);
+    }
+
+    // ===== «Создать документ» ведёт в каталог шаблонов =====
+    private async void OnCreateTapped(object? sender, TappedEventArgs e)
+    {
+        await Shell.Current.GoToAsync("//TemplatesPage");
     }
 
     // ===== Скан из «Быстрого старта» — настоящий экран, не заглушка =====
