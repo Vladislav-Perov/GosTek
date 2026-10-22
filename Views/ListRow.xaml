@@ -34,8 +34,7 @@
                        LineBreakMode="TailTruncation" />
             </VerticalStackLayout>
 
-            <Label Grid.Column="2" Text="›" FontSize="20"
-                   TextColor="{DynamicResource TextSecondary}" VerticalOptions="Center" />
+            <Path Grid.Column="2" Data="M2,1 L8,8 L2,15" Stroke="{DynamicResource TextSecondary}" StrokeThickness="2.5" StrokeLineCap="Round" StrokeLineJoin="Round" Aspect="Uniform" WidthRequest="10" HeightRequest="16" HorizontalOptions="Center" VerticalOptions="Center" />
         </Grid>
     </Border>
 </ContentView>

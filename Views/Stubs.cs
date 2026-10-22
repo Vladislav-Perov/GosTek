@@ -4,7 +4,7 @@
 public static class Stubs
 {
     private static readonly Dictionary<string, (string Title, string Text)> Items = new() {
-        ["check"] = ("✔️ Проверка документа",
+        ["check"] = ("Проверка документа",
             "Скоро здесь можно будет загрузить документ и получить список ошибок оформления: поля, шрифты, реквизиты и отступы."),
     };
 
@@ -20,14 +20,8 @@ public static class Stubs
 
     /// <summary>Заглушка шаблона, для которого ещё нет описания полей.</summary>
     public static Task ShowTemplateAsync(string title)
-        => Alert("📄 " + title, "Файл шаблона не найден или не открывается. Проверьте папку шаблонов в настройках.");
+        => Alert(title, "Файл шаблона не найден или не открывается. Проверьте папку шаблонов в настройках.");
 
     private static Task Alert(string title, string text)
-    {
-        var page = Application.Current?.Windows.FirstOrDefault()?.Page;
-
-        return page is null
-            ? Task.CompletedTask
-            : page.DisplayAlertAsync(title, text, "Понятно");
-    }
+        => Dialogs.AlertAsync(title, text);
 }

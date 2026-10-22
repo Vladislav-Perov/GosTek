@@ -11,14 +11,14 @@
     <Grid RowDefinitions="Auto, *, Auto, Auto">
 
         <!-- ==================== ШАПКА ==================== -->
-        <Grid Grid.Row="0" Padding="20, 15, 20, 10">
+        <Grid Grid.Row="0" Padding="20, 15, 20, 10" ColumnDefinitions="*, Auto" ColumnSpacing="12">
             <Label Text="Мой профиль"
                    FontSize="26"
                    FontAttributes="Bold"
                    VerticalOptions="Center"
                    TextColor="{DynamicResource TextPrimary}" />
 
-            <views:ThemeToggle HorizontalOptions="End" VerticalOptions="Center" />
+            <views:ThemeToggle Grid.Column="1" HorizontalOptions="End" VerticalOptions="Center" />
         </Grid>
 
         <!-- ==================== КОНТЕНТ ==================== -->
@@ -71,6 +71,21 @@
         <!-- ==================== КНОПКА «СОХРАНИТЬ» ==================== -->
         <VerticalStackLayout Grid.Row="2" Spacing="0">
             <BoxView HeightRequest="1" Color="{DynamicResource Divider}" />
+
+            <!-- Появляется только когда в полях есть ошибки -->
+            <Grid x:Name="IgnoreRow" IsVisible="False"
+                  ColumnDefinitions="Auto, *" ColumnSpacing="6"
+                  Margin="16,10,20,0" MaximumWidthRequest="700">
+                <CheckBox x:Name="IgnoreCheck" Color="{DynamicResource AccentGreen}"
+                          VerticalOptions="Center" CheckedChanged="OnIgnoreChanged" />
+                <Label Grid.Column="1" VerticalOptions="Center" FontSize="13"
+                       Text="Игнорировать ошибки и сохранить как есть"
+                       TextColor="{DynamicResource TextSecondary}" LineBreakMode="WordWrap">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnIgnoreLabelTapped" />
+                    </Label.GestureRecognizers>
+                </Label>
+            </Grid>
             <Border StyleClass="HoverGreen"
                     StrokeShape="RoundRectangle 16"
                     StrokeThickness="0"
@@ -83,7 +98,7 @@
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnSaveTapped" />
                 </Border.GestureRecognizers>
-                <Label Text="Сохранить"
+                <Label x:Name="SaveLabel" Text="Сохранить"
                        FontSize="17"
                        FontAttributes="Bold"
                        TextColor="#064E3B"

@@ -63,6 +63,10 @@ public static class ProfileRules
         if (v.Length == 0)
             return null;
 
+        // Значение, сохранённое через «Игнорировать ошибки», считаем принятым
+        if (IsAccepted(field, v))
+            return null;
+
         return field switch {
             ProfileField.FullName => ValidateFullName(v),
             ProfileField.OrgName => ValidateOrgName(v),
@@ -208,6 +212,31 @@ public static class ProfileRules
 
     private static string NormalizeAccount(string v)
         => v.Replace(" ", "").ToUpperInvariant();
+
+    // ===== Значения, сохранённые вопреки ошибке =====
+    private static string AcceptKey(ProfileField f) => "accepted_" + f;
+
+    private static bool IsAccepted(ProfileField field, string v)
+        => Preferences.Default.Get(AcceptKey(field), "") is { Length: > 0 } saved && saved == Normalize(field, v);
+
+    /// <summary>Запомнить значения полей с ошибками как принятые пользователем; у остальных полей отметка снимается.</summary>
+    public static void SetAccepted(ProfileData p, IEnumerable<ProfileField> withErrors)
+    {
+        var set = withErrors.ToHashSet();
+
+        foreach (var field in All) {
+            if (set.Contains(field))
+                Preferences.Default.Set(AcceptKey(field), Get(p, field));
+            else
+                Preferences.Default.Remove(AcceptKey(field));
+        }
+    }
+
+    public static void ForgetAccepted()
+    {
+        foreach (var field in All)
+            Preferences.Default.Remove(AcceptKey(field));
+    }
 
     // ===== Сводка: процент заполнения и подсказка =====
     // Засчитываются только заполненные И верные поля

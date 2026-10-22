@@ -26,14 +26,14 @@
                              Spacing="14">
 
             <!-- Заголовок + переключатель темы -->
-            <Grid>
+            <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12">
                 <Label Text="Шаблоны"
                        FontSize="26"
                        FontAttributes="Bold"
                        VerticalOptions="Center"
                        TextColor="{DynamicResource TextPrimary}" />
 
-                <views:ThemeToggle HorizontalOptions="End" VerticalOptions="Center" />
+                <views:ThemeToggle Grid.Column="1" HorizontalOptions="End" VerticalOptions="Center" />
             </Grid>
 
             <!-- Поиск -->
@@ -67,7 +67,7 @@
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnChipsLeftTapped" />
                     </Border.GestureRecognizers>
-                    <Label Text="‹" FontSize="20" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
+                    <Path Data="M8,1 L2,8 L8,15" Stroke="{DynamicResource TextPrimary}" StrokeThickness="2.5" StrokeLineCap="Round" StrokeLineJoin="Round" Aspect="Uniform" WidthRequest="10" HeightRequest="16" HorizontalOptions="Center" VerticalOptions="Center" />
                 </Border>
 
                 <ScrollView x:Name="ChipsScroll" Grid.Column="1"
@@ -88,7 +88,7 @@
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnChipsRightTapped" />
                     </Border.GestureRecognizers>
-                    <Label Text="›" FontSize="20" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
+                    <Path Data="M2,1 L8,8 L2,15" Stroke="{DynamicResource TextPrimary}" StrokeThickness="2.5" StrokeLineCap="Round" StrokeLineJoin="Round" Aspect="Uniform" WidthRequest="10" HeightRequest="16" HorizontalOptions="Center" VerticalOptions="Center" />
                 </Border>
             </Grid>
         </VerticalStackLayout>

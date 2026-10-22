@@ -52,7 +52,11 @@ public static class ProfileStorage
         => (await LoadWithStatusAsync()).Data;
 
     /// <summary>Удаляет профиль. Работает и для нечитаемого профиля: так его можно «починить».</summary>
-    public static void Clear() => SecureStorage.Default.Remove(Key);
+    public static void Clear()
+    {
+        SecureStorage.Default.Remove(Key);
+        GosTek.Views.ProfileRules.ForgetAccepted();
+    }
 
     public static Task SaveAsync(ProfileData profile)
         => SecureStorage.Default.SetAsync(Key, JsonSerializer.Serialize(profile));

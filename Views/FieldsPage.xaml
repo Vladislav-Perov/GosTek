@@ -25,11 +25,7 @@
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnBackTapped" />
                 </Border.GestureRecognizers>
-                <Label Text="‹"
-                       FontSize="26"
-                       TextColor="{DynamicResource TextPrimary}"
-                       HorizontalOptions="Center"
-                       VerticalOptions="Center" />
+                <Path Data="M8,1 L2,8 L8,15" Stroke="{DynamicResource TextPrimary}" StrokeThickness="2.5" StrokeLineCap="Round" StrokeLineJoin="Round" Aspect="Uniform" WidthRequest="10" HeightRequest="16" HorizontalOptions="Center" VerticalOptions="Center" />
             </Border>
 
             <Label x:Name="TitleLabel"

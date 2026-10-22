@@ -27,6 +27,13 @@ public partial class ProfilePage : ContentPage
 
     private readonly List<FieldUi> _fields = new();
 
+    // Снимок формы на момент загрузки/сохранения: по нему видно несохранённые правки
+    private string _baseline = "";
+    private bool _leaving;
+
+    private string Snapshot() => string.Join("\u001f", _fields.Select(f => f.Entry.Text ?? ""));
+    private bool HasUnsaved => Snapshot() != _baseline;
+
     public ProfilePage()
     {
         InitializeComponent();
@@ -40,6 +47,7 @@ public partial class ProfilePage : ContentPage
 
             field.Entry.TextChanged += (_, _) => {
                 ApplyValidation(field);
+                UpdateIgnoreUi();
                 UpdateProgress(animated: true);
             };
 
@@ -111,8 +119,89 @@ public partial class ProfilePage : ContentPage
         base.OnAppearing();
         BottomTabs.ResetHover();   // сбросить «залипшее» наведение таббара
 
+        if (Shell.Current is { } shell)
+            shell.Navigating += OnShellNavigating;
+
         await LoadAsync();
     }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+
+        if (Shell.Current is { } shell)
+            shell.Navigating -= OnShellNavigating;
+    }
+
+    // ===== Выход с несохранёнными данными =====
+    private async Task<bool> AskLeaveAsync()
+    {
+        var choice = await Dialogs.ChoiceAsync(
+            "Есть несохранённые данные", "Сохранить изменения, прежде чем выйти?", DialogKind.Question,
+            new DialogButton("Сохранить и выйти", DialogButtonStyle.Primary),
+            new DialogButton("Выйти без сохранения", DialogButtonStyle.DangerOutline),
+            new DialogButton("Остаться"));
+
+        if (choice == 0)
+            return await TrySaveAsync(silent: true);
+
+        return choice == 1;   // 2 или закрытие окна: остаёмся
+    }
+
+    private async void OnShellNavigating(object? sender, ShellNavigatingEventArgs e)
+    {
+        if (_leaving || !e.CanCancel || !HasUnsaved)
+            return;
+
+        if (e.Target?.Location.OriginalString.Contains("ProfilePage") == true)
+            return;
+
+        var deferral = e.GetDeferral();
+        try {
+            if (!await AskLeaveAsync())
+                e.Cancel();
+        } finally {
+            deferral.Complete();
+        }
+    }
+
+    // «Назад» на Android
+    protected override bool OnBackButtonPressed()
+    {
+        if (!HasUnsaved)
+            return base.OnBackButtonPressed();
+
+        _ = BackAsync();
+        return true;
+    }
+
+    private async Task BackAsync()
+    {
+        if (!await AskLeaveAsync())
+            return;
+
+        _leaving = true;
+        try { await Shell.Current.GoToAsync("//MainPage"); }
+        finally { _leaving = false; }
+    }
+
+    // ===== «Игнорировать ошибки» =====
+    // Галочка видна только при ошибках; при её включении кнопка меняет подпись,
+    // а перед сохранением спрашиваем подтверждение
+    private void UpdateIgnoreUi()
+    {
+        bool hasErrors = _fields.Any(f => f.Error.IsVisible);
+
+        IgnoreRow.IsVisible = hasErrors;
+        if (!hasErrors)
+            IgnoreCheck.IsChecked = false;
+
+        SaveLabel.Text = IgnoreCheck.IsChecked ? "Сохранить с ошибками" : "Сохранить";
+    }
+
+    private void OnIgnoreChanged(object? sender, CheckedChangedEventArgs e) => UpdateIgnoreUi();
+
+    private void OnIgnoreLabelTapped(object? sender, TappedEventArgs e) => IgnoreCheck.IsChecked = !IgnoreCheck.IsChecked;
 
     // ===== Загрузка =====
     private async Task LoadAsync()
@@ -125,14 +214,16 @@ public partial class ProfilePage : ContentPage
         foreach (var f in _fields)
             ApplyValidation(f);
 
+        UpdateIgnoreUi();
         UpdateProgress(animated: false);
+        _baseline = Snapshot();
 
         // Не показываем пустую форму молча: иначе «Сохранить» тихо затрёт старые данные
         if (status == ProfileLoadStatus.Failed)
-            await DisplayAlertAsync("Профиль не прочитан",
+            await Dialogs.AlertAsync("Профиль не прочитан",
                 "Не удалось прочитать сохранённый профиль: возможно, данные повреждены или перенесены с другого устройства. " +
                 "Если сохранить новые данные, старые будут заменены.",
-                "Понятно");
+                DialogKind.Warning);
     }
 
     // Значения из формы. normalize = true: в виде для сохранения (паспорт, счёт)
@@ -155,36 +246,62 @@ public partial class ProfilePage : ContentPage
     }
 
     // ===== Сохранение =====
-    private async void OnSaveTapped(object? sender, TappedEventArgs e)
+    private async void OnSaveTapped(object? sender, TappedEventArgs e) => await TrySaveAsync(silent: false);
+
+    // true — профиль сохранён. silent: без сообщения «Готово» (при выходе со страницы)
+    private async Task<bool> TrySaveAsync(bool silent)
     {
         foreach (var f in _fields)
             f.Entry.Unfocus();
 
         // Проверяем все поля; незаполненные пропускаем, неверные подсвечиваем
         var invalid = _fields.Where(f => !ApplyValidation(f)).ToList();
+        UpdateIgnoreUi();
 
         if (invalid.Count > 0) {
             var names = string.Join(", ", invalid.Select(f => ProfileRules.DisplayName(f.Field)));
-            await DisplayAlertAsync("Проверьте данные",
-                "Исправьте поля, выделенные красным: " + names + ".",
-                "Понятно");
 
-            invalid[0].Entry.Focus();
-            return;
+            if (!IgnoreCheck.IsChecked) {
+                await Dialogs.AlertAsync("Проверьте данные",
+                    "Исправьте поля, выделенные красным: " + names + ".\n" +
+                    "Или отметьте «Игнорировать ошибки», чтобы сохранить как есть.",
+                    DialogKind.Warning);
+
+                invalid[0].Entry.Focus();
+                return false;
+            }
+
+            if (!await Dialogs.ConfirmAsync("Сохранить с ошибками?",
+                    "Есть ошибки в полях: " + names + ". Документы могут заполниться неверно.",
+                    "Сохранить"))
+                return false;
         }
 
-        var profile = ReadForm(normalize: true);
-
         try {
+            var profile = ReadForm(normalize: true);
             await ProfileStorage.SaveAsync(profile);
+            ProfileRules.SetAccepted(profile, invalid.Select(f => f.Field));
 
             // Показываем значения в том виде, в котором они сохранились
             foreach (var f in _fields)
                 f.Entry.Text = ProfileRules.Get(profile, f.Field);
 
-            await DisplayAlertAsync("✅ Готово", "Профиль сохранён на этом устройстве.", "Понятно");
+            // Принятые с ошибкой поля больше не красные, галочка прячется, процент пересчитан
+            foreach (var f in _fields)
+                ApplyValidation(f);
+
+            IgnoreCheck.IsChecked = false;
+            UpdateIgnoreUi();
+            UpdateProgress(animated: false);
+            _baseline = Snapshot();
+
+            if (!silent)
+                await Dialogs.AlertAsync("Готово", "Профиль сохранён на этом устройстве.", DialogKind.Success);
+
+            return true;
         } catch (Exception ex) {
-            await DisplayAlertAsync("Не удалось сохранить", ex.Message, "Понятно");
+            await Dialogs.AlertAsync("Не удалось сохранить", ex.Message, DialogKind.Danger);
+            return false;
         }
     }
 
