@@ -117,7 +117,7 @@
                             <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
                         </Border.Shadow>
                         <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="scan" />
+                            <TapGestureRecognizer Tapped="OnScanTapped" />
                         </Border.GestureRecognizers>
                         <VerticalStackLayout Spacing="12">
                             <Label Text="📷" FontSize="20" />

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using TesseractOcrMaui;
 
 namespace GosTek
 {
@@ -13,6 +14,14 @@ namespace GosTek
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
+
+            builder.Services.AddLogging();
+
+            // OCR на Android (см. Services/OcrService.cs). Файл должен лежать
+            // в Resources/Raw с тем же именем — rus.traineddata уже там.
+            builder.Services.AddTesseractOcr(files => {
+                files.AddFile("rus.traineddata");
+            });
 
 #if DEBUG
     		builder.Logging.AddDebug();

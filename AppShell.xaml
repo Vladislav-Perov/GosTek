@@ -17,6 +17,10 @@
         ContentTemplate="{DataTemplate views:TemplatesPage}"
         Route="TemplatesPage" />
     <ShellContent
+        Title="Scan"
+        ContentTemplate="{DataTemplate views:ScanPage}"
+        Route="ScanPage" />
+    <ShellContent
         Title="Profile"
         ContentTemplate="{DataTemplate views:ProfilePage}"
         Route="ProfilePage" />

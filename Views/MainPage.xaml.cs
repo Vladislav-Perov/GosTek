@@ -138,10 +138,16 @@ public partial class MainPage : ContentPage
         SubtitleLabel.Text = Subtitles[index];
     }
 
-    // ===== Заглушки (create, check, scan) =====
+    // ===== Заглушки (create, check) =====
     private async void OnStubTapped(object? sender, TappedEventArgs e)
     {
         await Stubs.ShowAsync(e.Parameter as string);
+    }
+
+    // ===== Скан из «Быстрого старта» — настоящий экран, не заглушка =====
+    private async void OnScanTapped(object? sender, TappedEventArgs e)
+    {
+        await Shell.Current.GoToAsync("//ScanPage");
     }
 
     // ===== Шаблон из «Быстрого старта» =====

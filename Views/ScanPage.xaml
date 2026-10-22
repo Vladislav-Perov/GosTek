@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:views="clr-namespace:GosTek.Views"
+             x:Class="GosTek.Views.ScanPage"
+             Title="Скан"
+             BackgroundColor="{DynamicResource PageBg}"
+             Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto, *, Auto">
+
+        <!-- ==================== ШАПКА ==================== -->
+        <Grid Grid.Row="0" Padding="20, 15, 20, 10">
+            <Label Text="Сканирование документа"
+                   FontSize="24"
+                   FontAttributes="Bold"
+                   VerticalOptions="Center"
+                   TextColor="{DynamicResource TextPrimary}" />
+
+            <views:ThemeToggle HorizontalOptions="End" VerticalOptions="Center" />
+        </Grid>
+
+        <!-- ==================== КОНТЕНТ ==================== -->
+        <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
+            <VerticalStackLayout Padding="20, 6, 20, 20"
+                                 Spacing="16"
+                                 MaximumWidthRequest="700"
+                                 HorizontalOptions="Fill">
+
+                <Label Text="Сфотографируйте паспорт или страницу документа — текст распознаётся прямо на устройстве, без интернета."
+                       FontSize="13"
+                       TextColor="{DynamicResource TextSecondary}"
+                       LineBreakMode="WordWrap" />
+
+                <!-- Кнопки получения фото -->
+                <Grid ColumnDefinitions="*, *" ColumnSpacing="12">
+                    <Border Grid.Column="0" StyleClass="HoverGreen"
+                            StrokeShape="RoundRectangle 14" StrokeThickness="0" Padding="0,14">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnCameraTapped" />
+                        </Border.GestureRecognizers>
+                        <Label Text="📷 Камера" FontAttributes="Bold" TextColor="#064E3B" HorizontalOptions="Center" />
+                    </Border>
+
+                    <Border Grid.Column="1"
+                            BackgroundColor="{DynamicResource CardBg}"
+                            Stroke="{DynamicResource CardStroke}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 14" Padding="0,14">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnGalleryTapped" />
+                        </Border.GestureRecognizers>
+                        <Label Text="🖼️ Из галереи" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" HorizontalOptions="Center" />
+                    </Border>
+                </Grid>
+
+                <ActivityIndicator x:Name="Loader" IsRunning="False" IsVisible="False"
+                                   Color="{DynamicResource AccentGreen}" />
+
+                <Label x:Name="ErrorLabel" IsVisible="False" FontSize="13" TextColor="#EF4444" LineBreakMode="WordWrap" />
+
+                <!-- Результат распознавания -->
+                <VerticalStackLayout x:Name="ResultSection" IsVisible="False" Spacing="14">
+
+                    <BoxView HeightRequest="1" Color="{DynamicResource Divider}" />
+
+                    <Label Text="Найдено автоматически" FontSize="15" FontAttributes="Bold"
+                           TextColor="{DynamicResource TextPrimary}" />
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="ФИО" StyleClass="FieldLabel" />
+                        <Border StyleClass="FieldBox">
+                            <Entry x:Name="NameEntry" StyleClass="FieldEntry" Placeholder="Не найдено — введите вручную" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Паспорт" StyleClass="FieldLabel" />
+                        <Border StyleClass="FieldBox">
+                            <Entry x:Name="PassportEntry" StyleClass="FieldEntry" Placeholder="Не найдено — введите вручную" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <Border StyleClass="HoverGreen" StrokeShape="RoundRectangle 14" StrokeThickness="0" Padding="0,14">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnSaveToProfileTapped" />
+                        </Border.GestureRecognizers>
+                        <Label Text="Сохранить в профиль" FontAttributes="Bold" TextColor="#064E3B" HorizontalOptions="Center" />
+                    </Border>
+
+                    <BoxView HeightRequest="1" Color="{DynamicResource Divider}" />
+
+                    <Label Text="Весь распознанный текст" FontSize="15" FontAttributes="Bold"
+                           TextColor="{DynamicResource TextPrimary}" />
+                    <Label Text="Скопируйте нужный кусок вручную в поле любого открытого шаблона."
+                           FontSize="12" TextColor="{DynamicResource TextSecondary}" LineBreakMode="WordWrap" />
+
+                    <Border BackgroundColor="{DynamicResource CardBg}"
+                            Stroke="{DynamicResource CardStroke}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 14"
+                            Padding="12">
+                        <Editor x:Name="RawTextEditor" IsReadOnly="True" AutoSize="TextChanges"
+                                TextColor="{DynamicResource TextPrimary}" BackgroundColor="Transparent" />
+                    </Border>
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- ==================== ТАББАР ==================== -->
+        <views:AppTabBar x:Name="BottomTabs" Grid.Row="2" ActiveTab="scan" />
+
+    </Grid>
+</ContentPage>

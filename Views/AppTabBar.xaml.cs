@@ -17,7 +17,7 @@ public partial class AppTabBar : ContentView
     {
         new("home",      "🏠",  "Главная",  "//MainPage"),
         new("templates", "📋",  "Шаблоны",  "//TemplatesPage"),
-        new("scan",      "📷",  "Скан",     null),
+        new("scan",      "📷",  "Скан",     "//ScanPage"),
         new("check",     "🛡️", "Проверка", null),
         new("profile",   "👤",  "Профиль",  "//ProfilePage"),
     };
