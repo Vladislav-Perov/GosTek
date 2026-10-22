@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using CommunityToolkit.Maui;
 using TesseractOcrMaui;
 
 namespace GosTek
@@ -10,6 +11,7 @@ namespace GosTek
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
+                .UseMauiCommunityToolkitCamera()
                 .ConfigureFonts(fonts => {
                     fonts.AddFont("PTSans-Regular.ttf", "PTSansRegular");
                     fonts.AddFont("PTSans-Bold.ttf", "PTSansBold");

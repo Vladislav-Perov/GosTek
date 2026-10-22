@@ -67,6 +67,10 @@
 		     На Windows пакет тоже совместим, но распознавание там делает встроенный Windows.Media.Ocr
 		     (Platforms/Windows/OcrEngine.cs), без доп. пакетов. -->
 		<PackageReference Include="TesseractOcrMaui" Version="1.5.1" />
+
+		<!-- Живой предпросмотр камеры в рамке сканера (Views/ScanPage). 5.0.0 — под MAUI 10.0.10+;
+		     версия 6.x требует MAUI 10.0.60+, а у нас стоит 10.0.20. -->
+		<PackageReference Include="CommunityToolkit.Maui.Camera" Version="5.0.0" />
 	</ItemGroup>
 
 </Project>

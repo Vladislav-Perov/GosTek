@@ -1,115 +1,249 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:views="clr-namespace:GosTek.Views"
              x:Class="GosTek.Views.ScanPage"
-             Title="Скан"
+             Title="Сканер"
              BackgroundColor="{DynamicResource PageBg}"
              Shell.NavBarIsVisible="False">
 
-    <Grid RowDefinitions="Auto, *, Auto">
+    <ContentPage.Resources>
+        <!-- Уголок рамки сканера: две полоски цвета акцента -->
+        <Style x:Key="CornerBar" TargetType="BoxView">
+            <Setter Property="Color" Value="{DynamicResource AccentGreen}" />
+            <Setter Property="CornerRadius" Value="2" />
+        </Style>
+    </ContentPage.Resources>
 
-        <!-- ==================== ШАПКА ==================== -->
-        <Grid Grid.Row="0" Padding="20, 15, 20, 10">
-            <Label Text="Сканирование документа"
+    <Grid RowDefinitions="Auto, *, Auto, Auto"
+          MaximumWidthRequest="700"
+          HorizontalOptions="Fill">
+
+        <!-- ==================== ШАПКА: ✕ и заголовок ==================== -->
+        <Grid Grid.Row="0" Padding="20, 15, 20, 10" ColumnDefinitions="Auto, *" ColumnSpacing="16">
+            <Label Grid.Column="0"
+                   Text="✕"
+                   FontSize="22"
+                   Padding="4"
+                   VerticalOptions="Center"
+                   TextColor="{DynamicResource TextPrimary}"
+                   AutomationProperties.Name="Закрыть сканер">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnCloseTapped" />
+                </Label.GestureRecognizers>
+            </Label>
+
+            <Label Grid.Column="1"
+                   Text="Сканер"
                    FontSize="24"
                    FontAttributes="Bold"
                    VerticalOptions="Center"
                    TextColor="{DynamicResource TextPrimary}" />
-
-            <views:ThemeToggle HorizontalOptions="End" VerticalOptions="Center" />
         </Grid>
 
-        <!-- ==================== КОНТЕНТ ==================== -->
-        <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
-            <VerticalStackLayout Padding="20, 6, 20, 20"
-                                 Spacing="16"
-                                 MaximumWidthRequest="700"
-                                 HorizontalOptions="Fill">
+        <!-- ==================== ЦЕНТР: рамка сканера или результат ==================== -->
+        <Grid Grid.Row="1" Margin="20,4">
 
-                <Label Text="Сфотографируйте паспорт или страницу документа — текст распознаётся прямо на устройстве, без интернета."
-                       FontSize="13"
-                       TextColor="{DynamicResource TextSecondary}"
-                       LineBreakMode="WordWrap" />
+            <!-- Рамка с уголками и подсказкой -->
+            <Grid x:Name="FramePanel" RowDefinitions="*, Auto, Auto" RowSpacing="12">
 
-                <!-- Кнопки получения фото -->
-                <Grid ColumnDefinitions="*, *" ColumnSpacing="12">
-                    <Border Grid.Column="0" StyleClass="HoverGreen"
-                            StrokeShape="RoundRectangle 14" StrokeThickness="0" Padding="0,14">
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnCameraTapped" />
-                        </Border.GestureRecognizers>
-                        <Label Text="📷 Камера" FontAttributes="Bold" TextColor="#064E3B" HorizontalOptions="Center" />
-                    </Border>
+                <Grid Grid.Row="0">
+                    <Border BackgroundColor="{DynamicResource CardBg}"
+                            Opacity="0.55"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 6" />
 
-                    <Border Grid.Column="1"
-                            BackgroundColor="{DynamicResource CardBg}"
-                            Stroke="{DynamicResource CardStroke}"
-                            StrokeThickness="1"
-                            StrokeShape="RoundRectangle 14" Padding="0,14">
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnGalleryTapped" />
-                        </Border.GestureRecognizers>
-                        <Label Text="🖼️ Из галереи" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" HorizontalOptions="Center" />
-                    </Border>
+                    <!-- Линии «листа» (создаются из кода) -->
+                    <Grid x:Name="LinesHost" Margin="14,22" InputTransparent="True" />
+
+                    <!-- Живой предпросмотр камеры (CameraView создаётся из кода после выдачи доступа);
+                         пока камеры нет, видны линии «листа» -->
+                    <Grid x:Name="CameraHost" InputTransparent="True" />
+
+                    <!-- Уголки рамки -->
+                    <Grid WidthRequest="34" HeightRequest="34" HorizontalOptions="Start" VerticalOptions="Start">
+                        <BoxView Style="{StaticResource CornerBar}" HeightRequest="4" VerticalOptions="Start" HorizontalOptions="Fill" />
+                        <BoxView Style="{StaticResource CornerBar}" WidthRequest="4" HorizontalOptions="Start" VerticalOptions="Fill" />
+                    </Grid>
+                    <Grid WidthRequest="34" HeightRequest="34" HorizontalOptions="End" VerticalOptions="Start">
+                        <BoxView Style="{StaticResource CornerBar}" HeightRequest="4" VerticalOptions="Start" HorizontalOptions="Fill" />
+                        <BoxView Style="{StaticResource CornerBar}" WidthRequest="4" HorizontalOptions="End" VerticalOptions="Fill" />
+                    </Grid>
+                    <Grid WidthRequest="34" HeightRequest="34" HorizontalOptions="Start" VerticalOptions="End">
+                        <BoxView Style="{StaticResource CornerBar}" HeightRequest="4" VerticalOptions="End" HorizontalOptions="Fill" />
+                        <BoxView Style="{StaticResource CornerBar}" WidthRequest="4" HorizontalOptions="Start" VerticalOptions="Fill" />
+                    </Grid>
+                    <Grid WidthRequest="34" HeightRequest="34" HorizontalOptions="End" VerticalOptions="End">
+                        <BoxView Style="{StaticResource CornerBar}" HeightRequest="4" VerticalOptions="End" HorizontalOptions="Fill" />
+                        <BoxView Style="{StaticResource CornerBar}" WidthRequest="4" HorizontalOptions="End" VerticalOptions="Fill" />
+                    </Grid>
                 </Grid>
 
-                <ActivityIndicator x:Name="Loader" IsRunning="False" IsVisible="False"
-                                   Color="{DynamicResource AccentGreen}" />
+                <Label Grid.Row="1"
+                       Text="Положите документ на ровную поверхность так, чтобы он целиком поместился в рамку."
+                       FontSize="14"
+                       HorizontalTextAlignment="Center"
+                       LineBreakMode="WordWrap"
+                       Margin="12,4,12,0"
+                       TextColor="{DynamicResource TextSecondary}" />
 
-                <Label x:Name="ErrorLabel" IsVisible="False" FontSize="13" TextColor="#EF4444" LineBreakMode="WordWrap" />
+                <Label x:Name="ErrorLabel"
+                       Grid.Row="2"
+                       IsVisible="False"
+                       FontSize="13"
+                       HorizontalTextAlignment="Center"
+                       LineBreakMode="WordWrap"
+                       TextColor="#EF4444" />
+            </Grid>
 
-                <!-- Результат распознавания -->
-                <VerticalStackLayout x:Name="ResultSection" IsVisible="False" Spacing="14">
+            <!-- Результат распознавания -->
+            <ScrollView x:Name="ResultPanel" IsVisible="False" VerticalScrollBarVisibility="Never">
+                <VerticalStackLayout Spacing="14" Padding="0,0,0,12">
 
-                    <BoxView HeightRequest="1" Color="{DynamicResource Divider}" />
+                    <Label Text="↩ Снять заново"
+                           FontSize="14"
+                           FontAttributes="Bold"
+                           TextColor="{DynamicResource BrandGreen}">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnRetakeTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
 
-                    <Label Text="Найдено автоматически" FontSize="15" FontAttributes="Bold"
-                           TextColor="{DynamicResource TextPrimary}" />
+                    <!-- Только для типа «Паспорт / ID» -->
+                    <VerticalStackLayout x:Name="ExtractedSection" Spacing="14">
+                        <Label Text="Найдено автоматически"
+                               FontSize="16"
+                               FontAttributes="Bold"
+                               TextColor="{DynamicResource TextPrimary}" />
 
-                    <VerticalStackLayout Spacing="6">
-                        <Label Text="ФИО" StyleClass="FieldLabel" />
-                        <Border StyleClass="FieldBox">
-                            <Entry x:Name="NameEntry" StyleClass="FieldEntry" Placeholder="Не найдено — введите вручную" />
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="ФИО" StyleClass="FieldLabel" />
+                            <Border StyleClass="FieldBox">
+                                <Entry x:Name="NameEntry" StyleClass="FieldEntry" Placeholder="Не найдено — введите вручную" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Паспорт" StyleClass="FieldLabel" />
+                            <Border StyleClass="FieldBox">
+                                <Entry x:Name="PassportEntry" StyleClass="FieldEntry" Placeholder="Не найдено — введите вручную" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <Border StyleClass="HoverGreen"
+                                StrokeShape="RoundRectangle 14"
+                                StrokeThickness="0"
+                                Padding="0,14">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnSaveToProfileTapped" />
+                            </Border.GestureRecognizers>
+                            <Label Text="Сохранить в профиль"
+                                   FontAttributes="Bold"
+                                   TextColor="#064E3B"
+                                   HorizontalOptions="Center" />
                         </Border>
+
+                        <BoxView HeightRequest="1" Color="{DynamicResource Divider}" />
                     </VerticalStackLayout>
 
-                    <VerticalStackLayout Spacing="6">
-                        <Label Text="Паспорт" StyleClass="FieldLabel" />
-                        <Border StyleClass="FieldBox">
-                            <Entry x:Name="PassportEntry" StyleClass="FieldEntry" Placeholder="Не найдено — введите вручную" />
-                        </Border>
-                    </VerticalStackLayout>
-
-                    <Border StyleClass="HoverGreen" StrokeShape="RoundRectangle 14" StrokeThickness="0" Padding="0,14">
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnSaveToProfileTapped" />
-                        </Border.GestureRecognizers>
-                        <Label Text="Сохранить в профиль" FontAttributes="Bold" TextColor="#064E3B" HorizontalOptions="Center" />
-                    </Border>
-
-                    <BoxView HeightRequest="1" Color="{DynamicResource Divider}" />
-
-                    <Label Text="Весь распознанный текст" FontSize="15" FontAttributes="Bold"
-                           TextColor="{DynamicResource TextPrimary}" />
-                    <Label Text="Скопируйте нужный кусок вручную в поле любого открытого шаблона."
-                           FontSize="12" TextColor="{DynamicResource TextSecondary}" LineBreakMode="WordWrap" />
+                    <!-- Весь текст, для копирования в поля шаблона -->
+                    <Grid ColumnDefinitions="*, Auto">
+                        <Label Text="Весь распознанный текст"
+                               FontSize="16"
+                               FontAttributes="Bold"
+                               VerticalOptions="Center"
+                               TextColor="{DynamicResource TextPrimary}" />
+                        <Label x:Name="CopyLabel"
+                               Grid.Column="1"
+                               Text="Копировать"
+                               FontSize="14"
+                               FontAttributes="Bold"
+                               VerticalOptions="Center"
+                               TextColor="{DynamicResource BrandGreen}">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnCopyTapped" />
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </Grid>
 
                     <Border BackgroundColor="{DynamicResource CardBg}"
                             Stroke="{DynamicResource CardStroke}"
                             StrokeThickness="1"
                             StrokeShape="RoundRectangle 14"
                             Padding="12">
-                        <Editor x:Name="RawTextEditor" IsReadOnly="True" AutoSize="TextChanges"
-                                TextColor="{DynamicResource TextPrimary}" BackgroundColor="Transparent" />
+                        <Editor x:Name="RawTextEditor"
+                                IsReadOnly="True"
+                                AutoSize="TextChanges"
+                                TextColor="{DynamicResource TextPrimary}"
+                                BackgroundColor="Transparent" />
                     </Border>
                 </VerticalStackLayout>
+            </ScrollView>
 
-            </VerticalStackLayout>
+            <ActivityIndicator x:Name="Loader"
+                               IsRunning="False"
+                               IsVisible="False"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"
+                               Color="{DynamicResource AccentGreen}" />
+        </Grid>
+
+        <!-- ==================== ТИП ДОКУМЕНТА (чипы создаются из кода) ==================== -->
+        <ScrollView Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalScrollBarVisibility="Never"
+                    Margin="0,10,0,4">
+            <HorizontalStackLayout x:Name="KindChips" Spacing="10" Padding="20,0" />
         </ScrollView>
 
-        <!-- ==================== ТАББАР ==================== -->
-        <views:AppTabBar x:Name="BottomTabs" Grid.Row="2" ActiveTab="scan" />
+        <!-- ==================== НИЖНЯЯ ПАНЕЛЬ: галерея, затвор, файл ==================== -->
+        <Grid Grid.Row="3" ColumnDefinitions="*, Auto, *" Padding="24,8,24,20">
+
+            <VerticalStackLayout Grid.Column="0"
+                                 Spacing="4"
+                                 HorizontalOptions="Start"
+                                 VerticalOptions="Center"
+                                 Padding="8"
+                                 AutomationProperties.Name="Выбрать фото из галереи">
+                <VerticalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnGalleryTapped" />
+                </VerticalStackLayout.GestureRecognizers>
+                <Label Text="🖼️" FontSize="22" HorizontalOptions="Center" />
+                <Label Text="Галерея" FontSize="12" HorizontalOptions="Center"
+                       TextColor="{DynamicResource TextSecondary}" />
+            </VerticalStackLayout>
+
+            <!-- Затвор: открывает камеру -->
+            <Border Grid.Column="1"
+                    WidthRequest="78"
+                    HeightRequest="78"
+                    StrokeShape="RoundRectangle 39"
+                    StrokeThickness="4"
+                    Stroke="{DynamicResource TextPrimary}"
+                    BackgroundColor="Transparent"
+                    Padding="5"
+                    AutomationProperties.Name="Сфотографировать">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnShutterTapped" />
+                </Border.GestureRecognizers>
+                <Border StrokeShape="RoundRectangle 30"
+                        StrokeThickness="0"
+                        BackgroundColor="{DynamicResource TextPrimary}" />
+            </Border>
+
+            <VerticalStackLayout Grid.Column="2"
+                                 Spacing="4"
+                                 HorizontalOptions="End"
+                                 VerticalOptions="Center"
+                                 Padding="8"
+                                 AutomationProperties.Name="Выбрать файл с изображением">
+                <VerticalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnFileTapped" />
+                </VerticalStackLayout.GestureRecognizers>
+                <Label Text="📁" FontSize="22" HorizontalOptions="Center" />
+                <Label Text="Файл" FontSize="12" HorizontalOptions="Center"
+                       TextColor="{DynamicResource TextSecondary}" />
+            </VerticalStackLayout>
+        </Grid>
 
     </Grid>
 </ContentPage>

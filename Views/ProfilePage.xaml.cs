@@ -66,13 +66,6 @@ public partial class ProfilePage : ContentPage
     {
         var label = new Label { Text = spec.Label, StyleClass = new[] { "FieldLabel" } };
 
-        var labelRow = new HorizontalStackLayout { Spacing = 8, VerticalOptions = LayoutOptions.Center };
-        labelRow.Children.Add(label);
-
-        // У поля «Паспорт» — ссылка на скан вместо ручного ввода
-        if (spec.Field == ProfileField.Passport)
-            labelRow.Children.Add(CreateScanLink());
-
         var entry = new Entry {
             Placeholder = spec.Placeholder,
             Keyboard = spec.Keyboard,
@@ -92,26 +85,10 @@ public partial class ProfilePage : ContentPage
         _fields.Add(new FieldUi(spec.Field, entry, box, error));
 
         var stack = new VerticalStackLayout { Spacing = 6 };
-        stack.Children.Add(labelRow);
+        stack.Children.Add(label);
         stack.Children.Add(box);
         stack.Children.Add(error);
         return stack;
-    }
-
-    // Ссылка «📷 Сканировать» рядом с подписью поля «Паспорт»
-    private View CreateScanLink()
-    {
-        var text = new Label { Text = "📷 Сканировать", FontSize = 12, FontAttributes = FontAttributes.Bold };
-        text.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
-
-        var wrapper = new HorizontalStackLayout { VerticalOptions = LayoutOptions.Center };
-        wrapper.Children.Add(text);
-
-        var tap = new TapGestureRecognizer();
-        tap.Tapped += OnPassportScanTapped;
-        wrapper.GestureRecognizers.Add(tap);
-
-        return wrapper;
     }
 
     protected override async void OnAppearing()
@@ -305,6 +282,7 @@ public partial class ProfilePage : ContentPage
         }
     }
 
+    // Кнопка «Заполнить по фото паспорта»
     private async void OnPassportScanTapped(object? sender, TappedEventArgs e)
     {
         await Shell.Current.GoToAsync("//ScanPage?mode=passport");

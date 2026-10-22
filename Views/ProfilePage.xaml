@@ -65,6 +65,26 @@
 
                 <!-- Поля создаются из кода (ProfilePage.xaml.cs, таблица Specs) -->
                 <VerticalStackLayout x:Name="FieldsHost" Spacing="16" />
+
+                <!-- Быстрое заполнение: открывает сканер в режиме паспорта -->
+                <Border BackgroundColor="Transparent"
+                        Stroke="{DynamicResource BrandGreen}"
+                        StrokeThickness="1.5"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="0,14"
+                        AutomationProperties.Name="Заполнить по фото паспорта">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnPassportScanTapped" />
+                    </Border.GestureRecognizers>
+                    <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                        <Label Text="📷" FontSize="18" VerticalOptions="Center" />
+                        <Label Text="Заполнить по фото паспорта"
+                               FontSize="16"
+                               FontAttributes="Bold"
+                               VerticalOptions="Center"
+                               TextColor="{DynamicResource BrandGreen}" />
+                    </HorizontalStackLayout>
+                </Border>
             </VerticalStackLayout>
         </ScrollView>
 
