@@ -4,7 +4,7 @@
 
 **Локальное (privacy-first) приложение для распознавания и автозаполнения документов по официальным стандартам РБ**
 
-![Status](https://img.shields.io/badge/статус-концепция-yellow)
+![Status](https://img.shields.io/badge/статус-разработка-yellow)
 ![Platform](https://img.shields.io/badge/платформа-.NET%20MAUI-512BD4)
 ![License](https://img.shields.io/badge/лицензия-proprietary-red)
 ![Team](https://img.shields.io/badge/команда-3%20человека-blue)
