@@ -1,8 +1,6 @@
 ﻿using GosTek.Models;
+using GosTek.Services;
 using Microsoft.Maui.Controls.Shapes;
-
-// В Shapes есть одноимённый Path
-using Path = System.IO.Path;
 
 namespace GosTek.Views;
 
@@ -189,7 +187,7 @@ public partial class FieldsPage : ContentPage
         {
             draft[field.Id] = text ?? "";
             if (!IsEmpty(ui))
-                Mark(ui, false);
+                FieldValidationHelper.Mark(ui.Box, ui.Error, false);
             QueueRender();
         }
 
@@ -199,7 +197,7 @@ public partial class FieldsPage : ContentPage
             en.TextChanged += (_, e) => Changed(e.NewTextValue);
 
         // Ушли из пустого поля: подсветить
-        input.Unfocused += (_, _) => Mark(ui, IsEmpty(ui));
+        input.Unfocused += (_, _) => FieldValidationHelper.Mark(ui.Box, ui.Error, IsEmpty(ui));
 
         return ui;
     }
@@ -226,19 +224,6 @@ public partial class FieldsPage : ContentPage
 
     // ===== Пустое поле: подсветка =====
     private static bool IsEmpty(FieldUi f) => string.IsNullOrWhiteSpace(f.Input.Text);
-
-    private static void Mark(FieldUi f, bool invalid)
-    {
-        if (invalid) {
-            f.Box.Stroke = new SolidColorBrush(ThemeService.ErrorColor);
-            f.Box.StrokeThickness = 1.5;
-        } else {
-            // Вернуть рамку из стиля FieldBox (цвет подхватывает тему)
-            f.Box.ClearValue(Border.StrokeProperty);
-            f.Box.ClearValue(Border.StrokeThicknessProperty);
-        }
-        f.Error.IsVisible = invalid;
-    }
 
     // ===== Подстановка из профиля =====
     // onlyEmpty = true: заполняем только пустые поля (при открытии окна)
@@ -316,7 +301,7 @@ public partial class FieldsPage : ContentPage
         var empty = _fields.Where(IsEmpty).ToList();
         if (empty.Count > 0) {
             foreach (var f in empty)
-                Mark(f, true);
+                FieldValidationHelper.Mark(f.Box, f.Error, true);
 
             await FormScroll.ScrollToAsync(empty[0].Container, ScrollToPosition.Center, true);
             empty[0].Input.Focus();
@@ -324,7 +309,7 @@ public partial class FieldsPage : ContentPage
         }
 
         // Все поля заполнены: открываем шторку экспорта
-        FileNameEntry.Text = DefaultFileName();
+        FileNameEntry.Text = ExportService.DefaultFileName(_template);
         ExportOverlay.IsVisible = true;
     }
 
@@ -339,105 +324,9 @@ public partial class FieldsPage : ContentPage
     // Нажатие на саму шторку не должно её закрывать (жест перехватывает нажатие у подложки)
     private void OnSheetTapped(object? sender, TappedEventArgs e) { }
 
-    // Имя по умолчанию зависит от настройки: «Шаблон» или «Шаблон_2026-10-10»
-    private string DefaultFileName()
-    {
-        var name = _template!.Title.Replace(' ', '_');
-
-        return SettingsService.Name == NameMode.TemplateDate
-            ? $"{name}_{DateTime.Today:yyyy-MM-dd}"
-            : name;
-    }
-
-    private string SafeFileName()
-    {
-        var name = (FileNameEntry.Text ?? "").Trim();
-
-        foreach (var c in Path.GetInvalidFileNameChars())
-            name = name.Replace(c, '_');
-
-        if (name.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
-            name = name[..^5];
-
-        return string.IsNullOrWhiteSpace(name) ? DefaultFileName() : name;
-    }
-
-    // Собирает и сохраняет .docx с учётом настройки «Если файл уже есть».
-    // Возвращает null, если пользователь отказался (шторка остаётся открытой).
-    private async Task<SaveResult?> SaveDocxAsync()
-    {
-        var fileName = SafeFileName() + ".docx";
-        bool overwrite = false;
-
-        if (FileSaveService.Exists(fileName)) {
-            var mode = SettingsService.Conflict;
-
-            if (mode == ConflictMode.Ask) {
-                var answer = await Dialogs.ChoiceAsync(
-                    $"Файл «{fileName}» уже есть", "Что сделать с новым документом?", DialogKind.Question,
-                    new DialogButton("Добавить номер", DialogButtonStyle.Primary),
-                    new DialogButton("Заменить", DialogButtonStyle.DangerOutline),
-                    new DialogButton("Отмена"));
-
-                if (answer == 0)
-                    mode = ConflictMode.Number;
-                else if (answer == 1)
-                    mode = ConflictMode.Overwrite;
-                else
-                    return null;
-            }
-
-            if (mode == ConflictMode.Overwrite)
-                overwrite = true;
-            else
-                fileName = FileSaveService.FreeName(fileName);
-        }
-
-        return FileSaveService.Save(_template!, _values, fileName, overwrite);
-    }
-
-    private static Task ShareFileAsync(string path)
-        => Share.Default.RequestAsync(new ShareFileRequest {
-            Title = "Документ",
-            File = new ShareFile(path),
-        });
-
-    // Что делать после сохранения: по настройке или спросить
-    private async Task AfterSaveAsync(SaveResult result)
-    {
-        var action = SettingsService.AfterSave;
-
-        if (action == AfterSaveAction.Ask) {
-            var choice = await Dialogs.ChoiceAsync(
-                "Документ сохранён", result.Location, DialogKind.Success,
-                new DialogButton("Открыть", DialogButtonStyle.Primary),
-                new DialogButton("Поделиться"),
-                new DialogButton("Закрыть"));
-
-            action = choice switch {
-                0 => AfterSaveAction.Open,
-                1 => AfterSaveAction.Share,
-                _ => AfterSaveAction.Nothing,
-            };
-
-            if (action == AfterSaveAction.Nothing)
-                return;
-        }
-
-        switch (action) {
-            case AfterSaveAction.Open:
-                await Launcher.Default.OpenAsync(new OpenFileRequest("Документ", new ReadOnlyFile(result.FilePath)));
-                break;
-
-            case AfterSaveAction.Share:
-                await ShareFileAsync(result.FilePath);
-                break;
-
-            default:
-                await Dialogs.AlertAsync("Сохранено", result.Location, DialogKind.Success);
-                break;
-        }
-    }
+    // Имя файла из поля в шторке (с заменой запрещённых символов)
+    private string ExportName()
+        => ExportService.SafeFileName(FileNameEntry.Text, ExportService.DefaultFileName(_template!));
 
     private async void OnExportDocxTapped(object? sender, EventArgs e)
     {
@@ -445,12 +334,12 @@ public partial class FieldsPage : ContentPage
             return;
 
         try {
-            var result = await SaveDocxAsync();
+            var result = await ExportService.SaveDocxAsync(_template, _values, ExportName());
             if (result is null)
                 return;
 
             CloseExport();
-            await AfterSaveAsync(result);
+            await ExportService.AfterSaveAsync(result);
         } catch (Exception ex) {
             await Dialogs.AlertAsync("Не удалось сохранить", ex.Message, DialogKind.Danger);
         }
@@ -463,26 +352,32 @@ public partial class FieldsPage : ContentPage
             return;
 
         try {
-            var result = await SaveDocxAsync();
+            var result = await ExportService.SaveDocxAsync(_template, _values, ExportName());
             if (result is null)
                 return;
 
             CloseExport();
-            await ShareFileAsync(result.FilePath);
+            await ExportService.ShareFileAsync(result.FilePath);
         } catch (Exception ex) {
             await Dialogs.AlertAsync("Не удалось поделиться", ex.Message, DialogKind.Danger);
         }
     }
 
-    // Заглушка: PDF пока не делаем
+    // PDF: документ открывается в Word / WPS, там его сохраняют как PDF (см. PdfExportService)
     private async void OnExportPdfTapped(object? sender, EventArgs e)
     {
-        await Dialogs.AlertAsync("PDF",
-            "Сохранение в PDF добавим следующим шагом. Пока можно собрать Word и распечатать из него.");
+        if (_template is null)
+            return;
+
+        try {
+            if (await PdfExportService.ExportAsync(_template, _values, ExportName()))
+                CloseExport();
+        } catch (Exception ex) {
+            await Dialogs.AlertAsync("Не удалось открыть документ", ex.Message, DialogKind.Danger);
+        }
     }
 
-    // =====================================================================
-    //  ПРЕДПРОСМОТР
+
     // =====================================================================
 
     // Лист перерисовываем не на каждый символ и не на каждый пиксель растягивания,

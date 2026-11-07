@@ -100,7 +100,7 @@
                             <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
                         </Border.Shadow>
                         <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnStubTapped" CommandParameter="check" />
+                            <TapGestureRecognizer Tapped="OnCheckTapped" />
                         </Border.GestureRecognizers>
                         <VerticalStackLayout Spacing="12" HorizontalOptions="Fill">
                             <Label Text="✔️" FontSize="20" />

@@ -143,10 +143,10 @@ public partial class MainPage : ContentPage
         SubtitleLabel.Text = Subtitles[index];
     }
 
-    // ===== Заглушки (check) =====
-    private async void OnStubTapped(object? sender, TappedEventArgs e)
+    // ===== «Проверить» ведёт на экран проверки документа =====
+    private async void OnCheckTapped(object? sender, TappedEventArgs e)
     {
-        await Stubs.ShowAsync(e.Parameter as string);
+        await Shell.Current.GoToAsync("//CheckPage");
     }
 
     // ===== «Создать документ» ведёт в каталог шаблонов =====

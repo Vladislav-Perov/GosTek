@@ -1,5 +1,4 @@
 ﻿using GosTek.Models;
-using Microsoft.Maui.Controls.Shapes;
 
 namespace GosTek.Views;
 
@@ -8,9 +7,8 @@ public partial class TemplatesPage : ContentPage
     private const string RecentKey = "recent_templates";
     private const int RecentMax = 3;
 
-    private readonly List<(string? Category, Border Chip, Label Text)> _chips = new();
-
     private string? _category;   // null = «Все»
+    private string[] _categories = Array.Empty<string>();   // категории чипов (кроме «Все»)
     private string _query = "";
 
     private IDispatcherTimer? _watchTimer;
@@ -20,14 +18,7 @@ public partial class TemplatesPage : ContentPage
     {
         InitializeComponent();
 
-        // Стрелки по краям списка категорий показываем, только когда есть куда листать
-        ChipsScroll.Scrolled += (_, _) => UpdateChipArrows();
-        ChipsScroll.SizeChanged += (_, _) => UpdateChipArrows();
-        ChipsHost.SizeChanged += (_, _) => UpdateChipArrows();
-#if WINDOWS
-        // На ПК колесо мыши по умолчанию не листает горизонтальный список — включаем
-        ChipsScroll.HandlerChanged += (_, _) => HookChipsWheel();
-#endif
+        CategoryChips.SelectionChanged += OnCategoryChanged;
     }
 
     protected override void OnAppearing()
@@ -73,40 +64,13 @@ public partial class TemplatesPage : ContentPage
                 await Task.Delay(500);   // дать файлу докопироваться
                 ReloadTemplates();
             }
-        } catch {
+        } catch (Exception ex) {
             // папка временно недоступна — попробуем в следующий раз
+            System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
         } finally {
             _watchTimer?.Start();
         }
     }
-
-#if WINDOWS
-    private void HookChipsWheel()
-    {
-        if (ChipsScroll.Handler?.PlatformView is not Microsoft.UI.Xaml.Controls.ScrollViewer sv)
-            return;
-
-        sv.PointerWheelChanged += (_, args) => {
-            var delta = args.GetCurrentPoint(sv).Properties.MouseWheelDelta;
-            sv.ChangeView(sv.HorizontalOffset - delta, null, null);
-            args.Handled = true;
-        };
-    }
-#endif
-
-    // ===== Стрелки прокрутки категорий =====
-    private void UpdateChipArrows()
-    {
-        double max = ChipsScroll.ContentSize.Width - ChipsScroll.Width;
-        ChipsLeftArrow.IsVisible = ChipsScroll.ScrollX > 1;
-        ChipsRightArrow.IsVisible = max > 1 && ChipsScroll.ScrollX < max - 1;
-    }
-
-    private async void OnChipsLeftTapped(object? sender, TappedEventArgs e)
-        => await ChipsScroll.ScrollToAsync(Math.Max(0, ChipsScroll.ScrollX - 200), 0, true);
-
-    private async void OnChipsRightTapped(object? sender, TappedEventArgs e)
-        => await ChipsScroll.ScrollToAsync(ChipsScroll.ScrollX + 200, 0, true);
 
     // ===== Поиск =====
     private void OnSearchChanged(object? sender, TextChangedEventArgs e)
@@ -118,53 +82,24 @@ public partial class TemplatesPage : ContentPage
     // ===== Категории (берутся из имён файлов) =====
     private void RebuildChips()
     {
-        ChipsHost.Children.Clear();
-        _chips.Clear();
-
         var cats = TemplateCatalog.Categories;
         if (_category is not null && !cats.Contains(_category))
             _category = null;
 
-        CreateChip(null);
-        foreach (var category in cats)
-            CreateChip(category);
+        _categories = cats;
 
-        UpdateChips();
+        var titles = new List<string> { "Все" };
+        titles.AddRange(cats);
+
+        int selected = _category is null ? 0 : Array.IndexOf(cats, _category) + 1;
+        CategoryChips.SetItems(titles, selected);
     }
 
-    private void CreateChip(string? category)
+    // Выбрали чип: 0 = «Все», дальше категории по порядку
+    private void OnCategoryChanged(object? sender, int index)
     {
-        var label = new Label { Text = category ?? "Все", FontSize = 14 };
-        var chip = new Border {
-            StrokeShape = new RoundRectangle { CornerRadius = 18 },
-            Padding = new Thickness(16, 8),
-            Content = label,
-        };
-
-        var tap = new TapGestureRecognizer();
-        tap.Tapped += (_, _) => {
-            _category = category;
-            UpdateChips();
-            ApplyFilter();
-        };
-        chip.GestureRecognizers.Add(tap);
-
-        ChipsHost.Children.Add(chip);
-        _chips.Add((category, chip, label));
-    }
-
-    private void UpdateChips()
-    {
-        foreach (var (category, chip, label) in _chips) {
-            bool active = category == _category;
-
-            chip.SetDynamicResource(VisualElement.BackgroundColorProperty, active ? "TextPrimary" : "CardBg");
-            chip.SetDynamicResource(Border.StrokeProperty, "CardStroke");
-            chip.StrokeThickness = active ? 0 : 1;
-
-            label.SetDynamicResource(Label.TextColorProperty, active ? "PageBg" : "TextPrimary");
-            label.FontAttributes = active ? FontAttributes.Bold : FontAttributes.None;
-        }
+        _category = index <= 0 || index > _categories.Length ? null : _categories[index - 1];
+        ApplyFilter();
     }
 
     // ===== Фильтрация =====

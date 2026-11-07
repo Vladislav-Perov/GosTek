@@ -1,20 +1,5 @@
 ﻿namespace GosTek.Models;
 
-/// <summary>Откуда поле берёт значение при нажатии «Заполнить из профиля».</summary>
-public enum ProfileSource { None, FullName, ShortName, Passport, Address }
-
-public record TemplateField(
-    string Id,
-    string Label,
-    string Placeholder,
-    ProfileSource Source = ProfileSource.None,
-    bool Multiline = false);
-
-public record TemplateDef(string Id, string Title, string Category, string FilePath, TemplateField[] Fields);
-
-/// <summary>Строка в списке шаблонов (экран «Шаблоны» и «Быстрый старт» на главной).</summary>
-public record TemplateItem(string Id, string Title, string Description, string Category);
-
 /// <summary>
 /// Каталог шаблонов = .docx файлы из папки, указанной в настройках.
 /// Имя файла: «Категория_Название.docx» (подробнее в TemplateEngine).
@@ -81,7 +66,7 @@ public static class TemplateCatalog
             ? DateTime.Today.ToString("dd.MM.yyyy")
             : null;
 
-        public static string FromProfile(ProfileSource source, ProfileData p) => source switch {
+    public static string FromProfile(ProfileSource source, ProfileData p) => source switch {
         ProfileSource.FullName => p.FullName,
         ProfileSource.ShortName => ShortName(p.FullName),
         ProfileSource.Passport => p.Passport,
@@ -102,25 +87,4 @@ public static class TemplateCatalog
 
         return result;
     }
-}
-
-/// <summary>
-/// Введённые значения полей, пока приложение открыто. Только в памяти:
-/// там паспорт и адрес, на диск без шифрования их класть не стоит.
-/// Предпросмотр и экспорт читают отсюда.
-/// </summary>
-public static class DraftStore
-{
-    private static readonly Dictionary<string, Dictionary<string, string>> Data = new();
-
-    public static Dictionary<string, string> For(string templateId)
-    {
-        if (!Data.TryGetValue(templateId, out var draft))
-            Data[templateId] = draft = new Dictionary<string, string>();
-
-        return draft;
-    }
-
-    /// <summary>Забыть все введённые значения (кнопка «Удалить все данные»).</summary>
-    public static void Clear() => Data.Clear();
 }

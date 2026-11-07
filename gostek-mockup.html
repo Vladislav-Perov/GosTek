@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GosTek — макет интерфейса</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=PT+Serif:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E9ECF1;--panel:#FFFFFF;--panel2:#F3F5F8;--ink:#13203B;--ink2:#56627D;--line:#D9DFE8;
+  --accent:#0D6B57;--on-accent:#FFFFFF;--accent-soft:#DCEFE9;
+  --warn:#9A5B00;--warn-soft:#FCEFD6;--bad:#B42318;--bad-soft:#FBE5E2;
+  --phone:#13203B;--shadow:0 24px 60px -24px rgba(19,32,59,.45);
+  --font-ui:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  --font-doc:'PT Serif',Georgia,'Times New Roman',serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C1017;--panel:#151A23;--panel2:#1D2330;--ink:#E8ECF4;--ink2:#98A3BA;--line:#2A3142;
+    --accent:#3FC3A1;--on-accent:#04211A;--accent-soft:#12312A;
+    --warn:#F0B35A;--warn-soft:#3A2B10;--bad:#F2877C;--bad-soft:#3B1A17;
+    --phone:#05070B;--shadow:0 24px 60px -24px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C1017;--panel:#151A23;--panel2:#1D2330;--ink:#E8ECF4;--ink2:#98A3BA;--line:#2A3142;
+  --accent:#3FC3A1;--on-accent:#04211A;--accent-soft:#12312A;
+  --warn:#F0B35A;--warn-soft:#3A2B10;--bad:#F2877C;--bad-soft:#3B1A17;
+  --phone:#05070B;--shadow:0 24px 60px -24px rgba(0,0,0,.8);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--font-ui)}
+button,input,textarea{font:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.wrap{max-width:1140px;margin:0 auto;padding:24px 20px 48px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+.top h1{font-size:20px;margin:0;font-weight:700}
+.top .sub{color:var(--ink2);font-size:13px;margin-top:2px}
+.theme-btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:13px}
+
+.stage{display:grid;grid-template-columns:210px 398px minmax(0,1fr);gap:30px;align-items:start}
+.index{display:flex;flex-direction:column;gap:2px;position:sticky;top:16px}
+.idx-title{font-size:12.5px;color:var(--ink2);padding:0 10px 6px}
+.index button{display:flex;gap:10px;align-items:baseline;text-align:left;padding:8px 10px;border-radius:8px;border:0;background:none;color:var(--ink2);cursor:pointer}
+.index button .n{font-variant-numeric:tabular-nums;min-width:16px;color:var(--ink2);opacity:.7}
+.index button[aria-current="true"]{background:var(--panel);color:var(--ink);font-weight:600;box-shadow:inset 3px 0 0 var(--accent)}
+.notes{position:sticky;top:16px;max-width:380px}
+.notes h3{margin:0 0 6px;font-size:18px}
+.notes p{margin:0 0 10px;color:var(--ink2)}
+.notes .mods{font-size:13px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+@media (max-width:980px){
+  .stage{grid-template-columns:minmax(0,1fr);justify-items:center}
+  .index{flex-direction:row;overflow-x:auto;position:static;width:100%}
+  .idx-title{display:none}
+  .index button{white-space:nowrap}
+  .notes{position:static;max-width:398px;width:100%}
+}
+
+.phone{width:398px;max-width:100%;height:800px;background:var(--phone);border-radius:44px;padding:9px;box-shadow:var(--shadow)}
+.screen{position:relative;height:100%;border-radius:36px;overflow:hidden;background:var(--panel);display:flex;flex-direction:column}
+@media (max-width:480px){.phone{height:760px;border-radius:30px;padding:6px}.screen{border-radius:24px}}
+.status{display:flex;justify-content:space-between;align-items:center;padding:12px 24px 2px;font-size:12px;font-weight:600;flex:none}
+.appbar{display:flex;align-items:center;gap:6px;padding:6px 12px 8px;flex:none;min-height:50px}
+.appbar h2{font-size:18px;margin:0;font-weight:650;flex:1;padding-left:4px}
+.iconbtn{width:38px;height:38px;border-radius:12px;border:0;background:transparent;color:inherit;display:grid;place-items:center;cursor:pointer}
+.iconbtn:hover{background:var(--panel2)}
+.content{flex:1;overflow-y:auto;padding:4px 16px 16px}
+.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.brand{font-weight:700;font-size:22px;letter-spacing:-.02em;padding-left:4px;display:flex;align-items:center}
+.mark{display:inline-block;width:15px;height:19px;background:var(--accent);margin-right:9px;clip-path:polygon(0 0,68% 0,100% 28%,100% 100%,0 100%)}
+
+.bottomnav{flex:none;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--panel);padding:6px 4px 12px}
+.bottomnav button{border:0;background:none;color:var(--ink2);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;padding:6px 0;cursor:pointer;border-radius:10px}
+.bottomnav button[aria-current="true"]{color:var(--accent);font-weight:600}
+.actionbar{flex:none;padding:10px 16px 14px;border-top:1px solid var(--line);display:flex;gap:8px;background:var(--panel)}
+.actionbar.col{flex-direction:column}
+
+.btn{height:48px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-weight:600;cursor:pointer;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn.ghost{background:transparent}
+.btn.sm{height:34px;border-radius:10px;font-size:13px;width:auto;padding:0 12px;flex:none}
+.btn:disabled{opacity:.45;cursor:default}
+
+.field{margin-bottom:12px}
+label{display:block;font-size:12.5px;color:var(--ink2);margin-bottom:5px;font-weight:500}
+input,textarea{width:100%;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+textarea{min-height:130px;resize:vertical;line-height:1.45}
+textarea.free{min-height:260px}
+input.warn{border-color:var(--warn)}
+input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;background:var(--panel)}
+.flash{animation:flash 1.3s ease}
+@keyframes flash{0%{background:var(--accent-soft)}100%{background:var(--panel2)}}
+@media (prefers-reduced-motion:reduce){.flash{animation:none}.toast{transition:none}}
+.lrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px}
+.lrow label{margin:0}
+.tag{font-size:11px;background:var(--accent-soft);color:var(--accent);border-radius:99px;padding:1px 7px;margin-left:6px;font-weight:600}
+.ai-btn{display:inline-flex;align-items:center;gap:6px;border:0;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:5px 11px;font-size:12.5px;font-weight:600;cursor:pointer}
+.ai-btn .ic{width:16px;height:16px}
+.hintline{font-size:12px;color:var(--warn);margin-top:4px}
+.mut{color:var(--ink2)}
+.small{font-size:12.5px}
+
+.seg{display:grid;grid-auto-flow:column;gap:4px;background:var(--panel2);padding:4px;border-radius:13px;margin-bottom:12px}
+.seg button{border:0;background:none;padding:9px 6px;border-radius:10px;font-weight:600;font-size:13.5px;color:var(--ink2);cursor:pointer}
+.seg button[aria-selected="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px}
+.chip{flex:none;border:1px solid var(--line);background:transparent;color:var(--ink2);border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+
+.row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;color:inherit;padding:13px 2px;cursor:pointer}
+.row .ico{flex:none;width:42px;height:42px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.row b{display:block;font-weight:600}
+.row .d,.d{display:block;font-size:13px;color:var(--ink2)}
+.row .chev{margin-left:auto;color:var(--ink2)}
+.empty{padding:28px 8px;text-align:center;color:var(--ink2)}
+
+.greet{font-size:24px;font-weight:700;letter-spacing:-.02em;margin:8px 4px 14px;line-height:1.2}
+.hero{background:var(--accent);color:var(--on-accent);border-radius:22px;padding:18px;text-align:left;border:0;width:100%;cursor:pointer;display:block}
+.hero h3{margin:10px 0 4px;font-size:20px}
+.hero p{margin:0;font-size:13.5px;opacity:.92}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.tile{border:1px solid var(--line);background:var(--panel2);border-radius:18px;padding:14px;text-align:left;color:inherit;cursor:pointer}
+.tile b{display:block;margin-top:8px}
+.tile span{display:block;font-size:12.5px;color:var(--ink2)}
+.card{display:block;width:100%;text-align:left;border:1px solid var(--line);border-radius:16px;padding:14px;margin:14px 0;background:var(--panel);color:inherit}
+button.card{cursor:pointer}
+.bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin:8px 0 6px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.h5{font-size:13px;color:var(--ink2);margin:16px 4px 2px;font-weight:600}
+
+.sheet{background:#fff;color:#1b1b1f;font-family:var(--font-doc);font-size:13px;line-height:1.45;padding:9% 6% 8% 13%;aspect-ratio:210/297;width:100%;box-shadow:0 2px 10px rgba(0,0,0,.2);border-radius:2px;overflow:hidden}
+.sheet .r{margin-left:42%;margin-bottom:20px}
+.sheet h4{text-align:center;margin:8px 0 6px;font-size:15px;letter-spacing:.04em}
+.sheet .subj{text-align:center;font-style:italic;margin-bottom:10px}
+.sheet p{margin:0 0 8px;text-indent:1.1cm;text-align:justify}
+.sheet .sign{display:flex;justify-content:space-between;margin-top:26px}
+.sheet .gap{color:#7a8499;background:#eaeef5;border-radius:3px;padding:0 3px}
+.sheet.tit{display:flex;flex-direction:column;text-align:center;gap:2px}
+.sheet.tit .mid{margin:auto 0}
+.sheet.tit .who{text-align:right;margin-bottom:22px}
+.paper-bg{background:var(--panel2);border-radius:16px;padding:14px}
+.mini{display:flex;gap:12px;align-items:center;width:100%;text-align:left;border:1px solid var(--line);border-radius:16px;padding:10px;background:var(--panel2);color:inherit;cursor:pointer;margin-top:6px}
+.thumb{flex:none;width:102px;height:118px;overflow:hidden;border-radius:4px;background:#fff;position:relative}
+.thumb .sheet{width:340px;transform:scale(.3);transform-origin:top left;pointer-events:none}
+.mini b{display:block}
+
+.scrim{position:absolute;inset:0;background:rgba(8,12,20,.5);display:flex;align-items:flex-end;z-index:5}
+.panel{width:100%;background:var(--panel);border-radius:24px 24px 0 0;padding:10px 18px 22px;max-height:90%;overflow-y:auto}
+.grab{width:40px;height:4px;border-radius:9px;background:var(--line);margin:0 auto 12px}
+.panel h3{margin:0 0 4px;font-size:18px}
+.privacy{display:flex;gap:10px;background:var(--accent-soft);color:var(--ink);border-radius:14px;padding:12px;margin:12px 0;font-size:13px}
+.privacy .ic{color:var(--accent)}
+.linkbtn{border:0;background:none;color:var(--accent);font-weight:600;cursor:pointer;padding:0;margin-top:6px}
+.maskbox{white-space:pre-wrap;background:var(--panel2);border:1px dashed var(--line);border-radius:12px;padding:10px;font-size:12.5px;margin-top:8px;color:var(--ink2)}
+.toast{position:absolute;left:16px;right:16px;bottom:92px;background:var(--ink);color:var(--panel);padding:12px 14px;border-radius:14px;font-size:13.5px;z-index:9;opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none}
+.toast.show{opacity:1;transform:none}
+
+.dark-screen{background:#0b0f16;color:#fff}
+.cam{flex:1;position:relative;background:radial-gradient(120% 80% at 50% 30%,#1b2333,#0b0f16)}
+.frame{position:absolute;left:9%;right:9%;top:8%;bottom:16%;background:repeating-linear-gradient(#ffffff10 0 2px,transparent 2px 16px);border-radius:6px}
+.cn{position:absolute;width:30px;height:30px;border:3px solid #5FE0BD}
+.cn.tl{top:-3px;left:-3px;border-right:0;border-bottom:0;border-top-left-radius:10px}
+.cn.tr{top:-3px;right:-3px;border-left:0;border-bottom:0;border-top-right-radius:10px}
+.cn.bl{bottom:-3px;left:-3px;border-right:0;border-top:0;border-bottom-left-radius:10px}
+.cn.br{bottom:-3px;right:-3px;border-left:0;border-top:0;border-bottom-right-radius:10px}
+.camhint{position:absolute;left:16px;right:16px;bottom:12px;margin:0;text-align:center;font-size:13px;color:#cfd6e6}
+.camctl{flex:none;padding:12px 16px 24px}
+.dark-screen .chip{color:#cfd6e6;border-color:#ffffff33}
+.dark-screen .chip[aria-pressed="true"]{background:#fff;color:#0b0f16;border-color:#fff}
+.dark-screen .iconbtn:hover{background:#ffffff1a}
+.shutter-row{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.shutter{width:70px;height:70px;border-radius:50%;background:#fff;border:5px solid #0b0f16;box-shadow:0 0 0 3px #fff;cursor:pointer}
+.camside{width:64px;background:none;border:0;color:#cfd6e6;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;cursor:pointer}
+
+.scanned{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-radius:16px;padding:10px;margin-bottom:14px}
+.pic{flex:none;width:52px;height:68px;border-radius:6px;background:repeating-linear-gradient(var(--line) 0 2px,var(--panel2) 2px 9px)}
+.conf{display:inline-flex;align-items:center;gap:4px;font-size:12px;border-radius:99px;padding:2px 9px;font-weight:600;flex:none}
+.conf .ic{width:14px;height:14px}
+.conf.ok{background:var(--accent-soft);color:var(--accent)}
+.conf.chk{background:var(--warn-soft);color:var(--warn)}
+
+.filecard{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:14px}
+.filecard .ic{color:var(--accent);width:28px;height:28px}
+.filecard>div{flex:1;min-width:0}
+.summary{background:var(--bad-soft);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.summary.okk{background:var(--accent-soft)}
+.issue{display:flex;gap:10px;padding:12px;border:1px solid var(--line);border-radius:14px;margin-bottom:8px;align-items:center}
+.issue .grow{flex:1;min-width:0}
+.issue .t{font-weight:600;font-size:14px}
+.issue .w{font-size:12.5px;color:var(--ink2)}
+.dot{flex:none;width:10px;height:10px;border-radius:50%}
+.dot.hi{background:var(--bad)}
+.dot.mid{background:var(--warn)}
+.issue.done{opacity:.6}
+.issue.done .t{text-decoration:line-through}
+.lockline{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--ink2);margin:0 2px 14px}
+.lockline .ic{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>GosTek — макет интерфейса</h1>
+      <div class="sub">Кликабельный прототип. Все данные вымышленные.</div>
+    </div>
+    <button class="theme-btn" id="theme" type="button">Светлая / тёмная тема</button>
+  </header>
+  <div class="stage">
+    <nav class="index" id="index" aria-label="Экраны"></nav>
+    <div class="phone"><div id="app" style="height:100%"></div></div>
+    <aside class="notes" id="notes" aria-live="polite"></aside>
+  </div>
+</div>
+
+<script>
+const ICONS={
+  home:'<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/>',
+  templates:'<rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/>',
+  scan:'<path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><path d="M8 12h8"/>',
+  check:'<path d="M12 3.5 19 6v5.5c0 4.2-2.8 7.4-7 9-4.2-1.6-7-4.8-7-9V6l7-2.5Z"/><path d="m8.8 12.2 2.2 2.2 4.2-4.4"/>',
+  user:'<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/>',
+  back:'<path d="m14.5 5-7 7 7 7"/>',
+  chev:'<path d="m9.5 5 7 7-7 7"/>',
+  sparkle:'<path d="M12 3.5 13.9 9l5.6 1.9-5.6 1.9L12 18.3 10.1 12.8 4.5 10.9 10.1 9 12 3.5Z"/><path d="M18.5 16.5v3M17 18h3"/>',
+  lock:'<rect x="5.5" y="10.5" width="13" height="9.5" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
+  file:'<path d="M7 3.5h7l4 4V20.5H7z"/><path d="M14 3.5V8h4"/>',
+  x:'<path d="m6 6 12 12M18 6 6 18"/>',
+  download:'<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/>',
+  upload:'<path d="M12 15.5V4.5M7.5 9 12 4.5 16.5 9M5 19.5h14"/>',
+  share:'<circle cx="6.5" cy="12" r="2"/><circle cx="17" cy="6.5" r="2"/><circle cx="17" cy="17.5" r="2"/><path d="m8.3 11 6.9-3.6M8.3 13l6.9 3.6"/>',
+  image:'<rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m5 17 4.5-4.5L13 16l2.5-2.5L19 17"/>',
+  alert:'<path d="M12 4 21 19.5H3L12 4Z"/><path d="M12 10v4.5M12 17v.01"/>',
+  ok:'<path d="m5 12.5 4.5 4.5L19 7.5"/>'
+};
+const I=n=>'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+ICONS[n]+'</svg>';
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const short=f=>{const p=f.trim().split(/\s+/);return p[0]+(p[1]?' '+p[1][0]+'.':'')+(p[2]?' '+p[2][0]+'.':'')};
+
+const PROFILE={fio:'Иванов Иван Иванович',short:'Иванов И. И.',org:'ИП Иванов И. И.',unp:'123456789',addr:'г. Минск, ул. Примерная, д. 1, кв. 1',phone:'+375 29 000-00-00',passport:'KH 1234567'};
+const AI_TEXT='Настоящим сообщаю, что отчётность за третий квартал 2026 года была представлена с нарушением установленного срока по причине моей временной нетрудоспособности в период с 15 по 22 сентября 2026 года.\nПодтверждающий документ прилагаю. Обязуюсь в дальнейшем представлять отчётность своевременно.\nПрошу учесть указанные обстоятельства.';
+const FREE='Договор № 14\nг. Минск, 12.09.2026\n\nИндивидуальный предприниматель Иванов Иван Иванович, именуемый в дальнейшем «Исполнитель», с одной стороны, и ООО «Заказчик», именуемое в дальнейшем «Заказчик», с другой стороны, заключили настоящий договор о нижеследующем:\n\n1. Предмет договора';
+
+const CATALOG=[
+  {id:'explain',cat:'Организация',name:'Объяснительная записка',d:'Причина опоздания, нарушения срока, отсутствия'},
+  {id:'ip',cat:'Предприниматель',name:'Заявление о регистрации ИП',d:'Для подачи в регистрирующий орган'},
+  {id:'title',cat:'Учёба',name:'Титульный лист работы',d:'Курсовая, дипломная, отчёт по практике'},
+  {id:'',cat:'Предприниматель',name:'Договор оказания услуг',d:'С реквизитами заказчика и исполнителя'},
+  {id:'',cat:'Организация',name:'Доверенность',d:'На получение товара или представление интересов'},
+  {id:'',cat:'Учёба',name:'Отчёт по практике',d:'Структура по требованиям кафедры'}
+];
+const TPL={
+  explain:{name:'Объяснительная записка',file:'Объяснительная_записка',fields:[
+    {id:'pos',label:'Кому (должность)',ph:'Начальнику инспекции'},
+    {id:'org',label:'Организация получателя',ph:'Инспекция МНС по Центральному району г. Минска'},
+    {id:'fio',label:'От кого',ph:'Фамилия Имя Отчество',prof:'fio'},
+    {id:'subject',label:'Тема',ph:'О задержке сдачи отчётности'},
+    {id:'text',label:'Текст объяснения',type:'text'}]},
+  ip:{name:'Заявление о регистрации ИП',file:'Заявление_ИП',fields:[
+    {id:'organ',label:'Регистрирующий орган',ph:'Минский горисполком'},
+    {id:'fio',label:'ФИО заявителя',ph:'Фамилия Имя Отчество',prof:'fio'},
+    {id:'passport',label:'Паспорт',ph:'Серия и номер',prof:'passport'},
+    {id:'addr',label:'Адрес регистрации',ph:'Адрес места жительства',prof:'addr'},
+    {id:'activity',label:'Вид деятельности',ph:'Разработка программного обеспечения'}]},
+  title:{name:'Титульный лист',file:'Титульный_лист',fields:[
+    {id:'univ',label:'Учебное заведение',ph:'БГТУ'},
+    {id:'faculty',label:'Факультет',ph:'Информационных технологий'},
+    {id:'dept',label:'Кафедра',ph:'Программной инженерии'},
+    {id:'topic',label:'Тема работы',ph:'Разработка мобильного приложения'},
+    {id:'student',label:'Студент',ph:'Фамилия И. О.',prof:'short'},
+    {id:'head',label:'Руководитель',ph:'Фамилия И. О.'},
+    {id:'year',label:'Год',ph:'2026'}]}
+};
+const OCR={
+  0:{title:'Паспорт / ID',badge:'Часть полей сверена с машиночитаемой строкой',rows:[
+    ['Фамилия','Иванов','ok'],['Имя','Иван','ok'],['Отчество','Иванович','ok'],['Дата рождения','14.03.1990','ok'],
+    ['Номер документа','KH1234567','chk','Один символ распознан неуверенно'],
+    ['Адрес регистрации','г. Минск, ул. Примерная, 1-1','chk','В документе адрес может быть сокращён']]},
+  1:{title:'Свидетельство',badge:'Формат УНП проверен',rows:[
+    ['Наименование','ИП Иванов Иван Иванович','ok'],['УНП','123456789','ok'],
+    ['Дата регистрации','12.05.2023','chk','Проверьте цифры даты'],['Регистрирующий орган','Минский горисполком','ok']]}
+};
+const ISSUES=[
+  {t:'Левое поле 2 см, по правилам нужно 3 см',w:'Весь документ',sev:'hi',fix:true},
+  {t:'Размер шрифта 12 pt, нужен 14 pt',w:'Основной текст, стр. 4–38',sev:'hi',fix:true},
+  {t:'Межстрочный интервал 1,0, нужен 1,5',w:'Основной текст',sev:'mid',fix:true},
+  {t:'Нет нумерации страниц',w:'Колонтитул',sev:'mid',fix:true},
+  {t:'Не найден раздел «Список литературы»',w:'Конец документа',sev:'hi',fix:false}
+];
+const SCREENS=[
+  {k:'home',n:'Главная',d:'Три входа в приложение: создать документ, проверить готовый, отсканировать бумажный. Ниже профиль с индикатором заполнения и быстрый старт по шаблонам.',m:'Модули: навигация, ProfileService'},
+  {k:'templates',n:'Каталог шаблонов',d:'Поиск и фильтры по типу пользователя: предприниматель, организация, учёба. Каждый шаблон это JSON-описание полей и файл .docx с тегами. В макете подключены три.',m:'Модуль: TemplateEngine'},
+  {k:'fields',n:'Конструктор: поля',d:'Поля строятся из описания шаблона, поэтому у заявления, объяснительной и титульного листа они разные. «Заполнить из профиля» подставляет известные данные. Миниатюра внизу меняется по мере ввода.',m:'Модули: TemplateEngine, ProfileService'},
+  {k:'ai',n:'ИИ-помощник',d:'Задача простыми словами, черновик попадает в поле текста. Перед отправкой имена, УНП и адреса заменяются метками, а пользователь может посмотреть, что именно уйдёт в облако.',m:'Модули: PrivacyScrubberService, AiAssistantService'},
+  {k:'preview',n:'Предпросмотр',d:'Лист А4 с теми же данными, что попадут в Word. Незаполненные поля подсвечены серым, чтобы ничего не забыть.',m:'Модули: модель документа, OpenXmlExportService'},
+  {k:'export',n:'Экспорт',d:'Имя файла и три способа получить результат: .docx, PDF или системное меню «Поделиться». История файлов в приложении не хранится.',m:'Модуль: OpenXmlExportService'},
+  {k:'scan',n:'Сканер',d:'Камера на Android и загрузка файла на Windows. Тип документа выбирается заранее: известный извлекается по правилам, любой другой превращается в текст.',m:'Модуль: IOcrService'},
+  {k:'ocr',n:'Сверка OCR',d:'Распознавание ошибается, поэтому человек всё проверяет до сохранения. Сомнительные поля выделены. Данные уходят в профиль или сразу в форму документа.',m:'Модули: IOcrService, RegexExtractorService'},
+  {k:'check',n:'Проверка документа',d:'Правила оформления читаются из .docx без ИИ: поля, шрифт, интервалы, нумерация, обязательные разделы. Простые ошибки исправляются одной кнопкой. Числа в макете условные.',m:'Модули: проверка правил (новый), OpenXML SDK'},
+  {k:'profile',n:'Мой профиль',d:'Реквизиты вводятся один раз и хранятся на устройстве в зашифрованном виде. Отсюда данные подставляются в любые документы.',m:'Модуль: SecureStorageService'}
+];
+
+const S={view:'home',tpl:'explain',ai:false,exp:false,mask:false,loading:false,
+  aiPrompt:'Объяснительная в налоговую за задержку отчёта из-за болезни',cat:'Все',q:'',scanMode:0,
+  fixed:new Set(),fileName:'',last:'',
+  data:{explain:{pos:'Начальнику инспекции',org:'Инспекция МНС по Центральному району г. Минска',subject:'О задержке сдачи отчётности'},
+        ip:{organ:'Минский горисполком'},title:{univ:'БГТУ',year:'2026'}}};
+const D=()=>S.data[S.tpl];
+const $=s=>document.querySelector(s);
+const app=$('#app');
+let tt;
+function toast(m){const t=$('#toast');if(!t)return;t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2800)}
+
+const status=()=>'<div class="status"><span>9:41</span><svg width="44" height="12" viewBox="0 0 44 12" fill="currentColor" aria-hidden="true"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4.5" width="3" height="7.5" rx="1"/><rect x="10" y="2" width="3" height="10" rx="1"/><rect x="22" y="1" width="20" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="24" y="3" width="12" height="6" rx="1.5"/></svg></div>';
+const appbar=(title,back)=>'<div class="appbar">'+(back?'<button class="iconbtn" data-go="'+back+'" aria-label="Назад">'+I('back')+'</button>':'')+'<h2>'+title+'</h2></div>';
+const bottomnav=()=>'<nav class="bottomnav" aria-label="Основная навигация">'+[['home','Главная','home'],['templates','Шаблоны','templates'],['scan','Скан','scan'],['check','Проверка','check'],['profile','Профиль','user']].map(n=>'<button data-go="'+n[0]+'" aria-current="'+(S.view===n[0])+'">'+I(n[2])+n[1]+'</button>').join('')+'</nav>';
+const rowHTML=it=>'<button class="row" data-tpl="'+it.id+'"><span class="ico">'+I('file')+'</span><span><b>'+it.name+'</b><span class="d">'+it.d+'</span></span><span class="chev">'+I('chev')+'</span></button>';
+const tabs=()=>'<div class="seg" role="tablist"><button role="tab" data-tab="fields" aria-selected="'+(S.view==='fields')+'">Поля</button><button role="tab" data-tab="preview" aria-selected="'+(S.view==='preview')+'">Предпросмотр</button></div>';
+
+function sheet(){
+  const t=TPL[S.tpl],d=D();
+  const v=id=>{const f=t.fields.find(x=>x.id===id);return d[id]?esc(d[id]):'<span class="gap">'+esc(f.ph||f.label)+'</span>'};
+  const sign='<div class="sign"><span>30.09.2026</span><span>____________ '+(d.fio?esc(short(d.fio)):'<span class="gap">подпись</span>')+'</span></div>';
+  if(S.tpl==='explain'){
+    const ps=(d.text||'').split('\n').filter(Boolean);
+    return '<div class="sheet"><div class="r">'+v('pos')+'<br>'+v('org')+'<br>от '+v('fio')+'</div><h4>Объяснительная записка</h4><div class="subj">'+v('subject')+'</div>'+
+      (ps.length?ps.map(p=>'<p>'+esc(p)+'</p>').join(''):'<p><span class="gap">Текст объяснения</span></p>')+sign+'</div>';
+  }
+  if(S.tpl==='ip'){
+    return '<div class="sheet"><div class="r">'+v('organ')+'<br>от '+v('fio')+'<br>паспорт '+v('passport')+'</div><h4>ЗАЯВЛЕНИЕ</h4><p>Прошу зарегистрировать меня в качестве индивидуального предпринимателя. Адрес места жительства: '+v('addr')+'. Предполагаемый вид деятельности: '+v('activity')+'.</p>'+sign+'</div>';
+  }
+  return '<div class="sheet tit"><div>Министерство образования Республики Беларусь</div><div><b>'+v('univ')+'</b></div><div>Факультет '+v('faculty')+'</div><div>Кафедра '+v('dept')+'</div><div class="mid"><h4>КУРСОВАЯ РАБОТА</h4><div>Тема: '+v('topic')+'</div></div><div class="who">Выполнил: '+v('student')+'<br>Руководитель: '+v('head')+'</div><div>Минск, '+v('year')+'</div></div>';
+}
+function miniHTML(){
+  const t=TPL[S.tpl],n=t.fields.filter(f=>D()[f.id]).length;
+  return '<div class="thumb">'+sheet()+'</div><div><b>Так выглядит сейчас</b><span class="d">Заполнено '+n+' из '+t.fields.length+'. Нажмите, чтобы открыть крупно.</span></div>';
+}
+function fieldHTML(f){
+  const val=esc(D()[f.id]||''),tag=f.prof?'<span class="tag">из профиля</span>':'';
+  if(f.type==='text'){
+    return '<div class="field" data-fid="'+f.id+'"><div class="lrow"><label for="f_'+f.id+'">'+f.label+'</label><button class="ai-btn" data-act="ai">'+I('sparkle')+'Написать с помощью ИИ</button></div><textarea id="f_'+f.id+'" data-f="'+f.id+'" placeholder="Опишите суть своими словами или попросите ИИ написать черновик">'+val+'</textarea></div>';
+  }
+  return '<div class="field" data-fid="'+f.id+'"><label for="f_'+f.id+'">'+f.label+tag+'</label><input id="f_'+f.id+'" data-f="'+f.id+'" value="'+val+'" placeholder="'+esc(f.ph||'')+'"></div>';
+}
+function listHTML(){
+  const q=S.q.trim().toLowerCase();
+  const items=CATALOG.filter(i=>(S.cat==='Все'||i.cat===S.cat)&&(!q||(i.name+' '+i.d).toLowerCase().includes(q)));
+  return items.length?items.map(rowHTML).join(''):'<div class="empty">Ничего не найдено. Попробуйте другое слово или выберите «Все».</div>';
+}
+
+function vHome(){
+  return '<div class="appbar"><div class="brand"><i class="mark"></i>GosTek</div></div><div class="content">'+
+    '<p class="greet">Что оформим сегодня?</p>'+
+    '<button class="hero" data-go="templates">'+I('templates')+'<h3>Создать документ</h3><p>Выберите шаблон, заполните поля. Файл Word или PDF будет готов.</p></button>'+
+    '<div class="duo"><button class="tile" data-go="check">'+I('check')+'<b>Проверить</b><span>Свой документ на ошибки оформления</span></button><button class="tile" data-go="scan">'+I('scan')+'<b>Сканировать</b><span>Из фото в данные или текст</span></button></div>'+
+    '<button class="card" data-go="profile"><b>Мой профиль</b><div class="bar"><i style="width:80%"></i></div><span class="d">Заполнено на 80%. Не хватает расчётного счёта.</span></button>'+
+    '<div class="h5">Быстрый старт</div>'+CATALOG.slice(0,3).map(rowHTML).join('')+'</div>';
+}
+function vTemplates(){
+  return appbar('Шаблоны')+'<div class="content"><div class="field"><input id="q" type="search" placeholder="Найти шаблон" value="'+esc(S.q)+'" aria-label="Поиск шаблона"></div>'+
+    '<div class="chips">'+['Все','Предприниматель','Организация','Учёба'].map(c=>'<button class="chip" data-cat="'+c+'" aria-pressed="'+(S.cat===c)+'">'+c+'</button>').join('')+'</div><div id="list">'+listHTML()+'</div></div>';
+}
+function vFields(){
+  const t=TPL[S.tpl];
+  return appbar(t.name,'templates')+'<div class="content">'+tabs()+
+    '<button class="btn ghost" data-act="fill" style="margin-bottom:14px">'+I('user')+'Заполнить из профиля</button>'+
+    t.fields.map(fieldHTML).join('')+'<button class="mini" id="mini" data-tab="preview">'+miniHTML()+'</button></div>'+
+    '<div class="actionbar"><button class="btn primary" data-act="export">Собрать документ</button></div>';
+}
+function vPreview(){
+  const t=TPL[S.tpl];
+  return appbar(t.name,'templates')+'<div class="content">'+tabs()+'<div class="paper-bg">'+sheet()+'</div><p class="mut small">Так документ будет выглядеть в Word. Серые места это поля, которые ещё не заполнены.</p></div>'+
+    '<div class="actionbar"><button class="btn" data-tab="fields">Изменить</button><button class="btn primary" data-act="export">Собрать документ</button></div>';
+}
+function vScan(){
+  const modes=['Паспорт / ID','Свидетельство','Любой документ'];
+  return '<div class="appbar"><button class="iconbtn" data-go="home" aria-label="Закрыть">'+I('x')+'</button><h2>Сканер</h2></div>'+
+    '<div class="cam"><div class="frame"><i class="cn tl"></i><i class="cn tr"></i><i class="cn bl"></i><i class="cn br"></i></div><p class="camhint">Положите документ на ровную поверхность так, чтобы он целиком поместился в рамку.</p></div>'+
+    '<div class="camctl"><div class="chips">'+modes.map((m,i)=>'<button class="chip" data-mode="'+i+'" aria-pressed="'+(S.scanMode===i)+'">'+m+'</button>').join('')+'</div>'+
+    '<div class="shutter-row"><button class="camside" data-act="gallery">'+I('image')+'<span>Галерея</span></button><button class="shutter" data-act="shoot" aria-label="Сделать снимок"></button><button class="camside" data-act="gallery">'+I('upload')+'<span>Файл</span></button></div></div>';
+}
+function vOcr(){
+  if(S.scanMode===2){
+    return appbar('Распознанный текст','scan')+'<div class="content"><div class="scanned"><div class="pic"></div><div><b>Любой документ</b><span class="d">214 слов, русский язык. Абзацы определены автоматически.</span></div></div>'+
+      '<div class="field"><label for="freeText">Текст для правки</label><textarea id="freeText" class="free">'+esc(FREE)+'</textarea></div><p class="mut small">Таблицы и колонки в первой версии превращаются в обычный текст.</p></div>'+
+      '<div class="actionbar col"><button class="btn primary" data-act="free-docx">Сохранить как .docx</button><button class="btn" data-act="rescan">Снять заново</button></div>';
+  }
+  const o=OCR[S.scanMode===1?1:0];
+  return appbar('Проверьте распознанное','scan')+'<div class="content"><div class="scanned"><div class="pic"></div><div><b>'+o.title+'</b><span class="d">'+o.badge+'</span></div></div>'+
+    o.rows.map(r=>'<div class="field"><div class="lrow"><label>'+r[0]+'</label><span class="conf '+r[2]+'">'+(r[2]==='ok'?I('ok')+'Уверенно':I('alert')+'Проверьте')+'</span></div><input value="'+esc(r[1])+'" class="'+(r[2]==='chk'?'warn':'')+'">'+(r[3]?'<div class="hintline">'+r[3]+'</div>':'')+'</div>').join('')+'</div>'+
+    '<div class="actionbar col"><button class="btn primary" data-act="ocr-profile">Сохранить в профиль</button><button class="btn" data-act="ocr-doc">Подставить в документ</button></div>';
+}
+function vCheck(){
+  const rem=ISSUES.map((x,i)=>i).filter(i=>!S.fixed.has(i));
+  const hi=rem.filter(i=>ISSUES[i].sev==='hi').length;
+  const fixable=rem.filter(i=>ISSUES[i].fix).length;
+  const issue=i=>{const x=ISSUES[i],done=S.fixed.has(i);
+    return '<div class="issue'+(done?' done':'')+'"><span class="dot '+x.sev+'"></span><div class="grow"><div class="t">'+x.t+'</div><div class="w">'+x.w+'</div></div>'+
+      (done?'<span class="conf ok">'+I('ok')+'Исправлено</span>':x.fix?'<button class="btn sm" data-fix="'+i+'">Исправить</button>':'<span class="conf chk">Вручную</span>')+'</div>'};
+  return appbar('Проверка')+'<div class="content"><div class="filecard">'+I('file')+'<div><b>Курсовой_проект.docx</b><span class="d">42 страницы, загружен с устройства</span></div><button class="btn sm" data-act="swap">Заменить</button></div>'+
+    '<div class="field"><label>Правила проверки</label><div class="chips"><button class="chip" aria-pressed="true">Учебные работы, БГТУ</button><button class="chip" aria-pressed="false" data-act="rule">Заявления и бланки</button><button class="chip" aria-pressed="false" data-act="rule">Договоры</button></div></div>'+
+    '<div class="summary'+(rem.length?'':' okk')+'">'+(rem.length?'Осталось замечаний: <b>'+rem.length+'</b>, из них важных: <b>'+hi+'</b>':'Замечаний нет. Документ можно отправлять.')+'</div>'+
+    ISSUES.map((x,i)=>issue(i)).join('')+'</div>'+
+    '<div class="actionbar"><button class="btn primary" data-act="fixall"'+(fixable?'':' disabled')+'>Исправить всё, что можно ('+fixable+')</button></div>';
+}
+function vProfile(){
+  const f=(l,v,p)=>'<div class="field"><label>'+l+'</label><input value="'+esc(v)+'" placeholder="'+esc(p||'')+'"></div>';
+  return appbar('Мой профиль')+'<div class="content"><div class="card" style="margin-top:4px"><b>Заполнено на 80%</b><div class="bar"><i style="width:80%"></i></div><span class="d">Не хватает расчётного счёта</span></div>'+
+    '<div class="lockline">'+I('lock')+'<span>Данные хранятся только на этом устройстве в зашифрованном виде.</span></div>'+
+    f('ФИО',PROFILE.fio)+f('Наименование',PROFILE.org)+f('УНП',PROFILE.unp)+f('Юридический адрес',PROFILE.addr)+f('Телефон',PROFILE.phone)+f('Паспорт',PROFILE.passport)+f('Расчётный счёт','','Введите номер счёта')+
+    '<button class="btn ghost" data-go="scan">'+I('scan')+'Заполнить по фото паспорта</button></div>'+
+    '<div class="actionbar"><button class="btn primary" data-act="saveprofile">Сохранить</button></div>';
+}
+
+const masked=()=>{
+  let t=S.aiPrompt+'\nЗаявитель: '+PROFILE.fio+', '+PROFILE.org+', УНП '+PROFILE.unp+', '+PROFILE.addr;
+  return t.split(PROFILE.fio).join('[PERSON_1]').split(PROFILE.org).join('[ORG_1]').split(PROFILE.unp).join('[UNP_1]').split(PROFILE.addr).join('[ADDRESS_1]');
+};
+function aiSheet(){
+  const ex=['Объяснительная об опоздании на работу','Объяснение отсутствия на совещании'];
+  return '<div class="scrim" data-act="close-ai"><div class="panel" role="dialog" aria-label="ИИ-помощник"><div class="grab"></div><h3>ИИ-помощник</h3>'+
+    '<p class="mut" style="margin:0 0 10px">Опишите, что нужно написать. Черновик появится в поле текста, его можно будет править.</p>'+
+    '<textarea id="aiPrompt" style="min-height:92px" aria-label="Задача для ИИ">'+esc(S.aiPrompt)+'</textarea>'+
+    '<div class="chips" style="margin-top:8px">'+ex.map(e=>'<button class="chip" data-ex="'+esc(e)+'">'+e+'</button>').join('')+'</div>'+
+    '<div class="privacy">'+I('lock')+'<div>Перед отправкой имена, УНП и адреса заменяются метками. Реальные данные остаются на устройстве.<br><button class="linkbtn" data-act="mask">'+(S.mask?'Скрыть':'Показать, что уйдёт в ИИ')+'</button>'+(S.mask?'<div class="maskbox" id="maskbox">'+esc(masked())+'</div>':'')+'</div></div>'+
+    '<button class="btn primary" data-act="gen"'+(S.loading?' disabled':'')+'>'+I('sparkle')+(S.loading?'Пишем черновик…':'Написать черновик')+'</button></div></div>';
+}
+function expSheet(){
+  const t=TPL[S.tpl];
+  const r=(a,ic,n,d)=>'<button class="row" data-act="'+a+'"><span class="ico">'+I(ic)+'</span><span><b>'+n+'</b><span class="d">'+d+'</span></span></button>';
+  return '<div class="scrim" data-act="close-exp"><div class="panel" role="dialog" aria-label="Собрать документ"><div class="grab"></div><h3>Собрать документ</h3>'+
+    '<div class="field" style="margin-top:10px"><label for="fname">Имя файла</label><input id="fname" value="'+esc(S.fileName||t.file)+'"></div>'+
+    r('save-docx','file','Документ Word (.docx)','Можно править в Word и LibreOffice')+
+    r('save-pdf','download','PDF','Готов к печати')+
+    r('share','share','Поделиться','Отправить в мессенджер или на почту')+'</div></div>';
+}
+
+function render(){
+  const sc=$('.content'),pos=(sc&&S.last===S.view)?sc.scrollTop:0;
+  let body='',nav=false,dark=false;
+  switch(S.view){
+    case 'home':body=vHome();nav=true;break;
+    case 'templates':body=vTemplates();nav=true;break;
+    case 'fields':body=vFields();break;
+    case 'preview':body=vPreview();break;
+    case 'scan':body=vScan();dark=true;break;
+    case 'ocr':body=vOcr();break;
+    case 'check':body=vCheck();nav=true;break;
+    case 'profile':body=vProfile();nav=true;break;
+  }
+  app.innerHTML='<div class="screen'+(dark?' dark-screen':'')+'">'+status()+body+(nav?bottomnav():'')+(S.ai?aiSheet():'')+(S.exp?expSheet():'')+'<div class="toast" id="toast" role="status" aria-live="polite"></div></div>';
+  const c=$('.content');if(c)c.scrollTop=pos;
+  S.last=S.view;renderSide();
+}
+function curKey(){return S.ai?'ai':S.exp?'export':S.view}
+function renderSide(){
+  const cur=curKey();
+  $('#index').innerHTML='<div class="idx-title">Экраны</div>'+SCREENS.map((s,i)=>'<button data-k="'+(s.k==='export'?'export':s.k)+'" aria-current="'+(s.k===cur)+'"><span class="n">'+(i+1)+'</span>'+s.n+'</button>').join('');
+  const s=SCREENS.find(x=>x.k===cur)||SCREENS[0];
+  $('#notes').innerHTML='<h3>'+s.n+'</h3><p>'+s.d+'</p><p class="mods">'+s.m+'</p>';
+}
+function ensureDemo(){const e=S.data.explain;if(!e.text)e.text=AI_TEXT;if(!e.fio)e.fio=PROFILE.fio}
+function go(k){
+  S.ai=false;S.exp=false;S.loading=false;
+  if(['fields','ai','preview','export'].includes(k)){S.tpl='explain'}
+  if(k==='ai'){S.view='fields';S.ai=true}
+  else if(k==='preview'){ensureDemo();S.view='preview'}
+  else if(k==='export'){ensureDemo();S.view='preview';S.exp=true}
+  else if(k==='ocr'){S.scanMode=0;S.view='ocr'}
+  else S.view=k;
+  render();
+}
+function updateMini(){const m=$('#mini');if(m)m.innerHTML=miniHTML()}
+
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-k],[data-go],[data-tpl],[data-tab],[data-cat],[data-act],[data-fix],[data-mode],[data-ex]');
+  if(!el)return;
+  const d=el.dataset;
+  if(d.k!==undefined){go(d.k);return}
+  if(d.go!==undefined){S.ai=false;S.exp=false;S.view=d.go;render();return}
+  if(d.tpl!==undefined){if(!d.tpl){toast('В макете подключены три шаблона');return}S.tpl=d.tpl;S.view='fields';render();return}
+  if(d.tab!==undefined){S.view=d.tab;render();return}
+  if(d.cat!==undefined){S.cat=d.cat;render();return}
+  if(d.fix!==undefined){S.fixed.add(+d.fix);render();return}
+  if(d.mode!==undefined){S.scanMode=+d.mode;render();return}
+  if(d.ex!==undefined){S.aiPrompt=d.ex;const t=$('#aiPrompt');if(t)t.value=d.ex;const mb=$('#maskbox');if(mb)mb.textContent=masked();return}
+  const a=d.act;
+  if((a==='close-ai'||a==='close-exp')&&e.target!==el)return;
+  const t=TPL[S.tpl];
+  switch(a){
+    case 'fill':{let n=0;t.fields.forEach(f=>{if(f.prof&&D()[f.id]!==PROFILE[f.prof]){D()[f.id]=PROFILE[f.prof];n++}});
+      render();t.fields.filter(f=>f.prof).forEach(f=>{const w=$('[data-fid="'+f.id+'"] input');if(w)w.classList.add('flash')});
+      toast(n?'Подставлено из профиля: '+n:'Данные из профиля уже подставлены');break}
+    case 'ai':S.ai=true;render();break;
+    case 'close-ai':S.ai=false;S.loading=false;render();break;
+    case 'mask':S.mask=!S.mask;render();break;
+    case 'gen':S.loading=true;render();setTimeout(()=>{if(!S.loading)return;S.loading=false;S.ai=false;S.data.explain.text=AI_TEXT;render();toast('Черновик вставлен в текст. Проверьте и поправьте.')},1200);break;
+    case 'export':S.exp=true;render();break;
+    case 'close-exp':S.exp=false;render();break;
+    case 'save-docx':S.exp=false;render();toast('Файл «'+(S.fileName||t.file)+'.docx» сохранён на устройство');break;
+    case 'save-pdf':S.exp=false;render();toast('Файл «'+(S.fileName||t.file)+'.pdf» сохранён на устройство');break;
+    case 'share':S.exp=false;render();toast('Открываем системное меню «Поделиться»');break;
+    case 'shoot':S.view='ocr';render();break;
+    case 'gallery':toast('Откроется выбор файла');break;
+    case 'rescan':S.view='scan';render();break;
+    case 'ocr-profile':toast('Данные сохранены в профиль');break;
+    case 'ocr-doc':toast('Поля подставлены в форму документа');break;
+    case 'free-docx':toast('Файл «Распознанный_текст.docx» сохранён');break;
+    case 'fixall':ISSUES.forEach((x,i)=>{if(x.fix)S.fixed.add(i)});render();toast('Исправлено автоматически. Остальное нужно поправить вручную.');break;
+    case 'swap':toast('Откроется выбор файла .docx');break;
+    case 'rule':toast('В макете подключён набор «Учебные работы, БГТУ»');break;
+    case 'saveprofile':toast('Профиль сохранён в защищённом хранилище');break;
+  }
+});
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.dataset&&t.dataset.f){D()[t.dataset.f]=t.value;updateMini()}
+  else if(t.id==='aiPrompt'){S.aiPrompt=t.value;const mb=$('#maskbox');if(mb)mb.textContent=masked()}
+  else if(t.id==='q'){S.q=t.value;$('#list').innerHTML=listHTML()}
+  else if(t.id==='fname'){S.fileName=t.value}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&(S.ai||S.exp)){S.ai=false;S.exp=false;S.loading=false;render()}});
+$('#theme').addEventListener('click',()=>{
+  const r=document.documentElement;
+  const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+  r.dataset.theme=dark?'light':'dark';
+});
+render();
+</script>
+</body>
+</html>

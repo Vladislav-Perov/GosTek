@@ -35,6 +35,12 @@ public static class ThemeService
         ("TabBarBg",      "#111C30", "#FFFFFF"),
         ("TabActiveBg",   "#143A33", "#D1FAE5"),
         ("ToggleTrackBg", "#475569", "#CBD5E1"),
+
+        // Экран «Проверка»: важное замечание (красный), желательное (жёлтый) и их мягкие фоны (по макету)
+        ("BadColor",      "#F2877C", "#B42318"),
+        ("BadSoftBg",     "#3B1A17", "#FBE5E2"),
+        ("WarnColor",     "#F0B35A", "#9A5B00"),
+        ("WarnSoftBg",    "#3A2B10", "#FCEFD6"),
     };
 
     // Вызвать один раз при старте приложения

@@ -1,6 +1,5 @@
 using CommunityToolkit.Maui.Views;
 using GosTek.Services;
-using Microsoft.Maui.Controls.Shapes;
 
 namespace GosTek.Views;
 
@@ -17,8 +16,6 @@ public partial class ScanPage : ContentPage
         (ScanKind.Certificate, "Свидетельство"),
         (ScanKind.Any, "Любой документ"),
     };
-
-    private readonly List<(ScanKind Kind, Border Chip, Label Text)> _chips = new();
 
     private ScanKind _kind = ScanKind.Passport;
     private string? _lastText;   // последний распознанный текст: при смене типа его разбирают заново
@@ -182,45 +179,13 @@ public partial class ScanPage : ContentPage
 
     private void BuildChips()
     {
-        foreach (var (kind, title) in Kinds) {
-            var label = new Label { Text = title, FontSize = 14 };
-            var chip = new Border {
-                StrokeShape = new RoundRectangle { CornerRadius = 18 },
-                Padding = new Thickness(16, 9),
-                Content = label,
-            };
+        KindChips.SetItems(Kinds.Select(k => k.Title).ToList());
+        KindChips.SelectionChanged += (_, index) => {
+            _kind = Kinds[index].Kind;
 
-            var selected = kind;
-            var tap = new TapGestureRecognizer();
-            tap.Tapped += (_, _) => {
-                _kind = selected;
-                UpdateChips();
-
-                if (_lastText is not null)
-                    ApplyResult(_lastText);
-            };
-            chip.GestureRecognizers.Add(tap);
-
-            KindChips.Children.Add(chip);
-            _chips.Add((kind, chip, label));
-        }
-
-        UpdateChips();
-    }
-
-    // Активный чип — залитый, остальные — с рамкой (как категории на экране шаблонов)
-    private void UpdateChips()
-    {
-        foreach (var (kind, chip, label) in _chips) {
-            bool active = kind == _kind;
-
-            chip.SetDynamicResource(VisualElement.BackgroundColorProperty, active ? "TextPrimary" : "CardBg");
-            chip.SetDynamicResource(Border.StrokeProperty, "CardStroke");
-            chip.StrokeThickness = active ? 0 : 1;
-
-            label.SetDynamicResource(Label.TextColorProperty, active ? "PageBg" : "TextPrimary");
-            label.FontAttributes = active ? FontAttributes.Bold : FontAttributes.None;
-        }
+            if (_lastText is not null)
+                ApplyResult(_lastText);
+        };
     }
 
     private void SetLoading(bool on)

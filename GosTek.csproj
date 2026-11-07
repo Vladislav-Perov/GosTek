@@ -28,6 +28,7 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">29.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+		<NoWarn>$(NoWarn);NU1608;MSB3246;CS8669</NoWarn>	
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-android|AnyCPU'">
@@ -59,9 +60,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Compile Remove="GosTek.Tests\**" />
+		<None Remove="GosTek.Tests\**" />
+		<Content Remove="GosTek.Tests\**" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="DocumentFormat.OpenXml" Version="3.5.1" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.9" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
 
 		<!-- OCR: Tesseract — нужен только на Android (см. Services/OcrService.cs, почему не ML Kit).
 		     На Windows пакет тоже совместим, но распознавание там делает встроенный Windows.Media.Ocr

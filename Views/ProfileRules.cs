@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 
 namespace GosTek.Views;
 
@@ -64,7 +64,7 @@ public static class ProfileRules
             return null;
 
         // Значение, сохранённое через «Игнорировать ошибки», считаем принятым
-        if (IsAccepted(field, v))
+        if (IsAccepted(field))
             return null;
 
         return field switch {
@@ -214,10 +214,13 @@ public static class ProfileRules
         => v.Replace(" ", "").ToUpperInvariant();
 
     // ===== Значения, сохранённые вопреки ошибке =====
+    public static IPreferences? PreferencesProvider { get; set; }
+    private static IPreferences Prefs => PreferencesProvider ?? Preferences.Default;
+
     private static string AcceptKey(ProfileField f) => "accepted_" + f;
 
-    private static bool IsAccepted(ProfileField field, string v)
-        => Preferences.Default.Get(AcceptKey(field), "") is { Length: > 0 } saved && saved == Normalize(field, v);
+    private static bool IsAccepted(ProfileField field)
+        => Prefs.Get(AcceptKey(field), false);
 
     /// <summary>Запомнить значения полей с ошибками как принятые пользователем; у остальных полей отметка снимается.</summary>
     public static void SetAccepted(ProfileData p, IEnumerable<ProfileField> withErrors)
@@ -226,16 +229,21 @@ public static class ProfileRules
 
         foreach (var field in All) {
             if (set.Contains(field))
-                Preferences.Default.Set(AcceptKey(field), Get(p, field));
+                Prefs.Set(AcceptKey(field), true);
             else
-                Preferences.Default.Remove(AcceptKey(field));
+                Prefs.Remove(AcceptKey(field));
         }
+    }
+
+    public static void ForgetAccepted(ProfileField field)
+    {
+        Prefs.Remove(AcceptKey(field));
     }
 
     public static void ForgetAccepted()
     {
         foreach (var field in All)
-            Preferences.Default.Remove(AcceptKey(field));
+            Prefs.Remove(AcceptKey(field));
     }
 
     // ===== Сводка: процент заполнения и подсказка =====

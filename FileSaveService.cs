@@ -69,7 +69,27 @@ public static class FileSaveService
         return SaveAndroid(template, values, fileName, overwrite);
 #else
         var path = Path.Combine(ResolveFolder(), fileName);
-        DocxExporter.Save(template, values, path);
+        TemplateEngine.FillTo(template, values, path);
+        return new SaveResult(path, path);
+#endif
+    }
+
+    /// <summary>
+    /// Сохраняет уже готовый файл (например, исправленную копию с экрана «Проверка») по тем же правилам,
+    /// что и Save: ПК — в папку из настроек, Android — в Документы/GosTek.
+    /// </summary>
+    public static SaveResult SaveCopy(string sourcePath, string fileName, bool overwrite)
+    {
+#if ANDROID
+        // Копия в кэше: из неё потом открываем и отправляем файл
+        var temp = Path.Combine(FileSystem.CacheDirectory, fileName);
+        if (!string.Equals(Path.GetFullPath(sourcePath), Path.GetFullPath(temp), StringComparison.OrdinalIgnoreCase))
+            File.Copy(sourcePath, temp, true);
+
+        return SaveAndroidFile(temp, fileName, overwrite);
+#else
+        var path = Path.Combine(ResolveFolder(), fileName);
+        File.Copy(sourcePath, path, true);
         return new SaveResult(path, path);
 #endif
     }
@@ -84,12 +104,14 @@ public static class FileSaveService
                 try {
                     File.Delete(file);
                     count++;
-                } catch {
+                } catch (Exception ex) {
                     // Файл занят (например, открыт в другой программе), пропускаем
+                    System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
                 }
             }
-        } catch {
+        } catch (Exception ex) {
             // Кэш недоступен: удалять нечего
+            System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
         }
 
         return count;
@@ -139,8 +161,13 @@ public static class FileSaveService
     {
         // Копия в кэше: из неё потом открываем и отправляем файл
         var temp = Path.Combine(FileSystem.CacheDirectory, fileName);
-        DocxExporter.Save(template, values, temp);
+        TemplateEngine.FillTo(template, values, temp);
+        return SaveAndroidFile(temp, fileName, overwrite);
+    }
 
+    // Записывает готовый файл из кэша в публичную папку Документы/GosTek через MediaStore
+    private static SaveResult SaveAndroidFile(string temp, string fileName, bool overwrite)
+    {
         var resolver = Platform.AppContext.ContentResolver
             ?? throw new InvalidOperationException("Хранилище устройства недоступно.");
         var collection = MediaStore.Files.GetContentUri("external")

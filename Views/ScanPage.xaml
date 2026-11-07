@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:GosTek.Controls"
              x:Class="GosTek.Views.ScanPage"
              Title="Сканер"
              BackgroundColor="{DynamicResource PageBg}"
@@ -188,12 +189,10 @@
         </Grid>
 
         <!-- ==================== ТИП ДОКУМЕНТА (чипы создаются из кода) ==================== -->
-        <ScrollView Grid.Row="2"
-                    Orientation="Horizontal"
-                    HorizontalScrollBarVisibility="Never"
-                    Margin="0,10,0,4">
-            <HorizontalStackLayout x:Name="KindChips" Spacing="10" Padding="20,0" />
-        </ScrollView>
+        <controls:ChipBar x:Name="KindChips"
+                          Grid.Row="2"
+                          ChipsPadding="20,0"
+                          Margin="0,10,0,4" />
 
         <!-- ==================== НИЖНЯЯ ПАНЕЛЬ: галерея, затвор, файл ==================== -->
         <Grid Grid.Row="3" ColumnDefinitions="*, Auto, *" Padding="24,8,24,20">

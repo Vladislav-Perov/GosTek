@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -73,12 +74,14 @@ public static class TemplateEngine
                     var id = Convert.ToHexString(SHA1.HashData(Encoding.UTF8.GetBytes(rel)))[..10];
 
                     result.Add(new TemplateDef(id, title, category, file, fields));
-                } catch {
+                } catch (Exception ex) {
                     // Битый или заблокированный файл пропускаем
+                    System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
                 }
             }
-        } catch {
+        } catch (Exception ex) {
             // Папка недоступна
+            System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
         }
 
         return result
@@ -330,8 +333,9 @@ public static class TemplateEngine
 
                 result.Add(new PreviewPara(parts, align, bold, italic, pt, false));
             }
-        } catch {
+        } catch (Exception ex) {
             // Предпросмотр не получится, но форма и сохранение продолжат работать
+            System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
         }
 
         return result;
@@ -341,6 +345,41 @@ public static class TemplateEngine
     //  ПОМОЩНИКИ
     // ===================================================================
 
+    private const long MaxUncompressedBytes = 20 * 1024 * 1024; // 20 MB
+    private const int MaxZipEntries = 500;
+    private const double MaxCompressionRatio = 100.0;
+
+    private static void ValidateZipArchive(Stream stream)
+    {
+        long initialPos = stream.Position;
+        try {
+            using var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true);
+            if (archive.Entries.Count > MaxZipEntries)
+                throw new InvalidDataException("Файл повреждён или слишком большой (превышен лимит размера или структуры архива).");
+
+            long totalUncompressed = 0;
+            foreach (var entry in archive.Entries) {
+                if (entry.Length < 0)
+                    throw new InvalidDataException("Файл повреждён или слишком большой (превышен лимит размера или структуры архива).");
+
+                totalUncompressed += entry.Length;
+                if (totalUncompressed > MaxUncompressedBytes)
+                    throw new InvalidDataException("Файл повреждён или слишком большой (превышен лимит размера или структуры архива).");
+
+                if (entry.Length > 1024) {
+                    if (entry.CompressedLength <= 0 || ((double)entry.Length / entry.CompressedLength) > MaxCompressionRatio)
+                        throw new InvalidDataException("Файл повреждён или слишком большой (превышен лимит размера или структуры архива).");
+                }
+            }
+        } catch (InvalidDataException) {
+            throw;
+        } catch (Exception ex) {
+            throw new InvalidDataException("Файл повреждён или слишком большой (превышен лимит размера или структуры архива).", ex);
+        } finally {
+            stream.Position = initialPos;
+        }
+    }
+
     // Читаем с FileShare.ReadWrite: шаблон может быть открыт в Word
     private static MemoryStream CopyToMemory(string file)
     {
@@ -348,6 +387,7 @@ public static class TemplateEngine
         using (var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
             fs.CopyTo(ms);
         ms.Position = 0;
+        ValidateZipArchive(ms);
         return ms;
     }
 

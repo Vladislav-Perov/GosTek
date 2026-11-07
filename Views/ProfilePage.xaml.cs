@@ -1,4 +1,6 @@
-﻿namespace GosTek.Views;
+using GosTek.Services;
+
+namespace GosTek.Views;
 
 public partial class ProfilePage : ContentPage
 {
@@ -30,6 +32,7 @@ public partial class ProfilePage : ContentPage
     // Снимок формы на момент загрузки/сохранения: по нему видно несохранённые правки
     private string _baseline = "";
     private bool _leaving;
+    private bool _isUpdatingFields;
 
     private string Snapshot() => string.Join("\u001f", _fields.Select(f => f.Entry.Text ?? ""));
     private bool HasUnsaved => Snapshot() != _baseline;
@@ -46,6 +49,9 @@ public partial class ProfilePage : ContentPage
             var field = _fields[i];
 
             field.Entry.TextChanged += (_, _) => {
+                if (_isUpdatingFields)
+                    return;
+                ProfileRules.ForgetAccepted(field.Field);
                 ApplyValidation(field);
                 UpdateIgnoreUi();
                 UpdateProgress(animated: true);
@@ -185,8 +191,13 @@ public partial class ProfilePage : ContentPage
     {
         var (profile, status) = await ProfileStorage.LoadWithStatusAsync();
 
-        foreach (var f in _fields)
-            f.Entry.Text = ProfileRules.Get(profile, f.Field);
+        _isUpdatingFields = true;
+        try {
+            foreach (var f in _fields)
+                f.Entry.Text = ProfileRules.Get(profile, f.Field);
+        } finally {
+            _isUpdatingFields = false;
+        }
 
         foreach (var f in _fields)
             ApplyValidation(f);
@@ -259,9 +270,14 @@ public partial class ProfilePage : ContentPage
             await ProfileStorage.SaveAsync(profile);
             ProfileRules.SetAccepted(profile, invalid.Select(f => f.Field));
 
-            // Показываем значения в том виде, в котором они сохранились
-            foreach (var f in _fields)
-                f.Entry.Text = ProfileRules.Get(profile, f.Field);
+            _isUpdatingFields = true;
+            try {
+                // Показываем значения в том виде, в котором они сохранились
+                foreach (var f in _fields)
+                    f.Entry.Text = ProfileRules.Get(profile, f.Field);
+            } finally {
+                _isUpdatingFields = false;
+            }
 
             // Принятые с ошибкой поля больше не красные, галочка прячется, процент пересчитан
             foreach (var f in _fields)
@@ -289,24 +305,9 @@ public partial class ProfilePage : ContentPage
     }
 
     // ===== Проверка поля: красная рамка + подпись =====
-    // Возвращает true, если ошибки нет (поле пустое или заполнено верно)
+    // Возвращает true, если ошибки нет (поле пустое или заполнено верно). Сама подсветка — в FieldValidationHelper
     private static bool ApplyValidation(FieldUi f)
-    {
-        string? error = ProfileRules.Validate(f.Field, f.Entry.Text);
-
-        if (error is null) {
-            // Вернуть рамку из стиля FieldBox (цвет подхватывает тема)
-            f.Box.ClearValue(Border.StrokeProperty);
-            f.Box.ClearValue(Border.StrokeThicknessProperty);
-        } else {
-            f.Box.Stroke = new SolidColorBrush(ThemeService.ErrorColor);
-            f.Box.StrokeThickness = 1.5;
-            f.Error.Text = error;
-        }
-
-        f.Error.IsVisible = error is not null;
-        return error is null;
-    }
+        => FieldValidationHelper.Apply(f.Box, f.Error, ProfileRules.Validate(f.Field, f.Entry.Text));
 
     // ===== Прогресс заполнения =====
     private void UpdateProgress(bool animated)

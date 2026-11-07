@@ -4,8 +4,6 @@
 public static class Stubs
 {
     private static readonly Dictionary<string, (string Title, string Text)> Items = new() {
-        ["check"] = ("Проверка документа",
-            "Скоро здесь можно будет загрузить документ и получить список ошибок оформления: поля, шрифты, реквизиты и отступы."),
     };
 
     /// <summary>Заглушка раздела по ключу; для неизвестного ключа — общее «Скоро».</summary>

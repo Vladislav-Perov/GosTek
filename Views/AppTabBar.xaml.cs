@@ -10,7 +10,7 @@ public partial class AppTabBar : ContentView
 {
     private const double HoverScale = 1.08;
 
-    // Route = null: перехода пока нет, вкладка показывает заглушку
+    // Route = null: перехода нет, вкладка показывает заглушку (сейчас такой вкладки нет)
     private sealed record Tab(string Key, string Icon, string Title, string? Route);
 
     private static readonly Tab[] TabList =
@@ -18,7 +18,7 @@ public partial class AppTabBar : ContentView
         new("home",      "🏠",  "Главная",  "//MainPage"),
         new("templates", "📋",  "Шаблоны",  "//TemplatesPage"),
         new("scan",      "📷",  "Скан",     "//ScanPage"),
-        new("check",     "🛡️", "Проверка", null),
+        new("check",     "🛡️", "Проверка", "//CheckPage"),
         new("profile",   "👤",  "Профиль",  "//ProfilePage"),
     };
 

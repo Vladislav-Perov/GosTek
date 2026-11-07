@@ -236,8 +236,9 @@ public static class Dialogs
                         scrim.FadeToAsync(1, 160, Easing.CubicOut),
                         card.FadeToAsync(1, 160, Easing.CubicOut),
                         card.ScaleToAsync(1, 180, Easing.CubicOut));
-            } catch {
+            } catch (Exception ex) {
                 // анимация не должна ломать окно
+                System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
             }
         }
 
@@ -259,8 +260,9 @@ public static class Dialogs
                         scrim.FadeToAsync(0, 140, Easing.CubicIn),
                         card.FadeToAsync(0, 140, Easing.CubicIn),
                         card.ScaleToAsync(0.96, 140, Easing.CubicIn));
-            } catch {
+            } catch (Exception ex) {
                 // не мешаем закрытию
+                System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
             }
 
             root.Remove(overlay);

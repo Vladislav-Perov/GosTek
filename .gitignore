@@ -1,6 +1,7 @@
-﻿bin/
+bin/
 obj/
 .vs/
 *.user
 *.suo
 *.slnx
+*.zip
