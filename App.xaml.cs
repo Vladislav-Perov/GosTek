@@ -22,6 +22,7 @@ namespace GosTek
             // Меньше этого окно уменьшить нельзя: иначе элементы шапки наезжают друг на друга
             window.MinimumWidth = 500;
             window.MinimumHeight = 700;
+            window.Created += (_, _) => ThemeService.ApplyPlatformTheme(window);
 #endif
             return window;
         }

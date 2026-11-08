@@ -5,7 +5,9 @@
  * ЗАВИСИМОСТИ: GosTek.Views, GosTek.SettingsService, GosTek.FileSaveService
  * ==============================================================================
  */
+using GosTek.Controls;
 using GosTek.Models;
+using GosTek.Services;
 
 namespace GosTek.Views;
 
@@ -67,6 +69,9 @@ public partial class MainPage : ContentPage
     // ===== Настройки =====
     private async void OnSettingsTapped(object? sender, TappedEventArgs e)
     {
+        HapticHelper.Click();
+        if (sender is VisualElement ve)
+            await ve.AnimateBounceAsync();
         await Settings.OpenAsync();
     }
 
@@ -153,18 +158,27 @@ public partial class MainPage : ContentPage
     // ===== «Проверить» ведёт на экран проверки документа =====
     private async void OnCheckTapped(object? sender, TappedEventArgs e)
     {
+        HapticHelper.Click();
+        if (sender is VisualElement ve)
+            await ve.AnimateBounceAsync();
         await Shell.Current.GoToAsync("//CheckPage");
     }
 
     // ===== «Создать документ» ведёт в каталог шаблонов =====
     private async void OnCreateTapped(object? sender, TappedEventArgs e)
     {
+        HapticHelper.Click();
+        if (sender is VisualElement ve)
+            await ve.AnimateBounceAsync();
         await Shell.Current.GoToAsync("//TemplatesPage");
     }
 
     // ===== Скан из «Быстрого старта» — настоящий экран, не заглушка =====
     private async void OnScanTapped(object? sender, TappedEventArgs e)
     {
+        HapticHelper.Click();
+        if (sender is VisualElement ve)
+            await ve.AnimateBounceAsync();
         await Shell.Current.GoToAsync("//ScanPage");
     }
 
@@ -178,6 +192,9 @@ public partial class MainPage : ContentPage
     // ===== Переход в профиль =====
     private async void OnProfileTapped(object? sender, TappedEventArgs e)
     {
+        HapticHelper.Click();
+        if (sender is VisualElement ve)
+            await ve.AnimateBounceAsync();
         await Shell.Current.GoToAsync("//ProfilePage");
     }
 }

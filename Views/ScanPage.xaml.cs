@@ -239,6 +239,7 @@ public partial class ScanPage : ContentPage
     // Затвор: снимок прямо с камеры в рамке; если камеры в рамке нет — системная камера
     private async void OnShutterTapped(object? sender, TappedEventArgs e)
     {
+        HapticHelper.Click();
         if (_previewOn && _camera is { } camera) {
             await AcquireAndRecognizeAsync("Не удалось сделать снимок", async () => {
                 SetLoading(true, "Снимок кадра...", "Захват фото с камеры");
@@ -392,6 +393,8 @@ public partial class ScanPage : ContentPage
     // ===== Копирование текста =====
     private async void OnCopyTapped(object? sender, TappedEventArgs e)
     {
+        HapticHelper.Click();
+        Toast.Show("Текст скопирован в буфер", "📋");
         await Clipboard.Default.SetTextAsync(RawTextEditor.Text ?? "");
 
         int version = ++_copyVersion;
@@ -418,7 +421,8 @@ public partial class ScanPage : ContentPage
 
         try {
             await ProfileStorage.SaveAsync(updated);
-            await Dialogs.AlertAsync("Сохранено", "Данные добавлены в профиль.", DialogKind.Success);
+            HapticHelper.Success();
+            Toast.Show("Данные добавлены в профиль", "👤");
 
             if (_mode == "passport")
                 await Shell.Current.GoToAsync("//ProfilePage");

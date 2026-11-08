@@ -5,6 +5,7 @@
  * ЗАВИСИМОСТИ: Microsoft.Maui.Controls
  * ==============================================================================
  */
+using GosTek.Services;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace GosTek.Views;
@@ -105,6 +106,7 @@ public partial class AppTabBar : ContentView
 
     private async Task OnTabTappedAsync(Tab tab)
     {
+        HapticHelper.Click();
         if (tab.Key == ActiveTab)
             return;
 

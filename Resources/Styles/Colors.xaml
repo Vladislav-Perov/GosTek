@@ -28,4 +28,23 @@
     <Color x:Key="Gray900">#212121</Color>
     <Color x:Key="Gray950">#141414</Color>
 
+    <!-- Базовые fallback-значения динамической палитры темы (ThemeService) -->
+    <Color x:Key="PageBg">#F6F4EE</Color>
+    <Color x:Key="CardBg">#FFFFFF</Color>
+    <Color x:Key="CardHoverBg">#EFEBE0</Color>
+    <Color x:Key="CardStroke">#E2DED2</Color>
+    <Color x:Key="TextPrimary">#16213A</Color>
+    <Color x:Key="TextSecondary">#5A6479</Color>
+    <Color x:Key="BrandGreen">#0D6B57</Color>
+    <Color x:Key="AccentGreen">#0D6B57</Color>
+    <Color x:Key="Divider">#E2DED2</Color>
+    <Color x:Key="IconBoxBg">#DCEFE9</Color>
+    <Color x:Key="TabBarBg">#FFFFFF</Color>
+    <Color x:Key="TabActiveBg">#DCEFE9</Color>
+    <Color x:Key="ToggleTrackBg">#D6D1C3</Color>
+    <Color x:Key="BadColor">#B42318</Color>
+    <Color x:Key="BadSoftBg">#FBE5E2</Color>
+    <Color x:Key="WarnColor">#9A5B00</Color>
+    <Color x:Key="WarnSoftBg">#FCEFD6</Color>
+
 </ResourceDictionary>

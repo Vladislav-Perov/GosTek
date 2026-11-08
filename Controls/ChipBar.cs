@@ -5,6 +5,7 @@
  * ЗАВИСИМОСТИ: Microsoft.Maui.Controls
  * ==============================================================================
  */
+using GosTek.Services;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace GosTek.Controls;
@@ -67,7 +68,7 @@ public sealed class ChipBar : ContentView
 
     public ChipBar()
     {
-        _host = new HorizontalStackLayout { Spacing = 8, Padding = new Thickness(0, 0, 0, 6) };
+        _host = new HorizontalStackLayout { Spacing = 10, Padding = new Thickness(0, 2, 0, 8) };
         _scroll = new ScrollView {
             Orientation = ScrollOrientation.Horizontal,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Never,
@@ -120,8 +121,8 @@ public sealed class ChipBar : ContentView
     {
         var label = new Label { Text = title, FontSize = 14 };
         var chip = new Border {
-            StrokeShape = new RoundRectangle { CornerRadius = 18 },
-            Padding = new Thickness(16, 8),
+            StrokeShape = new RoundRectangle { CornerRadius = 20 },
+            Padding = new Thickness(18, 9),
             Content = label,
         };
 
@@ -130,6 +131,7 @@ public sealed class ChipBar : ContentView
             if (index == _selected)
                 return;
 
+            HapticHelper.Click();
             _selected = index;
             UpdateChips();
             SelectionChanged?.Invoke(this, index);
@@ -140,19 +142,33 @@ public sealed class ChipBar : ContentView
         _chips.Add((chip, label));
     }
 
-    // Активный чип залит, остальные с рамкой. DynamicResource, чтобы цвета менялись вместе с темой
+    // Активный чип залит AccentGreen с белым текстом и легкой тенью, остальные с рамкой
     private void UpdateChips()
     {
         for (int i = 0; i < _chips.Count; i++) {
             var (chip, label) = _chips[i];
             bool active = i == _selected;
 
-            chip.SetDynamicResource(VisualElement.BackgroundColorProperty, active ? "TextPrimary" : "CardBg");
-            chip.SetDynamicResource(Border.StrokeProperty, "CardStroke");
-            chip.StrokeThickness = active ? 0 : 1;
-
-            label.SetDynamicResource(Label.TextColorProperty, active ? "PageBg" : "TextPrimary");
-            label.FontAttributes = active ? FontAttributes.Bold : FontAttributes.None;
+            if (active) {
+                chip.SetDynamicResource(VisualElement.BackgroundColorProperty, "AccentGreen");
+                chip.StrokeThickness = 0;
+                label.RemoveDynamicResource(Label.TextColorProperty);
+                label.TextColor = Colors.White;
+                label.FontAttributes = FontAttributes.Bold;
+                chip.Shadow = new Shadow {
+                    Brush = new SolidColorBrush(Colors.Black),
+                    Offset = new Point(0, 2),
+                    Radius = 4,
+                    Opacity = 0.18f,
+                };
+            } else {
+                chip.SetDynamicResource(VisualElement.BackgroundColorProperty, "CardBg");
+                chip.SetDynamicResource(Border.StrokeProperty, "CardStroke");
+                chip.StrokeThickness = 1;
+                label.SetDynamicResource(Label.TextColorProperty, "TextPrimary");
+                label.FontAttributes = FontAttributes.None;
+                chip.Shadow = null;
+            }
 
             SemanticProperties.SetDescription(chip, active ? $"{label.Text}, выбрано" : label.Text);
         }

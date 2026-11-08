@@ -1,8 +1,8 @@
 /*
  * ==============================================================================
- * НАЗНАЧЕНИЕ: Кроссплатформенный движок модальных диалоговых окон и шторок выбора
+ * НАЗНАЧЕНИЕ: Кроссплатформенный движок модальных диалоговых окон и шторок выбора по дизайн-системе
  * СОДЕРЖИМОЕ: Dialogs, DialogButton, DialogKind, DialogButtonStyle
- * ЗАВИСИМОСТИ: Microsoft.Maui.Controls
+ * ЗАВИСИМОСТИ: Microsoft.Maui.Controls, GosTek.ThemeService
  * ==============================================================================
  */
 using Microsoft.Maui.Controls.Shapes;
@@ -29,7 +29,7 @@ public enum DialogKind
 /// <summary>Вид кнопки окна.</summary>
 public enum DialogButtonStyle
 {
-    /// <summary>Главная: зелёная заливка.</summary>
+    /// <summary>Главная: изумрудная заливка.</summary>
     Primary,
     /// <summary>Опасная: красная заливка (удаление).</summary>
     Danger,
@@ -49,7 +49,7 @@ public sealed record DialogButton(string Text, DialogButtonStyle Style = DialogB
 public static class Dialogs
 {
     private const double PhoneMaxWidth = 600;   // уже этого: шторка снизу, шире: карточка по центру
-    private const double CardWidth = 380;
+    private const double CardWidth = 400;
 
     private static readonly SemaphoreSlim Gate = new(1, 1);   // окна показываются по очереди
     private static Action? _dismiss;                          // закрыть текущее окно как «отмена»
@@ -73,13 +73,16 @@ public static class Dialogs
     public static async Task<int> ChoiceAsync(string title, string text, DialogKind kind, params DialogButton[] buttons)
     {
         await Gate.WaitAsync();
-        try {
+        try
+        {
             var page = Shell.Current?.CurrentPage ?? Application.Current?.Windows.FirstOrDefault()?.Page;
             if (page is null)
                 return -1;
 
             return await ShowAsync(page, title, text, kind, buttons);
-        } finally {
+        }
+        finally
+        {
             Gate.Release();
         }
     }
@@ -105,10 +108,10 @@ public static class Dialogs
         var phone = (page.Width > 0 ? page.Width : 400) < PhoneMaxWidth;
         var dark = ThemeService.IsDark;
 
-        var cardBg = Res("CardBg", dark ? "#1E293B" : "#FFFFFF");
-        var stroke = Res("CardStroke", dark ? "#334155" : "#E2E8F0");
-        var textPrimary = Res("TextPrimary", dark ? "#F1F5F9" : "#0F172A");
-        var textSecondary = Res("TextSecondary", dark ? "#94A3B8" : "#64748B");
+        var cardBg = Res("CardBg", dark ? "#151A23" : "#FFFFFF");
+        var stroke = Res("CardStroke", dark ? "#2A3142" : "#E2DED2");
+        var textPrimary = Res("TextPrimary", dark ? "#E8ECF4" : "#16213A");
+        var textSecondary = Res("TextSecondary", dark ? "#8A94AA" : "#5A6479");
         var (iconBg, iconFg, glyph) = IconStyle(kind, dark);
 
         var tcs = new TaskCompletionSource<int>();
@@ -119,52 +122,79 @@ public static class Dialogs
         Grid overlay = null!;
 
         // ----- затемнение -----
-        var scrim = new BoxView { Color = Color.FromArgb("#99000000"), Opacity = 0 };
+        var scrim = new BoxView { Color = Color.FromArgb("#8A000000"), Opacity = 0 };
 
         // ----- содержимое карточки -----
         var content = new VerticalStackLayout { Spacing = 0 };
 
         if (phone)
-            content.Add(new BoxView {
-                WidthRequest = 38, HeightRequest = 4, CornerRadius = 2,
+        {
+            content.Add(new BoxView
+            {
+                WidthRequest = 42,
+                HeightRequest = 4,
+                CornerRadius = 2,
                 HorizontalOptions = LayoutOptions.Center,
                 Margin = new Thickness(0, 0, 0, 16),
                 Color = stroke,
             });
+        }
 
-        var icon = new Border {
-            WidthRequest = 44, HeightRequest = 44,
+        var icon = new Border
+        {
+            WidthRequest = 46,
+            HeightRequest = 46,
             VerticalOptions = LayoutOptions.Start,
             StrokeThickness = 0,
             BackgroundColor = iconBg,
-            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(12) },
-            Content = new Microsoft.Maui.Controls.Shapes.Path {
+            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(14) },
+            Content = new Microsoft.Maui.Controls.Shapes.Path
+            {
                 Data = (Geometry)new PathGeometryConverter().ConvertFromInvariantString(glyph)!,
                 Stroke = new SolidColorBrush(iconFg),
                 StrokeThickness = 2,
                 StrokeLineCap = PenLineCap.Round,
                 StrokeLineJoin = PenLineJoin.Round,
                 Aspect = Stretch.Uniform,
-                WidthRequest = 22, HeightRequest = 22,
+                WidthRequest = 22,
+                HeightRequest = 22,
                 HorizontalOptions = LayoutOptions.Center,
                 VerticalOptions = LayoutOptions.Center,
             },
         };
 
         var message = new VerticalStackLayout { Spacing = 6 };
-        message.Add(new Label {
-            Text = title, TextColor = textPrimary, FontSize = 19,
-            FontFamily = "PTSansBold",
+        message.Add(new Label
+        {
+            Text = title,
+            TextColor = textPrimary,
+            FontSize = 18.5,
+            FontAttributes = FontAttributes.Bold,
         });
 
         if (!string.IsNullOrWhiteSpace(text))
-            message.Add(new Label {
-                Text = text, TextColor = textSecondary, FontSize = 15, LineHeight = 1.25,
+        {
+            message.Add(new Label
+            {
+                Text = text,
+                TextColor = textSecondary,
+                FontSize = 14,
+                LineHeight = 1.25,
             });
+        }
 
-        var head = new Grid { ColumnDefinitions = { new ColumnDefinition(GridLength.Auto), new ColumnDefinition(GridLength.Star) }, ColumnSpacing = 14 };
+        var head = new Grid
+        {
+            ColumnDefinitions =
+            {
+                new ColumnDefinition(GridLength.Auto),
+                new ColumnDefinition(GridLength.Star),
+            },
+            ColumnSpacing = 14,
+        };
         head.Add(icon, 0, 0);
-        head.Add(new ScrollView {
+        head.Add(new ScrollView
+        {
             VerticalScrollBarVisibility = ScrollBarVisibility.Never,
             MaximumHeightRequest = Math.Max(120, (page.Height > 0 ? page.Height : 700) * 0.45),
             Content = message,
@@ -177,29 +207,39 @@ public static class Dialogs
             .OrderBy(x => x.Button.Style == DialogButtonStyle.Secondary ? 1 : 0)
             .ToList();
 
-        var buttonStack = new VerticalStackLayout { Spacing = 8, Margin = new Thickness(0, 20, 0, 0) };
+        var buttonStack = new VerticalStackLayout { Spacing = 10, Margin = new Thickness(0, 20, 0, 0) };
 
-        foreach (var (button, index) in order) {
+        foreach (var (button, index) in order)
+        {
             var i = index;
-            buttonStack.Add(MakeButton(button, dark, stroke, textSecondary, () => Close(i)));
+            buttonStack.Add(MakeButton(button, dark, stroke, textPrimary, textSecondary, () => Close(i)));
         }
 
         content.Add(buttonStack);
 
         // ----- сама карточка -----
-        card = new Border {
+        card = new Border
+        {
             BackgroundColor = cardBg,
             Stroke = new SolidColorBrush(stroke),
             StrokeThickness = 1,
-            Padding = phone ? new Thickness(22, 12, 22, 26) : new Thickness(22, 24, 22, 20),
-            StrokeShape = new RoundRectangle {
-                CornerRadius = phone ? new CornerRadius(24, 24, 0, 0) : new CornerRadius(22),
+            Padding = phone ? new Thickness(22, 14, 22, 28) : new Thickness(24, 24, 24, 22),
+            StrokeShape = new RoundRectangle
+            {
+                CornerRadius = phone ? new CornerRadius(26, 26, 0, 0) : new CornerRadius(22),
             },
             HorizontalOptions = phone ? LayoutOptions.Fill : LayoutOptions.Center,
             VerticalOptions = phone ? LayoutOptions.End : LayoutOptions.Center,
             WidthRequest = phone ? -1 : CardWidth,
             Margin = phone ? new Thickness(0, 0, 0, -1) : new Thickness(16),
             Content = content,
+            Shadow = new Shadow
+            {
+                Brush = new SolidColorBrush(Colors.Black),
+                Offset = new Point(0, 8),
+                Radius = 24,
+                Opacity = 0.22f,
+            },
         };
 
         // Нажатие на саму карточку не должно закрывать окно
@@ -216,8 +256,11 @@ public static class Dialogs
 
         // Начальное положение до анимации
         if (phone)
+        {
             card.TranslationY = (page.Height > 0 ? page.Height : 800);
-        else {
+        }
+        else
+        {
             card.Opacity = 0;
             card.Scale = 0.94;
         }
@@ -231,19 +274,26 @@ public static class Dialogs
         // ----- анимации -----
         async Task Open()
         {
-            try {
+            try
+            {
                 await Task.Yield();
 
                 if (phone)
+                {
                     await Task.WhenAll(
                         scrim.FadeToAsync(1, 180, Easing.CubicOut),
                         card.TranslateToAsync(0, 0, 260, Easing.CubicOut));
+                }
                 else
+                {
                     await Task.WhenAll(
                         scrim.FadeToAsync(1, 160, Easing.CubicOut),
                         card.FadeToAsync(1, 160, Easing.CubicOut),
                         card.ScaleToAsync(1, 180, Easing.CubicOut));
-            } catch (Exception ex) {
+                }
+            }
+            catch (Exception ex)
+            {
                 // анимация не должна ломать окно
                 System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
             }
@@ -257,17 +307,24 @@ public static class Dialogs
             done = true;
             _dismiss = null;
 
-            try {
+            try
+            {
                 if (phone)
+                {
                     await Task.WhenAll(
                         scrim.FadeToAsync(0, 160, Easing.CubicIn),
                         card.TranslateToAsync(0, card.Height + 40, 200, Easing.CubicIn));
+                }
                 else
+                {
                     await Task.WhenAll(
                         scrim.FadeToAsync(0, 140, Easing.CubicIn),
                         card.FadeToAsync(0, 140, Easing.CubicIn),
                         card.ScaleToAsync(0.96, 140, Easing.CubicIn));
-            } catch (Exception ex) {
+                }
+            }
+            catch (Exception ex)
+            {
                 // не мешаем закрытию
                 System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
             }
@@ -277,38 +334,43 @@ public static class Dialogs
         }
     }
 
-    private static View MakeButton(DialogButton button, bool dark, Color stroke, Color secondaryText, Action onTap)
+    private static View MakeButton(DialogButton button, bool dark, Color stroke, Color primaryText, Color secondaryText, Action onTap)
     {
         Color bg = Colors.Transparent, fg, border = Colors.Transparent;
 
-        switch (button.Style) {
+        switch (button.Style)
+        {
             case DialogButtonStyle.Primary:
-                bg = Color.FromArgb(dark ? "#34D399" : "#059669");
-                fg = Color.FromArgb(dark ? "#04281D" : "#FFFFFF");
+                bg = Res("BrandGreen", dark ? "#3FC3A1" : "#0D6B57");
+                fg = Colors.White;
                 break;
             case DialogButtonStyle.Danger:
-                bg = Color.FromArgb(dark ? "#F87171" : "#DC2626");
-                fg = Color.FromArgb(dark ? "#3B0A0A" : "#FFFFFF");
+                bg = Color.FromArgb("#DC2626");
+                fg = Colors.White;
                 break;
             case DialogButtonStyle.DangerOutline:
-                fg = Color.FromArgb(dark ? "#F87171" : "#DC2626");
-                border = Color.FromArgb(dark ? "#7F3A3F" : "#FCA5A5");
+                fg = Color.FromArgb(dark ? "#EF4444" : "#DC2626");
+                border = Color.FromArgb(dark ? "#7F2A32" : "#FCA5A5");
                 break;
             default:
-                fg = dark ? Color.FromArgb("#CBD5E1") : Color.FromArgb("#334155");
+                fg = primaryText;
                 border = stroke;
                 break;
         }
 
-        var box = new Border {
+        var box = new Border
+        {
             BackgroundColor = bg,
             Stroke = new SolidColorBrush(border),
             StrokeThickness = button.Style is DialogButtonStyle.DangerOutline or DialogButtonStyle.Secondary ? 1 : 0,
-            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(12) },
+            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(14) },
             Padding = new Thickness(16, 13),
-            Content = new Label {
-                Text = button.Text, TextColor = fg, FontSize = 16,
-                FontFamily = "PTSansBold",
+            Content = new Label
+            {
+                Text = button.Text,
+                TextColor = fg,
+                FontSize = 15,
+                FontAttributes = FontAttributes.Bold,
                 HorizontalTextAlignment = TextAlignment.Center,
                 VerticalTextAlignment = TextAlignment.Center,
             },
@@ -334,13 +396,14 @@ public static class Dialogs
     private const string IconInfo = "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M12 9h0.01M11 12h1v4h1";
 
     // Цвет плашки, цвет значка и контур значка для каждого смысла окна
-    private static (Color Bg, Color Fg, string Glyph) IconStyle(DialogKind kind, bool dark) => kind switch {
-        DialogKind.Warning => (Color.FromArgb(dark ? "#3A2F12" : "#FEF3C7"), Color.FromArgb(dark ? "#FBBF24" : "#B45309"), IconAlert),
-        DialogKind.Danger => (Color.FromArgb(dark ? "#3B1F26" : "#FEE2E2"), Color.FromArgb(dark ? "#F87171" : "#DC2626"), IconAlert),
-        DialogKind.Delete => (Color.FromArgb(dark ? "#3B1F26" : "#FEE2E2"), Color.FromArgb(dark ? "#F87171" : "#DC2626"), IconTrash),
-        DialogKind.Success => (Color.FromArgb(dark ? "#12352B" : "#D1FAE5"), Color.FromArgb(dark ? "#34D399" : "#059669"), IconCheck),
-        DialogKind.Question => (Color.FromArgb(dark ? "#1B2F52" : "#DBEAFE"), Color.FromArgb(dark ? "#7DB4FF" : "#2563EB"), IconSave),
-        _ => (Color.FromArgb(dark ? "#1B2F52" : "#DBEAFE"), Color.FromArgb(dark ? "#7DB4FF" : "#2563EB"), IconInfo),
+    private static (Color Bg, Color Fg, string Glyph) IconStyle(DialogKind kind, bool dark) => kind switch
+    {
+        DialogKind.Warning => (Color.FromArgb(dark ? "#3A2A10" : "#FEF3C7"), Color.FromArgb(dark ? "#F59E0B" : "#D97706"), IconAlert),
+        DialogKind.Danger => (Color.FromArgb(dark ? "#3A141A" : "#FEE2E2"), Color.FromArgb(dark ? "#EF4444" : "#DC2626"), IconAlert),
+        DialogKind.Delete => (Color.FromArgb(dark ? "#3A141A" : "#FEE2E2"), Color.FromArgb(dark ? "#EF4444" : "#DC2626"), IconTrash),
+        DialogKind.Success => (Res("IconBoxBg", dark ? "#0B3D31" : "#DCEFE9"), Res("BrandGreen", dark ? "#3FC3A1" : "#0D6B57"), IconCheck),
+        DialogKind.Question => (Color.FromArgb(dark ? "#162842" : "#DBEAFE"), Color.FromArgb(dark ? "#60A5FA" : "#2563EB"), IconSave),
+        _ => (Color.FromArgb(dark ? "#162842" : "#DBEAFE"), Color.FromArgb(dark ? "#60A5FA" : "#2563EB"), IconInfo),
     };
 
     // Цвет из ресурсов темы; если ресурса нет, берём запасной

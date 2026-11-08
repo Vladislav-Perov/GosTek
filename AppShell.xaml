@@ -12,7 +12,12 @@
        xmlns:views="clr-namespace:GosTek.Views"
        Title="GosTek"
        FlyoutBehavior="Disabled"
-       Shell.TabBarIsVisible="False">
+       Shell.TabBarIsVisible="False"
+       Shell.BackgroundColor="{DynamicResource PageBg}"
+       Shell.ForegroundColor="{DynamicResource TextPrimary}"
+       Shell.TitleColor="{DynamicResource TextPrimary}"
+       Shell.UnselectedColor="{DynamicResource TextSecondary}"
+       BackgroundColor="{DynamicResource PageBg}">
 
     <ShellContent
         Title="Home"

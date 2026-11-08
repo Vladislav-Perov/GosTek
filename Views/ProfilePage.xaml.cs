@@ -6,6 +6,7 @@
  * ==============================================================================
  */
 using GosTek.Services;
+using GosTek.Views.Controls;
 
 namespace GosTek.Views;
 
@@ -58,6 +59,22 @@ public partial class ProfilePage : ContentPage
             field.Entry.TextChanged += (_, _) => {
                 if (_isUpdatingFields)
                     return;
+
+
+                if (field.Field == ProfileField.FullName)
+                {
+                    var text = field.Entry.Text;
+                    var titleCased = SmartInputHelper.ToTitleCase(text);
+                    if (text != titleCased)
+                    {
+                        int cursor = field.Entry.CursorPosition;
+                        _isUpdatingFields = true;
+                        field.Entry.Text = titleCased;
+                        field.Entry.CursorPosition = Math.Min(cursor, titleCased.Length);
+                        _isUpdatingFields = false;
+                    }
+                }
+
                 ProfileRules.ForgetAccepted(field.Field);
                 ApplyValidation(field);
                 UpdateIgnoreUi();
@@ -241,7 +258,11 @@ public partial class ProfilePage : ContentPage
     }
 
     // ===== Сохранение =====
-    private async void OnSaveTapped(object? sender, TappedEventArgs e) => await TrySaveAsync(silent: false);
+    private async void OnSaveTapped(object? sender, TappedEventArgs e)
+    {
+        HapticHelper.Click();
+        await TrySaveAsync(silent: false);
+    }
 
     // true — профиль сохранён. silent: без сообщения «Готово» (при выходе со страницы)
     private async Task<bool> TrySaveAsync(bool silent)
@@ -296,7 +317,10 @@ public partial class ProfilePage : ContentPage
             _baseline = Snapshot();
 
             if (!silent)
-                await Dialogs.AlertAsync("Готово", "Профиль сохранён на этом устройстве.", DialogKind.Success);
+            {
+                HapticHelper.Success();
+                Toast.Show("Профиль сохранён", "👤");
+            }
 
             return true;
         } catch (Exception ex) {
@@ -323,6 +347,7 @@ public partial class ProfilePage : ContentPage
 
         ProgressTitle.Text = $"Заполнено на {summary.Percent}%";
         ProgressHint.Text = summary.Hint;
+        ProgressBadgeLabel.Text = $"{summary.Percent}%";
 
         if (animated)
             _ = FillProgress.ProgressTo(summary.Progress, 250, Easing.CubicOut);

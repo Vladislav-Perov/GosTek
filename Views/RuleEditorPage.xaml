@@ -3,11 +3,12 @@
  ==============================================================================
  НАЗНАЧЕНИЕ: Интерфейс конструктора правил оформления ГОСТ с визуальным предпросмотром «Было / Стало»
  СОДЕРЖИМОЕ: ContentPage, Grid, ScrollView, Border, Entry, Picker, Switch
- ЗАВИСИМОСТИ: GosTek.Views.RuleEditorPage, GosTek.Models.RuleSet, GosTek.Services.CustomRulesService
+ ЗАВИСИМОСТИ: GosTek.Views.RuleEditorPage, GosTek.Models.RuleSet, GosTek.Services.CustomRulesService, GosTek.Views.ThemeToggle
  ==============================================================================
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:views="clr-namespace:GosTek.Views"
              x:Class="GosTek.Views.RuleEditorPage"
              Title="Конструктор правил ГОСТ"
              BackgroundColor="{DynamicResource PageBg}"
@@ -20,7 +21,7 @@
             <!-- ==================== ШАПКА ==================== -->
             <Grid Grid.Row="0"
                   Padding="20, 15, 20, 10"
-                  ColumnDefinitions="Auto, *"
+                  ColumnDefinitions="Auto, *, Auto"
                   ColumnSpacing="14">
 
                 <Border Grid.Column="0"
@@ -44,6 +45,7 @@
                           VerticalOptions="Center" />
                 </Border>
 
+                <views:ThemeToggle Grid.Column="2" HorizontalOptions="End" VerticalOptions="Center" />
                 <Label x:Name="PageTitleLabel"
                        Grid.Column="1"
                        Text="Конструктор правила"
@@ -309,7 +311,7 @@
                             <Label Text="Сохранить"
                                    FontSize="15"
                                    FontAttributes="Bold"
-                                   TextColor="#064E3B"
+                                   TextColor="#FFFFFF"
                                    VerticalOptions="Center" />
                         </HorizontalStackLayout>
                     </Border>
@@ -411,7 +413,7 @@
 
                             <!-- Справа: Стало -->
                             <VerticalStackLayout Grid.Column="1" Spacing="8" HorizontalOptions="Center">
-                                <Border BackgroundColor="#E6F9F0"
+                                <Border BackgroundColor="{DynamicResource IconBoxBg}"
                                         StrokeThickness="0"
                                         StrokeShape="RoundRectangle 8"
                                         Padding="10,4"
@@ -420,7 +422,7 @@
                                            Text="СТАЛО: Настроенное правило"
                                            FontSize="12"
                                            FontAttributes="Bold"
-                                           TextColor="#064E3B" />
+                                           TextColor="{DynamicResource BrandGreen}" />
                                 </Border>
 
                                 <Border x:Name="AfterSheet"
@@ -453,7 +455,7 @@
                         <Label Text="Вернуться к редактированию"
                                FontSize="14"
                                FontAttributes="Bold"
-                               TextColor="#064E3B"
+                               TextColor="#FFFFFF"
                                HorizontalOptions="Center" />
                     </Border>
 

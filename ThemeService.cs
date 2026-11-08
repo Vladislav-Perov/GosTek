@@ -29,19 +29,19 @@ public static class ThemeService
 
     // Ключ ресурса, цвет в тёмной теме, цвет в светлой
     private static readonly (string Key, string Dark, string Light)[] Palette = {
-        ("PageBg",        "#0F172A", "#F8FAFC"),
-        ("CardBg",        "#1E293B", "#FFFFFF"),
-        ("CardHoverBg",   "#273449", "#F1F5F9"),
-        ("CardStroke",    "#334155", "#E2E8F0"),
-        ("TextPrimary",   "#F1F5F9", "#0F172A"),
-        ("TextSecondary", "#94A3B8", "#64748B"),
-        ("BrandGreen",    "#34D399", "#059669"),
-        ("AccentGreen",   "#34D399", "#10B981"),
-        ("Divider",       "#334155", "#E2E8F0"),
-        ("IconBoxBg",     "#064E3B", "#D1FAE5"),
-        ("TabBarBg",      "#111C30", "#FFFFFF"),
-        ("TabActiveBg",   "#143A33", "#D1FAE5"),
-        ("ToggleTrackBg", "#475569", "#CBD5E1"),
+        ("PageBg",        "#0C1017", "#F6F4EE"),
+        ("CardBg",        "#151A23", "#FFFFFF"),
+        ("CardHoverBg",   "#1D2330", "#EFEBE0"),
+        ("CardStroke",    "#2A3142", "#E2DED2"),
+        ("TextPrimary",   "#E8ECF4", "#16213A"),
+        ("TextSecondary", "#8A94AA", "#5A6479"),
+        ("BrandGreen",    "#3FC3A1", "#0D6B57"),
+        ("AccentGreen",   "#3FC3A1", "#0D6B57"),
+        ("Divider",       "#2A3142", "#E2DED2"),
+        ("IconBoxBg",     "#0B3D31", "#DCEFE9"),
+        ("TabBarBg",      "#10141D", "#FFFFFF"),
+        ("TabActiveBg",   "#12312A", "#DCEFE9"),
+        ("ToggleTrackBg", "#3A4358", "#D6D1C3"),
 
         // Экран «Проверка»: важное замечание (красный), желательное (жёлтый) и их мягкие фоны (по макету)
         ("BadColor",      "#F2877C", "#B42318"),
@@ -85,6 +85,20 @@ public static class ThemeService
     /// <summary>Быстрый переключатель: из любого режима в противоположную тему.</summary>
     public static void Toggle() => SetMode(IsDark ? ThemeMode.Light : ThemeMode.Dark);
 
+    /// <summary>Применить системную тему нативной платформы (WinUI ElementTheme на Windows).</summary>
+    public static void ApplyPlatformTheme(Window? window = null)
+    {
+#if WINDOWS
+        var w = window ?? Application.Current?.Windows.FirstOrDefault();
+        if (w?.Handler?.PlatformView is Microsoft.UI.Xaml.Window win && win.Content is Microsoft.UI.Xaml.FrameworkElement fe)
+        {
+            fe.RequestedTheme = IsDark 
+                ? Microsoft.UI.Xaml.ElementTheme.Dark 
+                : Microsoft.UI.Xaml.ElementTheme.Light;
+        }
+#endif
+    }
+
     private static void Apply()
     {
         var app = Application.Current;
@@ -105,5 +119,13 @@ public static class ThemeService
 
         foreach (var (key, dark, light) in Palette)
             app.Resources[key] = Color.FromArgb(IsDark ? dark : light);
+
+        foreach (var window in app.Windows)
+        {
+            if (window.Page is { } page)
+                page.BackgroundColor = Color.FromArgb(IsDark ? "#0C1017" : "#F6F4EE");
+
+            ApplyPlatformTheme(window);
+        }
     }
 }

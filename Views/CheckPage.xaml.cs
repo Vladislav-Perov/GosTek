@@ -7,6 +7,7 @@
  */
 using GosTek.Models;
 using GosTek.Services;
+using GosTek.Views.Controls;
 using Microsoft.Maui.Controls.Shapes;
 
 // В Shapes есть одноимённый Path
@@ -197,6 +198,7 @@ public partial class CheckPage : ContentPage
 
     private async Task PickAsync()
     {
+        HapticHelper.Click();
         if (_busy)
             return;
 
@@ -323,6 +325,7 @@ public partial class CheckPage : ContentPage
 
     private async void OnPrimaryTapped(object? sender, TappedEventArgs e)
     {
+        HapticHelper.Click();
         if (_busy)
             return;
 
@@ -354,6 +357,11 @@ public partial class CheckPage : ContentPage
                     _fixedIssues.Add(t);
 
             _issues = after;
+            if (changes > 0)
+            {
+                HapticHelper.Success();
+                Toast.Show($"Исправлено изменений: {changes}", "✨");
+            }
             _status = changes > 0
                 ? $"Исправлено: {RuFormat.Count(changes, "изменение", "изменения", "изменений")}. Остальное нужно поправить вручную."
                 : "Автоматически здесь ничего не изменилось. Поправьте это вручную в Word.";
@@ -381,6 +389,8 @@ public partial class CheckPage : ContentPage
                 return;
 
             SetBusy(false);
+            HapticHelper.Success();
+            Toast.Show("Копия сохранена", "💾");
             await ExportService.AfterSaveAsync(result);
         } catch (Exception ex) {
             System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
@@ -460,12 +470,32 @@ public partial class CheckPage : ContentPage
             SummaryLabel.Text = $"Найдено замечаний: {_issues.Count}. " +
                 (fixable.Count > 0 ? $"Автоматически исправим: {fixable.Count}." : "Все требуют ручной правки в Word.");
 
-        // Список замечаний
+        // Список замечаний с группировкой по категориям важности
         IssuesHost.Children.Clear();
-        foreach (var issue in _issues)
-            IssuesHost.Children.Add(BuildIssueCard(issue, isFixed: false));
-        foreach (var issue in _fixedIssues)
-            IssuesHost.Children.Add(BuildIssueCard(issue, isFixed: true));
+
+        var importantIssues = _issues.Where(i => i.Severity == IssueSeverity.Important).ToList();
+        var warningIssues = _issues.Where(i => i.Severity != IssueSeverity.Important).ToList();
+
+        if (importantIssues.Count > 0)
+        {
+            IssuesHost.Children.Add(BuildGroupHeader("Важные замечания", "⚠️", importantIssues.Count, "#EF4444"));
+            foreach (var issue in importantIssues)
+                IssuesHost.Children.Add(BuildIssueCard(issue, isFixed: false));
+        }
+
+        if (warningIssues.Count > 0)
+        {
+            IssuesHost.Children.Add(BuildGroupHeader("Желательные рекомендации", "ℹ️", warningIssues.Count, "#F59E0B"));
+            foreach (var issue in warningIssues)
+                IssuesHost.Children.Add(BuildIssueCard(issue, isFixed: false));
+        }
+
+        if (_fixedIssues.Count > 0)
+        {
+            IssuesHost.Children.Add(BuildGroupHeader("Исправлено автоматически", "✅", _fixedIssues.Count, "#10B981"));
+            foreach (var issue in _fixedIssues)
+                IssuesHost.Children.Add(BuildIssueCard(issue, isFixed: true));
+        }
     }
 
     private string BuildInfoText()
@@ -480,11 +510,68 @@ public partial class CheckPage : ContentPage
         return string.Join(" • ", parts);
     }
 
+    private static View BuildGroupHeader(string title, string icon, int count, string badgeColorHex)
+    {
+        var row = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitionCollection
+            {
+                new ColumnDefinition(GridLength.Auto),
+                new ColumnDefinition(GridLength.Star),
+                new ColumnDefinition(GridLength.Auto),
+            },
+            ColumnSpacing = 8,
+            Margin = new Thickness(2, 6, 2, 2),
+            VerticalOptions = LayoutOptions.Center,
+        };
+
+        var iconLabel = new Label { Text = icon, FontSize = 14, VerticalOptions = LayoutOptions.Center };
+        var titleLabel = new Label
+        {
+            Text = title,
+            FontSize = 13.5,
+            FontAttributes = FontAttributes.Bold,
+            VerticalOptions = LayoutOptions.Center,
+        };
+        titleLabel.SetDynamicResource(Label.TextColorProperty, "TextPrimary");
+
+        var badgeText = new Label
+        {
+            Text = count.ToString(),
+            FontSize = 11,
+            FontAttributes = FontAttributes.Bold,
+            TextColor = Color.FromArgb(badgeColorHex),
+            HorizontalOptions = LayoutOptions.Center,
+            VerticalOptions = LayoutOptions.Center,
+        };
+
+        var badge = new Border
+        {
+            StrokeThickness = 0,
+            StrokeShape = new RoundRectangle { CornerRadius = 8 },
+            Padding = new Thickness(8, 2),
+            BackgroundColor = Color.FromArgb(badgeColorHex).WithAlpha(0.16f),
+            VerticalOptions = LayoutOptions.Center,
+            Content = badgeText,
+        };
+
+        row.Children.Add(iconLabel);
+        Grid.SetColumn(iconLabel, 0);
+
+        row.Children.Add(titleLabel);
+        Grid.SetColumn(titleLabel, 1);
+
+        row.Children.Add(badge);
+        Grid.SetColumn(badge, 2);
+
+        return row;
+    }
+
     private View BuildIssueCard(CheckIssue issue, bool isFixed)
     {
         var card = new Border {
             StrokeThickness = 1,
-            StrokeShape = new RoundRectangle { CornerRadius = 14 },
+            StrokeShape = new RoundRectangle { CornerRadius = 16 },
             Padding = new Thickness(14, 12),
         };
         card.SetDynamicResource(VisualElement.BackgroundColorProperty, "CardBg");
@@ -567,7 +654,7 @@ public partial class CheckPage : ContentPage
             Text = "Исправить",
             FontSize = 12,
             FontAttributes = FontAttributes.Bold,
-            TextColor = Color.FromArgb("#064E3B"),
+            TextColor = Color.FromArgb("#FFFFFF"),
         };
 
         var button = new Border {

@@ -1,12 +1,13 @@
 /*
  * ==============================================================================
- * НАЗНАЧЕНИЕ: Интерактивная форма заполнения полей выбранного шаблона с живым предпросмотром А4
+ * НАЗНАЧЕНИЕ: Интерактивная форма заполнения полей выбранного шаблона с живым предпросмотром А4 по ГОСТ
  * СОДЕРЖИМОЕ: FieldsPage
  * ЗАВИСИМОСТИ: GosTek.Models, GosTek.Services, GosTek.TemplateEngine
  * ==============================================================================
  */
 using GosTek.Models;
 using GosTek.Services;
+using GosTek.Views.Controls;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace GosTek.Views;
@@ -27,13 +28,17 @@ public partial class FieldsPage : ContentPage
     private static readonly string SerifFont =
         DeviceInfo.Platform == DevicePlatform.Android ? "serif" : "Times New Roman";
 
-    // Абзацный отступ (три длинных пробела)
-    private const string Indent = "\u2003\u2003\u2003";
-
-    // Поле на экране: само поле ввода, рамка, красная подпись и контейнер (для прокрутки)
-    private sealed record FieldUi(TemplateField Field, InputView Input, Border Box, Label Error, View Container);
+    // Поле на экране: само поле ввода, рамка, красная подпись, контейнер и бейдж профиля
+    private sealed record FieldUi(
+        TemplateField Field,
+        InputView Input,
+        Border Box,
+        Label Error,
+        View Container,
+        View? ProfileTag = null);
 
     private TemplateDef? _template;
+    private RuleSet? _activeRule;
     private List<PreviewPara> _previewParas = new();
     private readonly List<FieldUi> _fields = new();
     private Dictionary<string, string> _values = new();
@@ -47,11 +52,30 @@ public partial class FieldsPage : ContentPage
 
     private string _templateId = "";
 
+    // Эффективный шрифт документа с учётом ГОСТ-правила и платформы
+    private string EffectiveFont
+    {
+        get
+        {
+            var font = _activeRule?.FontName;
+            if (DeviceInfo.Platform == DevicePlatform.Android)
+            {
+                if (string.IsNullOrWhiteSpace(font) || font.Contains("Times", StringComparison.OrdinalIgnoreCase))
+                    return "serif";
+                if (font.Contains("Arial", StringComparison.OrdinalIgnoreCase))
+                    return "sans-serif";
+                return font;
+            }
+            return !string.IsNullOrWhiteSpace(font) ? font : SerifFont;
+        }
+    }
+
     // Shell передаёт сюда id из адреса FieldsPage?id=...
     public string TemplateId
     {
         get => _templateId;
-        set {
+        set
+        {
             _templateId = value;
             BuildForm();
         }
@@ -116,12 +140,18 @@ public partial class FieldsPage : ContentPage
 
         TitleLabel.Text = _template.Title;
 
+        // Подбираем правило ГОСТ для шаблона
+        _activeRule = !string.IsNullOrWhiteSpace(_template.FilePath)
+            ? CustomRulesService.Instance.MatchRuleSetForTemplate(System.IO.Path.GetFileName(_template.FilePath))
+            : null;
+
         var draft = DraftStore.For(_template.Id);
         _values = draft;
 
         _previewParas = TemplateEngine.ReadPreview(_template.FilePath);
 
-        foreach (var field in _template.Fields) {
+        foreach (var field in _template.Fields)
+        {
             // Поля-даты по умолчанию = сегодня
             if (!draft.ContainsKey(field.Id) && TemplateCatalog.DefaultFor(field) is { } def)
                 draft[field.Id] = def;
@@ -147,16 +177,24 @@ public partial class FieldsPage : ContentPage
 
         var labelRow = new HorizontalStackLayout { Spacing = 8 };
         labelRow.Children.Add(label);
+
+        View? profileTag = null;
         if (field.Source != ProfileSource.None)
-            labelRow.Children.Add(CreateProfileTag());
+        {
+            profileTag = CreateProfileTag();
+            profileTag.IsVisible = !string.IsNullOrWhiteSpace(saved);
+            labelRow.Children.Add(profileTag);
+        }
 
         // Рамка + поле ввода
         var box = new Border();
         box.StyleClass = new[] { "FieldBox" };
 
         InputView input;
-        if (field.Multiline) {
-            var editor = new Editor {
+        if (field.Multiline)
+        {
+            var editor = new Editor
+            {
                 Placeholder = field.Placeholder,
                 Text = saved ?? "",
                 AutoSize = EditorAutoSizeOption.TextChanges,
@@ -164,8 +202,11 @@ public partial class FieldsPage : ContentPage
             editor.StyleClass = new[] { "FieldEditor" };
             box.Padding = new Thickness(16, 8);
             input = editor;
-        } else {
-            var entry = new Entry {
+        }
+        else
+        {
+            var entry = new Entry
+            {
                 Placeholder = field.Placeholder,
                 Text = saved ?? "",
             };
@@ -174,8 +215,29 @@ public partial class FieldsPage : ContentPage
         }
         box.Content = input;
 
+        var keyboard = SmartInputHelper.ResolveKeyboard(field.Label, field.Placeholder, field.Id);
+        if (input is Entry ent)
+            ent.Keyboard = keyboard;
+        else if (input is Editor edt)
+            edt.Keyboard = keyboard;
+
+        if (SmartInputHelper.IsDateField(field.Label, field.Placeholder, field.Id))
+        {
+            var todayChip = CreateTodayChip(() =>
+            {
+                HapticHelper.Click();
+                string today = SmartInputHelper.FormatToday();
+                if (input is Editor ed) ed.Text = today;
+                else if (input is Entry en) en.Text = today;
+            });
+            labelRow.Children.Add(todayChip);
+        }
+
+        bool isFio = SmartInputHelper.IsFioField(field.Label, field.Placeholder, field.Id);
+
         // Красная подпись под полем
-        var error = new Label {
+        var error = new Label
+        {
             Text = "Заполните поле",
             FontSize = 12,
             TextColor = ThemeService.ErrorColor,
@@ -187,12 +249,29 @@ public partial class FieldsPage : ContentPage
         stack.Children.Add(box);
         stack.Children.Add(error);
 
-        var ui = new FieldUi(field, input, box, error, stack);
+        var ui = new FieldUi(field, input, box, error, stack, profileTag);
 
         // Текст изменился: сохранить в черновик, убрать подсветку, обновить лист
         void Changed(string? text)
         {
+            if (isFio && !string.IsNullOrEmpty(text))
+            {
+                var titleCased = SmartInputHelper.ToTitleCase(text);
+                if (text != titleCased)
+                {
+                    if (input is Entry en)
+                    {
+                        int cur = en.CursorPosition;
+                        en.Text = titleCased;
+                        en.CursorPosition = Math.Min(cur, titleCased.Length);
+                        return;
+                    }
+                }
+            }
+
             draft[field.Id] = text ?? "";
+            if (ui.ProfileTag is not null)
+                ui.ProfileTag.IsVisible = !string.IsNullOrWhiteSpace(text) && field.Source != ProfileSource.None;
             if (!IsEmpty(ui))
                 FieldValidationHelper.Mark(ui.Box, ui.Error, false);
             QueueRender();
@@ -211,22 +290,53 @@ public partial class FieldsPage : ContentPage
 
     private static View CreateProfileTag()
     {
-        var text = new Label {
-            Text = "из профиля",
-            FontSize = 11,
+        var text = new Label
+        {
+            Text = "👤 из профиля",
+            FontSize = 10,
             FontAttributes = FontAttributes.Bold,
+            VerticalOptions = LayoutOptions.Center,
         };
         text.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
 
-        var tag = new Border {
+        var tag = new Border
+        {
             StrokeThickness = 0,
-            StrokeShape = new RoundRectangle { CornerRadius = 10 },
-            Padding = new Thickness(8, 2),
+            StrokeShape = new RoundRectangle { CornerRadius = 8 },
+            Padding = new Thickness(6, 2),
             VerticalOptions = LayoutOptions.Center,
             Content = text,
         };
         tag.SetDynamicResource(VisualElement.BackgroundColorProperty, "IconBoxBg");
         return tag;
+    }
+
+    private static View CreateTodayChip(Action onTap)
+    {
+        var text = new Label
+        {
+            Text = "📅 Сегодня",
+            FontSize = 10.5,
+            FontAttributes = FontAttributes.Bold,
+            VerticalOptions = LayoutOptions.Center,
+        };
+        text.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
+
+        var chip = new Border
+        {
+            StrokeThickness = 0,
+            StrokeShape = new RoundRectangle { CornerRadius = 8 },
+            Padding = new Thickness(8, 2),
+            VerticalOptions = LayoutOptions.Center,
+            Content = text,
+        };
+        chip.SetDynamicResource(VisualElement.BackgroundColorProperty, "IconBoxBg");
+
+        var tap = new TapGestureRecognizer();
+        tap.Tapped += (_, _) => onTap();
+        chip.GestureRecognizers.Add(tap);
+
+        return chip;
     }
 
     // ===== Пустое поле: подсветка =====
@@ -239,7 +349,8 @@ public partial class FieldsPage : ContentPage
     {
         int filled = 0;
 
-        foreach (var f in _fields) {
+        foreach (var f in _fields)
+        {
             if (f.Field.Source == ProfileSource.None)
                 continue;
             if (onlyEmpty && !IsEmpty(f))
@@ -250,6 +361,8 @@ public partial class FieldsPage : ContentPage
                 continue;
 
             f.Input.Text = value;   // TextChanged сохранит значение, уберёт подсветку, обновит лист
+            if (f.ProfileTag is not null)
+                f.ProfileTag.IsVisible = true;
             filled++;
         }
 
@@ -301,12 +414,14 @@ public partial class FieldsPage : ContentPage
     // ===== Собрать документ =====
     private async void OnBuildTapped(object? sender, TappedEventArgs e)
     {
+        HapticHelper.Click();
         if (_template is null)
             return;
 
         // Подсвечиваем все пустые поля и переходим к первому
         var empty = _fields.Where(IsEmpty).ToList();
-        if (empty.Count > 0) {
+        if (empty.Count > 0)
+        {
             foreach (var f in empty)
                 FieldValidationHelper.Mark(f.Box, f.Error, true);
 
@@ -340,14 +455,19 @@ public partial class FieldsPage : ContentPage
         if (_template is null)
             return;
 
-        try {
+        try
+        {
             var result = await ExportService.SaveDocxAsync(_template, _values, ExportName());
             if (result is null)
                 return;
 
             CloseExport();
+            HapticHelper.Success();
+            Toast.Show("Документ Word сохранён", "📝");
             await ExportService.AfterSaveAsync(result);
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             await Dialogs.AlertAsync("Не удалось сохранить", ex.Message, DialogKind.Danger);
         }
     }
@@ -358,14 +478,19 @@ public partial class FieldsPage : ContentPage
         if (_template is null)
             return;
 
-        try {
+        try
+        {
             var result = await ExportService.SaveDocxAsync(_template, _values, ExportName());
             if (result is null)
                 return;
 
             CloseExport();
+            HapticHelper.Click();
+            Toast.Show("Файл готов к отправке", "📤");
             await ExportService.ShareFileAsync(result.FilePath);
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             await Dialogs.AlertAsync("Не удалось поделиться", ex.Message, DialogKind.Danger);
         }
     }
@@ -376,18 +501,22 @@ public partial class FieldsPage : ContentPage
         if (_template is null)
             return;
 
-        try {
+        try
+        {
             var result = await ExportService.SavePdfAsync(_template, _values, ExportName());
             if (result is null)
                 return;
 
             CloseExport();
+            HapticHelper.Success();
+            Toast.Show("Документ PDF сохранён", "📕");
             await ExportService.AfterSaveAsync(result);
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             await Dialogs.AlertAsync("Не удалось сохранить PDF", ex.Message, DialogKind.Danger);
         }
     }
-
 
     // =====================================================================
 
@@ -433,7 +562,20 @@ public partial class FieldsPage : ContentPage
         var sheet = ActiveSheet;
         sheet.WidthRequest = w;
         sheet.MinimumHeightRequest = w * 297 / 210;   // пропорции А4
-        sheet.Padding = new Thickness(w * 0.13, w * 0.09, w * 0.06, w * 0.08);   // слева поле шире
+
+        // Масштаб: ширина листа w соответствует 21.0 см листа А4
+        double cmScale = w / 21.0;
+        double leftCm = _activeRule?.Left.Cm ?? 3.0;
+        double rightCm = _activeRule?.Right.Cm ?? 1.5;
+        double topCm = _activeRule?.Top.Cm ?? 2.0;
+        double bottomCm = _activeRule?.Bottom.Cm ?? 2.0;
+
+        sheet.Padding = new Thickness(
+            Math.Max(12, leftCm * cmScale),
+            Math.Max(12, topCm * cmScale),
+            Math.Max(10, rightCm * cmScale),
+            Math.Max(12, bottomCm * cmScale));
+
         sheet.Content = BuildSheet(w);
     }
 
@@ -442,13 +584,16 @@ public partial class FieldsPage : ContentPage
     {
         var stack = new VerticalStackLayout { Spacing = _font * 0.25 };
 
-        if (_previewParas.Count == 0) {
-            stack.Children.Add(new Label { Text = _template!.Title, TextColor = Ink, FontFamily = SerifFont });
+        if (_previewParas.Count == 0)
+        {
+            stack.Children.Add(new Label { Text = _template!.Title, TextColor = Ink, FontFamily = EffectiveFont });
             return stack;
         }
 
-        foreach (var para in _previewParas) {
-            if (para.Blank) {
+        foreach (var para in _previewParas)
+        {
+            if (para.Blank)
+            {
                 stack.Children.Add(new BoxView { HeightRequest = _font * 0.7, Color = Colors.Transparent });
                 continue;
             }
@@ -482,7 +627,8 @@ public partial class FieldsPage : ContentPage
         if (!string.IsNullOrWhiteSpace(v))
             return new Span { Text = v.Trim() };
 
-        return new Span {
+        return new Span
+        {
             Text = FieldOf(id) is { Placeholder.Length: > 0 } fld ? fld.Placeholder : FieldOf(id)?.Label ?? id,
             TextColor = GapText,
             BackgroundColor = GapBg,
@@ -499,24 +645,26 @@ public partial class FieldsPage : ContentPage
         foreach (var s in spans)
             formatted.Spans.Add(s);
 
-        return new Label {
+        return new Label
+        {
             FormattedText = formatted,
             TextColor = Ink,
-            FontFamily = SerifFont,
+            FontFamily = EffectiveFont,
             FontSize = _font,
             HorizontalTextAlignment = align,
             LineBreakMode = LineBreakMode.WordWrap,
         };
     }
 
-    private Label Heading(string text) => new() {
+    private Label Heading(string text) => new()
+    {
         Text = text,
         FontAttributes = FontAttributes.Bold,
         FontSize = _font + 2,
         CharacterSpacing = 1,
         HorizontalTextAlignment = TextAlignment.Center,
         TextColor = Ink,
-        FontFamily = SerifFont,
+        FontFamily = EffectiveFont,
         Margin = new Thickness(0, _font * 0.5, 0, 0),
     };
 }
