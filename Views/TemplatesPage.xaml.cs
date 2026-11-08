@@ -181,7 +181,7 @@ public partial class TemplatesPage : ContentPage
         if (sender is ListRow { BindingContext: TemplateItem item })
         {
             bool isFav = FavoritesService.Instance.Toggle(item.Id);
-            Toast.Show(isFav ? "Добавлено в избранное" : "Удалено из избранного", isFav ? "⭐" : "☆");
+            Toast.Show(isFav ? "Добавлено в избранное" : "Удалено из избранного", isFav ? "star" : "trash");
         }
     }
 

@@ -394,7 +394,7 @@ public partial class ScanPage : ContentPage
     private async void OnCopyTapped(object? sender, TappedEventArgs e)
     {
         HapticHelper.Click();
-        Toast.Show("Текст скопирован в буфер", "📋");
+        Toast.Show("Текст скопирован в буфер", "copy");
         await Clipboard.Default.SetTextAsync(RawTextEditor.Text ?? "");
 
         int version = ++_copyVersion;
@@ -422,7 +422,7 @@ public partial class ScanPage : ContentPage
         try {
             await ProfileStorage.SaveAsync(updated);
             HapticHelper.Success();
-            Toast.Show("Данные добавлены в профиль", "👤");
+            Toast.Show("Данные добавлены в профиль", "user");
 
             if (_mode == "passport")
                 await Shell.Current.GoToAsync("//ProfilePage");

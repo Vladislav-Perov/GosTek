@@ -1,7 +1,7 @@
 /*
  * ==============================================================================
- * НАЗНАЧЕНИЕ: Защищенное хранение персональных данных профиля в зашифрованном SecureStorage
- * СОДЕРЖИМОЕ: ProfileStorage
+ * НАЗНАЧЕНИЕ: Защищенное хранение персональных данных профиля и кастомных полей в зашифрованном SecureStorage
+ * СОДЕРЖИМОЕ: ProfileData, ProfileStorage, ProfileLoadStatus
  * ЗАВИСИМОСТИ: Microsoft.Maui.Storage.SecureStorage, GosTek.Views.ProfileRules
  * ==============================================================================
  */
@@ -16,7 +16,14 @@ public record ProfileData(
     string Address = "",
     string Phone = "",
     string Passport = "",
-    string Account = "");
+    string Account = "",
+    Dictionary<string, string>? CustomFields = null)
+{
+    public Dictionary<string, string> CustomFields { get; init; } =
+        CustomFields != null
+            ? new Dictionary<string, string>(CustomFields, StringComparer.OrdinalIgnoreCase)
+            : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+}
 
 /// <summary>Итог чтения профиля: нет данных — это не то же самое, что не удалось прочитать.</summary>
 public enum ProfileLoadStatus { Ok, Empty, Failed }
@@ -24,6 +31,7 @@ public enum ProfileLoadStatus { Ok, Empty, Failed }
 /// <summary>
 /// Хранение профиля только на устройстве. Данные лежат в SecureStorage
 /// (Android Keystore) одним JSON-значением, то есть в зашифрованном виде.
+/// Поддерживает базовые белорусские реквизиты и динамические CustomFields.
 /// </summary>
 public static class ProfileStorage
 {
@@ -43,15 +51,20 @@ public static class ProfileStorage
         }
 
         if (string.IsNullOrEmpty(json))
-            return (new ProfileData(), ProfileLoadStatus.Empty);
+            return (new ProfileData(CustomFields: new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)), ProfileLoadStatus.Empty);
 
         try {
             var data = JsonSerializer.Deserialize<ProfileData>(json);
-            return data is null
-                ? (new ProfileData(), ProfileLoadStatus.Failed)
-                : (data, ProfileLoadStatus.Ok);
+            if (data is null)
+                return (new ProfileData(CustomFields: new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)), ProfileLoadStatus.Failed);
+
+            var custom = data.CustomFields is not null
+                ? new Dictionary<string, string>(data.CustomFields, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            return (data with { CustomFields = custom }, ProfileLoadStatus.Ok);
         } catch (JsonException) {
-            return (new ProfileData(), ProfileLoadStatus.Failed);
+            return (new ProfileData(CustomFields: new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)), ProfileLoadStatus.Failed);
         }
     }
 

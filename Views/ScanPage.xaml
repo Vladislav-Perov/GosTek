@@ -146,7 +146,15 @@
                         Padding="14, 10"
                         Margin="4, 0">
                     <Grid ColumnDefinitions="Auto, *" ColumnSpacing="10" VerticalOptions="Center">
-                        <Label Text="💡" FontSize="16" VerticalOptions="Center" />
+                        <Path Data="{StaticResource IconBulb}"
+                              Stroke="{DynamicResource BrandGreen}"
+                              StrokeThickness="2"
+                              StrokeLineCap="Round"
+                              StrokeLineJoin="Round"
+                              Aspect="Uniform"
+                              WidthRequest="16"
+                              HeightRequest="16"
+                              VerticalOptions="Center" />
                         <Label Grid.Column="1"
                                Text="Поместите документ целиком в рамку при хорошем освещении."
                                FontSize="12.5"
@@ -209,7 +217,16 @@
                                             WidthRequest="32"
                                             HeightRequest="32"
                                             VerticalOptions="Center">
-                                        <Label Text="✨" FontSize="15" HorizontalOptions="Center" VerticalOptions="Center" />
+                                        <Path Data="{StaticResource IconSparkles}"
+                                              Stroke="{DynamicResource BrandGreen}"
+                                              StrokeThickness="2"
+                                              StrokeLineCap="Round"
+                                              StrokeLineJoin="Round"
+                                              Aspect="Uniform"
+                                              WidthRequest="16"
+                                              HeightRequest="16"
+                                              HorizontalOptions="Center"
+                                              VerticalOptions="Center" />
                                     </Border>
                                     <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
                                         <Label Text="Найдено автоматически"
@@ -357,7 +374,16 @@
                     <Border.Shadow>
                         <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.08" />
                     </Border.Shadow>
-                    <Label Text="🖼️" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
+                    <Path Data="{StaticResource IconImage}"
+                          Stroke="{DynamicResource TextPrimary}"
+                          StrokeThickness="2"
+                          StrokeLineCap="Round"
+                          StrokeLineJoin="Round"
+                          Aspect="Uniform"
+                          WidthRequest="20"
+                          HeightRequest="20"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center" />
                 </Border>
                 <Label Text="Галерея"
                        FontSize="11.5"
@@ -384,11 +410,17 @@
                 </Border.GestureRecognizers>
                 <Border StrokeShape="RoundRectangle 34"
                         StrokeThickness="0"
-                        BackgroundColor="{DynamicResource BrandGreen}">
-                    <Label Text="📷"
-                           FontSize="24"
-                           HorizontalOptions="Center"
-                           VerticalOptions="Center" />
+                        Background="{DynamicResource BrandGreenGradient}">
+                    <Path Data="{StaticResource IconCamera}"
+                          Stroke="White"
+                          StrokeThickness="2"
+                          StrokeLineCap="Round"
+                          StrokeLineJoin="Round"
+                          Aspect="Uniform"
+                          WidthRequest="24"
+                          HeightRequest="24"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center" />
                 </Border>
             </Border>
 
@@ -411,7 +443,16 @@
                     <Border.Shadow>
                         <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.08" />
                     </Border.Shadow>
-                    <Label Text="📁" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
+                    <Path Data="{StaticResource IconFolder}"
+                          Stroke="{DynamicResource TextPrimary}"
+                          StrokeThickness="2"
+                          StrokeLineCap="Round"
+                          StrokeLineJoin="Round"
+                          Aspect="Uniform"
+                          WidthRequest="20"
+                          HeightRequest="20"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center" />
                 </Border>
                 <Label Text="Файл"
                        FontSize="11.5"

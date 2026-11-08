@@ -1,10 +1,11 @@
 /*
  * ==============================================================================
- * НАЗНАЧЕНИЕ: Экран редактирования реквизитов организации и гражданина с динамической валидацией
+ * НАЗНАЧЕНИЕ: Экран редактирования реквизитов организации и гражданина с динамической валидацией и пользовательскими полями
  * СОДЕРЖИМОЕ: ProfilePage
- * ЗАВИСИМОСТИ: GosTek.Views.ProfileRules, GosTek.Views.ProfileStorage
+ * ЗАВИСИМОСТИ: GosTek.Views.ProfileRules, GosTek.Views.ProfileStorage, GosTek.Resources.Styles.Icons
  * ==============================================================================
  */
+using GosTek.Resources.Styles;
 using GosTek.Services;
 using GosTek.Views.Controls;
 
@@ -34,15 +35,20 @@ public partial class ProfilePage : ContentPage
 
     // Поле на экране: поле ввода, рамка вокруг него и красная подпись с ошибкой
     private sealed record FieldUi(ProfileField Field, Entry Entry, Border Box, Label Error);
+    private sealed record CustomFieldUi(string Name, Entry Entry, Border Box, View Container);
 
     private readonly List<FieldUi> _fields = new();
+    private readonly List<CustomFieldUi> _customFields = new();
 
     // Снимок формы на момент загрузки/сохранения: по нему видно несохранённые правки
     private string _baseline = "";
     private bool _leaving;
     private bool _isUpdatingFields;
 
-    private string Snapshot() => string.Join("\u001f", _fields.Select(f => f.Entry.Text ?? ""));
+    private string Snapshot() =>
+        string.Join("\u001f", _fields.Select(f => f.Entry.Text ?? "")) + "\u001e" +
+        string.Join("\u001f", _customFields.Select(c => $"{c.Name}:{c.Entry.Text}"));
+
     private bool HasUnsaved => Snapshot() != _baseline;
 
     public ProfilePage()
@@ -59,7 +65,6 @@ public partial class ProfilePage : ContentPage
             field.Entry.TextChanged += (_, _) => {
                 if (_isUpdatingFields)
                     return;
-
 
                 if (field.Field == ProfileField.FullName)
                 {
@@ -119,6 +124,112 @@ public partial class ProfilePage : ContentPage
         stack.Children.Add(box);
         stack.Children.Add(error);
         return stack;
+    }
+
+    // Создание строки для пользовательского динамического поля (CustomField)
+    private View CreateCustomFieldUi(string fieldName, string? initialValue)
+    {
+        var label = new Label
+        {
+            Text = fieldName,
+            StyleClass = new[] { "FieldLabel" },
+            VerticalOptions = LayoutOptions.Center,
+        };
+
+        var trashPath = Icons.CreatePath("trash", size: 14, strokeColorResource: "TextSecondary", strokeThickness: 1.8);
+        trashPath.VerticalOptions = LayoutOptions.Center;
+        trashPath.HorizontalOptions = LayoutOptions.Center;
+
+        var deleteBtn = new Border
+        {
+            StrokeThickness = 0,
+            BackgroundColor = Colors.Transparent,
+            Padding = new Thickness(6, 4),
+            Content = trashPath,
+            HorizontalOptions = LayoutOptions.End,
+            VerticalOptions = LayoutOptions.Center,
+        };
+
+        var headerGrid = new Grid
+        {
+            ColumnDefinitions =
+            {
+                new ColumnDefinition { Width = GridLength.Star },
+                new ColumnDefinition { Width = GridLength.Auto }
+            }
+        };
+        headerGrid.Children.Add(label);
+        Grid.SetColumn(label, 0);
+        headerGrid.Children.Add(deleteBtn);
+        Grid.SetColumn(deleteBtn, 1);
+
+        var entry = new Entry
+        {
+            Placeholder = $"Значение для «{fieldName}»",
+            Text = initialValue ?? "",
+            StyleClass = new[] { "FieldEntry" },
+        };
+
+        entry.TextChanged += (_, _) =>
+        {
+            if (!_isUpdatingFields)
+                UpdateProgress(animated: true);
+        };
+
+        var box = new Border
+        {
+            Content = entry,
+            StyleClass = new[] { "FieldBox" }
+        };
+
+        var stack = new VerticalStackLayout { Spacing = 6 };
+        stack.Children.Add(headerGrid);
+        stack.Children.Add(box);
+
+        var customUi = new CustomFieldUi(fieldName, entry, box, stack);
+        _customFields.Add(customUi);
+
+        var tap = new TapGestureRecognizer();
+        tap.Tapped += (_, _) =>
+        {
+            HapticHelper.Click();
+            _customFields.Remove(customUi);
+            CustomFieldsHost.Children.Remove(stack);
+        };
+        deleteBtn.GestureRecognizers.Add(tap);
+
+        return stack;
+    }
+
+    public async void OnAddCustomFieldTapped(object? sender, TappedEventArgs e)
+    {
+        HapticHelper.Click();
+        var name = await DisplayPromptAsync(
+            "Новое поле профиля",
+            "Введите название реквизита (например: Должность, Отдел, Номер договора):",
+            "Добавить",
+            "Отмена",
+            placeholder: "Название поля",
+            maxLength: 60);
+
+        if (string.IsNullOrWhiteSpace(name))
+            return;
+
+        name = name.Trim();
+
+        if (Specs.Any(s => string.Equals(s.Label, name, StringComparison.OrdinalIgnoreCase)) ||
+            _customFields.Any(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)))
+        {
+            await Dialogs.AlertAsync("Поле уже существует", $"Поле с названием «{name}» уже есть в профиле.", DialogKind.Warning);
+            return;
+        }
+
+        var view = CreateCustomFieldUi(name, "");
+        CustomFieldsHost.Children.Add(view);
+        Toast.Show($"Поле «{name}» добавлено", "plus");
+
+        var created = _customFields.FirstOrDefault(c => string.Equals(c.Name, name, StringComparison.Ordinal));
+        created?.Entry.Focus();
     }
 
     protected override async void OnAppearing()
@@ -219,6 +330,17 @@ public partial class ProfilePage : ContentPage
         try {
             foreach (var f in _fields)
                 f.Entry.Text = ProfileRules.Get(profile, f.Field);
+
+            _customFields.Clear();
+            CustomFieldsHost.Children.Clear();
+            if (profile.CustomFields != null)
+            {
+                foreach (var (k, v) in profile.CustomFields)
+                {
+                    var view = CreateCustomFieldUi(k, v);
+                    CustomFieldsHost.Children.Add(view);
+                }
+            }
         } finally {
             _isUpdatingFields = false;
         }
@@ -247,6 +369,14 @@ public partial class ProfilePage : ContentPage
             return normalize ? ProfileRules.Normalize(field, text) : text ?? "";
         }
 
+        var customDict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var c in _customFields)
+        {
+            var val = c.Entry.Text?.Trim() ?? "";
+            if (!string.IsNullOrWhiteSpace(val))
+                customDict[c.Name] = val;
+        }
+
         return new ProfileData(
             FullName: Get(ProfileField.FullName),
             OrgName: Get(ProfileField.OrgName),
@@ -254,7 +384,8 @@ public partial class ProfilePage : ContentPage
             Address: Get(ProfileField.Address),
             Phone: Get(ProfileField.Phone),
             Passport: Get(ProfileField.Passport),
-            Account: Get(ProfileField.Account));
+            Account: Get(ProfileField.Account),
+            CustomFields: customDict);
     }
 
     // ===== Сохранение =====
@@ -269,6 +400,9 @@ public partial class ProfilePage : ContentPage
     {
         foreach (var f in _fields)
             f.Entry.Unfocus();
+
+        foreach (var c in _customFields)
+            c.Entry.Unfocus();
 
         // Проверяем все поля; незаполненные пропускаем, неверные подсвечиваем
         var invalid = _fields.Where(f => !ApplyValidation(f)).ToList();
@@ -319,7 +453,7 @@ public partial class ProfilePage : ContentPage
             if (!silent)
             {
                 HapticHelper.Success();
-                Toast.Show("Профиль сохранён", "👤");
+                Toast.Show("Профиль сохранён", "user");
             }
 
             return true;

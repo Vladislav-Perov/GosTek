@@ -288,7 +288,15 @@
                             <TapGestureRecognizer Tapped="OnPreviewTapped" />
                         </Border.GestureRecognizers>
                         <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
-                            <Label Text="👁️" FontSize="16" VerticalOptions="Center" />
+                            <Path Data="{StaticResource IconEye}"
+                                  Stroke="{DynamicResource TextPrimary}"
+                                  StrokeThickness="2"
+                                  StrokeLineCap="Round"
+                                  StrokeLineJoin="Round"
+                                  Aspect="Uniform"
+                                  WidthRequest="16"
+                                  HeightRequest="16"
+                                  VerticalOptions="Center" />
                             <Label Text="Предпросмотр"
                                    FontSize="15"
                                    FontAttributes="Bold"
@@ -302,12 +310,21 @@
                             StyleClass="HoverGreen"
                             StrokeShape="RoundRectangle 14"
                             StrokeThickness="0"
-                            Padding="12,14">
+                            Padding="12,14"
+                            Background="{DynamicResource BrandGreenGradient}">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnSaveTapped" />
                         </Border.GestureRecognizers>
                         <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
-                            <Label Text="💾" FontSize="16" VerticalOptions="Center" />
+                            <Path Data="{StaticResource IconSave}"
+                                  Stroke="White"
+                                  StrokeThickness="2"
+                                  StrokeLineCap="Round"
+                                  StrokeLineJoin="Round"
+                                  Aspect="Uniform"
+                                  WidthRequest="16"
+                                  HeightRequest="16"
+                                  VerticalOptions="Center" />
                             <Label Text="Сохранить"
                                    FontSize="15"
                                    FontAttributes="Bold"
@@ -330,11 +347,22 @@
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnDeleteTapped" />
                     </Border.GestureRecognizers>
-                    <Label Text="🗑️ Удалить это правило"
-                           FontSize="14"
-                           FontAttributes="Bold"
-                           TextColor="#EF4444"
-                           HorizontalOptions="Center" />
+                    <HorizontalStackLayout HorizontalOptions="Center" Spacing="6">
+                        <Path Data="{StaticResource IconTrash}"
+                              Stroke="#EF4444"
+                              StrokeThickness="2"
+                              StrokeLineCap="Round"
+                              StrokeLineJoin="Round"
+                              Aspect="Uniform"
+                              WidthRequest="14"
+                              HeightRequest="14"
+                              VerticalOptions="Center" />
+                        <Label Text="Удалить это правило"
+                               FontSize="14"
+                               FontAttributes="Bold"
+                               TextColor="#EF4444"
+                               VerticalOptions="Center" />
+                    </HorizontalStackLayout>
                 </Border>
             </VerticalStackLayout>
         </Grid>

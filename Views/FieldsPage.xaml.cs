@@ -6,6 +6,7 @@
  * ==============================================================================
  */
 using GosTek.Models;
+using GosTek.Resources.Styles;
 using GosTek.Services;
 using GosTek.Views.Controls;
 using Microsoft.Maui.Controls.Shapes;
@@ -290,14 +291,22 @@ public partial class FieldsPage : ContentPage
 
     private static View CreateProfileTag()
     {
+        var icon = Icons.CreatePath(Icons.User, size: 10, strokeColorResource: "BrandGreen");
         var text = new Label
         {
-            Text = "👤 из профиля",
+            Text = "из профиля",
             FontSize = 10,
             FontAttributes = FontAttributes.Bold,
             VerticalOptions = LayoutOptions.Center,
         };
         text.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
+
+        var stack = new HorizontalStackLayout
+        {
+            Spacing = 4,
+            VerticalOptions = LayoutOptions.Center,
+            Children = { icon, text },
+        };
 
         var tag = new Border
         {
@@ -305,7 +314,7 @@ public partial class FieldsPage : ContentPage
             StrokeShape = new RoundRectangle { CornerRadius = 8 },
             Padding = new Thickness(6, 2),
             VerticalOptions = LayoutOptions.Center,
-            Content = text,
+            Content = stack,
         };
         tag.SetDynamicResource(VisualElement.BackgroundColorProperty, "IconBoxBg");
         return tag;
@@ -313,14 +322,22 @@ public partial class FieldsPage : ContentPage
 
     private static View CreateTodayChip(Action onTap)
     {
+        var icon = Icons.CreatePath(Icons.Calendar, size: 11, strokeColorResource: "BrandGreen");
         var text = new Label
         {
-            Text = "📅 Сегодня",
+            Text = "Сегодня",
             FontSize = 10.5,
             FontAttributes = FontAttributes.Bold,
             VerticalOptions = LayoutOptions.Center,
         };
         text.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
+
+        var stack = new HorizontalStackLayout
+        {
+            Spacing = 4,
+            VerticalOptions = LayoutOptions.Center,
+            Children = { icon, text },
+        };
 
         var chip = new Border
         {
@@ -328,7 +345,7 @@ public partial class FieldsPage : ContentPage
             StrokeShape = new RoundRectangle { CornerRadius = 8 },
             Padding = new Thickness(8, 2),
             VerticalOptions = LayoutOptions.Center,
-            Content = text,
+            Content = stack,
         };
         chip.SetDynamicResource(VisualElement.BackgroundColorProperty, "IconBoxBg");
 
@@ -351,12 +368,16 @@ public partial class FieldsPage : ContentPage
 
         foreach (var f in _fields)
         {
-            if (f.Field.Source == ProfileSource.None)
-                continue;
             if (onlyEmpty && !IsEmpty(f))
                 continue;
 
-            var value = TemplateCatalog.FromProfile(f.Field.Source, profile);
+            string? value = null;
+            if (f.Field.Source != ProfileSource.None)
+                value = TemplateCatalog.FromProfile(f.Field.Source, profile);
+
+            if (string.IsNullOrWhiteSpace(value))
+                value = TemplateEngine.ResolveCustomField(f.Field.Label, profile.CustomFields);
+
             if (string.IsNullOrWhiteSpace(value))
                 continue;
 
@@ -463,7 +484,7 @@ public partial class FieldsPage : ContentPage
 
             CloseExport();
             HapticHelper.Success();
-            Toast.Show("Документ Word сохранён", "📝");
+            Toast.Show("Документ Word сохранён", "file");
             await ExportService.AfterSaveAsync(result);
         }
         catch (Exception ex)
@@ -486,7 +507,7 @@ public partial class FieldsPage : ContentPage
 
             CloseExport();
             HapticHelper.Click();
-            Toast.Show("Файл готов к отправке", "📤");
+            Toast.Show("Файл готов к отправке", "share");
             await ExportService.ShareFileAsync(result.FilePath);
         }
         catch (Exception ex)
@@ -509,7 +530,7 @@ public partial class FieldsPage : ContentPage
 
             CloseExport();
             HapticHelper.Success();
-            Toast.Show("Документ PDF сохранён", "📕");
+            Toast.Show("Документ PDF сохранён", "file");
             await ExportService.AfterSaveAsync(result);
         }
         catch (Exception ex)

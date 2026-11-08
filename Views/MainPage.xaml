@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!--
  ==============================================================================
- НАЗНАЧЕНИЕ: Главный дашборд приложения с виджетами готовности профиля, быстрого старта и действий
+ НАЗНАЧЕНИЕ: Главный дашборд приложения с радиальным градиентом, векторными иконками и градиентными кнопками
  СОДЕРЖИМОЕ: MainPage (ContentPage)
- ЗАВИСИМОСТИ: GosTek.Views, GosTek.Models, GosTek.Views.SettingsPanel, GosTek.Views.AppTabBar
+ ЗАВИСИМОСТИ: GosTek.Views, GosTek.Models, GosTek.Views.SettingsPanel, GosTek.Views.AppTabBar, GosTek.Resources.Styles.Icons
  ==============================================================================
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
@@ -12,10 +12,11 @@
              xmlns:models="clr-namespace:GosTek.Models"
              x:Class="GosTek.Views.MainPage"
              Title="Главная"
-             BackgroundColor="{DynamicResource PageBg}"
              Shell.NavBarIsVisible="False">
 
-    <Grid RowDefinitions="Auto, *, Auto">
+    <!-- Радиальный фон дизайн-системы для избавления от плоского вида -->
+    <Grid RowDefinitions="Auto, *, Auto"
+          Background="{DynamicResource MainPageBackgroundBrush}">
 
         <!-- ==================== ШАПКА ==================== -->
         <Grid Grid.Row="0"
@@ -25,7 +26,7 @@
               MaximumWidthRequest="700"
               HorizontalOptions="Fill">
 
-            <!-- Кнопка «Настройки» (шестеренка в карточке 44x44) -->
+            <!-- Кнопка «Настройки» (ползунки Sliders в карточке 44x44) -->
             <Border Grid.Column="0"
                     StyleClass="HoverCard"
                     StrokeThickness="1"
@@ -41,7 +42,7 @@
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnSettingsTapped" />
                 </Border.GestureRecognizers>
-                <Path Data="M3,6 L10,6 M14,6 L21,6 M10,3.5 L10,8.5 M3,12 L15,12 M19,12 L21,12 M15,9.5 L15,14.5 M3,18 L6,18 M10,18 L21,18 M6,15.5 L6,20.5"
+                <Path Data="{StaticResource IconSliders}"
                       Stroke="{DynamicResource TextPrimary}"
                       StrokeThickness="2"
                       StrokeLineCap="Round"
@@ -87,14 +88,14 @@
                        HorizontalTextAlignment="Center"
                        Margin="0, 4, 0, 4" />
 
-                <!-- Главная премиальная изумрудная карточка «Создать документ» -->
+                <!-- Главная премиальная градиентная карточка «Создать документ» -->
                 <Border StyleClass="HoverGreen"
                         StrokeShape="RoundRectangle 22"
                         StrokeThickness="0"
                         Padding="22, 20"
-                        BackgroundColor="{DynamicResource BrandGreen}">
+                        Background="{DynamicResource BrandGreenGradient}">
                     <Border.Shadow>
-                        <Shadow Brush="Black" Offset="0,4" Radius="10" Opacity="0.18" />
+                        <Shadow Brush="Black" Offset="0,4" Radius="12" Opacity="0.22" />
                     </Border.Shadow>
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnCreateTapped" />
@@ -160,10 +161,16 @@
                                     WidthRequest="42"
                                     HeightRequest="42"
                                     HorizontalOptions="Start">
-                                <Label Text="🛡️"
-                                       FontSize="18"
-                                       HorizontalOptions="Center"
-                                       VerticalOptions="Center" />
+                                <Path Data="{StaticResource IconShield}"
+                                      Stroke="{DynamicResource BrandGreen}"
+                                      StrokeThickness="2"
+                                      StrokeLineCap="Round"
+                                      StrokeLineJoin="Round"
+                                      Aspect="Uniform"
+                                      WidthRequest="20"
+                                      HeightRequest="20"
+                                      HorizontalOptions="Center"
+                                      VerticalOptions="Center" />
                             </Border>
 
                             <VerticalStackLayout Spacing="3">
@@ -201,10 +208,16 @@
                                     WidthRequest="42"
                                     HeightRequest="42"
                                     HorizontalOptions="Start">
-                                <Label Text="📷"
-                                       FontSize="18"
-                                       HorizontalOptions="Center"
-                                       VerticalOptions="Center" />
+                                <Path Data="{StaticResource IconCamera}"
+                                      Stroke="{DynamicResource BrandGreen}"
+                                      StrokeThickness="2"
+                                      StrokeLineCap="Round"
+                                      StrokeLineJoin="Round"
+                                      Aspect="Uniform"
+                                      WidthRequest="20"
+                                      HeightRequest="20"
+                                      HorizontalOptions="Center"
+                                      VerticalOptions="Center" />
                             </Border>
 
                             <VerticalStackLayout Spacing="3">
@@ -239,14 +252,24 @@
                     </Border.GestureRecognizers>
 
                     <VerticalStackLayout Spacing="10">
-                        <Grid ColumnDefinitions="*, Auto" VerticalOptions="Center">
-                            <Label Text="Мой профиль 👤"
+                        <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="8" VerticalOptions="Center">
+                            <Path Data="{StaticResource IconUser}"
+                                  Stroke="{DynamicResource BrandGreen}"
+                                  StrokeThickness="2"
+                                  StrokeLineCap="Round"
+                                  StrokeLineJoin="Round"
+                                  Aspect="Uniform"
+                                  WidthRequest="16"
+                                  HeightRequest="16"
+                                  VerticalOptions="Center" />
+                            <Label Grid.Column="1"
+                                   Text="Мой профиль"
                                    FontSize="15"
                                    FontAttributes="Bold"
                                    TextColor="{DynamicResource TextPrimary}"
                                    VerticalOptions="Center" />
                             <Label x:Name="ProfilePercentLabel"
-                                   Grid.Column="1"
+                                   Grid.Column="2"
                                    Text="0%"
                                    FontSize="14"
                                    FontAttributes="Bold"
@@ -283,7 +306,7 @@
                     <VerticalStackLayout x:Name="QuickStartList" Spacing="10">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="models:TemplateItem">
-                                <views:ListRow Icon="📄"
+                                <views:ListRow Icon="file"
                                                Title="{Binding Title}"
                                                Subtitle="{Binding Description}"
                                                Tapped="OnTemplateTapped" />

@@ -1,10 +1,11 @@
 /*
  * ==============================================================================
- * НАЗНАЧЕНИЕ: Компонент всплывающих уведомлений (Toast Notifications) с плавной анимацией
+ * НАЗНАЧЕНИЕ: Компонент всплывающих уведомлений (Toast Notifications) с векторными иконками и плавной анимацией
  * СОДЕРЖИМОЕ: Toast
- * ЗАВИСИМОСТИ: Microsoft.Maui.Controls, GosTek.Services.HapticHelper
+ * ЗАВИСИМОСТИ: Microsoft.Maui.Controls, GosTek.Services.HapticHelper, GosTek.Resources.Styles.Icons
  * ==============================================================================
  */
+using GosTek.Resources.Styles;
 using GosTek.Services;
 using Microsoft.Maui.Controls.Shapes;
 
@@ -12,7 +13,7 @@ namespace GosTek.Views.Controls;
 
 /// <summary>
 /// Легковесные всплывающие уведомления (тосты), не блокирующие интерфейс.
-/// Появляются снизу экрана, отображают иконку с сообщением и плавно исчезают.
+/// Появляются снизу экрана, отображают векторную иконку с сообщением и плавно исчезают.
 /// </summary>
 public static class Toast
 {
@@ -21,7 +22,7 @@ public static class Toast
     /// <summary>
     /// Отображает всплывающее уведомление поверх текущей активной страницы.
     /// </summary>
-    public static void Show(string message, string icon = "✓", int durationMs = 2200)
+    public static void Show(string message, string icon = "check_ok", int durationMs = 2200)
     {
         _ = ShowAsync(message, icon, durationMs);
     }
@@ -29,7 +30,7 @@ public static class Toast
     /// <summary>
     /// Асинхронное отображение всплывающего уведомления с анимацией.
     /// </summary>
-    public static async Task ShowAsync(string message, string icon = "✓", int durationMs = 2200)
+    public static async Task ShowAsync(string message, string icon = "check_ok", int durationMs = 2200)
     {
         if (string.IsNullOrWhiteSpace(message))
             return;
@@ -45,10 +46,12 @@ public static class Toast
 
             HapticHelper.Click();
 
+            var vectorPath = Icons.CreatePath(Icons.ResolvePath(icon), size: 16, strokeColorResource: "BrandGreen");
+
             var pill = new Border
             {
-                BackgroundColor = Color.FromArgb("#16213A"),
-                Stroke = new SolidColorBrush(Color.FromArgb("#2A3142")),
+                BackgroundColor = Color.FromArgb("#0F172A"),
+                Stroke = new SolidColorBrush(Color.FromArgb("#334155")),
                 StrokeThickness = 1,
                 StrokeShape = new RoundRectangle { CornerRadius = 16 },
                 Padding = new Thickness(16, 10),
@@ -64,20 +67,15 @@ public static class Toast
                     Brush = new SolidColorBrush(Colors.Black),
                     Offset = new Point(0, 4),
                     Radius = 12,
-                    Opacity = 0.28f,
+                    Opacity = 0.32f,
                 },
                 Content = new HorizontalStackLayout
                 {
-                    Spacing = 8,
+                    Spacing = 10,
                     VerticalOptions = LayoutOptions.Center,
                     Children =
                     {
-                        new Label
-                        {
-                            Text = icon,
-                            FontSize = 14,
-                            VerticalOptions = LayoutOptions.Center,
-                        },
+                        vectorPath,
                         new Label
                         {
                             Text = message,

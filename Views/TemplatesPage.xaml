@@ -2,8 +2,8 @@
 <!--
  ==============================================================================
  НАЗНАЧЕНИЕ: Каталог шаблонов документов с автообновлением, категоризацией и полнотекстовым поиском
- СОДЕРЖИМОЕ: ContentPage, Grid, ScrollView, Border, Entry, ChipBar, ListRow, AppTabBar, ThemeToggle
- ЗАВИСИМОСТИ: GosTek.Views.TemplatesPage, GosTek.Controls.ChipBar, GosTek.Views.ThemeToggle, GosTek.Views.AppTabBar, GosTek.Views.ListRow
+ СОДЕРЖИМОЕ: ContentPage, Grid, ScrollView, Border, Entry, ChipBar, ListRow, AppTabBar, ThemeToggle, Path
+ ЗАВИСИМОСТИ: GosTek.Views.TemplatesPage, GosTek.Controls.ChipBar, GosTek.Views.ThemeToggle, GosTek.Views.AppTabBar, GosTek.Views.ListRow, GosTek.Resources.Styles.Icons
  ==============================================================================
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
@@ -17,9 +17,9 @@
              Shell.NavBarIsVisible="False">
 
     <ContentPage.Resources>
-        <!-- Строка списка: карточка в стиле дизайн-системы с избранным -->
+        <!-- Строка списка: карточка в стиле дизайн-системы с избранным и векторной иконкой -->
         <DataTemplate x:Key="TemplateRow" x:DataType="models:TemplateItem">
-            <views:ListRow Icon="📄"
+            <views:ListRow Icon="file"
                            Title="{Binding Title}"
                            Subtitle="{Binding Description}"
                            ShowFavorite="True"
@@ -111,10 +111,14 @@
                                CharacterSpacing="0.8"
                                TextColor="{DynamicResource BrandGreen}"
                                VerticalOptions="Center" />
-                        <Label Grid.Column="1"
-                               Text="⭐"
-                               FontSize="13"
-                               VerticalOptions="Center" />
+                        <Path Grid.Column="1"
+                              Data="{StaticResource IconStarFilled}"
+                              Stroke="{DynamicResource BrandGreen}"
+                              Fill="{DynamicResource BrandGreen}"
+                              WidthRequest="14"
+                              HeightRequest="14"
+                              Aspect="Uniform"
+                              VerticalOptions="Center" />
                     </Grid>
 
                     <VerticalStackLayout x:Name="FavoritesList"
@@ -133,10 +137,14 @@
                                CharacterSpacing="0.8"
                                TextColor="{DynamicResource TextSecondary}"
                                VerticalOptions="Center" />
-                        <Label Grid.Column="1"
-                               Text="🕒"
-                               FontSize="13"
-                               VerticalOptions="Center" />
+                        <Path Grid.Column="1"
+                              Data="{StaticResource IconCalendar}"
+                              Stroke="{DynamicResource TextSecondary}"
+                              StrokeThickness="2"
+                              WidthRequest="14"
+                              HeightRequest="14"
+                              Aspect="Uniform"
+                              VerticalOptions="Center" />
                     </Grid>
 
                     <VerticalStackLayout x:Name="RecentList"
@@ -179,7 +187,14 @@
                                 WidthRequest="56"
                                 HeightRequest="56"
                                 HorizontalOptions="Center">
-                            <Label Text="📄" FontSize="26" HorizontalOptions="Center" VerticalOptions="Center" />
+                            <Path Data="{StaticResource IconFileText}"
+                                  Stroke="{DynamicResource BrandGreen}"
+                                  StrokeThickness="2"
+                                  WidthRequest="26"
+                                  HeightRequest="26"
+                                  Aspect="Uniform"
+                                  HorizontalOptions="Center"
+                                  VerticalOptions="Center" />
                         </Border>
 
                         <Label x:Name="EmptyLabel"
@@ -190,7 +205,7 @@
                                LineBreakMode="WordWrap"
                                TextColor="{DynamicResource TextPrimary}" />
 
-                        <Label Text="Попробуйте изменить поисковый запрос или выбрать категорию «Все»."
+                        <Label Text="Попробуйте изменить поисковый запрос или выбрать другую категорию"
                                FontSize="13"
                                HorizontalTextAlignment="Center"
                                LineBreakMode="WordWrap"

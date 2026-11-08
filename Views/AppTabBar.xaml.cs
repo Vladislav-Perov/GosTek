@@ -1,17 +1,19 @@
 /*
  * ==============================================================================
- * НАЗНАЧЕНИЕ: Компонент нижней навигационной панели приложения с вкладками
+ * НАЗНАЧЕНИЕ: Компонент нижней навигационной панели приложения с векторными иконками
  * СОДЕРЖИМОЕ: AppTabBar
- * ЗАВИСИМОСТИ: Microsoft.Maui.Controls
+ * ЗАВИСИМОСТИ: Microsoft.Maui.Controls, GosTek.Resources.Styles.Icons, GosTek.Services.HapticHelper
  * ==============================================================================
  */
+using GosTek.Resources.Styles;
 using GosTek.Services;
 using Microsoft.Maui.Controls.Shapes;
+using MauiPath = Microsoft.Maui.Controls.Shapes.Path;
 
 namespace GosTek.Views;
 
 /// <summary>
-/// Общий нижний таббар. Страница указывает активную вкладку: ActiveTab="home".
+/// Общий нижний таббар с векторными иконками. Страница указывает активную вкладку: ActiveTab="home".
 /// Ключи вкладок: home, templates, scan, check, profile.
 /// </summary>
 public partial class AppTabBar : ContentView
@@ -19,15 +21,15 @@ public partial class AppTabBar : ContentView
     private const double HoverScale = 1.08;
 
     // Route = null: перехода нет, вкладка показывает заглушку (сейчас такой вкладки нет)
-    private sealed record Tab(string Key, string Icon, string Title, string? Route);
+    private sealed record Tab(string Key, string IconKey, string Title, string? Route);
 
     private static readonly Tab[] TabList =
     {
-        new("home",      "🏠",  "Главная",  "//MainPage"),
-        new("templates", "📋",  "Шаблоны",  "//TemplatesPage"),
-        new("scan",      "📷",  "Скан",     "//ScanPage"),
-        new("check",     "🛡️", "Проверка", "//CheckPage"),
-        new("profile",   "👤",  "Профиль",  "//ProfilePage"),
+        new("home",      "home",      "Главная",  "//MainPage"),
+        new("templates", "templates", "Шаблоны",  "//TemplatesPage"),
+        new("scan",      "scan",      "Скан",     "//ScanPage"),
+        new("check",     "check",     "Проверка", "//CheckPage"),
+        new("profile",   "profile",   "Профиль",  "//ProfilePage"),
     };
 
     public static readonly BindableProperty ActiveTabProperty = BindableProperty.Create(
@@ -69,11 +71,13 @@ public partial class AppTabBar : ContentView
         ApplyStates();
     }
 
-    // Вкладка: иконка и подпись в скруглённой рамке + жесты. Цвета выставляет ApplyStates
+    // Вкладка: векторная иконка и подпись в скруглённой рамке + жесты. Цвета выставляет ApplyStates
     private Border CreateTab(Tab tab)
     {
-        var content = new VerticalStackLayout { Spacing = 2 };
-        content.Children.Add(new Label { Text = tab.Icon, FontSize = 18, HorizontalOptions = LayoutOptions.Center });
+        var content = new VerticalStackLayout { Spacing = 3 };
+        var iconPath = Icons.CreatePath(Icons.ResolvePath(tab.IconKey), size: 18, strokeColorResource: "TextSecondary");
+        content.Children.Add(iconPath);
+
         content.Children.Add(new Label {
             Text = tab.Title,
             FontSize = 10,
@@ -146,6 +150,9 @@ public partial class AppTabBar : ContentView
 
             // Иконка и подпись
             if (border.Content is Layout layout) {
+                foreach (var path in layout.Children.OfType<MauiPath>())
+                    path.SetDynamicResource(MauiPath.StrokeProperty, active ? "AccentGreen" : "TextSecondary");
+
                 foreach (var label in layout.Children.OfType<Label>())
                     label.SetDynamicResource(Label.TextColorProperty, active ? "AccentGreen" : "TextSecondary");
             }

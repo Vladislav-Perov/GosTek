@@ -1,7 +1,7 @@
 /*
  * ==============================================================================
- * НАЗНАЧЕНИЕ: Управление динамическим переключением светлой/тёмной/системной тем оформления
- * СОДЕРЖИМОЕ: ThemeService, AppThemeMode
+ * НАЗНАЧЕНИЕ: Управление динамическим переключением светлой/тёмной (Slate Dark)/системной тем оформления и градиентов
+ * СОДЕРЖИМОЕ: ThemeService, ThemeMode
  * ЗАВИСИМОСТИ: Microsoft.Maui.Controls, GosTek.SettingsService
  * ==============================================================================
  */
@@ -27,27 +27,27 @@ public static class ThemeService
     /// <summary>Тема переключена. На это событие подписан ThemeToggle.</summary>
     public static event Action? Changed;
 
-    // Ключ ресурса, цвет в тёмной теме, цвет в светлой
+    // Ключ ресурса, цвет в тёмной теме (Slate Dark), цвет в светлой
     private static readonly (string Key, string Dark, string Light)[] Palette = {
-        ("PageBg",        "#0C1017", "#F6F4EE"),
-        ("CardBg",        "#151A23", "#FFFFFF"),
-        ("CardHoverBg",   "#1D2330", "#EFEBE0"),
-        ("CardStroke",    "#2A3142", "#E2DED2"),
-        ("TextPrimary",   "#E8ECF4", "#16213A"),
-        ("TextSecondary", "#8A94AA", "#5A6479"),
-        ("BrandGreen",    "#3FC3A1", "#0D6B57"),
-        ("AccentGreen",   "#3FC3A1", "#0D6B57"),
-        ("Divider",       "#2A3142", "#E2DED2"),
-        ("IconBoxBg",     "#0B3D31", "#DCEFE9"),
-        ("TabBarBg",      "#10141D", "#FFFFFF"),
-        ("TabActiveBg",   "#12312A", "#DCEFE9"),
-        ("ToggleTrackBg", "#3A4358", "#D6D1C3"),
+        ("PageBg",        "#0F172A", "#F6F4EE"),
+        ("CardBg",        "#1E293B", "#FFFFFF"),
+        ("CardHoverBg",   "#334155", "#EFEBE0"),
+        ("CardStroke",    "#334155", "#E2DED2"),
+        ("TextPrimary",   "#F8FAFC", "#16213A"),
+        ("TextSecondary", "#94A3B8", "#5A6479"),
+        ("BrandGreen",    "#2DD4BF", "#0D6B57"),
+        ("AccentGreen",   "#2DD4BF", "#0D6B57"),
+        ("Divider",       "#334155", "#E2DED2"),
+        ("IconBoxBg",     "#134E4A", "#DCEFE9"),
+        ("TabBarBg",      "#0F172A", "#FFFFFF"),
+        ("TabActiveBg",   "#134E4A", "#DCEFE9"),
+        ("ToggleTrackBg", "#334155", "#D6D1C3"),
 
-        // Экран «Проверка»: важное замечание (красный), желательное (жёлтый) и их мягкие фоны (по макету)
-        ("BadColor",      "#F2877C", "#B42318"),
-        ("BadSoftBg",     "#3B1A17", "#FBE5E2"),
-        ("WarnColor",     "#F0B35A", "#9A5B00"),
-        ("WarnSoftBg",    "#3A2B10", "#FCEFD6"),
+        // Экран «Проверка»: важное замечание (красный), желательное (жёлтый) и их мягкие фоны
+        ("BadColor",      "#F87171", "#B42318"),
+        ("BadSoftBg",     "#450A0A", "#FBE5E2"),
+        ("WarnColor",     "#FBBF24", "#9A5B00"),
+        ("WarnSoftBg",    "#451A03", "#FCEFD6"),
     };
 
     // Вызвать один раз при старте приложения
@@ -120,10 +120,35 @@ public static class ThemeService
         foreach (var (key, dark, light) in Palette)
             app.Resources[key] = Color.FromArgb(IsDark ? dark : light);
 
+        // Градиенты дизайн-системы
+        var brandGradient = new LinearGradientBrush
+        {
+            StartPoint = new Point(0, 0),
+            EndPoint = new Point(1, 1),
+            GradientStops = new GradientStopCollection
+            {
+                new GradientStop(Color.FromArgb(IsDark ? "#0F766E" : "#0D6B57"), 0.0f),
+                new GradientStop(Color.FromArgb(IsDark ? "#2DD4BF" : "#14B8A6"), 1.0f),
+            },
+        };
+        app.Resources["BrandGreenGradient"] = brandGradient;
+
+        var mainRadial = new RadialGradientBrush
+        {
+            Center = new Point(0.5, 0.4),
+            Radius = 0.9,
+            GradientStops = new GradientStopCollection
+            {
+                new GradientStop(Color.FromArgb(IsDark ? "#1E293B" : "#FFFFFF"), 0.0f),
+                new GradientStop(Color.FromArgb(IsDark ? "#0F172A" : "#F6F4EE"), 1.0f),
+            },
+        };
+        app.Resources["MainPageBackgroundBrush"] = mainRadial;
+
         foreach (var window in app.Windows)
         {
             if (window.Page is { } page)
-                page.BackgroundColor = Color.FromArgb(IsDark ? "#0C1017" : "#F6F4EE");
+                page.BackgroundColor = Color.FromArgb(IsDark ? "#0F172A" : "#F6F4EE");
 
             ApplyPlatformTheme(window);
         }

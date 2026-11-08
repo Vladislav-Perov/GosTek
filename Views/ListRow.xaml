@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!--
  ==============================================================================
- НАЗНАЧЕНИЕ: Визуальный компонент строки списка с иконкой, заголовком, подзаголовком и избранным
+ НАЗНАЧЕНИЕ: Унифицированный компонент строки списка с векторной иконкой, заголовком и избранным
  СОДЕРЖИМОЕ: ContentView, Grid, Label, Border, Path
- ЗАВИСИМОСТИ: GosTek.Views.ListRow, GosTek.Controls.BounceEffect
+ ЗАВИСИМОСТИ: GosTek.Views.ListRow, GosTek.Controls.BounceEffect, GosTek.Resources.Styles.Icons
  ==============================================================================
 -->
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="GosTek.Views.ListRow">
 
-    <!-- Строка-карточка: иконка в плашке, заголовок, подпись, избранное, стрелка перехода -->
+    <!-- Строка-карточка: векторная иконка в плашке, заголовок, подпись, избранное, стрелка перехода -->
     <Border StyleClass="HoverCard"
             StrokeShape="RoundRectangle 18"
             Stroke="{DynamicResource CardStroke}"
@@ -25,7 +25,7 @@
         </Border.GestureRecognizers>
 
         <Grid ColumnDefinitions="Auto, *, Auto, Auto" ColumnSpacing="12" VerticalOptions="Center">
-            <!-- Плашка для иконки документа -->
+            <!-- Плашка для векторной иконки документа -->
             <Border Grid.Column="0"
                     BackgroundColor="{DynamicResource IconBoxBg}"
                     StrokeShape="RoundRectangle 12"
@@ -33,10 +33,17 @@
                     WidthRequest="42"
                     HeightRequest="42"
                     VerticalOptions="Center">
-                <Label x:Name="IconLabel"
-                       FontSize="19"
-                       HorizontalOptions="Center"
-                       VerticalOptions="Center" />
+                <Path x:Name="IconPath"
+                      Data="{StaticResource IconFileText}"
+                      Stroke="{DynamicResource BrandGreen}"
+                      StrokeThickness="2"
+                      StrokeLineCap="Round"
+                      StrokeLineJoin="Round"
+                      Aspect="Uniform"
+                      WidthRequest="20"
+                      HeightRequest="20"
+                      HorizontalOptions="Center"
+                      VerticalOptions="Center" />
             </Border>
 
             <!-- Заголовок и подзаголовок -->
@@ -64,12 +71,19 @@
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnFavoriteTapped" />
                 </Border.GestureRecognizers>
-                <Label x:Name="FavoriteLabel"
-                       Text="☆"
-                       FontSize="20"
-                       TextColor="{DynamicResource TextSecondary}"
-                       HorizontalOptions="Center"
-                       VerticalOptions="Center" />
+                <!-- Векторная звезда избранного -->
+                <Path x:Name="FavoritePath"
+                      Data="{StaticResource IconStar}"
+                      Stroke="{DynamicResource TextSecondary}"
+                      Fill="Transparent"
+                      StrokeThickness="2"
+                      StrokeLineCap="Round"
+                      StrokeLineJoin="Round"
+                      Aspect="Uniform"
+                      WidthRequest="18"
+                      HeightRequest="18"
+                      HorizontalOptions="Center"
+                      VerticalOptions="Center" />
             </Border>
 
             <!-- Векторная стрелка перехода -->

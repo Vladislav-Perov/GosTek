@@ -51,7 +51,16 @@
                             WidthRequest="36"
                             HeightRequest="36"
                             VerticalOptions="Center">
-                        <Label Text="⚙️" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                        <Path Data="{StaticResource IconSliders}"
+                              Stroke="{DynamicResource BrandGreen}"
+                              StrokeThickness="2"
+                              StrokeLineCap="Round"
+                              StrokeLineJoin="Round"
+                              Aspect="Uniform"
+                              WidthRequest="18"
+                              HeightRequest="18"
+                              HorizontalOptions="Center"
+                              VerticalOptions="Center" />
                     </Border>
 
                     <Label Grid.Column="1"
@@ -112,7 +121,16 @@
                                                 WidthRequest="34"
                                                 HeightRequest="34"
                                                 VerticalOptions="Center">
-                                            <Label Text="📁" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center" />
+                                            <Path Data="{StaticResource IconFolder}"
+                                                  Stroke="{DynamicResource BrandGreen}"
+                                                  StrokeThickness="2"
+                                                  StrokeLineCap="Round"
+                                                  StrokeLineJoin="Round"
+                                                  Aspect="Uniform"
+                                                  WidthRequest="16"
+                                                  HeightRequest="16"
+                                                  HorizontalOptions="Center"
+                                                  VerticalOptions="Center" />
                                         </Border>
 
                                         <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
@@ -138,8 +156,16 @@
                                         <Border.GestureRecognizers>
                                             <TapGestureRecognizer Tapped="OnOpenTemplatesTapped" />
                                         </Border.GestureRecognizers>
-                                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="6">
-                                            <Label Text="📂" FontSize="13" VerticalOptions="Center" />
+                                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                                            <Path Data="{StaticResource IconFolder}"
+                                                  Stroke="{DynamicResource TextPrimary}"
+                                                  StrokeThickness="2"
+                                                  StrokeLineCap="Round"
+                                                  StrokeLineJoin="Round"
+                                                  Aspect="Uniform"
+                                                  WidthRequest="14"
+                                                  HeightRequest="14"
+                                                  VerticalOptions="Center" />
                                             <Label Text="Открыть в проводнике"
                                                    FontSize="13"
                                                    FontAttributes="Bold"
@@ -220,7 +246,16 @@
                                                     WidthRequest="34"
                                                     HeightRequest="34"
                                                     VerticalOptions="Center">
-                                                <Label Text="💾" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center" />
+                                                <Path Data="{StaticResource IconSave}"
+                                                      Stroke="{DynamicResource BrandGreen}"
+                                                      StrokeThickness="2"
+                                                      StrokeLineCap="Round"
+                                                      StrokeLineJoin="Round"
+                                                      Aspect="Uniform"
+                                                      WidthRequest="16"
+                                                      HeightRequest="16"
+                                                      HorizontalOptions="Center"
+                                                      VerticalOptions="Center" />
                                             </Border>
 
                                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
@@ -367,7 +402,16 @@
                                                 WidthRequest="34"
                                                 HeightRequest="34"
                                                 VerticalOptions="Center">
-                                            <Label Text="🛡️" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center" />
+                                            <Path Data="{StaticResource IconShield}"
+                                                  Stroke="{DynamicResource BrandGreen}"
+                                                  StrokeThickness="2"
+                                                  StrokeLineCap="Round"
+                                                  StrokeLineJoin="Round"
+                                                  Aspect="Uniform"
+                                                  WidthRequest="16"
+                                                  HeightRequest="16"
+                                                  HorizontalOptions="Center"
+                                                  VerticalOptions="Center" />
                                         </Border>
                                         <Label Grid.Column="1"
                                                Text="Все данные хранятся строго локально на этом устройстве и не передаются в сеть."
@@ -404,8 +448,16 @@
                                         <Border.GestureRecognizers>
                                             <TapGestureRecognizer Tapped="OnDeleteProfileTapped" />
                                         </Border.GestureRecognizers>
-                                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="6">
-                                            <Label Text="🗑️" FontSize="13" VerticalOptions="Center" />
+                                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                                            <Path Data="{StaticResource IconTrash}"
+                                                  Stroke="#EF4444"
+                                                  StrokeThickness="2"
+                                                  StrokeLineCap="Round"
+                                                  StrokeLineJoin="Round"
+                                                  Aspect="Uniform"
+                                                  WidthRequest="14"
+                                                  HeightRequest="14"
+                                                  VerticalOptions="Center" />
                                             <Label Text="Удалить профиль"
                                                    FontSize="13"
                                                    FontAttributes="Bold"
@@ -423,8 +475,16 @@
                                         <Border.GestureRecognizers>
                                             <TapGestureRecognizer Tapped="OnDeleteAllTapped" />
                                         </Border.GestureRecognizers>
-                                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="6">
-                                            <Label Text="⚠️" FontSize="13" VerticalOptions="Center" />
+                                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                                            <Path Data="{StaticResource IconAlertTriangle}"
+                                                  Stroke="#EF4444"
+                                                  StrokeThickness="2"
+                                                  StrokeLineCap="Round"
+                                                  StrokeLineJoin="Round"
+                                                  Aspect="Uniform"
+                                                  WidthRequest="14"
+                                                  HeightRequest="14"
+                                                  VerticalOptions="Center" />
                                             <Label Text="Сбросить все данные приложения"
                                                    FontSize="13"
                                                    FontAttributes="Bold"
@@ -461,7 +521,16 @@
                                                 WidthRequest="34"
                                                 HeightRequest="34"
                                                 VerticalOptions="Center">
-                                            <Label Text="📄" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center" />
+                                            <Path Data="{StaticResource IconFileText}"
+                                                  Stroke="{DynamicResource BrandGreen}"
+                                                  StrokeThickness="2"
+                                                  StrokeLineCap="Round"
+                                                  StrokeLineJoin="Round"
+                                                  Aspect="Uniform"
+                                                  WidthRequest="16"
+                                                  HeightRequest="16"
+                                                  HorizontalOptions="Center"
+                                                  VerticalOptions="Center" />
                                         </Border>
                                         <Label x:Name="VersionLabel"
                                                Grid.Column="1"
@@ -480,8 +549,16 @@
                                         <Border.GestureRecognizers>
                                             <TapGestureRecognizer Tapped="OnHelpTapped" />
                                         </Border.GestureRecognizers>
-                                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="6">
-                                            <Label Text="❓" FontSize="13" VerticalOptions="Center" />
+                                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                                            <Path Data="{StaticResource IconInfo}"
+                                                  Stroke="{DynamicResource TextPrimary}"
+                                                  StrokeThickness="2"
+                                                  StrokeLineCap="Round"
+                                                  StrokeLineJoin="Round"
+                                                  Aspect="Uniform"
+                                                  WidthRequest="14"
+                                                  HeightRequest="14"
+                                                  VerticalOptions="Center" />
                                             <Label Text="Как пользоваться"
                                                    FontSize="13"
                                                    FontAttributes="Bold"

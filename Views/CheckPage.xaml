@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!--
  ==============================================================================
- НАЗНАЧЕНИЕ: Пользовательский интерфейс экрана аудита оформления документов по ГОСТ с конструктором правил
- СОДЕРЖИМОЕ: ContentPage, ChipBar, ScrollView, Border, Button, AppTabBar, ThemeToggle
- ЗАВИСИМОСТИ: GosTek.Views.CheckPage, GosTek.Controls.ChipBar, GosTek.Views.ThemeToggle, GosTek.Views.AppTabBar
+ НАЗНАЧЕНИЕ: Профессиональный интерфейс аудита оформления документов по ГОСТ
+ СОДЕРЖИМОЕ: ContentPage, Dropzone, Summary Card, ChipBar, Accordions, AppTabBar, ThemeToggle
+ ЗАВИСИМОСТИ: GosTek.Views.CheckPage, GosTek.Controls.ChipBar, GosTek.Views.ThemeToggle, GosTek.Views.AppTabBar, GosTek.Resources.Styles.Icons
  ==============================================================================
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
@@ -28,7 +28,7 @@
                        FontSize="26"
                        FontAttributes="Bold"
                        TextColor="{DynamicResource TextPrimary}" />
-                <Label Text="Локальный аудит оформления по ГОСТ"
+                <Label Text="Инспектор оформления документов по ГОСТ"
                        FontSize="13"
                        TextColor="{DynamicResource TextSecondary}" />
             </VerticalStackLayout>
@@ -43,8 +43,60 @@
                                  Padding="20, 6, 20, 20"
                                  Spacing="16">
 
-                <!-- Карточка выбранного файла -->
-                <Border BackgroundColor="{DynamicResource CardBg}"
+                <!-- 1. Зона выбора файла (Dropzone) с пунктирной рамкой (когда файл ещё не выбран) -->
+                <Border x:Name="DropzoneBorder"
+                        StyleClass="HoverCard"
+                        BackgroundColor="{DynamicResource CardBg}"
+                        Stroke="{DynamicResource CardStroke}"
+                        StrokeDashArray="4,4"
+                        StrokeThickness="1.8"
+                        StrokeShape="RoundRectangle 20"
+                        Padding="24, 28"
+                        HorizontalOptions="Fill">
+                    <Border.Shadow>
+                        <Shadow Brush="Black" Offset="0,2" Radius="8" Opacity="0.06" />
+                    </Border.Shadow>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnPickTapped" />
+                        <DropGestureRecognizer Drop="OnDropFile" />
+                    </Border.GestureRecognizers>
+
+                    <VerticalStackLayout Spacing="10" HorizontalOptions="Center" VerticalOptions="Center">
+                        <Border BackgroundColor="{DynamicResource IconBoxBg}"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 16"
+                                WidthRequest="54"
+                                HeightRequest="54"
+                                HorizontalOptions="Center">
+                            <Path Data="{StaticResource IconFileText}"
+                                  Stroke="{DynamicResource BrandGreen}"
+                                  StrokeThickness="2"
+                                  StrokeLineCap="Round"
+                                  StrokeLineJoin="Round"
+                                  Aspect="Uniform"
+                                  WidthRequest="26"
+                                  HeightRequest="26"
+                                  HorizontalOptions="Center"
+                                  VerticalOptions="Center" />
+                        </Border>
+
+                        <Label Text="Перетащите файл .docx или нажмите для выбора"
+                               FontSize="15.5"
+                               FontAttributes="Bold"
+                               HorizontalTextAlignment="Center"
+                               TextColor="{DynamicResource TextPrimary}" />
+
+                        <Label Text="Формат Microsoft Word (.docx) • Локальный аудит по ГОСТ"
+                               FontSize="12.5"
+                               HorizontalTextAlignment="Center"
+                               TextColor="{DynamicResource TextSecondary}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- 2. Карточка выбранного документа (активна после выбора файла) -->
+                <Border x:Name="FileSelectedCard"
+                        IsVisible="False"
+                        BackgroundColor="{DynamicResource CardBg}"
                         Stroke="{DynamicResource CardStroke}"
                         StrokeThickness="1"
                         StrokeShape="RoundRectangle 18"
@@ -61,10 +113,16 @@
                                 WidthRequest="44"
                                 HeightRequest="44"
                                 VerticalOptions="Center">
-                            <Label Text="📄"
-                                   FontSize="20"
-                                   HorizontalOptions="Center"
-                                   VerticalOptions="Center" />
+                            <Path Data="{StaticResource IconFileText}"
+                                  Stroke="{DynamicResource BrandGreen}"
+                                  StrokeThickness="2"
+                                  StrokeLineCap="Round"
+                                  StrokeLineJoin="Round"
+                                  Aspect="Uniform"
+                                  WidthRequest="20"
+                                  HeightRequest="20"
+                                  HorizontalOptions="Center"
+                                  VerticalOptions="Center" />
                         </Border>
 
                         <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
@@ -93,7 +151,7 @@
                                 <TapGestureRecognizer Tapped="OnPickTapped" />
                             </Border.GestureRecognizers>
                             <Label x:Name="PickLabel"
-                                   Text="Выбрать"
+                                   Text="Заменить"
                                    FontSize="13"
                                    FontAttributes="Bold"
                                    TextColor="{DynamicResource TextPrimary}" />
@@ -101,7 +159,7 @@
                     </Grid>
                 </Border>
 
-                <!-- Правила проверки (чипы создаются из кода) -->
+                <!-- 3. Правила проверки (чипы создаются из кода) -->
                 <VerticalStackLayout Spacing="8">
                     <Grid ColumnDefinitions="*, Auto" VerticalOptions="Center">
                         <Label Text="Правила оформления"
@@ -110,17 +168,24 @@
                                TextColor="{DynamicResource TextSecondary}"
                                VerticalOptions="Center" />
 
-                        <Label x:Name="EditCurrentRuleLabel"
-                               Grid.Column="1"
-                               Text="✏️ Настроить"
-                               FontSize="12"
-                               FontAttributes="Bold"
-                               TextColor="{DynamicResource BrandGreen}"
-                               VerticalOptions="Center">
-                            <Label.GestureRecognizers>
+                        <HorizontalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                            <HorizontalStackLayout.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnEditCurrentRuleTapped" />
-                            </Label.GestureRecognizers>
-                        </Label>
+                            </HorizontalStackLayout.GestureRecognizers>
+                            <Path Data="{StaticResource IconPen}"
+                                  Stroke="{DynamicResource BrandGreen}"
+                                  StrokeThickness="2"
+                                  WidthRequest="14"
+                                  HeightRequest="14"
+                                  Aspect="Uniform"
+                                  VerticalOptions="Center" />
+                            <Label x:Name="EditCurrentRuleLabel"
+                                   Text="Настроить"
+                                   FontSize="12.5"
+                                   FontAttributes="Bold"
+                                   TextColor="{DynamicResource BrandGreen}"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
                     </Grid>
 
                     <controls:ChipBar x:Name="RuleChips" Margin="0, 2, 0, 2" />
@@ -133,7 +198,7 @@
                            Margin="2, 0" />
                 </VerticalStackLayout>
 
-                <!-- Конструктор правил ГОСТ / Мои правила -->
+                <!-- 4. Конструктор правил ГОСТ / Мои правила -->
                 <Border BackgroundColor="{DynamicResource CardBg}"
                         Stroke="{DynamicResource CardStroke}"
                         StrokeThickness="1"
@@ -151,7 +216,16 @@
                                     WidthRequest="36"
                                     HeightRequest="36"
                                     VerticalOptions="Center">
-                                <Label Text="📐" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center" />
+                                <Path Data="{StaticResource IconRuler}"
+                                      Stroke="{DynamicResource BrandGreen}"
+                                      StrokeThickness="2"
+                                      StrokeLineCap="Round"
+                                      StrokeLineJoin="Round"
+                                      Aspect="Uniform"
+                                      WidthRequest="18"
+                                      HeightRequest="18"
+                                      HorizontalOptions="Center"
+                                      VerticalOptions="Center" />
                             </Border>
 
                             <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
@@ -177,8 +251,14 @@
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Tapped="OnCreateNewRuleTapped" />
                                 </Border.GestureRecognizers>
-                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="6">
-                                    <Label Text="➕" FontSize="12" VerticalOptions="Center" />
+                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                                    <Path Data="{StaticResource IconPlus}"
+                                          Stroke="{DynamicResource TextPrimary}"
+                                          StrokeThickness="2"
+                                          WidthRequest="14"
+                                          HeightRequest="14"
+                                          Aspect="Uniform"
+                                          VerticalOptions="Center" />
                                     <Label Text="С нуля"
                                            FontSize="13"
                                            FontAttributes="Bold"
@@ -198,8 +278,14 @@
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Tapped="OnCreateBasedOnRuleTapped" />
                                 </Border.GestureRecognizers>
-                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="6">
-                                    <Label Text="📋" FontSize="12" VerticalOptions="Center" />
+                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                                    <Path Data="{StaticResource IconCopy}"
+                                          Stroke="{DynamicResource TextPrimary}"
+                                          StrokeThickness="2"
+                                          WidthRequest="14"
+                                          HeightRequest="14"
+                                          Aspect="Uniform"
+                                          VerticalOptions="Center" />
                                     <Label Text="На основе…"
                                            FontSize="13"
                                            FontAttributes="Bold"
@@ -214,7 +300,7 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <!-- Состояние: файл пока не выбран -->
+                <!-- 5. Состояние: файл пока не выбран -->
                 <Border x:Name="EmptyPanel"
                         BackgroundColor="{DynamicResource CardBg}"
                         Stroke="{DynamicResource CardStroke}"
@@ -229,7 +315,14 @@
                                 WidthRequest="56"
                                 HeightRequest="56"
                                 HorizontalOptions="Center">
-                            <Label Text="🛡️" FontSize="26" HorizontalOptions="Center" VerticalOptions="Center" />
+                            <Path Data="{StaticResource IconShield}"
+                                  Stroke="{DynamicResource BrandGreen}"
+                                  StrokeThickness="2"
+                                  WidthRequest="26"
+                                  HeightRequest="26"
+                                  Aspect="Uniform"
+                                  HorizontalOptions="Center"
+                                  VerticalOptions="Center" />
                         </Border>
 
                         <Label Text="Локальная проверка документа по ГОСТ"
@@ -246,8 +339,8 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <!-- Результат проверки -->
-                <VerticalStackLayout x:Name="ResultPanel" IsVisible="False" Spacing="12">
+                <!-- 6. Результат проверки -->
+                <VerticalStackLayout x:Name="ResultPanel" IsVisible="False" Spacing="14">
                     <Label x:Name="StatusLabel"
                            IsVisible="False"
                            FontSize="13"
@@ -255,20 +348,54 @@
                            LineBreakMode="WordWrap"
                            TextColor="{DynamicResource BrandGreen}" />
 
-                    <!-- Плашка сводки -->
+                    <!-- Карточка итогов (Summary Card) профессионального инспектора -->
                     <Border x:Name="SummaryBox"
-                            StrokeThickness="1"
+                            StrokeThickness="1.5"
                             Stroke="{DynamicResource CardStroke}"
-                            StrokeShape="RoundRectangle 16"
-                            Padding="16, 14">
-                        <Label x:Name="SummaryLabel"
-                               FontSize="14"
-                               FontAttributes="Bold"
-                               LineBreakMode="WordWrap"
-                               TextColor="{DynamicResource TextPrimary}" />
+                            StrokeShape="RoundRectangle 18"
+                            Padding="18, 16">
+                        <Border.Shadow>
+                            <Shadow Brush="Black" Offset="0,2" Radius="8" Opacity="0.08" />
+                        </Border.Shadow>
+
+                        <Grid ColumnDefinitions="Auto, *" ColumnSpacing="14" VerticalOptions="Center">
+                            <Border x:Name="SummaryIconBox"
+                                    BackgroundColor="{DynamicResource IconBoxBg}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 14"
+                                    WidthRequest="48"
+                                    HeightRequest="48"
+                                    VerticalOptions="Center">
+                                <Path x:Name="SummaryIconPath"
+                                      Data="{StaticResource IconShield}"
+                                      Stroke="{DynamicResource BrandGreen}"
+                                      StrokeThickness="2"
+                                      StrokeLineCap="Round"
+                                      StrokeLineJoin="Round"
+                                      Aspect="Uniform"
+                                      WidthRequest="24"
+                                      HeightRequest="24"
+                                      HorizontalOptions="Center"
+                                      VerticalOptions="Center" />
+                            </Border>
+
+                            <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                <Label x:Name="SummaryTitle"
+                                       Text="Результаты проверки"
+                                       FontSize="16.5"
+                                       FontAttributes="Bold"
+                                       TextColor="{DynamicResource TextPrimary}" />
+                                <Label x:Name="SummarySubtitle"
+                                       Text=""
+                                       FontSize="12.5"
+                                       TextColor="{DynamicResource TextSecondary}"
+                                       LineBreakMode="WordWrap" />
+                                <Label x:Name="SummaryLabel" IsVisible="False" />
+                            </VerticalStackLayout>
+                        </Grid>
                     </Border>
 
-                    <!-- Замечания (группируются по важности) -->
+                    <!-- Замечания (группируются в аккордеоны по важности) -->
                     <VerticalStackLayout x:Name="IssuesHost" Spacing="10" />
                 </VerticalStackLayout>
 
@@ -300,7 +427,7 @@
                         StrokeShape="RoundRectangle 16"
                         StrokeThickness="0"
                         Padding="8, 15"
-                        BackgroundColor="{DynamicResource BrandGreen}">
+                        Background="{DynamicResource BrandGreenGradient}">
                     <Border.Shadow>
                         <Shadow Brush="Black" Offset="0, 4" Radius="10" Opacity="0.18" />
                     </Border.Shadow>

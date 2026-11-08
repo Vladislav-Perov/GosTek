@@ -1,17 +1,20 @@
 /*
  * ==============================================================================
- * НАЗНАЧЕНИЕ: Унифицированный компонент строки списка с иконкой, заголовком, избранным и подсветкой поиска
+ * НАЗНАЧЕНИЕ: Унифицированный компонент строки списка с векторной иконкой, заголовком, избранным и подсветкой поиска
  * СОДЕРЖИМОЕ: ListRow
- * ЗАВИСИМОСТИ: Microsoft.Maui.Controls, GosTek.Services.HapticHelper, GosTek.Controls.BounceEffect
+ * ЗАВИСИМОСТИ: Microsoft.Maui.Controls, GosTek.Services.HapticHelper, GosTek.Controls.BounceEffect, GosTek.Resources.Styles.Icons
  * ==============================================================================
  */
 using GosTek.Controls;
+using GosTek.Resources.Styles;
 using GosTek.Services;
+using Microsoft.Maui.Controls.Shapes;
+using MauiPath = Microsoft.Maui.Controls.Shapes.Path;
 
 namespace GosTek.Views;
 
 /// <summary>
-/// Строка списка: Icon, Title, Subtitle, IsFavorite, ShowFavorite и событие Tapped.
+/// Строка списка с векторной иконкой: Icon, Title, Subtitle, IsFavorite, ShowFavorite и событие Tapped.
 /// Используется для шаблонов (главная, «Шаблоны») и для способов экспорта.
 /// </summary>
 public partial class ListRow : ContentView
@@ -20,7 +23,7 @@ public partial class ListRow : ContentView
 
     public static readonly BindableProperty IconProperty = BindableProperty.Create(
         nameof(Icon), typeof(string), typeof(ListRow), "",
-        propertyChanged: (b, _, v) => ((ListRow)b).IconLabel.Text = (string)v);
+        propertyChanged: (b, _, v) => ((ListRow)b).UpdateIcon((string)v));
 
     public static readonly BindableProperty TitleProperty = BindableProperty.Create(
         nameof(Title), typeof(string), typeof(ListRow), "",
@@ -79,6 +82,12 @@ public partial class ListRow : ContentView
         InitializeComponent();
     }
 
+    private void UpdateIcon(string iconKey)
+    {
+        var pathData = Icons.ResolvePath(iconKey);
+        IconPath.Data = (Geometry)new PathGeometryConverter().ConvertFromInvariantString(pathData)!;
+    }
+
     private void UpdateTitle(string title)
     {
         TitleLabel.FormattedText = null;
@@ -87,11 +96,19 @@ public partial class ListRow : ContentView
 
     private void UpdateFavoriteState(bool isFav)
     {
-        FavoriteLabel.Text = isFav ? "★" : "☆";
         if (isFav)
-            FavoriteLabel.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
+        {
+            FavoritePath.Data = (Geometry)new PathGeometryConverter().ConvertFromInvariantString(Icons.StarFilled)!;
+            FavoritePath.SetDynamicResource(MauiPath.StrokeProperty, "BrandGreen");
+            FavoritePath.SetDynamicResource(MauiPath.FillProperty, "BrandGreen");
+        }
         else
-            FavoriteLabel.SetDynamicResource(Label.TextColorProperty, "TextSecondary");
+        {
+            FavoritePath.Data = (Geometry)new PathGeometryConverter().ConvertFromInvariantString(Icons.Star)!;
+            FavoritePath.SetDynamicResource(MauiPath.StrokeProperty, "TextSecondary");
+            FavoritePath.Fill = Colors.Transparent;
+            FavoritePath.RemoveDynamicResource(MauiPath.FillProperty);
+        }
     }
 
     /// <summary>
@@ -151,10 +168,13 @@ public partial class ListRow : ContentView
         Tapped?.Invoke(this, EventArgs.Empty);
     }
 
-    private void OnFavoriteTapped(object? sender, TappedEventArgs e)
+    private async void OnFavoriteTapped(object? sender, TappedEventArgs e)
     {
         _justToggledFavorite = true;
         HapticHelper.Click();
+        if (sender is VisualElement ve)
+            await ve.AnimateBounceAsync();
+
         FavoriteTapped?.Invoke(this, EventArgs.Empty);
     }
 }

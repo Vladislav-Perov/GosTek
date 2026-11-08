@@ -173,7 +173,7 @@ public static class TemplateEngine
         => MultilineWords.Any(w => label.Contains(w, StringComparison.CurrentCultureIgnoreCase));
 
     // Что подставлять из профиля по названию поля
-    private static ProfileSource GuessSource(string label)
+    public static ProfileSource GuessSource(string label)
     {
         var l = label.ToLowerInvariant();
 
@@ -190,6 +190,55 @@ public static class TemplateEngine
     }
 
     // ===================================================================
+    /// <summary>
+    /// Автоподстановка значения поля из профиля: базовые реквизиты или CustomFields.
+    /// Если в шаблоне встречается поле [Название] и его нет в базовом профиле, но есть в CustomFields — подставляется.
+    /// </summary>
+    public static string? ResolveFromProfile(string label, ProfileData profile)
+    {
+        var l = label.Trim().ToLowerInvariant();
+
+        if (l.Contains("и.о") || l.Contains("и. о") || l.Contains("инициал"))
+            return TemplateCatalog.ShortName(profile.FullName);
+        if (l.Contains("фио") || l.Contains("ф.и.о") || l.Contains("фамилия") || l.Contains("фамили"))
+            return profile.FullName;
+        if (l.Contains("наименование") || l.Contains("организаци") || l.Contains("предприяти") || l.Contains("компани"))
+            return profile.OrgName;
+        if (l.Contains("унп") || l.Contains("инн"))
+            return profile.Unp;
+        if (l.Contains("адрес"))
+            return profile.Address;
+        if (l.Contains("телефон") || l.Contains("тел."))
+            return profile.Phone;
+        if (l.Contains("паспорт"))
+            return profile.Passport;
+        if (l.Contains("счет") || l.Contains("счёт") || l.Contains("iban") || l.Contains("расчетн") || l.Contains("расчётн"))
+            return profile.Account;
+
+        return ResolveCustomField(label, profile.CustomFields);
+    }
+
+    /// <summary>
+    /// Поиск кастомного реквизита в CustomFields (нечувствительно к регистру и пробелам).
+    /// </summary>
+    public static string? ResolveCustomField(string label, IReadOnlyDictionary<string, string>? customFields)
+    {
+        if (customFields is null || customFields.Count == 0)
+            return null;
+
+        var clean = label.Trim();
+        if (customFields.TryGetValue(clean, out var direct) && !string.IsNullOrWhiteSpace(direct))
+            return direct.Trim();
+
+        foreach (var (k, v) in customFields)
+        {
+            if (string.Equals(k.Trim(), clean, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(v))
+                return v.Trim();
+        }
+
+        return null;
+    }
+
     //  ЗАПОЛНЕНИЕ .docx
     // ===================================================================
 

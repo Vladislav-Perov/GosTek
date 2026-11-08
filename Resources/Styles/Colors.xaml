@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
  ==============================================================================
- НАЗНАЧЕНИЕ: Палитра цветов приложения (светлая и тёмная темы)
- СОДЕРЖИМОЕ: Color resources, ResourceDictionary
+ НАЗНАЧЕНИЕ: Палитра цветов и градиентов приложения (Slate Dark и тёплая светлая)
+ СОДЕРЖИМОЕ: Color resources, LinearGradientBrush, RadialGradientBrush
  ЗАВИСИМОСТИ: Microsoft.Maui.Controls
  ==============================================================================
 -->
@@ -46,5 +46,16 @@
     <Color x:Key="BadSoftBg">#FBE5E2</Color>
     <Color x:Key="WarnColor">#9A5B00</Color>
     <Color x:Key="WarnSoftBg">#FCEFD6</Color>
+
+    <!-- Базовые градиенты дизайн-системы -->
+    <LinearGradientBrush x:Key="BrandGreenGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#0D6B57" Offset="0.0" />
+        <GradientStop Color="#14B8A6" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <RadialGradientBrush x:Key="MainPageBackgroundBrush" Center="0.5,0.4" Radius="0.9">
+        <GradientStop Color="#FFFFFF" Offset="0.0" />
+        <GradientStop Color="#F6F4EE" Offset="1.0" />
+    </RadialGradientBrush>
 
 </ResourceDictionary>

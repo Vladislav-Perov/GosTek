@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+ ==============================================================================
+ НАЗНАЧЕНИЕ: Библиотека векторных путей (PathData) строгих геометрических иконок
+ СОДЕРЖИМОЕ: ResourceDictionary, String PathData
+ ЗАВИСИМОСТИ: Microsoft.Maui.Controls
+ ==============================================================================
+-->
+<?xaml-comp compile="true" ?>
+<ResourceDictionary 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- 1. Настройки и ползунки (Sliders / Settings) -->
+    <x:String x:Key="IconSliders">M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M1 14h6m2-6h6m2 8h6</x:String>
+
+    <!-- 2. Безопасность и проверка (Shield) -->
+    <x:String x:Key="IconShield">M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z</x:String>
+
+    <!-- 3. Камера / скан (Camera) -->
+    <x:String x:Key="IconCamera">M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z</x:String>
+
+    <!-- 4. Изображение / галерея (Image) -->
+    <x:String x:Key="IconImage">M21 3H3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-11 5a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm11 11H3l5-6 3.5 4.5 4.5-6 5 7.5z</x:String>
+
+    <!-- 5. Папка (Folder) -->
+    <x:String x:Key="IconFolder">M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z</x:String>
+
+    <!-- 6. Сохранение (Save / Disk) -->
+    <x:String x:Key="IconSave">M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z M17 21v-8H7v8 M7 3v5h8</x:String>
+
+    <!-- 7. Плюс / добавление (Plus) -->
+    <x:String x:Key="IconPlus">M12 5v14M5 12h14</x:String>
+
+    <!-- 8. Буфер обмена / копирование (Copy) -->
+    <x:String x:Key="IconCopy">M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2 M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z</x:String>
+
+    <!-- 9. Календарь / дата (Calendar) -->
+    <x:String x:Key="IconCalendar">M19 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z M16 2v4 M8 2v4 M3 10h18</x:String>
+
+    <!-- 10. Избранное (Star) -->
+    <x:String x:Key="IconStar">M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z</x:String>
+    <x:String x:Key="IconStarFilled">M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z</x:String>
+
+    <!-- 11. Удаление / корзина (Trash) -->
+    <x:String x:Key="IconTrash">M3 6h18 M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2 M10 11v6 M14 11v6</x:String>
+
+    <!-- 12. Предпросмотр (Eye) -->
+    <x:String x:Key="IconEye">M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z</x:String>
+
+    <!-- 13. Искры / улучшение (Sparkles) -->
+    <x:String x:Key="IconSparkles">M12 3l1.9 4.6L18 9.5l-4.1 1.9L12 16l-1.9-4.6L6 9.5l4.1-1.9z M19 16l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z M5 16l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z</x:String>
+
+    <!-- 14. Пользователь / профиль (User) -->
+    <x:String x:Key="IconUser">M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z</x:String>
+
+    <!-- 15. Подсказка / лампочка (Bulb / Info) -->
+    <x:String x:Key="IconBulb">M9 18h6 M10 22h4 M12 2a7 7 0 0 0-7 7c0 2.5 1.3 4.7 3.2 6h7.6c1.9-1.3 3.2-3.5 3.2-6a7 7 0 0 0-7-7z</x:String>
+    <x:String x:Key="IconInfo">M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 16v-4 M12 8h.01</x:String>
+
+    <!-- 16. Лист документа (FileText) -->
+    <x:String x:Key="IconFileText">M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8</x:String>
+
+    <!-- 17. Успех / галочка (Check) -->
+    <x:String x:Key="IconCheck">M20 6L9 17l-5-5</x:String>
+
+    <!-- 18. Предупреждение / треугольник (AlertTriangle) -->
+    <x:String x:Key="IconAlertTriangle">M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01</x:String>
+
+    <!-- 19. Тема оформления (Солнце и Луна) -->
+    <x:String x:Key="IconSun">M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42 M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z</x:String>
+    <x:String x:Key="IconMoon">M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z</x:String>
+
+    <!-- 20. Навигационные стрелки (Chevrons) -->
+    <x:String x:Key="IconChevronDown">M6 9l6 6 6-6</x:String>
+    <x:String x:Key="IconChevronUp">M18 15l-6-6-6 6</x:String>
+    <x:String x:Key="IconChevronRight">M9 18l6-6-6-6</x:String>
+
+    <!-- 21. Редактирование и линейка (Pen / Ruler) -->
+    <x:String x:Key="IconPen">M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z</x:String>
+    <x:String x:Key="IconRuler">M2 12l10 10 10-10L12 2 2 12z M7 7l2 2 M10 4l2 2 M12 12l2 2 M17 7l2 2</x:String>
+
+    <!-- 22. Главная (Home) -->
+    <x:String x:Key="IconHome">M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10</x:String>
+
+    <!-- 23. Поделиться (Share) -->
+    <x:String x:Key="IconShare">M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8 M16 6l-4-4-4 4 M12 2v13</x:String>
+
+</ResourceDictionary>

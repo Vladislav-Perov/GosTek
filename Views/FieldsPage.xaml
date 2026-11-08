@@ -116,10 +116,16 @@
                                     WidthRequest="40"
                                     HeightRequest="40"
                                     VerticalOptions="Center">
-                                <Label Text="👤"
-                                       FontSize="18"
-                                       HorizontalOptions="Center"
-                                       VerticalOptions="Center" />
+                                <Path Data="{StaticResource IconUser}"
+                                      Stroke="{DynamicResource BrandGreen}"
+                                      StrokeThickness="2"
+                                      StrokeLineCap="Round"
+                                      StrokeLineJoin="Round"
+                                      Aspect="Uniform"
+                                      WidthRequest="18"
+                                      HeightRequest="18"
+                                      HorizontalOptions="Center"
+                                      VerticalOptions="Center" />
                             </Border>
 
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
@@ -175,7 +181,7 @@
                                    TextColor="{DynamicResource TextSecondary}"
                                    VerticalOptions="Center" />
                             <Label Grid.Column="1"
-                                   Text="📄 Лист Word"
+                                   Text="Лист Word"
                                    FontSize="12"
                                    TextColor="{DynamicResource TextSecondary}"
                                    VerticalOptions="Center" />
@@ -230,7 +236,7 @@
                                TextColor="{DynamicResource TextSecondary}"
                                VerticalOptions="Center" />
                         <Label Grid.Column="1"
-                               Text="📄 Лист Word"
+                               Text="Лист Word"
                                FontSize="12"
                                TextColor="{DynamicResource TextSecondary}"
                                VerticalOptions="Center" />
@@ -286,7 +292,7 @@
                     Padding="0, 16"
                     Margin="20, 12"
                     MaximumWidthRequest="700"
-                    BackgroundColor="{DynamicResource BrandGreen}">
+                    Background="{DynamicResource BrandGreenGradient}">
                 <Border.Shadow>
                     <Shadow Brush="Black" Offset="0, 4" Radius="10" Opacity="0.18" />
                 </Border.Shadow>
@@ -295,7 +301,15 @@
                 </Border.GestureRecognizers>
 
                 <HorizontalStackLayout HorizontalOptions="Center" Spacing="10" VerticalOptions="Center">
-                    <Label Text="✨" FontSize="17" VerticalOptions="Center" />
+                    <Path Data="{StaticResource IconSparkles}"
+                          Stroke="White"
+                          StrokeThickness="2"
+                          StrokeLineCap="Round"
+                          StrokeLineJoin="Round"
+                          Aspect="Uniform"
+                          WidthRequest="18"
+                          HeightRequest="18"
+                          VerticalOptions="Center" />
                     <Label Text="Собрать документ"
                            FontSize="16.5"
                            FontAttributes="Bold"
@@ -396,17 +410,17 @@
 
                     <!-- Варианты экспорта через унифицированные карточки ListRow -->
                     <VerticalStackLayout Spacing="10">
-                        <views:ListRow Icon="📝"
+                        <views:ListRow Icon="file"
                                        Title="Документ Word (.docx)"
                                        Subtitle="Полностью редактируемый файл по ГОСТ"
                                        Tapped="OnExportDocxTapped" />
 
-                        <views:ListRow Icon="📕"
+                        <views:ListRow Icon="file"
                                        Title="Документ PDF (.pdf)"
                                        Subtitle="Готов к печати, нативная векторная генерация"
                                        Tapped="OnExportPdfTapped" />
 
-                        <views:ListRow Icon="📤"
+                        <views:ListRow Icon="share"
                                        Title="Поделиться"
                                        Subtitle="Отправить в мессенджер, на почту или в облако"
                                        Tapped="OnExportShareTapped" />
