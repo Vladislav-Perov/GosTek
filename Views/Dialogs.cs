@@ -1,4 +1,11 @@
-﻿using Microsoft.Maui.Controls.Shapes;
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Кроссплатформенный движок модальных диалоговых окон и шторок выбора
+ * СОДЕРЖИМОЕ: Dialogs, DialogButton, DialogKind, DialogButtonStyle
+ * ЗАВИСИМОСТИ: Microsoft.Maui.Controls
+ * ==============================================================================
+ */
+using Microsoft.Maui.Controls.Shapes;
 
 namespace GosTek.Views;
 

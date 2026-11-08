@@ -1,4 +1,11 @@
-﻿using GosTek.Models;
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Боковая выезжающая панель конфигурации приложения и очистки временного хранилища
+ * СОДЕРЖИМОЕ: SettingsPanel
+ * ЗАВИСИМОСТИ: GosTek.SettingsService, GosTek.FileSaveService
+ * ==============================================================================
+ */
+using GosTek.Models;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace GosTek.Views;

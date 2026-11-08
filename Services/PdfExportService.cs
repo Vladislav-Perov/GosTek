@@ -1,89 +1,174 @@
-﻿using System.Diagnostics;
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Нативная блочная генерация документов PDF по правилам ГОСТ на базе QuestPDF (Community License)
+ * СОДЕРЖИМОЕ: PdfExportService
+ * ЗАВИСИМОСТИ: QuestPDF, GosTek.Models, GosTek.TemplateEngine
+ * ==============================================================================
+ */
+using System.Diagnostics;
 using GosTek.Models;
 using GosTek.Views;
-
-#if ANDROID
-using Android.Content;
-#endif
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
+using QuestColors = QuestPDF.Helpers.Colors;
 
 namespace GosTek.Services;
 
 /// <summary>
-/// Экспорт в PDF без сторонних библиотек: готовый .docx открывается во внешней программе,
-/// а PDF пользователь сохраняет там сам.
-///
-/// Windows: файл открывается в Word (программа по умолчанию для .docx), дальше «Файл → Сохранить как → PDF».
-/// Android: файл открывается через FileProvider и Intent.ActionView в WPS, Google Документах и т. п.
+/// Сервис нативной генерации и экспорта документов в формат PDF на базе движка QuestPDF (Community License).
+/// Документы формируются локально на устройстве без передачи во внешние сети,
+/// с соблюдением пропорций листа А4 и стандартных полей оформления по ГОСТ.
 /// </summary>
 public static class PdfExportService
 {
-    private const string DocxMime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    private const string BlankPlaceholder = "__________";
+
+    static PdfExportService()
+    {
+        QuestPDF.Settings.License = LicenseType.Community;
+        QuestPDF.Settings.UseSystemFonts = true;
+        QuestPDF.Settings.ThrowOnMissingFontFamilies = false;
+    }
 
     /// <summary>
-    /// Собирает .docx во временную папку (кэш приложения) и открывает его для сохранения в PDF.
-    /// Возвращает true, если документ удалось открыть.
+    /// Генерирует PDF-документ из шаблона и переданных значений в указанный выходной поток.
+    /// </summary>
+    public static void GeneratePdf(TemplateDef template, IReadOnlyDictionary<string, string> values, Stream outputStream)
+    {
+        List<PreviewPara> paras = new();
+        if (!string.IsNullOrEmpty(template.FilePath) && File.Exists(template.FilePath))
+        {
+            paras = TemplateEngine.ReadPreview(template.FilePath);
+        }
+
+        GeneratePdfCore(template.Title, template.Fields, paras, values, outputStream);
+    }
+
+    /// <summary>
+    /// Генерирует PDF-документ из шаблона и сохраняет его в файл по указанному пути.
+    /// </summary>
+    public static void GeneratePdf(TemplateDef template, IReadOnlyDictionary<string, string> values, string outputPath)
+    {
+        using var stream = File.Create(outputPath);
+        GeneratePdf(template, values, stream);
+    }
+
+    /// <summary>
+    /// Генерирует PDF напрямую из списка параграфов разметки предпросмотра (PreviewPara).
+    /// </summary>
+    public static void GeneratePdf(string title, IReadOnlyList<PreviewPara> paragraphs, IReadOnlyDictionary<string, string> values, Stream outputStream)
+    {
+        GeneratePdfCore(title, Array.Empty<TemplateField>(), paragraphs, values, outputStream);
+    }
+
+    private static void GeneratePdfCore(
+        string title,
+        IReadOnlyList<TemplateField> fields,
+        IReadOnlyList<PreviewPara> paragraphs,
+        IReadOnlyDictionary<string, string> values,
+        Stream outputStream)
+    {
+        string GetValue(string fieldId)
+        {
+            if (values.TryGetValue(fieldId, out var v) && !string.IsNullOrWhiteSpace(v))
+                return v.Trim();
+            return BlankPlaceholder;
+        }
+
+        var doc = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+
+                // Стандартные поля страницы (ГОСТ: Левое 30 мм, Правое 15 мм, Верхнее 20 мм, Нижнее 20 мм)
+                page.MarginLeft(30, Unit.Millimetre);
+                page.MarginRight(15, Unit.Millimetre);
+                page.MarginTop(20, Unit.Millimetre);
+                page.MarginBottom(20, Unit.Millimetre);
+
+                page.PageColor(QuestColors.White);
+                page.DefaultTextStyle(x => x.FontFamily("PT Sans", "Times New Roman").FontSize(14).FontColor(QuestColors.Black));
+
+                page.Content().Column(col =>
+                {
+                    if (paragraphs.Count > 0)
+                    {
+                        foreach (var para in paragraphs)
+                        {
+                            if (para.Blank)
+                            {
+                                col.Item().PaddingBottom(8);
+                                continue;
+                            }
+
+                            col.Item().PaddingBottom(4).Text(text =>
+                            {
+                                if (para.Align == Microsoft.Maui.TextAlignment.Center)
+                                    text.AlignCenter();
+                                else if (para.Align == Microsoft.Maui.TextAlignment.End)
+                                    text.AlignRight();
+                                else
+                                    text.AlignLeft();
+
+                                foreach (var part in para.Parts)
+                                {
+                                    string content = part.FieldId is not null
+                                        ? GetValue(part.FieldId)
+                                        : part.Text;
+
+                                    if (string.IsNullOrEmpty(content))
+                                        continue;
+
+                                    var span = text.Span(content);
+                                    if (para.Bold) span.Bold();
+                                    if (para.Italic) span.Italic();
+                                    if (para.Pt > 0) span.FontSize((float)para.Pt);
+                                }
+                            });
+                        }
+                    }
+                    else
+                    {
+                        // Резервная блочная верстка по переданным полям модели (если шаблон без docx на диске)
+                        if (!string.IsNullOrWhiteSpace(title))
+                        {
+                            col.Item().PaddingBottom(14).AlignCenter().Text(title).Bold().FontSize(16);
+                        }
+
+                        foreach (var field in fields)
+                        {
+                            string val = GetValue(field.Id);
+                            col.Item().PaddingBottom(6).Text(text =>
+                            {
+                                text.Span($"{field.Label}: ").Bold();
+                                text.Span(val);
+                            });
+                        }
+                    }
+                });
+
+                page.Footer().AlignCenter().Text(text =>
+                {
+                    text.CurrentPageNumber().FontSize(10);
+                });
+            });
+        });
+
+        doc.GeneratePdf(outputStream);
+    }
+
+    /// <summary>
+    /// Генерирует PDF во временный файл в кэше и открывает его через системный механизм предпросмотра.
     /// </summary>
     public static async Task<bool> ExportAsync(TemplateDef template, IReadOnlyDictionary<string, string> values, string name)
     {
-        var fileName = ExportService.SafeFileName(name, ExportService.DefaultFileName(template)) + ".docx";
+        var fileName = ExportService.SafeFileName(name, ExportService.DefaultFileName(template)) + ".pdf";
         var path = Path.Combine(FileSystem.CacheDirectory, fileName);
 
-        await Task.Run(() => TemplateEngine.FillTo(template, values, path));
-        return await OpenForPdfAsync(path);
-    }
-
-    /// <summary>Открывает готовый .docx во внешней программе. Сначала показывает подсказку, что делать дальше.</summary>
-    public static async Task<bool> OpenForPdfAsync(string docxPath)
-    {
-        await Dialogs.AlertAsync("Сохранение в PDF", Hint);
-
-        try {
-            Open(docxPath);
-            return true;
-        } catch (Exception ex) {
-            Debug.WriteLine("Ошибка: " + ex.Message);
-            await Dialogs.AlertAsync("Не удалось открыть документ", NoAppMessage, DialogKind.Danger);
-            return false;
-        }
-    }
-
-    private static string Hint =>
-#if ANDROID
-        "Откроется программа для документов (WPS, Google Документы или другая). Сохраните файл как PDF через её меню: «Экспорт», «Сохранить как PDF» или «Печать».";
-#else
-        "Откроется Word. Сохраните файл как PDF через Файл → Сохранить как.";
-#endif
-
-    private static string NoAppMessage =>
-#if ANDROID
-        "На устройстве нет программы для файлов Word. Установите WPS Office или Google Документы и повторите.";
-#else
-        "Не нашли программу для файлов .docx. Установите Word или другой редактор и повторите.";
-#endif
-
-    private static void Open(string path)
-    {
-#if WINDOWS
-        // UseShellExecute: Windows сам выбирает программу для .docx (обычно Word)
-        Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
-#elif ANDROID
-        var context = Platform.AppContext;
-        var file = new Java.IO.File(path);
-
-        // Провайдер файлов уже объявлен в MAUI Essentials: «{ApplicationId}.fileProvider», кэш приложения в его путях есть
-        var uri = AndroidX.Core.Content.FileProvider.GetUriForFile(context, context.PackageName + ".fileProvider", file)
-            ?? throw new InvalidOperationException("Не удалось выдать доступ к файлу.");
-
-        var intent = new Intent(Intent.ActionView);
-        intent.SetDataAndType(uri, DocxMime);
-        intent.AddFlags(ActivityFlags.GrantReadUriPermission | ActivityFlags.NewTask);
-
-        var chooser = Intent.CreateChooser(intent, "Открыть в…")
-            ?? throw new InvalidOperationException("Не удалось открыть выбор программы.");
-        chooser.AddFlags(ActivityFlags.NewTask);
-        context.StartActivity(chooser);
-#else
-        throw new PlatformNotSupportedException("Экспорт в PDF доступен на Windows и Android.");
-#endif
+        await Task.Run(() => GeneratePdf(template, values, path));
+        await ExportService.OpenFileAsync(path);
+        return true;
     }
 }

@@ -1,3 +1,10 @@
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Платформенная реализация оптического распознавания (OCR) на Android через TesseractOcrMaui
+ * СОДЕРЖИМОЕ: OcrEngine
+ * ЗАВИСИМОСТИ: TesseractOcrMaui, GosTek.Services.OcrService
+ * ==============================================================================
+ */
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
 using TesseractOcrMaui;
@@ -23,7 +30,12 @@ public static partial class OcrService
         using var memory = new MemoryStream();
         await photoStream.CopyToAsync(memory);
 
-        RecognizionResult result = await tesseract.RecognizeTextAsync(memory.ToArray());
+        byte[] bytes = memory.ToArray();
+
+        // Предварительная обработка изображения (выравнивание наклона, оттенки серого, бинаризация)
+        bytes = await ImagePreprocessor.Instance.PreprocessForOcrAsync(bytes);
+
+        RecognizionResult result = await tesseract.RecognizeTextAsync(bytes);
 
         if (result.NotSuccess())
             throw new InvalidOperationException($"Не удалось распознать текст (статус: {result.Status}).");

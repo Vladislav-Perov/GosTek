@@ -1,4 +1,11 @@
-﻿using Android.App;
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Главная Activity Android-приложения, настройка цветов системных панелей и ориентации
+ * СОДЕРЖИМОЕ: MainActivity
+ * ЗАВИСИМОСТИ: AndroidX.AppCompat, Microsoft.Maui
+ * ==============================================================================
+ */
+using Android.App;
 using Android.Content.PM;
 using Android.OS;
 using Android.Views;

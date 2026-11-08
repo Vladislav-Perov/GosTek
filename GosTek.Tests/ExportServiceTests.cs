@@ -1,3 +1,10 @@
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Тестирование защиты от атак обхода каталогов (Path Traversal) в ExportService.SafeFileName
+ * СОДЕРЖИМОЕ: ExportServiceTests
+ * ЗАВИСИМОСТИ: xUnit, GosTek.Services.ExportService
+ * ==============================================================================
+ */
 using GosTek.Services;
 using Xunit;
 

@@ -1,3 +1,10 @@
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Платформенная реализация оптического распознавания (OCR) на Windows через WinRT Windows.Media.Ocr
+ * СОДЕРЖИМОЕ: OcrEngine
+ * ЗАВИСИМОСТИ: Windows.Media.Ocr, Windows.Graphics.Imaging, GosTek.Services.OcrService
+ * ==============================================================================
+ */
 using Windows.Globalization;
 using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
@@ -22,6 +29,9 @@ public static partial class OcrService
         using var memory = new MemoryStream();
         await photoStream.CopyToAsync(memory);
         byte[] bytes = memory.ToArray();
+
+        // Предварительная обработка изображения (выравнивание наклона, оттенки серого, бинаризация)
+        bytes = await ImagePreprocessor.Instance.PreprocessForOcrAsync(bytes);
 
         using var randomAccessStream = new InMemoryRandomAccessStream();
         using (var output = randomAccessStream.GetOutputStreamAt(0)) {

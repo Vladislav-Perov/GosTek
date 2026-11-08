@@ -1,4 +1,11 @@
-﻿namespace GosTek;
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Фасад управления настройками приложения (папки, темы, конфликты) на базе Preferences
+ * СОДЕРЖИМОЕ: SettingsService, NameMode, ConflictMode, AfterSaveAction
+ * ЗАВИСИМОСТИ: Microsoft.Maui.Storage.Preferences
+ * ==============================================================================
+ */
+namespace GosTek;
 
 /// <summary>Как называть файл по умолчанию.</summary>
 public enum NameMode { Template, TemplateDate }

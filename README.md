@@ -39,6 +39,7 @@
 |---|---|
 | **Платформа** | [.NET 10 MAUI](https://learn.microsoft.com/dotnet/maui/) (Single Project, `net10.0-windows10.0.19041.0`, `net10.0-android`) |
 | **Работа с DOCX** | [DocumentFormat.OpenXml 3.5.1](https://github.com/dotnet/Open-XML-SDK) (валидация архивов, прямое редактирование WordprocessingML) |
+| **Генерация PDF** | [QuestPDF 2026.9.1](https://www.questpdf.com/) (нативная блочная вёрстка по ГОСТ, Community License) |
 | **Распознавание (OCR)** | [TesseractOcrMaui 1.5.1](https://github.com/maui-ocr/TesseractOcrMaui) (языковая модель `rus.traineddata`, Android), `Windows.Media.Ocr` (Windows) |
 | **Камера и превью** | [CommunityToolkit.Maui.Camera 5.0.0](https://learn.microsoft.com/dotnet/communitytoolkit/maui/) |
 | **Тестирование** | xUnit 2.9, Microsoft.NET.Test.Sdk 17.14, Coverlet |

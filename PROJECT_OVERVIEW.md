@@ -113,23 +113,29 @@ D:\-GosTek_WORK-\GosTek\
 │       ├── Colors.xaml                # Базовая системная палитра цветов
 │       └── Styles.xaml                # Стили компонентов, классов полей и карточек
 ├── Services\
+│   ├── CustomRulesService.cs       # Управление пользовательскими правилами ГОСТ, JSON-хранение и автоподбор
 │   ├── DocumentChecker.cs             # Валидатор и авто-исправитель .docx по нормам ГОСТ
+│   ├── DocumentClassifier.cs          # Интеллектуальное автоопределение типов и категорий документов
 │   ├── DocumentDataExtractor.cs       # Регулярные выражения извлечения ФИО и Паспорта из текста
 │   ├── ExportService.cs               # Управление экспортом, безопасными именами, диалогами
 │   ├── FieldValidationHelper.cs       # Визуальная подсветка ошибок валидации полей ввода
+│   ├── ImagePreprocessor.cs           # Предобработка изображений для OCR (оттенки серого, Оцу, Deskew)
 │   ├── OcrService.cs                  # Partial-фасад службы распознавания текста
-│   ├── PdfExportService.cs            # Внешний экспорт в PDF через системные приложения
+│   ├── PdfExportService.cs            # Нативная генерация и экспорт в PDF на базе QuestPDF
 │   └── RuFormat.cs                    # Русские склонения, плюрализация, форматирование чисел
 ├── Views\
 │   ├── AppTabBar.xaml (.cs)           # Нижняя навигационная панель (5 вкладок)
 │   ├── CheckPage.xaml (.cs)           # Экран аудита и исправления оформления .docx
+│   ├── Controls\LoadingOverlay.xaml (.cs) # Универсальный оверлей загрузки со статусом и анимацией
 │   ├── Dialogs.cs                     # Кастомная система кроссплатформенных модальных окон
 │   ├── FieldsPage.xaml (.cs)          # Экран заполнения формы документа и живого листа A4
 │   ├── ListRow.xaml (.cs)             # Компонент строки списка с иконкой и шевроном
 │   ├── MainPage.xaml (.cs)            # Главный экран (дашборд, быстрый старт, плашка профиля)
 │   ├── ProfilePage.xaml (.cs)         # Экран управления персональными реквизитами
 │   ├── ProfileRules.cs                # Бизнес-правила валидации и нормализации профиля (IBAN, УНП)
-│   ├── ProfileStorage.cs              # Хранилище профиля на базе SecureStorage
+│   ├── ProfileStorage.cs           # Безопасное сохранение профиля через SecureStorage
+│   ├── RuleEditorPage.xaml         # Конструктор правил ГОСТ и предпросмотр листов А4 «Было / Стало»
+│   ├── RuleEditorPage.xaml.cs      # Логика конструктора правил и рендеринга предпросмотра              # Хранилище профиля на базе SecureStorage
 │   ├── ScanPage.xaml (.cs)            # Экран видоискателя камеры, захвата и OCR
 │   ├── SettingsPanel.xaml (.cs)       # Выдвижная боковая шторка настроек
 │   ├── Stubs.cs                       # Заглушки отсутствующих разделов
@@ -180,7 +186,7 @@ graph TD
         DocumentDataExtractor["DocumentDataExtractor (Regex парсер ФИО/Паспорта)"]
         ProfileRules["ProfileRules (Валидация IBAN, УНП, телефона)"]
         ExportService["ExportService (Сохранение, шеринг, имена)"]
-        PdfExportService["PdfExportService (Внешний экспорт в PDF)"]
+        PdfExportService["PdfExportService (Нативная генерация PDF)"]
         FileSaveService["FileSaveService (Абстракция ФС и MediaStore)"]
         ThemeService["ThemeService (Палитра и темы)"]
         SettingsService["SettingsService (Preferences фасад)"]
@@ -395,7 +401,7 @@ sequenceDiagram
   - На Windows сохраняет файлы в файловую систему по настраиваемому пути.
   - На Android реализует интеграцию со Scoped Storage через `Android.Provider.MediaStore.Files` в каталог `Documents/GosTek/` с выставлением флага `is_pending=1` на время записи.
 - **`./Services/PdfExportService.cs`:** 
-  - Реализует паттерн «External Delegation»: не компилирует PDF самостоятельно, а генерирует готовый DOCX и открывает его через нативный системный Intent (`AndroidX.Core.Content.FileProvider`) или ShellExecute (Windows), направляя пользователя в специализированные просмотрщики (Word, Google Docs, WPS Office). Является **незавершённой функциональностью**, а не багом реализации.
+  - Нативная генерация PDF-документов на базе библиотеки QuestPDF 2026.9.1 (Community License). Разбирает параграфы шаблона (`PreviewPara`) или поля модели, строит документ с полями страницы по ГОСТ (А4, левое 30 мм, правое 15 мм, верхнее 20 мм, нижнее 20 мм) и шрифтами Times New Roman / PT Sans. Поддерживает прямое сохранение в файл и генерацию в поток `Stream`.
 
 ---
 
@@ -504,13 +510,17 @@ classDiagram
 
 ## 13. Тестирование и контроль качества
 
-- **Покрытие тестами:** **58 модульных тестов xUnit ([`GosTek.Tests`](./GosTek.Tests/)).** Все тесты успешно выполняются через команду `dotnet test`.
+- **Покрытие тестами:** **109 модульных тестов xUnit ([`GosTek.Tests`](./GosTek.Tests/)).** Все тесты успешно выполняются через команду `dotnet test`.
 - **Протестированные модули:**
   1. **`Views/ProfileRules.cs`:** Валидация УНП (строго 9 цифр), контрольная сумма IBAN mod 97, серия и номер паспорта РБ с нормализацией гомоглифов кириллицы, маски телефонов (+375 и 80), валидация трёх слов ФИО. Изоляция через подменяемый `IPreferences` провайдер (`FakePreferences`).
   2. **`Services/DocumentChecker.cs`:** Аудит оформления по ГОСТ (левые/правые/верхние/нижние поля страницы, соответствие гарнитуры Times New Roman, проверка кегля 14 pt, полуторного межстрочного интервала и наличия нумерации страниц).
   3. **`Services/DocumentDataExtractor.cs`:** Алгоритм извлечения ФИО и серии/номера паспорта из распознанного OCR-текста.
   4. **`TemplateEngine.cs`:** Алгоритм разбора токенов `[Поле]`, замена в одиночных и разбитых на несколько Run элементах, подстановка многострочного текста с элементами `<w:br>`, автоподстановка прочерков `__________` для незаполненных полей.
   5. **`Services/ExportService.cs`:** Защита от атак обхода каталогов (Path Traversal) в `SafeFileName` при сохранении экспортируемых документов.
+  7. **`Services/CustomRulesService.cs`:** Проверка JSON-хранилища пользовательских правил (сохранение, обновление, удаление, защита встроенных правил, восстановление после повреждения JSON, извлечение категорий `_` / ` - ` / пробелы, автоподбор правил).
+  6. **`Services/PdfExportService.cs`:** Нативная генерация PDF через QuestPDF (проверка создания файлов, потока MemoryStream, сигнатуры заголовка %PDF, форматирования параграфов).
+  8. **`Services/ImagePreprocessor.cs`:** Предварительная обработка изображений для OCR на базе SkiaSharp (оттенки серого, адаптивная бинаризация Оцу, коррекция угла наклона листа Deskew, сквозной конвейер улучшения).
+  9. **`Services/DocumentClassifier.cs`:** Интеллектуальный семантический классификатор типов документов по тексту OCR (определение ключевых документов, категорий, учет границ слов Unicode, устойчивость к зашумленному тексту).
 
 ---
 
@@ -537,7 +547,7 @@ classDiagram
 8. **COMPAT-01 (Зависимости):** **ИСПРАВЛЕНО (Батч P1).** Я обновил пакет `Microsoft.Extensions.Logging.Debug` с 9.0.9 до 10.0.0.
 9. **Инфраструктура тестов и .sln:** **ИСПРАВЛЕНО (Батч P1).** Я создал решение `GosTek.sln` и проект `GosTek.Tests` (58 модульных тестов xUnit).
 10. **Стиль кода и git quotepath:** **ИСПРАВЛЕНО (Батч P2).** Я создал конфигурацию `.editorconfig` (Вариант A, `dotnet format` exit code 0) и настроил `git config core.quotepath false`.
-11. **Незавершённая функциональность `PdfExportService`:** Встроенный конвертер DOCX в PDF оставлен на перспективное развитие.
+11. **Нативная генерация PDF (`PdfExportService` / CODE-02):** **ИСПРАВЛЕНО (Фаза 4).** Я внедрил нативный генератор PDF на базе QuestPDF (Community License) с ГОСТ-полями и блочной вёрсткой, покрыв логику 5 юнит-тестами.
 
 ---
 
@@ -591,7 +601,7 @@ classDiagram
 - [`./Services/ExportService.cs`](./Services/ExportService.cs) — Оркестратор сохранения DOCX, обработки конфликтов имён файлов и системного шеринга.
 - [`./Services/FieldValidationHelper.cs`](./Services/FieldValidationHelper.cs) — Утилита визуального выделения полей ввода с ошибками (красная рамка и текст).
 - [`./Services/OcrService.cs`](./Services/OcrService.cs) — Публичный контракт кроссплатформенного сервиса оптического распознавания текста.
-- [`./Services/PdfExportService.cs`](./Services/PdfExportService.cs) — Делегирование экспорта в PDF внешним редакторам через системный просмотрщик.
+- [`./Services/PdfExportService.cs`](./Services/PdfExportService.cs) — Нативная генерация документов PDF по ГОСТ на базе QuestPDF (Community License).
 - [`./Services/RuFormat.cs`](./Services/RuFormat.cs) — Форматирование чисел с запятой, правил склонения русских существительных и размеров файлов.
 - [`./SettingsService.cs`](./SettingsService.cs) — Фасад управления пользовательскими настройками на базе `Preferences`.
 - [`./TemplateEngine.cs`](./TemplateEngine.cs) — Движок сканирования каталога шаблонов, генерации рендеринга листа A4 и заполнения токенов OpenXML.
@@ -628,6 +638,7 @@ classDiagram
 | Пакет (Package ID) | Версия | Назначение в проекте |
 |---|---|---|
 | `DocumentFormat.OpenXml` | `3.5.1` | Низкоуровневая работа со спецификацией OpenXML (ECMA-376) для разбора и модификации `.docx`. |
+| `QuestPDF` | `2026.9.1` | Нативная оффлайн-генерация документов формата PDF (Community License). |
 | `Microsoft.Maui.Controls` | `$(MauiVersion)` | Базовая библиотека элементов управления и рантайма .NET MAUI 10. |
 | `Microsoft.Extensions.Logging.Debug` | `9.0.9` | Провайдер отладочного логирования для вывода в Debug Console. |
 | `TesseractOcrMaui` | `1.5.1` | Локальный движок OCR на базе Tesseract для Android-платформы. |

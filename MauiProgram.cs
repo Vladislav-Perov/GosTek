@@ -1,5 +1,13 @@
-﻿using Microsoft.Extensions.Logging;
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Точка инициализации приложения MAUI, регистрация сервисов, шрифтов, Tesseract OCR и CommunityToolkit
+ * СОДЕРЖИМОЕ: MauiProgram
+ * ЗАВИСИМОСТИ: Microsoft.Maui, CommunityToolkit.Maui.Camera, TesseractOcrMaui, GosTek.Services
+ * ==============================================================================
+ */
 using CommunityToolkit.Maui;
+using GosTek.Services;
+using Microsoft.Extensions.Logging;
 using TesseractOcrMaui;
 
 namespace GosTek
@@ -18,6 +26,9 @@ namespace GosTek
                 });
 
             builder.Services.AddLogging();
+            builder.Services.AddSingleton<ICustomRulesService, CustomRulesService>();
+            builder.Services.AddSingleton<IImagePreprocessor, ImagePreprocessor>();
+            builder.Services.AddSingleton<IDocumentClassifier, DocumentClassifier>();
 
             // OCR на Android (см. Services/OcrService.cs). Файл должен лежать
             // в Resources/Raw с тем же именем — rus.traineddata уже там.
@@ -29,7 +40,12 @@ namespace GosTek
     		builder.Logging.AddDebug();
 #endif
 
-            return builder.Build();
+            var app = builder.Build();
+            CustomRulesService.Instance = app.Services.GetRequiredService<ICustomRulesService>();
+            ImagePreprocessor.Instance = app.Services.GetRequiredService<IImagePreprocessor>();
+            DocumentClassifier.Instance = app.Services.GetRequiredService<IDocumentClassifier>();
+
+            return app;
         }
     }
 }

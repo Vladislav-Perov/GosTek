@@ -1,4 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+ ==============================================================================
+ НАЗНАЧЕНИЕ: Интерфейс боковой шторки настроек приложения (выбор папки, темы, очистка кэша)
+ СОДЕРЖИМОЕ: ContentView, Grid, Border, Label, ThemeToggle
+ ЗАВИСИМОСТИ: GosTek.Views.SettingsPanel, GosTek.Views.ThemeToggle
+ ==============================================================================
+-->
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="GosTek.Views.SettingsPanel"

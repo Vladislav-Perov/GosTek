@@ -1,4 +1,11 @@
-﻿using GosTek.Models;
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Страница аудита оформления документов Word по стандартам ГОСТ с пакетным исправлением и конструктором правил
+ * СОДЕРЖИМОЕ: CheckPage
+ * ЗАВИСИМОСТИ: GosTek.Services.DocumentChecker, GosTek.Models.CheckModels, GosTek.Services.ExportService, GosTek.Services.CustomRulesService
+ * ==============================================================================
+ */
+using GosTek.Models;
 using GosTek.Services;
 using Microsoft.Maui.Controls.Shapes;
 
@@ -27,6 +34,7 @@ public partial class CheckPage : ContentPage
     private DocumentInfo _info = new(null, 0);
     private long _sourceSize;
 
+    private List<RuleSet> _allRules = new();
     private List<CheckIssue> _issues = new();                 // что ещё не так
     private readonly List<CheckIssue> _fixedIssues = new();   // что уже исправили (показываем зачёркнутыми)
     private string? _status;
@@ -38,7 +46,8 @@ public partial class CheckPage : ContentPage
         InitializeComponent();
 
         RuleChips.ShowArrows = true;
-        RuleChips.SetItems(RuleSets.Presets.Select(p => p.Title).ToList());
+        _allRules = CustomRulesService.Instance.GetAllRules().ToList();
+        RuleChips.SetItems(_allRules.Select(p => p.Title).ToList());
         RuleChips.SelectionChanged += OnRuleChanged;
 
         UpdateUi();
@@ -48,14 +57,136 @@ public partial class CheckPage : ContentPage
     {
         get {
             int i = RuleChips.SelectedIndex;
-            return i >= 0 && i < RuleSets.Presets.Count ? RuleSets.Presets[i].Rules : RuleSets.Universal;
+            return (i >= 0 && i < _allRules.Count) ? _allRules[i] : RuleSets.Universal;
         }
     }
 
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
         BottomTabs.ResetHover();   // сбросить «залипшее» наведение таббара
+        await RefreshRulesAsync();
+    }
+
+    private async Task RefreshRulesAsync()
+    {
+        await CustomRulesService.Instance.LoadRulesAsync();
+        _allRules = CustomRulesService.Instance.GetAllRules().ToList();
+
+        int prevIndex = RuleChips.SelectedIndex;
+        RuleChips.SetItems(_allRules.Select(r => r.Title).ToList());
+        if (prevIndex >= 0 && prevIndex < _allRules.Count)
+            RuleChips.SelectedIndex = prevIndex;
+        else
+            RuleChips.SelectedIndex = 0;
+
+        UpdateCustomRulesList();
+        UpdateUi();
+    }
+
+    private void UpdateCustomRulesList()
+    {
+        CustomRulesHost.Children.Clear();
+        var customRules = CustomRulesService.Instance.GetCustomRules();
+
+        if (customRules.Count == 0) {
+            var emptyLabel = new Label {
+                Text = "Пользовательские правила пока не созданы. Нажмите «С нуля» или «На основе...», чтобы добавить своё правило.",
+                FontSize = 12,
+                Margin = new Thickness(0, 4),
+            };
+            emptyLabel.SetDynamicResource(Label.TextColorProperty, "TextSecondary");
+            CustomRulesHost.Children.Add(emptyLabel);
+            return;
+        }
+
+        foreach (var rule in customRules) {
+            var card = new Border {
+                StrokeThickness = 1,
+                StrokeShape = new RoundRectangle { CornerRadius = 10 },
+                Padding = new Thickness(12, 8),
+            };
+            card.SetDynamicResource(VisualElement.BackgroundColorProperty, "CardBg");
+            card.SetDynamicResource(Border.StrokeProperty, "CardStroke");
+
+            var grid = new Grid {
+                ColumnDefinitions = new ColumnDefinitionCollection {
+                    new ColumnDefinition(GridLength.Star),
+                    new ColumnDefinition(GridLength.Auto),
+                },
+                ColumnSpacing = 8,
+            };
+
+            var infoStack = new VerticalStackLayout { Spacing = 2, VerticalOptions = LayoutOptions.Center };
+
+            var titleRow = new HorizontalStackLayout { Spacing = 8 };
+            var titleLabel = new Label {
+                Text = rule.Title,
+                FontSize = 14,
+                FontAttributes = FontAttributes.Bold,
+                VerticalOptions = LayoutOptions.Center,
+            };
+            titleLabel.SetDynamicResource(Label.TextColorProperty, "TextPrimary");
+            titleRow.Children.Add(titleLabel);
+
+            if (!string.IsNullOrWhiteSpace(rule.Category)) {
+                var catBorder = new Border {
+                    BackgroundColor = Color.FromArgb("#ECFDF5"),
+                    StrokeThickness = 0,
+                    StrokeShape = new RoundRectangle { CornerRadius = 6 },
+                    Padding = new Thickness(6, 2),
+                    VerticalOptions = LayoutOptions.Center,
+                    Content = new Label {
+                        Text = rule.Category,
+                        FontSize = 11,
+                        FontAttributes = FontAttributes.Bold,
+                        TextColor = Color.FromArgb("#065F46"),
+                    },
+                };
+                titleRow.Children.Add(catBorder);
+            }
+            infoStack.Children.Add(titleRow);
+
+            var detailsLabel = new Label {
+                Text = $"Поля: {rule.Left.Cm}/{rule.Right.Cm}/{rule.Top.Cm}/{rule.Bottom.Cm} см • {rule.FontName} {rule.FontSizePt}pt • инт. {rule.LineSpacing}",
+                FontSize = 12,
+            };
+            detailsLabel.SetDynamicResource(Label.TextColorProperty, "TextSecondary");
+            infoStack.Children.Add(detailsLabel);
+
+            grid.Children.Add(infoStack);
+            Grid.SetColumn(infoStack, 0);
+
+            var editBtn = new Border {
+                StyleClass = new[] { "HoverCard" },
+                StrokeThickness = 1,
+                StrokeShape = new RoundRectangle { CornerRadius = 8 },
+                Padding = new Thickness(10, 6),
+                VerticalOptions = LayoutOptions.Center,
+            };
+            var editLabel = new Label {
+                Text = "✏️ Изменить",
+                FontSize = 12,
+                FontAttributes = FontAttributes.Bold,
+            };
+            editLabel.SetDynamicResource(Label.TextColorProperty, "TextPrimary");
+            editBtn.Content = editLabel;
+
+            var ruleToEdit = rule;
+            var tap = new TapGestureRecognizer();
+            tap.Tapped += async (s, e) => {
+                RuleEditorPage.TargetRule = ruleToEdit;
+                RuleEditorPage.BaselineRule = RuleSets.Universal;
+                await Shell.Current.GoToAsync("RuleEditorPage");
+            };
+            editBtn.GestureRecognizers.Add(tap);
+
+            grid.Children.Add(editBtn);
+            Grid.SetColumn(editBtn, 1);
+
+            card.Content = grid;
+            CustomRulesHost.Children.Add(card);
+        }
     }
 
     // =====================================================================
@@ -99,7 +230,13 @@ public partial class CheckPage : ContentPage
             await using (var output = File.Create(work))
                 await input.CopyToAsync(output);
 
-            var rules = CurrentRules;
+            // Автоопределение правила по категории из имени файла
+            var matchedRule = CustomRulesService.Instance.MatchRuleSetForTemplate(picked.FileName);
+            int matchIdx = _allRules.FindIndex(r => r.Id.Equals(matchedRule.Id, StringComparison.OrdinalIgnoreCase));
+            if (matchIdx >= 0)
+                RuleChips.SelectedIndex = matchIdx;
+
+            var rules = (matchIdx >= 0) ? _allRules[matchIdx] : CurrentRules;
             var issues = await Task.Run(() => DocumentChecker.Check(work, rules));
             var info = await Task.Run(() => DocumentChecker.ReadInfo(work));
 
@@ -109,7 +246,13 @@ public partial class CheckPage : ContentPage
             _info = info;
             _issues = issues;
             _fixedIssues.Clear();
-            _status = null;
+
+            var category = CustomRulesService.Instance.ExtractCategoryFromFileName(picked.FileName);
+            if (!string.IsNullOrWhiteSpace(category) && matchedRule.Id != RuleSets.Universal.Id) {
+                _status = $"Автоматически применено правило «{matchedRule.Title}» для категории «{category}».";
+            } else {
+                _status = null;
+            }
         } catch (Exception ex) {
             System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
             await Dialogs.AlertAsync("Не удалось проверить файл",
@@ -145,6 +288,33 @@ public partial class CheckPage : ContentPage
             SetBusy(false);
             UpdateUi();
         }
+    }
+
+    private async void OnCreateNewRuleTapped(object? sender, EventArgs e)
+    {
+        RuleEditorPage.TargetRule = null;
+        RuleEditorPage.BaselineRule = RuleSets.Universal;
+        await Shell.Current.GoToAsync("RuleEditorPage");
+    }
+
+    private async void OnCreateBasedOnRuleTapped(object? sender, EventArgs e)
+    {
+        var titles = _allRules.Select(r => r.Title).ToArray();
+        var chosen = await DisplayActionSheetAsync("Выберите правило за основу", "Отмена", null, titles);
+        if (!string.IsNullOrWhiteSpace(chosen) && chosen != "Отмена") {
+            var baseRule = _allRules.FirstOrDefault(r => r.Title == chosen) ?? RuleSets.Universal;
+            RuleEditorPage.TargetRule = baseRule;
+            RuleEditorPage.BaselineRule = baseRule;
+            await Shell.Current.GoToAsync("RuleEditorPage");
+        }
+    }
+
+    private async void OnEditCurrentRuleTapped(object? sender, EventArgs e)
+    {
+        var curr = CurrentRules;
+        RuleEditorPage.TargetRule = curr;
+        RuleEditorPage.BaselineRule = curr.IsCustom ? RuleSets.Universal : curr;
+        await Shell.Current.GoToAsync("RuleEditorPage");
     }
 
     // =====================================================================
@@ -235,8 +405,13 @@ public partial class CheckPage : ContentPage
     {
         bool hasFile = _workPath is not null;
 
-        // Пока для набора нет своих правил, предупреждаем (все чипы сейчас используют Universal)
-        RuleNote.IsVisible = RuleChips.SelectedIndex > 0;
+        var desc = CurrentRules.Description;
+        if (!string.IsNullOrWhiteSpace(desc)) {
+            RuleNote.Text = desc;
+            RuleNote.IsVisible = true;
+        } else {
+            RuleNote.IsVisible = false;
+        }
 
         EmptyPanel.IsVisible = !hasFile;
         ResultPanel.IsVisible = hasFile;
@@ -253,22 +428,44 @@ public partial class CheckPage : ContentPage
 
         FileNameLabel.Text = _sourceName;
         FileInfoLabel.Text = BuildInfoText();
-        PickLabel.Text = "Другой";
+        PickLabel.Text = "Заменить";
 
-        StatusLabel.IsVisible = !string.IsNullOrEmpty(_status);
-        StatusLabel.Text = _status ?? "";
+        var fixable = _issues.Where(i => i.CanFix).ToList();
+        var manual = _issues.Where(i => !i.CanFix).ToList();
 
-        BuildSummary();
-        BuildIssues();
+        // Главная кнопка: исправить (если есть что), иначе снова выбрать
+        if (fixable.Count > 0) {
+            PrimaryLabel.Text = $"Исправить всё ({fixable.Count})";
+            SaveButton.IsVisible = false;
+            Grid.SetColumnSpan(PrimaryButton, 2);
+        } else {
+            PrimaryLabel.Text = "Выбрать другой";
+            SaveButton.IsVisible = true;
+            Grid.SetColumnSpan(PrimaryButton, 1);
+        }
 
-        int fixable = _issues.Count(i => i.CanFix);
-        PrimaryLabel.Text = fixable > 0
-            ? $"Исправить всё, что можно ({fixable})"
-            : "Выбрать другой документ";
+        // Сообщение о статусе после правки
+        StatusLabel.Text = _status;
+        StatusLabel.IsVisible = _status is not null;
 
-        // «Сохранить копию» нужна, только если что-то исправили
-        SaveButton.IsVisible = _fixedIssues.Count > 0;
-        Grid.SetColumnSpan(PrimaryButton, SaveButton.IsVisible ? 1 : 2);
+        // Плашка-сводка
+        SummaryBox.BackgroundColor = _issues.Count == 0 ? Color.FromArgb("#ECFDF5") : Color.FromArgb("#FEF2F2");
+        SummaryLabel.TextColor = _issues.Count == 0 ? Color.FromArgb("#065F46") : Color.FromArgb("#991B1B");
+
+        if (_issues.Count == 0 && _fixedIssues.Count == 0)
+            SummaryLabel.Text = "Всё отлично! Документ полностью соответствует правилам.";
+        else if (_issues.Count == 0)
+            SummaryLabel.Text = "Замечания исправлены. Документ готов к сохранению.";
+        else
+            SummaryLabel.Text = $"Найдено замечаний: {_issues.Count}. " +
+                (fixable.Count > 0 ? $"Автоматически исправим: {fixable.Count}." : "Все требуют ручной правки в Word.");
+
+        // Список замечаний
+        IssuesHost.Children.Clear();
+        foreach (var issue in _issues)
+            IssuesHost.Children.Add(BuildIssueCard(issue, isFixed: false));
+        foreach (var issue in _fixedIssues)
+            IssuesHost.Children.Add(BuildIssueCard(issue, isFixed: true));
     }
 
     private string BuildInfoText()
@@ -280,108 +477,95 @@ public partial class CheckPage : ContentPage
         if (_info.Paragraphs > 0)
             parts.Add(RuFormat.Count(_info.Paragraphs, "абзац", "абзаца", "абзацев"));
 
-        return string.Join(" · ", parts);
+        return string.Join(" • ", parts);
     }
 
-    // Плашка с итогом: красная (есть важные), жёлтая (только пожелания), зелёная (всё хорошо)
-    private void BuildSummary()
+    private View BuildIssueCard(CheckIssue issue, bool isFixed)
     {
-        int total = _issues.Count;
-        int important = _issues.Count(i => i.Severity == IssueSeverity.Important);
-
-        var formatted = new FormattedString();
-        if (total == 0) {
-            formatted.Spans.Add(new Span { Text = "Замечаний нет. Документ можно отправлять." });
-            SummaryBox.SetDynamicResource(VisualElement.BackgroundColorProperty, "IconBoxBg");
-        } else {
-            formatted.Spans.Add(new Span { Text = "Осталось замечаний: " });
-            formatted.Spans.Add(new Span { Text = total.ToString(), FontAttributes = FontAttributes.Bold });
-            formatted.Spans.Add(new Span { Text = ", из них важных: " });
-            formatted.Spans.Add(new Span { Text = important.ToString(), FontAttributes = FontAttributes.Bold });
-            SummaryBox.SetDynamicResource(VisualElement.BackgroundColorProperty,
-                important > 0 ? "BadSoftBg" : "WarnSoftBg");
-        }
-
-        SummaryLabel.FormattedText = formatted;
-    }
-
-    private void BuildIssues()
-    {
-        IssuesHost.Children.Clear();
-
-        foreach (var issue in _issues)
-            IssuesHost.Children.Add(BuildIssueCard(issue, done: false));
-
-        foreach (var issue in _fixedIssues)
-            IssuesHost.Children.Add(BuildIssueCard(issue, done: true));
-    }
-
-    // Карточка замечания: цветная точка, текст и справа «Исправить» / «Вручную» / «Исправлено»
-    private View BuildIssueCard(CheckIssue issue, bool done)
-    {
-        var dot = new BoxView {
-            WidthRequest = 10,
-            HeightRequest = 10,
-            CornerRadius = 5,
-            VerticalOptions = LayoutOptions.Center,
+        var card = new Border {
+            StrokeThickness = 1,
+            StrokeShape = new RoundRectangle { CornerRadius = 14 },
+            Padding = new Thickness(14, 12),
         };
-        dot.SetDynamicResource(BoxView.ColorProperty,
-            issue.Severity == IssueSeverity.Important ? "BadColor" : "WarnColor");
-
-        var title = new Label {
-            Text = issue.Title,
-            FontSize = 14,
-            FontAttributes = FontAttributes.Bold,
-            LineBreakMode = LineBreakMode.WordWrap,
-            TextDecorations = done ? TextDecorations.Strikethrough : TextDecorations.None,
-        };
-        title.SetDynamicResource(Label.TextColorProperty, "TextPrimary");
-
-        var where = new Label {
-            Text = issue.Where,
-            FontSize = 12.5,
-            LineBreakMode = LineBreakMode.WordWrap,
-        };
-        where.SetDynamicResource(Label.TextColorProperty, "TextSecondary");
-
-        var text = new VerticalStackLayout { Spacing = 2, VerticalOptions = LayoutOptions.Center };
-        text.Children.Add(title);
-        text.Children.Add(where);
+        card.SetDynamicResource(VisualElement.BackgroundColorProperty, "CardBg");
+        card.SetDynamicResource(Border.StrokeProperty, "CardStroke");
 
         var grid = new Grid {
-            ColumnDefinitions = {
+            ColumnDefinitions = new ColumnDefinitionCollection {
                 new ColumnDefinition(GridLength.Auto),
                 new ColumnDefinition(GridLength.Star),
                 new ColumnDefinition(GridLength.Auto),
             },
             ColumnSpacing = 10,
         };
-        Grid.SetColumn(dot, 0);
-        Grid.SetColumn(text, 1);
+
+        // Точка важности (или зелёная галка для исправленных)
+        View dot = isFixed ? BuildDot("✓", "#059669")
+                 : issue.Severity == IssueSeverity.Important ? BuildDot("●", "#DC2626")
+                 : BuildDot("●", "#D97706");
         grid.Children.Add(dot);
-        grid.Children.Add(text);
+        Grid.SetColumn(dot, 0);
 
-        View action = done ? BuildDoneTag() : issue.CanFix ? BuildFixButton(issue) : BuildManualTag();
-        Grid.SetColumn(action, 2);
-        grid.Children.Add(action);
+        // Текст
+        var textStack = new VerticalStackLayout { Spacing = 2, VerticalOptions = LayoutOptions.Center };
 
-        var card = new Border {
-            StrokeThickness = 1,
-            StrokeShape = new RoundRectangle { CornerRadius = 14 },
-            Padding = new Thickness(12),
-            Opacity = done ? 0.6 : 1,
-            Content = grid,
+        var title = new Label {
+            Text = issue.Title,
+            FontSize = 14,
+            FontAttributes = isFixed ? FontAttributes.None : FontAttributes.Bold,
+            TextDecorations = isFixed ? TextDecorations.Strikethrough : TextDecorations.None,
+            LineBreakMode = LineBreakMode.WordWrap,
         };
-        card.SetDynamicResource(VisualElement.BackgroundColorProperty, "CardBg");
-        card.SetDynamicResource(Border.StrokeProperty, "CardStroke");
+        title.SetDynamicResource(Label.TextColorProperty, isFixed ? "TextSecondary" : "TextPrimary");
+        textStack.Children.Add(title);
+
+        var where = new Label {
+            Text = issue.Where,
+            FontSize = 12,
+            LineBreakMode = LineBreakMode.WordWrap,
+        };
+        where.SetDynamicResource(Label.TextColorProperty, "TextSecondary");
+        textStack.Children.Add(where);
+
+        grid.Children.Add(textStack);
+        Grid.SetColumn(textStack, 1);
+
+        // Кнопка или бейдж справа
+        View right;
+        if (isFixed)
+            right = BuildDoneTag();
+        else if (issue.CanFix)
+            right = BuildFixButton(issue);
+        else
+            right = BuildManualTag();
+
+        grid.Children.Add(right);
+        Grid.SetColumn(right, 2);
+
+        card.Content = grid;
         return card;
+    }
+
+    private static View BuildDot(string glyph, string colorHex)
+    {
+        var color = Color.FromArgb(colorHex);
+        return new Label {
+            Text = glyph,
+            FontSize = glyph == "✓" ? 14 : 10,
+            FontAttributes = FontAttributes.Bold,
+            TextColor = color,
+            VerticalOptions = LayoutOptions.Center,
+            HorizontalOptions = LayoutOptions.Center,
+            WidthRequest = 18,
+            HorizontalTextAlignment = TextAlignment.Center,
+        };
     }
 
     private View BuildFixButton(CheckIssue issue)
     {
         var label = new Label {
             Text = "Исправить",
-            FontSize = 13,
+            FontSize = 12,
             FontAttributes = FontAttributes.Bold,
             TextColor = Color.FromArgb("#064E3B"),
         };

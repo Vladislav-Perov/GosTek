@@ -1,3 +1,10 @@
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Сканирование DOCX-шаблонов, извлечение токенов, генерация структуры предпросмотра и заполнение
+ * СОДЕРЖИМОЕ: TemplateEngine, PreviewPart, PreviewPara
+ * ЗАВИСИМОСТИ: DocumentFormat.OpenXml, GosTek.Models
+ * ==============================================================================
+ */
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;

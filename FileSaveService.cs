@@ -1,4 +1,11 @@
-﻿using GosTek.Models;
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Кроссплатформенное сохранение документов (Word, PDF) на Windows и Android MediaStore
+ * СОДЕРЖИМОЕ: FileSaveService, SaveResult
+ * ЗАВИСИМОСТИ: GosTek.Models, GosTek.Services.PdfExportService, Android MediaStore / WinRT
+ * ==============================================================================
+ */
+using GosTek.Models;
 
 #if ANDROID
 using Android.Content;
@@ -26,6 +33,7 @@ public static class FileSaveService
 #if ANDROID
     private const string RelativePath = "Documents/GosTek/";
     private const string DocxMime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    private const string PdfMime = "application/pdf";
 #endif
 
     /// <summary>Где окажется файл: для строки в настройках и сообщений.</summary>
@@ -74,6 +82,19 @@ public static class FileSaveService
 #endif
     }
 
+    /// <summary>Собирает PDF и сохраняет. overwrite = true: заменить существующий файл.</summary>
+    public static SaveResult SavePdf(TemplateDef template, IReadOnlyDictionary<string, string> values,
+                                     string fileName, bool overwrite)
+    {
+#if ANDROID
+        return SaveAndroidPdf(template, values, fileName, overwrite);
+#else
+        var path = Path.Combine(ResolveFolder(), fileName);
+        Services.PdfExportService.GeneratePdf(template, values, path);
+        return new SaveResult(path, path);
+#endif
+    }
+
     /// <summary>
     /// Сохраняет уже готовый файл (например, исправленную копию с экрана «Проверка») по тем же правилам,
     /// что и Save: ПК — в папку из настроек, Android — в Документы/GosTek.
@@ -100,13 +121,15 @@ public static class FileSaveService
         int count = 0;
 
         try {
-            foreach (var file in Directory.EnumerateFiles(FileSystem.CacheDirectory, "*.docx")) {
-                try {
-                    File.Delete(file);
-                    count++;
-                } catch (Exception ex) {
-                    // Файл занят (например, открыт в другой программе), пропускаем
-                    System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
+            foreach (var pattern in new[] { "*.docx", "*.pdf" }) {
+                foreach (var file in Directory.EnumerateFiles(FileSystem.CacheDirectory, pattern)) {
+                    try {
+                        File.Delete(file);
+                        count++;
+                    } catch (Exception ex) {
+                        // Файл занят (например, открыт в другой программе), пропускаем
+                        System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
+                    }
                 }
             }
         } catch (Exception ex) {
@@ -162,11 +185,19 @@ public static class FileSaveService
         // Копия в кэше: из неё потом открываем и отправляем файл
         var temp = Path.Combine(FileSystem.CacheDirectory, fileName);
         TemplateEngine.FillTo(template, values, temp);
-        return SaveAndroidFile(temp, fileName, overwrite);
+        return SaveAndroidFile(temp, fileName, overwrite, DocxMime);
+    }
+
+    private static SaveResult SaveAndroidPdf(TemplateDef template, IReadOnlyDictionary<string, string> values,
+                                             string fileName, bool overwrite)
+    {
+        var temp = Path.Combine(FileSystem.CacheDirectory, fileName);
+        Services.PdfExportService.GeneratePdf(template, values, temp);
+        return SaveAndroidFile(temp, fileName, overwrite, PdfMime);
     }
 
     // Записывает готовый файл из кэша в публичную папку Документы/GosTek через MediaStore
-    private static SaveResult SaveAndroidFile(string temp, string fileName, bool overwrite)
+    private static SaveResult SaveAndroidFile(string temp, string fileName, bool overwrite, string mimeType = DocxMime)
     {
         var resolver = Platform.AppContext.ContentResolver
             ?? throw new InvalidOperationException("Хранилище устройства недоступно.");
@@ -179,7 +210,7 @@ public static class FileSaveService
         if (target is null) {
             var info = new ContentValues();
             info.Put("_display_name", fileName);
-            info.Put("mime_type", DocxMime);
+            info.Put("mime_type", mimeType);
             info.Put("relative_path", RelativePath);
             info.Put("is_pending", 1);   // пока пишем, файл скрыт от других приложений
 

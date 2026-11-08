@@ -1,3 +1,10 @@
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Набор модульных тестов для движка инспекции ГОСТ (DocumentChecker)
+ * СОДЕРЖИМОЕ: DocumentCheckerTests
+ * ЗАВИСИМОСТИ: xUnit, GosTek.Services.DocumentChecker, DocumentFormat.OpenXml
+ * ==============================================================================
+ */
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;

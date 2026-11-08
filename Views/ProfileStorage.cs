@@ -1,4 +1,11 @@
-﻿using System.Text.Json;
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Защищенное хранение персональных данных профиля в зашифрованном SecureStorage
+ * СОДЕРЖИМОЕ: ProfileStorage
+ * ЗАВИСИМОСТИ: Microsoft.Maui.Storage.SecureStorage, GosTek.Views.ProfileRules
+ * ==============================================================================
+ */
+using System.Text.Json;
 
 namespace GosTek;
 

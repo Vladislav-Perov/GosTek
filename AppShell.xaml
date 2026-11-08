@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
+<!--
+ ==============================================================================
+ НАЗНАЧЕНИЕ: Корневая визуальная оболочка приложения (Shell) с навигацией
+ СОДЕРЖИМОЕ: Shell, TabBar, Tab, ShellContent
+ ЗАВИСИМОСТИ: Views/MainPage.xaml, Views/TemplatesPage.xaml, Views/CheckPage.xaml, Views/ProfilePage.xaml
+ ==============================================================================
+-->
 <Shell x:Class="GosTek.AppShell"
        xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"

@@ -1,4 +1,11 @@
-﻿using Microsoft.UI.Xaml;
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Точка входа нативного Windows WinUI 3 приложения
+ * СОДЕРЖИМОЕ: App
+ * ЗАВИСИМОСТИ: Microsoft.UI.Xaml
+ * ==============================================================================
+ */
+using Microsoft.UI.Xaml;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.

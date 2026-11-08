@@ -1,5 +1,14 @@
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Экран видоискателя камеры, захвата кадра, вызова OCR, предобработки и автоопределения типа документа
+ * СОДЕРЖИМОЕ: ScanPage
+ * ЗАВИСИМОСТИ: CommunityToolkit.Maui.Camera, GosTek.Services, GosTek.Models, GosTek.Views.Controls
+ * ==============================================================================
+ */
 using CommunityToolkit.Maui.Views;
+using GosTek.Models;
 using GosTek.Services;
+using GosTek.Views.Controls;
 
 namespace GosTek.Views;
 
@@ -188,10 +197,14 @@ public partial class ScanPage : ContentPage
         };
     }
 
-    private void SetLoading(bool on)
+    private void SetLoading(bool on, string status = "Загрузка...", string? substatus = null)
     {
         Loader.IsRunning = on;
         Loader.IsVisible = on;
+        if (on)
+            ScanLoading.Show(status, substatus);
+        else
+            ScanLoading.Hide();
     }
 
     // Результат скрывает рамку и выключает камеру; возврат к рамке включает её снова
@@ -228,7 +241,7 @@ public partial class ScanPage : ContentPage
     {
         if (_previewOn && _camera is { } camera) {
             await AcquireAndRecognizeAsync("Не удалось сделать снимок", async () => {
-                SetLoading(true);
+                SetLoading(true, "Снимок кадра...", "Захват фото с камеры");
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
                 return await camera.CaptureImage(cts.Token);
             }, pausePreview: false);
@@ -245,16 +258,19 @@ public partial class ScanPage : ContentPage
 
     private async void OnGalleryTapped(object? sender, TappedEventArgs e)
         => await AcquireAndRecognizeAsync("Не удалось открыть галерею", async () => {
+            SetLoading(true, "Открытие галереи...", "Выбор файла фотографии");
             var photos = await MediaPicker.Default.PickPhotosAsync();
             return await OpenAsync(photos?.FirstOrDefault());
         }, pausePreview: true);
 
     private async void OnFileTapped(object? sender, TappedEventArgs e)
-        => await AcquireAndRecognizeAsync("Не удалось открыть файл", async () =>
-            await OpenAsync(await FilePicker.Default.PickAsync(new PickOptions {
+        => await AcquireAndRecognizeAsync("Не удалось открыть файл", async () => {
+            SetLoading(true, "Открытие проводника...", "Выбор файла документа");
+            return await OpenAsync(await FilePicker.Default.PickAsync(new PickOptions {
                 PickerTitle = "Выберите изображение документа",
                 FileTypes = FilePickerFileType.Images,
-            })), pausePreview: true);
+            }));
+        }, pausePreview: true);
 
     private static async Task<Stream?> OpenAsync(FileResult? file)
         => file is null ? null : await file.OpenReadAsync();
@@ -300,12 +316,13 @@ public partial class ScanPage : ContentPage
     {
         ErrorLabel.IsVisible = false;
         _cameraNoteShown = false;
-        SetLoading(true);
+        SetLoading(true, "Улучшаем изображение...", "Выравнивание наклона и бинаризация");
 
         try {
             if (stream.CanSeek)
                 stream.Position = 0;
 
+            ScanLoading.UpdateStatus("Распознаем текст...", "Распознавание символов OCR");
             string text = await OcrService.RecognizeTextAsync(stream);
 
             if (string.IsNullOrWhiteSpace(text)) {
@@ -316,6 +333,40 @@ public partial class ScanPage : ContentPage
             _lastText = text;
             ApplyResult(text);
             ShowResult(true);
+
+            // Интеллектуальное автоопределение типа документа
+            var classification = DocumentClassifier.Instance.Classify(text);
+            if (classification.IsDetected) {
+                string detectedCategory = !string.IsNullOrWhiteSpace(classification.Category)
+                    ? classification.Category
+                    : classification.DocumentType;
+
+                bool apply = await Dialogs.ConfirmAsync(
+                    "Определение документа",
+                    $"Я определил, что это {detectedCategory}. Применить этот шаблон?",
+                    accept: "Да",
+                    kind: DialogKind.Info,
+                    cancel: "Выбрать другой"
+                );
+
+                if (apply) {
+                    TemplateCatalog.Refresh();
+                    var matching = TemplateCatalog.Items.FirstOrDefault(t =>
+                        string.Equals(t.Category, detectedCategory, StringComparison.OrdinalIgnoreCase) ||
+                        t.Category.Contains(detectedCategory, StringComparison.OrdinalIgnoreCase) ||
+                        detectedCategory.Contains(t.Category, StringComparison.OrdinalIgnoreCase) ||
+                        t.Title.Contains(classification.DocumentType, StringComparison.OrdinalIgnoreCase) ||
+                        classification.DocumentType.Contains(t.Title, StringComparison.OrdinalIgnoreCase));
+
+                    if (matching != null) {
+                        await Shell.Current.GoToAsync($"FieldsPage?id={matching.Id}");
+                    } else {
+                        await Shell.Current.GoToAsync("//TemplatesPage");
+                    }
+                } else {
+                    await Shell.Current.GoToAsync("//TemplatesPage");
+                }
+            }
         } catch (Exception ex) {
             ShowError($"Не удалось распознать текст: {ex.Message}");
         } finally {

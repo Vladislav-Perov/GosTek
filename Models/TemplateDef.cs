@@ -1,4 +1,11 @@
-﻿namespace GosTek.Models;
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Описание шаблона документа и элемента отображения в каталоге
+ * СОДЕРЖИМОЕ: TemplateDef, TemplateItem
+ * ЗАВИСИМОСТИ: GosTek.Models.TemplateField
+ * ==============================================================================
+ */
+namespace GosTek.Models;
 
 public record TemplateDef(string Id, string Title, string Category, string FilePath, TemplateField[] Fields);
 

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+ ==============================================================================
+ НАЗНАЧЕНИЕ: Универсальный компонент полноэкранного оверлея загрузки с индикатором/GIF и статусом
+ СОДЕРЖИМОЕ: LoadingOverlay (ContentView)
+ ЗАВИСИМОСТИ: Microsoft.Maui.Controls, GosTek.Views.Controls
+ ==============================================================================
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GosTek.Views.Controls.LoadingOverlay"
+             x:Name="RootControl"
+             IsVisible="False"
+             InputTransparent="True"
+             ZIndex="999">
+
+    <!-- Полупрозрачная подложка на весь родительский контейнер -->
+    <Grid BackgroundColor="#A0000000"
+          HorizontalOptions="Fill"
+          VerticalOptions="Fill">
+
+        <!-- Центрированная карточка индикации -->
+        <Border HorizontalOptions="Center"
+                VerticalOptions="Center"
+                WidthRequest="290"
+                Padding="24, 20"
+                BackgroundColor="{DynamicResource CardBg}"
+                Stroke="{DynamicResource CardStroke}"
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 16">
+
+            <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+
+                <!-- Опциональная GIF-анимация -->
+                <Image x:Name="AnimatedGifImage"
+                       IsVisible="False"
+                       WidthRequest="56"
+                       HeightRequest="56"
+                       IsAnimationPlaying="True"
+                       HorizontalOptions="Center"
+                       Margin="0,0,0,6" />
+
+                <!-- Стандартный стилизованный спиннер (активен, если GIF не задан) -->
+                <ActivityIndicator x:Name="Spinner"
+                                   IsRunning="True"
+                                   IsVisible="True"
+                                   WidthRequest="42"
+                                   HeightRequest="42"
+                                   Color="{DynamicResource AccentGreen}"
+                                   HorizontalOptions="Center"
+                                   Margin="0,0,0,6" />
+
+                <!-- Основной статус процесса -->
+                <Label x:Name="StatusLabel"
+                       Text="Загрузка..."
+                       FontSize="15"
+                       FontAttributes="Bold"
+                       HorizontalTextAlignment="Center"
+                       TextColor="{DynamicResource TextPrimary}" />
+
+                <!-- Дополнительный поясняющий подстатус -->
+                <Label x:Name="SubstatusLabel"
+                       Text=""
+                       FontSize="12"
+                       HorizontalTextAlignment="Center"
+                       TextColor="{DynamicResource TextSecondary}"
+                       IsVisible="False" />
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+</ContentView>

@@ -1,4 +1,11 @@
-﻿<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+ ==============================================================================
+ НАЗНАЧЕНИЕ: Палитра цветов приложения (светлая и тёмная темы)
+ СОДЕРЖИМОЕ: Color resources, ResourceDictionary
+ ЗАВИСИМОСТИ: Microsoft.Maui.Controls
+ ==============================================================================
+-->
 <?xaml-comp compile="true" ?>
 <ResourceDictionary 
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"

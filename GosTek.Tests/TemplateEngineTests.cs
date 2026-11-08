@@ -1,3 +1,10 @@
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Модульные тесты движка шаблонизации DOCX (замена токенов в Run, многострочный ввод)
+ * СОДЕРЖИМОЕ: TemplateEngineTests
+ * ЗАВИСИМОСТИ: xUnit, GosTek.TemplateEngine, DocumentFormat.OpenXml
+ * ==============================================================================
+ */
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;

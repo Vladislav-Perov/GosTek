@@ -1,4 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+ ==============================================================================
+ НАЗНАЧЕНИЕ: Пользовательский интерфейс экрана аудита оформления документов по ГОСТ с конструктором правил
+ СОДЕРЖИМОЕ: ContentPage, ChipBar, ScrollView, Border, Button
+ ЗАВИСИМОСТИ: GosTek.Views.CheckPage, GosTek.Controls.ChipBar, GosTek.Views.ThemeToggle, GosTek.Views.AppTabBar
+ ==============================================================================
+-->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:views="clr-namespace:GosTek.Views"
@@ -77,18 +84,96 @@
 
                 <!-- Правила проверки (чипы создаются из кода) -->
                 <VerticalStackLayout Spacing="6">
-                    <Label Text="Правила проверки" StyleClass="FieldLabel" />
+                    <Grid ColumnDefinitions="*, Auto">
+                        <Label Text="Правила проверки" StyleClass="FieldLabel" VerticalOptions="Center" />
+                        <Label x:Name="EditCurrentRuleLabel"
+                               Grid.Column="1"
+                               Text="✏️ Редактировать правило"
+                               FontSize="12"
+                               FontAttributes="Bold"
+                               TextColor="{DynamicResource AccentGreen}"
+                               VerticalOptions="Center">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnEditCurrentRuleTapped" />
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </Grid>
+
                     <controls:ChipBar x:Name="RuleChips" />
+
                     <Label x:Name="RuleNote"
                            IsVisible="False"
-                           Text="Для этого набора пока действуют универсальные правила. Отдельные появятся позже."
                            FontSize="12"
                            LineBreakMode="WordWrap"
                            TextColor="{DynamicResource TextSecondary}" />
                 </VerticalStackLayout>
 
+                <!-- Конструктор правил ГОСТ / Мои правила -->
+                <Border BackgroundColor="{DynamicResource CardBg}"
+                        Stroke="{DynamicResource CardStroke}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="14,12">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                <Label Text="Мои правила ГОСТ"
+                                       FontSize="15"
+                                       FontAttributes="Bold"
+                                       TextColor="{DynamicResource TextPrimary}" />
+                                <Label Text="Настраивайте поля, шрифт и интервалы с визуальным сравнением"
+                                       FontSize="12"
+                                       TextColor="{DynamicResource TextSecondary}" />
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
+                            <!-- Кнопка Создать с нуля -->
+                            <Border Grid.Column="0"
+                                    StyleClass="HoverCard"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 10"
+                                    Padding="10,8">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnCreateNewRuleTapped" />
+                                </Border.GestureRecognizers>
+                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="6">
+                                    <Label Text="➕" FontSize="12" VerticalOptions="Center" />
+                                    <Label Text="С нуля"
+                                           FontSize="13"
+                                           FontAttributes="Bold"
+                                           TextColor="{DynamicResource TextPrimary}"
+                                           VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </Border>
+
+                            <!-- Кнопка Создать на основе -->
+                            <Border Grid.Column="1"
+                                    StyleClass="HoverCard"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 10"
+                                    Padding="10,8">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnCreateBasedOnRuleTapped" />
+                                </Border.GestureRecognizers>
+                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="6">
+                                    <Label Text="📋" FontSize="12" VerticalOptions="Center" />
+                                    <Label Text="На основе..."
+                                           FontSize="13"
+                                           FontAttributes="Bold"
+                                           TextColor="{DynamicResource TextPrimary}"
+                                           VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </Border>
+                        </Grid>
+
+                        <!-- Список сохраненных пользовательских правил -->
+                        <VerticalStackLayout x:Name="CustomRulesHost" Spacing="6" />
+                    </VerticalStackLayout>
+                </Border>
+
                 <!-- Пока файл не выбран -->
-                <VerticalStackLayout x:Name="EmptyPanel" Spacing="8" Margin="0,20,0,0">
+                <VerticalStackLayout x:Name="EmptyPanel" Spacing="8" Margin="0,16,0,0">
                     <Label Text="Проверим оформление без ИИ"
                            FontSize="17"
                            FontAttributes="Bold"

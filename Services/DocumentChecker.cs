@@ -1,4 +1,11 @@
-﻿using System.Diagnostics;
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Движок инспекции и автоматического исправления форматирования docx-документов по правилам ГОСТ
+ * СОДЕРЖИМОЕ: DocumentChecker, Context, DocumentInfo
+ * ЗАВИСИМОСТИ: DocumentFormat.OpenXml, GosTek.Models.CheckModels
+ * ==============================================================================
+ */
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Globalization;
 using System.Text.RegularExpressions;

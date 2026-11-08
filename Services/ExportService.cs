@@ -1,4 +1,11 @@
-﻿using GosTek.Models;
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Оркестратор экспорта документов (DOCX, PDF), санитизация имен файлов и диалоги шеринга
+ * СОДЕРЖИМОЕ: ExportService
+ * ЗАВИСИМОСТИ: GosTek.Models, GosTek.FileSaveService, GosTek.Views.Dialogs
+ * ==============================================================================
+ */
+using GosTek.Models;
 using GosTek.Views;
 
 namespace GosTek.Services;
@@ -21,12 +28,17 @@ public static class ExportService
             name = name.Replace(c, '_');
         if (name.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
             name = name[..^5];
+        if (name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            name = name[..^4];
         name = name.Trim();
         return string.IsNullOrWhiteSpace(name) ? fallback : name;
     }
 
     public static Task<SaveResult?> SaveDocxAsync(TemplateDef template, IReadOnlyDictionary<string, string> values, string name)
         => SaveAsync(name + ".docx", (fileName, overwrite) => FileSaveService.Save(template, values, fileName, overwrite));
+
+    public static Task<SaveResult?> SavePdfAsync(TemplateDef template, IReadOnlyDictionary<string, string> values, string name)
+        => SaveAsync(name + ".pdf", (fileName, overwrite) => FileSaveService.SavePdf(template, values, fileName, overwrite));
 
     public static Task<SaveResult?> SaveCopyAsync(string sourcePath, string name)
         => SaveAsync(name + ".docx", (fileName, overwrite) => FileSaveService.SaveCopy(sourcePath, fileName, overwrite));

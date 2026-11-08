@@ -1,4 +1,11 @@
-﻿using System.Globalization;
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Форматирование чисел, склонение русских существительных и человекочитаемые размеры файлов
+ * СОДЕРЖИМОЕ: RuFormat
+ * ЗАВИСИМОСТИ: System.Globalization
+ * ==============================================================================
+ */
+using System.Globalization;
 
 namespace GosTek.Services;
 
@@ -10,6 +17,22 @@ public static class RuFormat
     {
         var format = maxDecimals <= 0 ? "0" : "0." + new string('#', maxDecimals);
         return value.ToString(format, CultureInfo.InvariantCulture).Replace('.', ',');
+    }
+
+    /// <summary>Форматирование вещественного числа в строку.</summary>
+    public static string Double(double value, int maxDecimals = 2)
+        => Number(value, maxDecimals);
+
+    /// <summary>Безопасный парсинг вещественного числа с поддержкой точки и запятой.</summary>
+    public static double ParseDouble(string? text, double fallback = 0.0)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return fallback;
+
+        var cleaned = text.Trim().Replace(',', '.');
+        return double.TryParse(cleaned, NumberStyles.Float, CultureInfo.InvariantCulture, out double val)
+            ? val
+            : fallback;
     }
 
     /// <summary>Склонение по числу: Plural(1, "страница", "страницы", "страниц").</summary>

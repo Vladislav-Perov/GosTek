@@ -1,0 +1,464 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+ ==============================================================================
+ НАЗНАЧЕНИЕ: Интерфейс конструктора правил оформления ГОСТ с визуальным предпросмотром «Было / Стало»
+ СОДЕРЖИМОЕ: ContentPage, Grid, ScrollView, Border, Entry, Picker, Switch
+ ЗАВИСИМОСТИ: GosTek.Views.RuleEditorPage, GosTek.Models.RuleSet, GosTek.Services.CustomRulesService
+ ==============================================================================
+-->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GosTek.Views.RuleEditorPage"
+             Title="Конструктор правил ГОСТ"
+             BackgroundColor="{DynamicResource PageBg}"
+             Shell.NavBarIsVisible="False">
+
+    <Grid>
+        <!-- ОСНОВНОЙ КОНТЕНТ СТРАНИЦЫ -->
+        <Grid RowDefinitions="Auto, *, Auto">
+
+            <!-- ==================== ШАПКА ==================== -->
+            <Grid Grid.Row="0"
+                  Padding="20, 15, 20, 10"
+                  ColumnDefinitions="Auto, *"
+                  ColumnSpacing="14">
+
+                <Border Grid.Column="0"
+                        StyleClass="HoverCard"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="14,6"
+                        VerticalOptions="Center">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnBackTapped" />
+                    </Border.GestureRecognizers>
+                    <Path Data="M8,1 L2,8 L8,15"
+                          Stroke="{DynamicResource TextPrimary}"
+                          StrokeThickness="2.5"
+                          StrokeLineCap="Round"
+                          StrokeLineJoin="Round"
+                          Aspect="Uniform"
+                          WidthRequest="10"
+                          HeightRequest="16"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center" />
+                </Border>
+
+                <Label x:Name="PageTitleLabel"
+                       Grid.Column="1"
+                       Text="Конструктор правила"
+                       FontSize="22"
+                       FontAttributes="Bold"
+                       LineBreakMode="TailTruncation"
+                       VerticalOptions="Center"
+                       TextColor="{DynamicResource TextPrimary}" />
+            </Grid>
+
+            <!-- ==================== ФОРМА РЕДАКТИРОВАНИЯ ==================== -->
+            <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
+                <VerticalStackLayout MaximumWidthRequest="700"
+                                     HorizontalOptions="Fill"
+                                     Padding="20,4,20,24"
+                                     Spacing="16">
+
+                    <!-- Секция: Основное -->
+                    <Border BackgroundColor="{DynamicResource CardBg}"
+                            Stroke="{DynamicResource CardStroke}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="16">
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="Основная информация"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{DynamicResource TextPrimary}" />
+
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="Название правила *" StyleClass="FieldLabel" />
+                                <Border StyleClass="FieldBox">
+                                    <Entry x:Name="TitleEntry"
+                                           StyleClass="FieldEntry"
+                                           Placeholder="например, Внутренний регламент отчетов" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="Категория документов" StyleClass="FieldLabel" />
+                                <Border StyleClass="FieldBox">
+                                    <Entry x:Name="CategoryEntry"
+                                           StyleClass="FieldEntry"
+                                           Placeholder="например, Заявление, Договор, Отчет" />
+                                </Border>
+                                <Label Text="Используется для автоподбора правила по префиксу имени файла (например, Договор_Аренда.docx)."
+                                       FontSize="12"
+                                       TextColor="{DynamicResource TextSecondary}" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="Краткое описание" StyleClass="FieldLabel" />
+                                <Border StyleClass="FieldBox">
+                                    <Entry x:Name="DescriptionEntry"
+                                           StyleClass="FieldEntry"
+                                           Placeholder="дополнительные комментарии или стандарт" />
+                                </Border>
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Секция: Поля страницы -->
+                    <Border BackgroundColor="{DynamicResource CardBg}"
+                            Stroke="{DynamicResource CardStroke}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="16">
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="Поля страницы (см)"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{DynamicResource TextPrimary}" />
+
+                            <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto" ColumnSpacing="12" RowSpacing="10">
+                                <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="4">
+                                    <Label Text="Левое поле, см" StyleClass="FieldLabel" />
+                                    <Border StyleClass="FieldBox">
+                                        <Entry x:Name="LeftMarginEntry"
+                                               StyleClass="FieldEntry"
+                                               Keyboard="Numeric"
+                                               Text="3.0" />
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="4">
+                                    <Label Text="Правое поле, см" StyleClass="FieldLabel" />
+                                    <Border StyleClass="FieldBox">
+                                        <Entry x:Name="RightMarginEntry"
+                                               StyleClass="FieldEntry"
+                                               Keyboard="Numeric"
+                                               Text="1.0" />
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="4">
+                                    <Label Text="Верхнее поле, см" StyleClass="FieldLabel" />
+                                    <Border StyleClass="FieldBox">
+                                        <Entry x:Name="TopMarginEntry"
+                                               StyleClass="FieldEntry"
+                                               Keyboard="Numeric"
+                                               Text="2.0" />
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="4">
+                                    <Label Text="Нижнее поле, см" StyleClass="FieldLabel" />
+                                    <Border StyleClass="FieldBox">
+                                        <Entry x:Name="BottomMarginEntry"
+                                               StyleClass="FieldEntry"
+                                               Keyboard="Numeric"
+                                               Text="2.0" />
+                                    </Border>
+                                </VerticalStackLayout>
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Секция: Шрифт и размер -->
+                    <Border BackgroundColor="{DynamicResource CardBg}"
+                            Stroke="{DynamicResource CardStroke}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="16">
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="Шрифт и размер"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{DynamicResource TextPrimary}" />
+
+                            <Grid ColumnDefinitions="*, *" ColumnSpacing="12">
+                                <VerticalStackLayout Grid.Column="0" Spacing="4">
+                                    <Label Text="Гарнитура шрифта" StyleClass="FieldLabel" />
+                                    <Border StyleClass="FieldBox">
+                                        <Picker x:Name="FontPicker"
+                                                HeightRequest="50"
+                                                TextColor="{DynamicResource TextPrimary}" />
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                    <Label Text="Размер кегля, pt" StyleClass="FieldLabel" />
+                                    <Border StyleClass="FieldBox">
+                                        <Entry x:Name="FontSizeEntry"
+                                               StyleClass="FieldEntry"
+                                               Keyboard="Numeric"
+                                               Text="14" />
+                                    </Border>
+                                </VerticalStackLayout>
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Секция: Абзац, интервал и выравнивание -->
+                    <Border BackgroundColor="{DynamicResource CardBg}"
+                            Stroke="{DynamicResource CardStroke}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="16">
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="Абзац и форматирование"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{DynamicResource TextPrimary}" />
+
+                            <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto" ColumnSpacing="12" RowSpacing="10">
+                                <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="4">
+                                    <Label Text="Межстрочный интервал" StyleClass="FieldLabel" />
+                                    <Border StyleClass="FieldBox">
+                                        <Picker x:Name="SpacingPicker"
+                                                HeightRequest="50"
+                                                TextColor="{DynamicResource TextPrimary}" />
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="4">
+                                    <Label Text="Красная строка, см" StyleClass="FieldLabel" />
+                                    <Border StyleClass="FieldBox">
+                                        <Entry x:Name="FirstLineIndentEntry"
+                                               StyleClass="FieldEntry"
+                                               Keyboard="Numeric"
+                                               Text="1.25" />
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="4">
+                                    <Label Text="Выравнивание текста" StyleClass="FieldLabel" />
+                                    <Border StyleClass="FieldBox">
+                                        <Picker x:Name="AlignPicker"
+                                                HeightRequest="50"
+                                                TextColor="{DynamicResource TextPrimary}" />
+                                    </Border>
+                                </VerticalStackLayout>
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Секция: Страницы -->
+                    <Border BackgroundColor="{DynamicResource CardBg}"
+                            Stroke="{DynamicResource CardStroke}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="16">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                                <Label Text="Нумерация страниц"
+                                       FontSize="15"
+                                       FontAttributes="Bold"
+                                       TextColor="{DynamicResource TextPrimary}" />
+                                <Label Text="Требовать наличие номеров страниц в колонтитулах документа"
+                                       FontSize="12"
+                                       TextColor="{DynamicResource TextSecondary}" />
+                            </VerticalStackLayout>
+
+                            <Switch x:Name="RequirePageNumbersSwitch"
+                                    Grid.Column="1"
+                                    IsToggled="True"
+                                    VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+
+                </VerticalStackLayout>
+            </ScrollView>
+
+            <!-- ==================== ПАНЕЛЬ ДЕЙСТВИЙ ВНИЗУ ==================== -->
+            <VerticalStackLayout Grid.Row="2" Spacing="0">
+                <BoxView HeightRequest="1" Color="{DynamicResource Divider}" />
+
+                <Grid ColumnDefinitions="*, *"
+                      ColumnSpacing="10"
+                      Padding="20, 12, 20, 16"
+                      MaximumWidthRequest="700">
+
+                    <!-- Кнопка Предпросмотр -->
+                    <Border Grid.Column="0"
+                            StyleClass="HoverCard"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 14"
+                            Padding="12,14">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnPreviewTapped" />
+                        </Border.GestureRecognizers>
+                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                            <Label Text="👁️" FontSize="16" VerticalOptions="Center" />
+                            <Label Text="Предпросмотр"
+                                   FontSize="15"
+                                   FontAttributes="Bold"
+                                   TextColor="{DynamicResource TextPrimary}"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+
+                    <!-- Кнопка Сохранить -->
+                    <Border Grid.Column="1"
+                            StyleClass="HoverGreen"
+                            StrokeShape="RoundRectangle 14"
+                            StrokeThickness="0"
+                            Padding="12,14">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnSaveTapped" />
+                        </Border.GestureRecognizers>
+                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                            <Label Text="💾" FontSize="16" VerticalOptions="Center" />
+                            <Label Text="Сохранить"
+                                   FontSize="15"
+                                   FontAttributes="Bold"
+                                   TextColor="#064E3B"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+                </Grid>
+
+                <!-- Опциональная кнопка удаления правила -->
+                <Border x:Name="DeleteButton"
+                        IsVisible="False"
+                        StyleClass="HoverCard"
+                        StrokeThickness="1"
+                        Stroke="{DynamicResource CardStroke}"
+                        StrokeShape="RoundRectangle 12"
+                        Margin="20,0,20,12"
+                        Padding="8,10"
+                        MaximumWidthRequest="700">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnDeleteTapped" />
+                    </Border.GestureRecognizers>
+                    <Label Text="🗑️ Удалить это правило"
+                           FontSize="14"
+                           FontAttributes="Bold"
+                           TextColor="#EF4444"
+                           HorizontalOptions="Center" />
+                </Border>
+            </VerticalStackLayout>
+        </Grid>
+
+        <!-- ==================== МОДАЛЬНОЕ ОКНО ПРЕДПРОСМОТРА «БЫЛО / СТАЛО» ==================== -->
+        <Grid x:Name="PreviewOverlay"
+              IsVisible="False"
+              BackgroundColor="#99000000"
+              Padding="16">
+
+            <Border BackgroundColor="{DynamicResource PageBg}"
+                    Stroke="{DynamicResource CardStroke}"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 20"
+                    MaximumWidthRequest="760"
+                    VerticalOptions="Center"
+                    Padding="16">
+                <Grid RowDefinitions="Auto, *, Auto" RowSpacing="12">
+
+                    <!-- Шапка модалки -->
+                    <Grid Grid.Row="0" ColumnDefinitions="*, Auto">
+                        <VerticalStackLayout Grid.Column="0" Spacing="2">
+                            <Label Text="Визуальный предпросмотр ГОСТ"
+                                   FontSize="18"
+                                   FontAttributes="Bold"
+                                   TextColor="{DynamicResource TextPrimary}" />
+                            <Label Text="Сравнение базового шаблона («Было») и настроенного правила («Стало»)"
+                                   FontSize="12"
+                                   TextColor="{DynamicResource TextSecondary}" />
+                        </VerticalStackLayout>
+
+                        <Border Grid.Column="1"
+                                StyleClass="HoverCard"
+                                StrokeThickness="1"
+                                StrokeShape="RoundRectangle 14"
+                                Padding="10,6"
+                                VerticalOptions="Start">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnClosePreviewTapped" />
+                            </Border.GestureRecognizers>
+                            <Label Text="✕" FontSize="14" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
+                        </Border>
+                    </Grid>
+
+                    <!-- Область сравнения: 2 листа A4 -->
+                    <ScrollView Grid.Row="1" Orientation="Both" MaximumHeightRequest="480">
+                        <Grid ColumnDefinitions="*, *" ColumnSpacing="16" Margin="4,8">
+
+                            <!-- Слева: Было -->
+                            <VerticalStackLayout Grid.Column="0" Spacing="8" HorizontalOptions="Center">
+                                <Border BackgroundColor="{DynamicResource CardBg}"
+                                        StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 8"
+                                        Padding="10,4"
+                                        HorizontalOptions="Center">
+                                    <Label x:Name="BeforeBadgeLabel"
+                                           Text="БЫЛО: ГОСТ 7.32 (3/1/2/2 см, 14pt)"
+                                           FontSize="12"
+                                           FontAttributes="Bold"
+                                           TextColor="{DynamicResource TextSecondary}" />
+                                </Border>
+
+                                <Border x:Name="BeforeSheet"
+                                        BackgroundColor="White"
+                                        StrokeThickness="1"
+                                        Stroke="#D1D5DB"
+                                        StrokeShape="RoundRectangle 2"
+                                        WidthRequest="260"
+                                        HeightRequest="367"
+                                        HorizontalOptions="Center">
+                                    <Border.Shadow>
+                                        <Shadow Brush="Black" Offset="0,2" Radius="8" Opacity="0.2" />
+                                    </Border.Shadow>
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <!-- Справа: Стало -->
+                            <VerticalStackLayout Grid.Column="1" Spacing="8" HorizontalOptions="Center">
+                                <Border BackgroundColor="#E6F9F0"
+                                        StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 8"
+                                        Padding="10,4"
+                                        HorizontalOptions="Center">
+                                    <Label x:Name="AfterBadgeLabel"
+                                           Text="СТАЛО: Настроенное правило"
+                                           FontSize="12"
+                                           FontAttributes="Bold"
+                                           TextColor="#064E3B" />
+                                </Border>
+
+                                <Border x:Name="AfterSheet"
+                                        BackgroundColor="White"
+                                        StrokeThickness="1"
+                                        Stroke="#10B981"
+                                        StrokeShape="RoundRectangle 2"
+                                        WidthRequest="260"
+                                        HeightRequest="367"
+                                        HorizontalOptions="Center">
+                                    <Border.Shadow>
+                                        <Shadow Brush="#10B981" Offset="0,2" Radius="10" Opacity="0.3" />
+                                    </Border.Shadow>
+                                </Border>
+                            </VerticalStackLayout>
+
+                        </Grid>
+                    </ScrollView>
+
+                    <!-- Кнопка закрытия окна предпросмотра -->
+                    <Border Grid.Row="2"
+                            StyleClass="HoverGreen"
+                            StrokeShape="RoundRectangle 12"
+                            StrokeThickness="0"
+                            Padding="12,10"
+                            HorizontalOptions="Fill">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnClosePreviewTapped" />
+                        </Border.GestureRecognizers>
+                        <Label Text="Вернуться к редактированию"
+                               FontSize="14"
+                               FontAttributes="Bold"
+                               TextColor="#064E3B"
+                               HorizontalOptions="Center" />
+                    </Border>
+
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</ContentPage>

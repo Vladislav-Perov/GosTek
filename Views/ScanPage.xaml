@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<!--
+ ==============================================================================
+ НАЗНАЧЕНИЕ: Интерфейс экрана сканирования документов через камеру, предобработки и OCR
+ СОДЕРЖИМОЕ: ScanPage (ContentPage)
+ ЗАВИСИМОСТИ: CommunityToolkit.Maui.Camera, GosTek.Views.Controls.LoadingOverlay
+ ==============================================================================
+-->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:GosTek.Controls"
+             xmlns:vctrl="clr-namespace:GosTek.Views.Controls"
              x:Class="GosTek.Views.ScanPage"
              Title="Сканер"
              BackgroundColor="{DynamicResource PageBg}"
@@ -243,6 +251,13 @@
                        TextColor="{DynamicResource TextSecondary}" />
             </VerticalStackLayout>
         </Grid>
+
+        <!-- Полноэкранный оверлей индикации процесса (захват, улучшение, распознавание) -->
+        <vctrl:LoadingOverlay x:Name="ScanLoading"
+                              Grid.Row="0"
+                              Grid.RowSpan="4"
+                              HorizontalOptions="Fill"
+                              VerticalOptions="Fill" />
 
     </Grid>
 </ContentPage>

@@ -1,4 +1,11 @@
-﻿using GosTek.Models;
+/*
+ * ==============================================================================
+ * НАЗНАЧЕНИЕ: Интерактивная форма заполнения полей выбранного шаблона с живым предпросмотром А4
+ * СОДЕРЖИМОЕ: FieldsPage
+ * ЗАВИСИМОСТИ: GosTek.Models, GosTek.Services, GosTek.TemplateEngine
+ * ==============================================================================
+ */
+using GosTek.Models;
 using GosTek.Services;
 using Microsoft.Maui.Controls.Shapes;
 
@@ -363,17 +370,21 @@ public partial class FieldsPage : ContentPage
         }
     }
 
-    // PDF: документ открывается в Word / WPS, там его сохраняют как PDF (см. PdfExportService)
+    // PDF: нативное сохранение документа в PDF через QuestPDF
     private async void OnExportPdfTapped(object? sender, EventArgs e)
     {
         if (_template is null)
             return;
 
         try {
-            if (await PdfExportService.ExportAsync(_template, _values, ExportName()))
-                CloseExport();
+            var result = await ExportService.SavePdfAsync(_template, _values, ExportName());
+            if (result is null)
+                return;
+
+            CloseExport();
+            await ExportService.AfterSaveAsync(result);
         } catch (Exception ex) {
-            await Dialogs.AlertAsync("Не удалось открыть документ", ex.Message, DialogKind.Danger);
+            await Dialogs.AlertAsync("Не удалось сохранить PDF", ex.Message, DialogKind.Danger);
         }
     }
 
