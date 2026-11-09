@@ -14,9 +14,9 @@
     <!-- Затемнение подложки и выезжающая боковая панель -->
     <Grid>
 
-        <!-- Затемняющий экран с перехватом клика для закрытия -->
+        <!-- Затемняющий экран с перехватом клика для закрытия (Black с динамическим Opacity для корректного рендера на Android) -->
         <BoxView x:Name="Scrim"
-                 Color="#80000000"
+                 Color="Black"
                  Opacity="0">
             <BoxView.GestureRecognizers>
                 <TapGestureRecognizer Tapped="OnScrimTapped" />

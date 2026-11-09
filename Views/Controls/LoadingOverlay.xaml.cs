@@ -92,19 +92,45 @@ public partial class LoadingOverlay : ContentView
         set => SetValue(AnimationSourceProperty, value);
     }
 
+    public static readonly BindableProperty CanCancelProperty =
+        BindableProperty.Create(
+            nameof(CanCancel),
+            typeof(bool),
+            typeof(LoadingOverlay),
+            false,
+            propertyChanged: (bindable, _, newValue) => {
+                if (bindable is LoadingOverlay control && control.CancelButton != null)
+                    control.CancelButton.IsVisible = (bool)newValue;
+            });
+
+    public bool CanCancel
+    {
+        get => (bool)GetValue(CanCancelProperty);
+        set => SetValue(CanCancelProperty, value);
+    }
+
+    public event EventHandler? CancelRequested;
+
+    private void OnCancelTapped(object? sender, TappedEventArgs e)
+    {
+        Hide();
+        CancelRequested?.Invoke(this, EventArgs.Empty);
+    }
+
     public LoadingOverlay()
     {
         InitializeComponent();
     }
 
     /// <summary>
-    /// Активирует оверлей загрузки с установкой статуса и подстатуса.
+    /// Активирует оверлей загрузки с установкой статуса, подстатуса и возможности отмены.
     /// </summary>
-    public void Show(string status = "Загрузка...", string? substatus = null)
+    public void Show(string status = "Загрузка...", string? substatus = null, bool canCancel = false)
     {
         MainThread.BeginInvokeOnMainThread(() => {
             StatusText = status;
             SubstatusText = substatus ?? string.Empty;
+            CanCancel = canCancel;
             IsLoading = true;
         });
     }
@@ -116,6 +142,7 @@ public partial class LoadingOverlay : ContentView
     {
         MainThread.BeginInvokeOnMainThread(() => {
             IsLoading = false;
+            CanCancel = false;
         });
     }
 

@@ -252,7 +252,7 @@
                     </Border.GestureRecognizers>
 
                     <VerticalStackLayout Spacing="10">
-                        <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="8" VerticalOptions="Center">
+                        <Grid ColumnDefinitions="Auto, *, Auto, Auto" ColumnSpacing="8" VerticalOptions="Center">
                             <Path Data="{StaticResource IconUser}"
                                   Stroke="{DynamicResource BrandGreen}"
                                   StrokeThickness="2"
@@ -275,6 +275,19 @@
                                    FontAttributes="Bold"
                                    TextColor="{DynamicResource AccentGreen}"
                                    VerticalOptions="Center" />
+                            <Border Grid.Column="3"
+                                    BackgroundColor="{DynamicResource IconBoxBg}"
+                                    Stroke="{DynamicResource BrandGreen}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 8"
+                                    Padding="8, 3"
+                                    VerticalOptions="Center">
+                                <Label Text="Настроить"
+                                       FontSize="11.5"
+                                       FontAttributes="Bold"
+                                       TextColor="{DynamicResource BrandGreen}"
+                                       VerticalOptions="Center" />
+                            </Border>
                         </Grid>
 
                         <ProgressBar x:Name="ProfileProgress"

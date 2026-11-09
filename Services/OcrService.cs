@@ -33,5 +33,7 @@ public static partial class OcrService
     /// Бросает исключение с понятным сообщением, если распознавание не удалось технически
     /// (например, на Windows не установлен языковой пакет).
     /// </summary>
-    public static partial Task<string> RecognizeTextAsync(Stream photoStream);
+    public static partial Task<string> RecognizeTextAsync(Stream photoStream, CancellationToken cancellationToken = default);
+
+    public static Task<string> RecognizeTextAsync(Stream photoStream) => RecognizeTextAsync(photoStream, CancellationToken.None);
 }

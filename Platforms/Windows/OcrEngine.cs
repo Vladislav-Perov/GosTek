@@ -14,7 +14,7 @@ namespace GosTek.Services;
 
 public static partial class OcrService
 {
-    public static partial async Task<string> RecognizeTextAsync(Stream photoStream)
+    public static partial async Task<string> RecognizeTextAsync(Stream photoStream, CancellationToken cancellationToken)
     {
         // Сначала пробуем именно русский язык (точнее для кириллицы), затем —
         // любой язык, установленный в профиле пользователя, как запасной вариант.
@@ -27,7 +27,8 @@ public static partial class OcrService
                 "Параметры → Время и язык → Язык → Русский → Параметры → «Распознавание текста».");
 
         using var memory = new MemoryStream();
-        await photoStream.CopyToAsync(memory);
+        cancellationToken.ThrowIfCancellationRequested();
+        await photoStream.CopyToAsync(memory, cancellationToken);
         byte[] bytes = memory.ToArray();
 
         // Предварительная обработка изображения (выравнивание наклона, оттенки серого, бинаризация)

@@ -65,6 +65,27 @@
                        HorizontalTextAlignment="Center"
                        TextColor="{DynamicResource TextSecondary}"
                        IsVisible="False" />
+
+                <!-- Кнопка прерывания/отмены процесса -->
+                <Border x:Name="CancelButton"
+                        IsVisible="False"
+                        StyleClass="HoverCard"
+                        StrokeThickness="1"
+                        Stroke="{DynamicResource CardStroke}"
+                        BackgroundColor="{DynamicResource CardBg}"
+                        StrokeShape="RoundRectangle 10"
+                        Padding="16, 7"
+                        Margin="0, 8, 0, 0"
+                        HorizontalOptions="Center">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnCancelTapped" />
+                    </Border.GestureRecognizers>
+                    <Label Text="Отменить"
+                           FontSize="13"
+                           FontAttributes="Bold"
+                           TextColor="{DynamicResource BadColor}"
+                           HorizontalOptions="Center" />
+                </Border>
             </VerticalStackLayout>
         </Border>
     </Grid>

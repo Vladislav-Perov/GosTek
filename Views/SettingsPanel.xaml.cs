@@ -110,7 +110,7 @@ public partial class SettingsPanel : ContentView
             IsVisible = true;
 
             await Task.WhenAll(
-                Scrim.FadeToAsync(1, OpenMs, Easing.CubicOut),
+                Scrim.FadeToAsync(0.55, OpenMs, Easing.CubicOut),
                 Panel.TranslateToAsync(0, 0, OpenMs, Easing.CubicOut));
         } finally {
             _animating = false;

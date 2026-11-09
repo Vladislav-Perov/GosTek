@@ -48,6 +48,7 @@ public static class SettingsService
             else
                 Preferences.Default.Set(KeyFolder, value);
 
+            try { Directory.CreateDirectory(TemplatesFolder); } catch { }
             Changed?.Invoke();
         }
     }
@@ -73,6 +74,7 @@ public static class SettingsService
             else
                 Preferences.Default.Set(KeyTemplates, value);
 
+            try { Directory.CreateDirectory(TemplatesFolder); } catch { }
             Changed?.Invoke();
         }
     }

@@ -2,7 +2,7 @@
  * ==============================================================================
  * НАЗНАЧЕНИЕ: Каталог шаблонов, отслеживание хеш-сигнатуры изменений директории и группировка
  * СОДЕРЖИМОЕ: TemplateCatalog
- * ЗАВИСИМОСТИ: GosTek.Models.TemplateDef
+ * ЗАВИСИМОСТИ: GosTek.Models.TemplateDef, GosTek.SettingsService
  * ==============================================================================
  */
 namespace GosTek.Models;
@@ -14,6 +14,11 @@ namespace GosTek.Models;
 public static class TemplateCatalog
 {
     public const string NoCategory = "Прочее";
+
+    static TemplateCatalog()
+    {
+        SettingsService.Changed += Refresh;
+    }
 
     private static Dictionary<string, TemplateDef> _defs = new();
 

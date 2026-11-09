@@ -31,6 +31,7 @@ public partial class ScanPage : ContentPage
     private string? _mode;
     private bool _busy;
     private int _copyVersion;
+    private CancellationTokenSource? _processCts;
 
     // Живая камера в рамке: CameraView создаётся только после выдачи доступа к камере
     private CameraView? _camera;
@@ -51,6 +52,7 @@ public partial class ScanPage : ContentPage
         InitializeComponent();
         BuildScanLines();
         BuildChips();
+        ScanLoading.CancelRequested += (_, _) => CancelProcessing();
     }
 
     protected override async void OnAppearing()
@@ -66,7 +68,8 @@ public partial class ScanPage : ContentPage
         base.OnDisappearing();
 
         // Камеру отпускаем при уходе с вкладки
-        StopPreview();
+        CancelProcessing();
+            StopPreview();
 
         // Страница живёт между переходами: режим «из профиля» не должен прилипнуть.
         // Пока открыто окно выбора файла или идёт распознавание, его не трогаем.
@@ -77,6 +80,11 @@ public partial class ScanPage : ContentPage
     // «Назад» на Android: из результата — к рамке, иначе — на главную (или в профиль)
     protected override bool OnBackButtonPressed()
     {
+        if (_busy || ScanLoading.IsLoading) {
+            CancelProcessing();
+            return true;
+        }
+
         if (ResultPanel.IsVisible) {
             ShowResult(false);
             return true;
@@ -141,7 +149,10 @@ public partial class ScanPage : ContentPage
                 _cameraNoteShown = false;
                 ErrorLabel.IsVisible = false;
             }
-        } catch (Exception ex) {
+        } catch (OperationCanceledException) {
+            // Распознавание прервано пользователем
+            return;
+            } catch (Exception ex) {
             // Камеры нет или она занята: возвращаем линии «листа», сканировать можно из галереи и файла
             if (_camera is not null)
                 _camera.IsVisible = false;
@@ -197,12 +208,27 @@ public partial class ScanPage : ContentPage
         };
     }
 
-    private void SetLoading(bool on, string status = "Загрузка...", string? substatus = null)
+    private void CancelProcessing()
+    {
+        if (_processCts is { IsCancellationRequested: false }) {
+            try { _processCts.Cancel(); } catch { }
+        }
+        _processCts?.Dispose();
+        _processCts = null;
+
+        SetLoading(false);
+        _busy = false;
+
+        if (!ResultPanel.IsVisible)
+            _ = StartPreviewAsync();
+    }
+
+    private void SetLoading(bool on, string status = "Загрузка...", string? substatus = null, bool canCancel = true)
     {
         Loader.IsRunning = on;
         Loader.IsVisible = on;
         if (on)
-            ScanLoading.Show(status, substatus);
+            ScanLoading.Show(status, substatus, canCancel);
         else
             ScanLoading.Hide();
     }
@@ -214,6 +240,7 @@ public partial class ScanPage : ContentPage
         FramePanel.IsVisible = !on;
 
         if (on)
+
             StopPreview();
         else
             _ = StartPreviewAsync();
@@ -241,15 +268,16 @@ public partial class ScanPage : ContentPage
     {
         HapticHelper.Click();
         if (_previewOn && _camera is { } camera) {
-            await AcquireAndRecognizeAsync("Не удалось сделать снимок", async () => {
+            await AcquireAndRecognizeAsync("Не удалось сделать снимок", async token => {
                 SetLoading(true, "Снимок кадра...", "Захват фото с камеры");
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
+                cts.CancelAfter(TimeSpan.FromSeconds(10));
                 return await camera.CaptureImage(cts.Token);
             }, pausePreview: false);
             return;
         }
 
-        await AcquireAndRecognizeAsync("Не удалось открыть камеру", async () => {
+        await AcquireAndRecognizeAsync("Не удалось открыть камеру", async token => {
             if (!MediaPicker.Default.IsCaptureSupported)
                 throw new InvalidOperationException("Это устройство не поддерживает съёмку фото.");
 
@@ -258,14 +286,14 @@ public partial class ScanPage : ContentPage
     }
 
     private async void OnGalleryTapped(object? sender, TappedEventArgs e)
-        => await AcquireAndRecognizeAsync("Не удалось открыть галерею", async () => {
+        => await AcquireAndRecognizeAsync("Не удалось открыть галерею", async token => {
             SetLoading(true, "Открытие галереи...", "Выбор файла фотографии");
             var photos = await MediaPicker.Default.PickPhotosAsync();
             return await OpenAsync(photos?.FirstOrDefault());
         }, pausePreview: true);
 
     private async void OnFileTapped(object? sender, TappedEventArgs e)
-        => await AcquireAndRecognizeAsync("Не удалось открыть файл", async () => {
+        => await AcquireAndRecognizeAsync("Не удалось открыть файл", async token => {
             SetLoading(true, "Открытие проводника...", "Выбор файла документа");
             return await OpenAsync(await FilePicker.Default.PickAsync(new PickOptions {
                 PickerTitle = "Выберите изображение документа",
@@ -279,30 +307,39 @@ public partial class ScanPage : ContentPage
     // ===== Получить изображение и распознать =====
 
     // pausePreview: перед окном выбора файла камеру в рамке выключаем, чтобы не держать её занятой
-    private async Task AcquireAndRecognizeAsync(string errorTitle, Func<Task<Stream?>> acquire, bool pausePreview)
+    private async Task AcquireAndRecognizeAsync(string errorTitle, Func<CancellationToken, Task<Stream?>> acquire, bool pausePreview)
     {
         if (_busy)
             return;
 
         _busy = true;
+        _processCts?.Dispose();
+        _processCts = new CancellationTokenSource();
+        var token = _processCts.Token;
         try {
             if (pausePreview)
-                StopPreview();
+    
+            StopPreview();
 
             Stream? stream;
             try {
-                stream = await acquire();
+                stream = await acquire(token);
+            } catch (OperationCanceledException) {
+                return;
+
             } catch (Exception ex) {
                 SetLoading(false);
                 await Dialogs.AlertAsync(errorTitle, ex.Message, DialogKind.Danger);
                 return;
             }
 
-            if (stream is null)
+            if (stream is null || token.IsCancellationRequested)
                 return;   // закрыли камеру или окно выбора
 
             await using (stream)
-                await ProcessStreamAsync(stream);
+                await ProcessStreamAsync(stream, token);
+        } catch (OperationCanceledException) {
+            // Прервано пользователем
         } finally {
             SetLoading(false);
             _busy = false;
@@ -313,7 +350,7 @@ public partial class ScanPage : ContentPage
         }
     }
 
-    private async Task ProcessStreamAsync(Stream stream)
+    private async Task ProcessStreamAsync(Stream stream, CancellationToken token)
     {
         ErrorLabel.IsVisible = false;
         _cameraNoteShown = false;
@@ -324,7 +361,9 @@ public partial class ScanPage : ContentPage
                 stream.Position = 0;
 
             ScanLoading.UpdateStatus("Распознаем текст...", "Распознавание символов OCR");
-            string text = await OcrService.RecognizeTextAsync(stream);
+            token.ThrowIfCancellationRequested();
+            string text = await OcrService.RecognizeTextAsync(stream, token);
+            token.ThrowIfCancellationRequested();
 
             if (string.IsNullOrWhiteSpace(text)) {
                 ShowError("Текст на фото не распознан. Попробуйте снять при лучшем освещении, ровнее и ближе.");
@@ -368,7 +407,10 @@ public partial class ScanPage : ContentPage
                     await Shell.Current.GoToAsync("//TemplatesPage");
                 }
             }
-        } catch (Exception ex) {
+        } catch (OperationCanceledException) {
+            // Распознавание прервано пользователем
+            return;
+            } catch (Exception ex) {
             ShowError($"Не удалось распознать текст: {ex.Message}");
         } finally {
             SetLoading(false);
@@ -426,7 +468,10 @@ public partial class ScanPage : ContentPage
 
             if (_mode == "passport")
                 await Shell.Current.GoToAsync("//ProfilePage");
-        } catch (Exception ex) {
+        } catch (OperationCanceledException) {
+            // Распознавание прервано пользователем
+            return;
+            } catch (Exception ex) {
             await Dialogs.AlertAsync("Не удалось сохранить", ex.Message, DialogKind.Danger);
         }
     }

@@ -2,7 +2,7 @@
  * ==============================================================================
  * НАЗНАЧЕНИЕ: Корневой класс приложения .NET MAUI, управление жизненным циклом и окном Windows
  * СОДЕРЖИМОЕ: App
- * ЗАВИСИМОСТИ: Microsoft.Maui.Controls, GosTek.ThemeService
+ * ЗАВИСИМОСТИ: Microsoft.Maui.Controls, GosTek.ThemeService, GosTek.Services.TemplateSeeder
  * ==============================================================================
  */
 namespace GosTek
@@ -13,6 +13,7 @@ namespace GosTek
         {
             InitializeComponent();
             ThemeService.Init();
+            _ = GosTek.Services.TemplateSeeder.EnsureDefaultTemplatesAsync();
         }
 
         protected override Window CreateWindow(IActivationState? activationState)

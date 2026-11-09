@@ -352,8 +352,13 @@
         <!-- ==================== ПАНЕЛЬ ДЕЙСТВИЙ (ГАЛЕРЕЯ, ЗАТВОР, ФАЙЛ) ==================== -->
         <Grid Grid.Row="3"
               ColumnDefinitions="*, Auto, *"
-              Padding="24, 10, 24, 20"
-              VerticalOptions="Center">
+              VerticalOptions="End">
+            <Grid.Padding>
+                <OnPlatform x:TypeArguments="Thickness">
+                    <On Platform="Android" Value="24, 6, 24, 44" />
+                    <On Platform="WinUI" Value="24, 8, 24, 18" />
+                </OnPlatform>
+            </Grid.Padding>
 
             <!-- Кнопка выбора из галереи -->
             <VerticalStackLayout Grid.Column="0"

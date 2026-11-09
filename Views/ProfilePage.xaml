@@ -65,10 +65,11 @@
                                        LineBreakMode="WordWrap" />
                             </VerticalStackLayout>
 
-                            <!-- Сегментный бейдж процента -->
+                            <!-- Сегментный бейдж процента с контрастной рамкой -->
                             <Border Grid.Column="1"
                                     BackgroundColor="{DynamicResource IconBoxBg}"
-                                    StrokeThickness="0"
+                                    Stroke="{DynamicResource BrandGreen}"
+                                    StrokeThickness="1"
                                     StrokeShape="RoundRectangle 12"
                                     Padding="12, 6"
                                     VerticalOptions="Center">
@@ -138,7 +139,8 @@
 
                         <Border Grid.Column="2"
                                 BackgroundColor="{DynamicResource IconBoxBg}"
-                                StrokeThickness="0"
+                                Stroke="{DynamicResource BrandGreen}"
+                                StrokeThickness="1"
                                 StrokeShape="RoundRectangle 10"
                                 Padding="12, 6"
                                 VerticalOptions="Center">
