@@ -2,9 +2,10 @@
  * ==============================================================================
  * НАЗНАЧЕНИЕ: Каталог шаблонов документов с автообновлением, категоризацией, избранным и поиском с подсветкой
  * СОДЕРЖИМОЕ: TemplatesPage
- * ЗАВИСИМОСТИ: GosTek.Models, GosTek.Services, GosTek.TemplateEngine, GosTek.Views.Controls
+ * ЗАВИСИМОСТИ: GosTek.Models, GosTek.Services, GosTek.TemplateEngine, GosTek.Views.Controls, GosTek.Helpers
  * ==============================================================================
  */
+using GosTek.Helpers;
 using GosTek.Models;
 using GosTek.Services;
 using GosTek.Views.Controls;
@@ -22,6 +23,7 @@ public partial class TemplatesPage : ContentPage
 
     private IDispatcherTimer? _watchTimer;
     private string _signature = "";
+    private bool _isFirstLoad = true;
 
     public TemplatesPage()
     {
@@ -36,17 +38,35 @@ public partial class TemplatesPage : ContentPage
         ApplyFilter();
     }
 
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
-        ReloadTemplates();
         BottomTabs.ResetHover();   // сбросить «залипшее» наведение таббара
         StartWatching();
+
+        if (_isFirstLoad)
+        {
+            _isFirstLoad = false;
+            CatalogSkeleton.StartShimmer();
+            ResultsList.IsVisible = false;
+            FavoritesSection.IsVisible = false;
+            RecentSection.IsVisible = false;
+
+            await Task.Delay(250);   // реалистичная скелетон-анимация при открытии каталога
+            ReloadTemplates();
+            CatalogSkeleton.StopShimmer();
+            ResultsList.IsVisible = true;
+        }
+        else
+        {
+            ReloadTemplates();
+        }
     }
 
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        CatalogSkeleton.StopShimmer();
         StopWatching();
     }
 
@@ -155,11 +175,15 @@ public partial class TemplatesPage : ContentPage
         RecentSection.IsVisible = _query.Length == 0 && _category is null && recent.Count > 0;
 
         // Синхронизация состояния строк (звёздочки избранного и подсветка совпадений)
-        Dispatcher.Dispatch(() =>
+        Dispatcher.Dispatch(async () =>
         {
             UpdateRowsState(FavoritesList, favIds, "");
             UpdateRowsState(RecentList, favIds, "");
             UpdateRowsState(ResultsList, favIds, _query);
+
+            var rows = ResultsList.Children.OfType<VisualElement>().ToList();
+            if (rows.Count > 0)
+                await AnimationHelper.AnimateStaggeredEntranceAsync(rows);
         });
     }
 

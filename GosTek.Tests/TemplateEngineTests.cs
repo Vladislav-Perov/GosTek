@@ -145,4 +145,31 @@ public class TemplateEngineTests
             if (File.Exists(outputPath)) File.Delete(outputPath);
         }
     }
+
+    [Fact]
+    public void ParseTokenDetails_WithElaborateMode_ParsesCorrectly()
+    {
+        var (label, hint, mode) = TemplateEngine.ParseTokenDetails("Причина|расписать");
+        Assert.Equal("Причина", label);
+        Assert.Equal("", hint);
+        Assert.Equal(FieldExpansionMode.Elaborate, mode);
+    }
+
+    [Fact]
+    public void ParseTokenDetails_WithBriefMode_ParsesCorrectly()
+    {
+        var (label, hint, mode) = TemplateEngine.ParseTokenDetails("Причина|кратко");
+        Assert.Equal("Причина", label);
+        Assert.Equal("", hint);
+        Assert.Equal(FieldExpansionMode.Brief, mode);
+    }
+
+    [Fact]
+    public void ParseTokenDetails_WithHintAndElaborateMode_ParsesBoth()
+    {
+        var (label, hint, mode) = TemplateEngine.ParseTokenDetails("Причина-Укажите подробно|расписать");
+        Assert.Equal("Причина", label);
+        Assert.Equal("Укажите подробно", hint);
+        Assert.Equal(FieldExpansionMode.Elaborate, mode);
+    }
 }

@@ -2,10 +2,10 @@
  * ==============================================================================
  * НАЗНАЧЕНИЕ: Анимированный переключатель светлой и тёмной темы с векторными иконками Солнце/Луна
  * СОДЕРЖИМОЕ: ThemeToggle
- * ЗАВИСИМОСТИ: GosTek.ThemeService, GosTek.Resources.Styles.Icons
+ * ЗАВИСИМОСТИ: GosTek.ThemeService, GosTek.Views.Controls.IconView
  * ==============================================================================
  */
-using GosTek.Resources.Styles;
+using GosTek.Views.Controls;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace GosTek.Views;
@@ -21,7 +21,7 @@ public partial class ThemeToggle : ContentView
         InitializeComponent();
 
         Sync(animated: false);
-        Loaded += (_, _) => Sync(animated: false);   // страница могла быть скрыта, пока тему меняли
+        Loaded += (_, _) => Sync(animated: false);
         ThemeService.Changed += () => Sync(animated: true);
     }
 
@@ -30,8 +30,13 @@ public partial class ThemeToggle : ContentView
     private void Sync(bool animated)
     {
         bool dark = ThemeService.IsDark;
-        ThemeIconPath.Data = (Geometry)new PathGeometryConverter().ConvertFromInvariantString(dark ? Icons.Moon : Icons.Sun)!;
+        ThemeIcon.Icon = dark ? "moon" : "sun";
 
+        // Расчёт позиций:
+        // Базовая позиция ползунка в AbsoluteLayout: X = 3, Y = 3 (размер 16x16 при треке 40x22).
+        // В тёмной теме (выкл): TranslationX = 0, ползунок остаётся на X = 3.
+        // В светлой теме (вкл): TranslationX = 18, ползунок перемещается на X = 3 + 18 = 21.
+        // Правый край ползунка в светлой теме: 21 + 16 = 37, отступ справа: 40 - 37 = 3 px.
         double target = dark ? 0 : 18;
 
         if (animated && IsLoaded)

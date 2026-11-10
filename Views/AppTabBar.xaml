@@ -1,20 +1,111 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!--
  ==============================================================================
- НАЗНАЧЕНИЕ: Пользовательский интерфейс нижней навигационной панели приложения
- СОДЕРЖИМОЕ: ContentView, Grid, Border, Label
- ЗАВИСИМОСТИ: GosTek.Views.AppTabBar
+ НАЗНАЧЕНИЕ: Адаптивная навигационная панель (левый rail на Windows, нижний бар на Android)
+ СОДЕРЖИМОЕ: AppTabBar (ContentView)
+ ЗАВИСИМОСТИ: GosTek.Views.AppTabBar, GosTek.Views.Controls.IconView, GosTek.Views.ThemeToggle
  ==============================================================================
 -->
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:views="clr-namespace:GosTek.Views"
+             xmlns:vctrl="clr-namespace:GosTek.Views.Controls"
              x:Class="GosTek.Views.AppTabBar">
 
-    <Border BackgroundColor="{DynamicResource TabBarBg}"
-            Stroke="{DynamicResource CardStroke}"
-            StrokeThickness="1"
-            Padding="4, 8">
-        <!-- Вкладки создаются из кода (AppTabBar.xaml.cs, список TabList) -->
-        <Grid x:Name="TabsGrid" HorizontalOptions="Fill" />
-    </Border>
+    <Grid>
+        <!-- На Windows: Вертикальный левый Navigation Rail (220 px) -->
+        <Border x:Name="WindowsRail"
+                IsVisible="{OnPlatform WinUI=True, Android=False, Default=True}"
+                WidthRequest="220"
+                HorizontalOptions="Fill"
+                VerticalOptions="Fill"
+                BackgroundColor="{DynamicResource TabBarBg}"
+                Stroke="{DynamicResource CardStroke}"
+                StrokeThickness="1"
+                Padding="0">
+            <Grid RowDefinitions="Auto, *, Auto">
+                <!-- Сверху: Логотип приложения «ГосТек» -->
+                <Grid Grid.Row="0"
+                      Padding="20, 24, 20, 16"
+                      ColumnDefinitions="Auto, *"
+                      ColumnSpacing="10"
+                      VerticalOptions="Center">
+                    <vctrl:IconView Icon="file"
+                                    Size="24"
+                                    IconColor="BrandGreen"
+                                    VerticalOptions="Center" />
+                    <Label Grid.Column="1"
+                           Text="ГосТек"
+                           FontSize="22"
+                           FontAttributes="Bold"
+                           TextColor="{DynamicResource BrandGreen}"
+                           VerticalOptions="Center" />
+                </Grid>
+
+                <!-- Ниже: 5 вкладок вертикальным списком -->
+                <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
+                    <VerticalStackLayout x:Name="WindowsTabsStack"
+                                         Spacing="6"
+                                         Padding="12, 6" />
+                </ScrollView>
+
+                <!-- Снизу: ThemeToggle и кнопка «Настройки» -->
+                <VerticalStackLayout Grid.Row="2"
+                                     Spacing="10"
+                                     Padding="14, 12, 14, 18">
+                    <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 0, 0, 4" />
+
+                    <!-- Кнопка «Настройки» -->
+                    <Border x:Name="WindowsSettingsButton"
+                            StyleClass="HoverCard"
+                            StrokeThickness="1"
+                            Stroke="{DynamicResource CardStroke}"
+                            BackgroundColor="{DynamicResource CardBg}"
+                            StrokeShape="RoundRectangle 12"
+                            Padding="12, 10">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnSettingsClicked" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto, *" ColumnSpacing="10" VerticalOptions="Center">
+                            <vctrl:IconView Icon="sliders"
+                                            Size="18"
+                                            IconColor="TextPrimary"
+                                            VerticalOptions="Center" />
+                            <Label Grid.Column="1"
+                                   Text="Настройки"
+                                   FontSize="13.5"
+                                   FontAttributes="Bold"
+                                   TextColor="{DynamicResource TextPrimary}"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Переключатель темы -->
+                    <Grid ColumnDefinitions="*, Auto"
+                          Padding="4, 2"
+                          VerticalOptions="Center">
+                        <Label Text="Тема"
+                               FontSize="13"
+                               TextColor="{DynamicResource TextSecondary}"
+                               VerticalOptions="Center" />
+                        <views:ThemeToggle Grid.Column="1"
+                                           HorizontalOptions="End"
+                                           VerticalOptions="Center" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Grid>
+        </Border>
+
+        <!-- На Android: Нижний горизонтальный таббар -->
+        <Border x:Name="AndroidBottomBar"
+                IsVisible="{OnPlatform Android=True, WinUI=False, Default=False}"
+                HorizontalOptions="Fill"
+                VerticalOptions="End"
+                BackgroundColor="{DynamicResource TabBarBg}"
+                Stroke="{DynamicResource CardStroke}"
+                StrokeThickness="1"
+                Padding="4, 8">
+            <Grid x:Name="TabsGrid" HorizontalOptions="Fill" />
+        </Border>
+    </Grid>
 </ContentView>

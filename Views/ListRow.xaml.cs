@@ -2,7 +2,7 @@
  * ==============================================================================
  * НАЗНАЧЕНИЕ: Унифицированный компонент строки списка с векторной иконкой, заголовком, избранным и подсветкой поиска
  * СОДЕРЖИМОЕ: ListRow
- * ЗАВИСИМОСТИ: Microsoft.Maui.Controls, GosTek.Services.HapticHelper, GosTek.Controls.BounceEffect, GosTek.Resources.Styles.Icons
+ * ЗАВИСИМОСТИ: Microsoft.Maui.Controls, GosTek.Services.HapticHelper, GosTek.Controls.BounceEffect, GosTek.Views.Controls.IconView
  * ==============================================================================
  */
 using GosTek.Controls;
@@ -33,6 +33,16 @@ public partial class ListRow : ContentView
         nameof(Subtitle), typeof(string), typeof(ListRow), "",
         propertyChanged: (b, _, v) => ((ListRow)b).SubtitleLabel.Text = (string)v);
 
+    public static readonly BindableProperty DetailsProperty = BindableProperty.Create(
+        nameof(Details), typeof(string), typeof(ListRow), "",
+        propertyChanged: (b, _, v) =>
+        {
+            var row = (ListRow)b;
+            var text = (string)v;
+            row.DetailsLabel.Text = text;
+            row.DetailsLabel.IsVisible = !string.IsNullOrWhiteSpace(text);
+        });
+
     public static readonly BindableProperty ShowFavoriteProperty = BindableProperty.Create(
         nameof(ShowFavorite), typeof(bool), typeof(ListRow), false,
         propertyChanged: (b, _, v) => ((ListRow)b).FavoriteButton.IsVisible = (bool)v);
@@ -57,6 +67,12 @@ public partial class ListRow : ContentView
     {
         get => (string)GetValue(SubtitleProperty);
         set => SetValue(SubtitleProperty, value);
+    }
+
+    public string Details
+    {
+        get => (string)GetValue(DetailsProperty);
+        set => SetValue(DetailsProperty, value);
     }
 
     public bool ShowFavorite
@@ -84,8 +100,7 @@ public partial class ListRow : ContentView
 
     private void UpdateIcon(string iconKey)
     {
-        var pathData = Icons.ResolvePath(iconKey);
-        IconPath.Data = (Geometry)new PathGeometryConverter().ConvertFromInvariantString(pathData)!;
+        IconCtrl.Icon = iconKey;
     }
 
     private void UpdateTitle(string title)
@@ -98,16 +113,15 @@ public partial class ListRow : ContentView
     {
         if (isFav)
         {
-            FavoritePath.Data = (Geometry)new PathGeometryConverter().ConvertFromInvariantString(Icons.StarFilled)!;
-            FavoritePath.SetDynamicResource(MauiPath.StrokeProperty, "BrandGreen");
-            FavoritePath.SetDynamicResource(MauiPath.FillProperty, "BrandGreen");
+            FavoriteCtrl.Icon = "starfilled";
+            FavoriteCtrl.IconColor = "BrandGreen";
+            FavoriteCtrl.Filled = true;
         }
         else
         {
-            FavoritePath.Data = (Geometry)new PathGeometryConverter().ConvertFromInvariantString(Icons.Star)!;
-            FavoritePath.SetDynamicResource(MauiPath.StrokeProperty, "TextSecondary");
-            FavoritePath.Fill = Colors.Transparent;
-            FavoritePath.RemoveDynamicResource(MauiPath.FillProperty);
+            FavoriteCtrl.Icon = "star";
+            FavoriteCtrl.IconColor = "TextSecondary";
+            FavoriteCtrl.Filled = false;
         }
     }
 

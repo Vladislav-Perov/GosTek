@@ -82,8 +82,83 @@ public static class ThemeService
         Changed?.Invoke();
     }
 
+    /// <summary>Плавное переключение темы с эффектом мягкого затемнения и моргания.</summary>
+    public static async Task ToggleWithAnimationAsync()
+    {
+        var targetMode = IsDark ? ThemeMode.Light : ThemeMode.Dark;
+        await SetModeWithAnimationAsync(targetMode);
+    }
+
+    /// <summary>Установка режима темы с визуальным эффектом затухания/проявления.</summary>
+    public static async Task SetModeWithAnimationAsync(ThemeMode mode)
+    {
+        if (mode == Mode)
+            return;
+
+        var page = Shell.Current?.CurrentPage ?? Application.Current?.Windows.FirstOrDefault()?.Page;
+        if (page is ContentPage contentPage && contentPage.Content is Layout layout)
+        {
+            var veil = new BoxView
+            {
+                Color = Colors.Black,
+                Opacity = 0,
+                InputTransparent = true,
+                ZIndex = 99999,
+                HorizontalOptions = LayoutOptions.Fill,
+                VerticalOptions = LayoutOptions.Fill,
+            };
+
+            try
+            {
+                if (layout is Grid grid)
+                {
+                    if (grid.RowDefinitions.Count > 0)
+                        Grid.SetRowSpan(veil, Math.Max(1, grid.RowDefinitions.Count));
+                    if (grid.ColumnDefinitions.Count > 0)
+                        Grid.SetColumnSpan(veil, Math.Max(1, grid.ColumnDefinitions.Count));
+                    grid.Children.Add(veil);
+                }
+                else
+                {
+                    layout.Children.Add(veil);
+                }
+
+                await veil.FadeToAsync(0.45, 120, Easing.CubicIn);
+                SetMode(mode);
+                await veil.FadeToAsync(0.0, 180, Easing.CubicOut);
+            }
+            catch
+            {
+                SetMode(mode);
+            }
+            finally
+            {
+                try
+                {
+                    if (layout.Children.Contains(veil))
+                        layout.Children.Remove(veil);
+                }
+                catch { }
+            }
+        }
+        else
+        {
+            SetMode(mode);
+        }
+    }
+
     /// <summary>Быстрый переключатель: из любого режима в противоположную тему.</summary>
-    public static void Toggle() => SetMode(IsDark ? ThemeMode.Light : ThemeMode.Dark);
+    public static void Toggle()
+    {
+        if (Application.Current is not null && MainThread.IsMainThread)
+        {
+            _ = ToggleWithAnimationAsync();
+        }
+        else
+        {
+            SetMode(IsDark ? ThemeMode.Light : ThemeMode.Dark);
+        }
+    }
 
     /// <summary>Применить системную тему нативной платформы (WinUI ElementTheme на Windows).</summary>
     public static void ApplyPlatformTheme(Window? window = null)

@@ -37,11 +37,15 @@ public static class Icons
     public const string Pen = "M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z";
     public const string Ruler = "M21.3 8.7l-5.6-5.6a1 1 0 0 0-1.4 0L2.7 14.7a1 1 0 0 0 0 1.4l5.6 5.6a1 1 0 0 0 1.4 0L21.3 10.1a1 1 0 0 0 0-1.4z M7.5 10.5l2 2 M10.5 7.5l2 2 M13.5 4.5l2 2";
     public const string Share = "M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8 M16 6l-4-4-4 4 M12 2v13";
+    public const string Send = "M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z";
+    public const string Maximize = "M15 3h6v6 M9 21H3v-6 M21 3l-7 7 M3 21l7-7";
+    public const string Minimize = "M4 14h6v6 M20 10h-6V4 M14 10l7-7 M10 14l-7 7";
     public const string Search = "M21 21l-4.35-4.35M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0z";
     public const string ChevronDown = "M6 9l6 6 6-6";
     public const string ChevronUp = "M18 15l-6-6-6 6";
     public const string ChevronRight = "M9 18l6-6-6-6";
     public const string ChevronLeft = "M15 18l-6-6 6-6";
+    public const string Brain = "M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04zm5 0A2.5 2.5 0 0 1 19 4.5a2.5 2.5 0 0 1 1.32 4.24 3 3 0 0 1-.34 5.58 2.5 2.5 0 0 1-2.96 3.08A2.5 2.5 0 0 1 12 19.5v-15A2.5 2.5 0 0 1 14.5 2z";
 
     /// <summary>
     /// Возвращает PathData по строковому имени иконки или эмодзи.
@@ -51,7 +55,9 @@ public static class Icons
         if (string.IsNullOrWhiteSpace(iconNameOrEmoji))
             return FileText;
 
-        if (iconNameOrEmoji.StartsWith("M", StringComparison.OrdinalIgnoreCase))
+        if (iconNameOrEmoji.Length > 2 &&
+            (iconNameOrEmoji[0] == 'M' || iconNameOrEmoji[0] == 'm') &&
+            (char.IsDigit(iconNameOrEmoji[1]) || char.IsWhiteSpace(iconNameOrEmoji[1]) || iconNameOrEmoji[1] == '-' || iconNameOrEmoji[1] == '.'))
             return iconNameOrEmoji;
 
         return iconNameOrEmoji.ToLowerInvariant() switch
@@ -70,6 +76,7 @@ public static class Icons
             "trash" or "delete" or "remove" or "🗑️" => Trash,
             "eye" or "preview" or "👁️" => Eye,
             "sparkles" or "ai" or "magic" or "✨" => Sparkles,
+            "brain" or "memory" or "context" or "🧠" => Brain,
             "user" or "profile" or "person" or "👤" => User,
             "bulb" or "idea" or "hint" or "💡" => Bulb,
             "info" or "notice" or "ℹ️" => Info,
@@ -81,6 +88,9 @@ public static class Icons
             "pen" or "edit" or "✏️" => Pen,
             "ruler" or "📐" => Ruler,
             "share" or "↗" or "📤" => Share,
+            "send" or "paperplane" or "airplane" or "✈️" => Send,
+            "maximize" or "expand" or "fullscreen" => Maximize,
+            "minimize" or "restore" or "compress" => Minimize,
             "search" or "🔍" => Search,
             "chevrondown" or "chevron_down" => ChevronDown,
             "chevronup" or "chevron_up" => ChevronUp,

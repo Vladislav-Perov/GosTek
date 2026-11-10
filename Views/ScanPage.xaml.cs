@@ -32,6 +32,7 @@ public partial class ScanPage : ContentPage
     private bool _busy;
     private int _copyVersion;
     private CancellationTokenSource? _processCts;
+    private CancellationTokenSource? _laserCts;
 
     // Живая камера в рамке: CameraView создаётся только после выдачи доступа к камере
     private CameraView? _camera;
@@ -60,7 +61,10 @@ public partial class ScanPage : ContentPage
         base.OnAppearing();
 
         if (!ResultPanel.IsVisible)
+        {
             await StartPreviewAsync();
+            StartLaserAnimation();
+        }
     }
 
     protected override void OnDisappearing()
@@ -68,8 +72,9 @@ public partial class ScanPage : ContentPage
         base.OnDisappearing();
 
         // Камеру отпускаем при уходе с вкладки
+        StopLaserAnimation();
         CancelProcessing();
-            StopPreview();
+        StopPreview();
 
         // Страница живёт между переходами: режим «из профиля» не должен прилипнуть.
         // Пока открыто окно выбора файла или идёт распознавание, его не трогаем.
@@ -81,7 +86,8 @@ public partial class ScanPage : ContentPage
     protected override bool OnBackButtonPressed()
     {
         if (_busy || ScanLoading.IsLoading) {
-            CancelProcessing();
+            StopLaserAnimation();
+        CancelProcessing();
             return true;
         }
 
@@ -180,6 +186,76 @@ public partial class ScanPage : ContentPage
         ErrorLabel.IsVisible = true;
     }
 
+    // ===== Лазерная анимация сканирования видоискателя =====
+
+    private void StartLaserAnimation()
+    {
+        StopLaserAnimation();
+        _laserCts = new CancellationTokenSource();
+        var ct = _laserCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                try
+                {
+                    bool finished = false;
+                    await MainThread.InvokeOnMainThreadAsync(async () =>
+                    {
+                        if (ct.IsCancellationRequested || LaserLine is null)
+                            return;
+
+                        double h = ViewfinderArea?.Height ?? 0;
+                        if (h <= 0) h = 340;
+                        double targetY = Math.Max(80, h - 36);
+
+                        LaserLine.TranslationY = 16;
+                        LaserLine.Opacity = 0.85;
+
+                        // Плавное опускание сверху вниз за 2200 мс с ускорением и замедлением
+                        await LaserLine.TranslateToAsync(0, targetY, 2200, Easing.SinInOut);
+                        if (ct.IsCancellationRequested)
+                            return;
+
+                        // Быстрое затухание внизу и мгновенный возврат наверх
+                        await LaserLine.FadeToAsync(0.1, 150);
+                        LaserLine.TranslationY = 16;
+                        await LaserLine.FadeToAsync(0.85, 150);
+                        finished = true;
+                    });
+
+                    if (!finished && ct.IsCancellationRequested)
+                        break;
+
+                    await Task.Delay(100, ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch
+                {
+                    break;
+                }
+            }
+        }, ct);
+    }
+
+    private void StopLaserAnimation()
+    {
+        _laserCts?.Cancel();
+        _laserCts?.Dispose();
+        _laserCts = null;
+
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            LaserLine?.CancelAnimations();
+            if (LaserLine is not null)
+                LaserLine.Opacity = 0;
+        });
+    }
+
     // ===== Внешний вид =====
 
     // Тонкие линии внутри рамки, как «лист» на макете (видны, пока камера выключена)
@@ -220,7 +296,10 @@ public partial class ScanPage : ContentPage
         _busy = false;
 
         if (!ResultPanel.IsVisible)
+        {
+            StartLaserAnimation();
             _ = StartPreviewAsync();
+        }
     }
 
     private void SetLoading(bool on, string status = "Загрузка...", string? substatus = null, bool canCancel = true)
@@ -241,9 +320,15 @@ public partial class ScanPage : ContentPage
 
         if (on)
 
+        {
+            StopLaserAnimation();
             StopPreview();
+        }
         else
+        {
+            StartLaserAnimation();
             _ = StartPreviewAsync();
+        }
     }
 
     private void ShowError(string text)
@@ -319,7 +404,10 @@ public partial class ScanPage : ContentPage
         try {
             if (pausePreview)
     
+        {
+            StopLaserAnimation();
             StopPreview();
+        }
 
             Stream? stream;
             try {
@@ -346,7 +434,10 @@ public partial class ScanPage : ContentPage
 
             // Вернулись без результата (отмена, ошибка): камера в рамке снова работает
             if (!ResultPanel.IsVisible)
-                _ = StartPreviewAsync();
+            {
+            StartLaserAnimation();
+            _ = StartPreviewAsync();
+        }
         }
     }
 

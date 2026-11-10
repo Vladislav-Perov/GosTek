@@ -3,7 +3,7 @@
  ==============================================================================
  НАЗНАЧЕНИЕ: Интерфейс экрана сканирования документов через камеру, предобработки и OCR
  СОДЕРЖИМОЕ: ScanPage (ContentPage), видоискатель, панель распознавания, оверлей загрузки
- ЗАВИСИМОСТИ: CommunityToolkit.Maui.Camera, GosTek.Views.Controls.LoadingOverlay, GosTek.Views.ThemeToggle, GosTek.Controls.ChipBar
+ ЗАВИСИМОСТИ: CommunityToolkit.Maui.Camera, GosTek.Views.Controls.LoadingOverlay, GosTek.Views.Controls.IconView, GosTek.Controls.ChipBar
  ==============================================================================
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
@@ -31,7 +31,7 @@
         <!-- ==================== ШАПКА ==================== -->
         <Grid Grid.Row="0"
               Padding="20, 14, 20, 10"
-              ColumnDefinitions="Auto, *, Auto"
+              ColumnDefinitions="Auto, *"
               ColumnSpacing="14"
               VerticalOptions="Center"
               BackgroundColor="{DynamicResource PageBg}">
@@ -69,9 +69,6 @@
                    FontAttributes="Bold"
                    VerticalOptions="Center"
                    TextColor="{DynamicResource TextPrimary}" />
-
-            <!-- Переключатель темы справа -->
-            <views:ThemeToggle Grid.Column="2" HorizontalOptions="End" VerticalOptions="Center" />
         </Grid>
 
         <!-- ==================== ЦЕНТР: ВИДОИСКАТЕЛЬ ИЛИ РЕЗУЛЬТАТ ==================== -->
@@ -81,7 +78,7 @@
             <Grid x:Name="FramePanel" RowDefinitions="*, Auto, Auto" RowSpacing="12">
 
                 <!-- Область камеры/видоискателя -->
-                <Grid Grid.Row="0">
+                <Grid x:Name="ViewfinderArea" Grid.Row="0">
                     <Border BackgroundColor="{DynamicResource CardBg}"
                             Stroke="{DynamicResource CardStroke}"
                             StrokeThickness="1"
@@ -135,6 +132,20 @@
                         <BoxView Style="{StaticResource CornerBar}" HeightRequest="4" VerticalOptions="End" HorizontalOptions="Fill" />
                         <BoxView Style="{StaticResource CornerBar}" WidthRequest="4" HorizontalOptions="End" VerticalOptions="Fill" />
                     </Grid>
+
+                    <!-- Горизонтальная лазерная полоса сканирования (Laser Line) -->
+                    <BoxView x:Name="LaserLine"
+                             HeightRequest="2.5"
+                             HorizontalOptions="Fill"
+                             VerticalOptions="Start"
+                             Color="{DynamicResource BrandGreen}"
+                             Margin="22, 0"
+                             Opacity="0"
+                             InputTransparent="True">
+                        <BoxView.Shadow>
+                            <Shadow Brush="{DynamicResource BrandGreen}" Offset="0, 0" Radius="8" Opacity="0.85" />
+                        </BoxView.Shadow>
+                    </BoxView>
                 </Grid>
 
                 <!-- Подсказка под видоискателем -->
@@ -146,15 +157,10 @@
                         Padding="14, 10"
                         Margin="4, 0">
                     <Grid ColumnDefinitions="Auto, *" ColumnSpacing="10" VerticalOptions="Center">
-                        <Path Data="{StaticResource IconBulb}"
-                              Stroke="{DynamicResource BrandGreen}"
-                              StrokeThickness="2"
-                              StrokeLineCap="Round"
-                              StrokeLineJoin="Round"
-                              Aspect="Uniform"
-                              WidthRequest="16"
-                              HeightRequest="16"
-                              VerticalOptions="Center" />
+                        <vctrl:IconView Icon="bulb"
+                                        IconColor="BrandGreen"
+                                        Size="16"
+                                        VerticalOptions="Center" />
                         <Label Grid.Column="1"
                                Text="Поместите документ целиком в рамку при хорошем освещении."
                                FontSize="12.5"
@@ -217,16 +223,11 @@
                                             WidthRequest="32"
                                             HeightRequest="32"
                                             VerticalOptions="Center">
-                                        <Path Data="{StaticResource IconSparkles}"
-                                              Stroke="{DynamicResource BrandGreen}"
-                                              StrokeThickness="2"
-                                              StrokeLineCap="Round"
-                                              StrokeLineJoin="Round"
-                                              Aspect="Uniform"
-                                              WidthRequest="16"
-                                              HeightRequest="16"
-                                              HorizontalOptions="Center"
-                                              VerticalOptions="Center" />
+                                        <vctrl:IconView Icon="sparkles"
+                                                        IconColor="BrandGreen"
+                                                        Size="16"
+                                                        HorizontalOptions="Center"
+                                                        VerticalOptions="Center" />
                                     </Border>
                                     <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
                                         <Label Text="Найдено автоматически"
@@ -379,16 +380,11 @@
                     <Border.Shadow>
                         <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.08" />
                     </Border.Shadow>
-                    <Path Data="{StaticResource IconImage}"
-                          Stroke="{DynamicResource TextPrimary}"
-                          StrokeThickness="2"
-                          StrokeLineCap="Round"
-                          StrokeLineJoin="Round"
-                          Aspect="Uniform"
-                          WidthRequest="20"
-                          HeightRequest="20"
-                          HorizontalOptions="Center"
-                          VerticalOptions="Center" />
+                    <vctrl:IconView Icon="image"
+                                    IconColor="TextPrimary"
+                                    Size="20"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Center" />
                 </Border>
                 <Label Text="Галерея"
                        FontSize="11.5"
@@ -416,16 +412,11 @@
                 <Border StrokeShape="RoundRectangle 34"
                         StrokeThickness="0"
                         Background="{DynamicResource BrandGreenGradient}">
-                    <Path Data="{StaticResource IconCamera}"
-                          Stroke="White"
-                          StrokeThickness="2"
-                          StrokeLineCap="Round"
-                          StrokeLineJoin="Round"
-                          Aspect="Uniform"
-                          WidthRequest="24"
-                          HeightRequest="24"
-                          HorizontalOptions="Center"
-                          VerticalOptions="Center" />
+                    <vctrl:IconView Icon="camera"
+                                    IconColor="White"
+                                    Size="24"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Center" />
                 </Border>
             </Border>
 
@@ -448,16 +439,11 @@
                     <Border.Shadow>
                         <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.08" />
                     </Border.Shadow>
-                    <Path Data="{StaticResource IconFolder}"
-                          Stroke="{DynamicResource TextPrimary}"
-                          StrokeThickness="2"
-                          StrokeLineCap="Round"
-                          StrokeLineJoin="Round"
-                          Aspect="Uniform"
-                          WidthRequest="20"
-                          HeightRequest="20"
-                          HorizontalOptions="Center"
-                          VerticalOptions="Center" />
+                    <vctrl:IconView Icon="folder"
+                                    IconColor="TextPrimary"
+                                    Size="20"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Center" />
                 </Border>
                 <Label Text="Файл"
                        FontSize="11.5"

@@ -2,12 +2,13 @@
 <!--
  ==============================================================================
  НАЗНАЧЕНИЕ: Интерфейс переключателя светлой и тёмной темы интерфейса с векторной иконкой
- СОДЕРЖИМОЕ: ContentView, Border, Path, BoxView
- ЗАВИСИМОСТИ: GosTek.Views.ThemeToggle, GosTek.Resources.Styles.Icons
+ СОДЕРЖИМОЕ: ContentView, Border, AbsoluteLayout, IconView
+ ЗАВИСИМОСТИ: GosTek.Views.ThemeToggle, GosTek.Views.Controls.IconView
  ==============================================================================
 -->
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vctrl="clr-namespace:GosTek.Views.Controls"
              x:Class="GosTek.Views.ThemeToggle">
 
     <Border StyleClass="HoverCard"
@@ -19,33 +20,30 @@
         </Border.GestureRecognizers>
 
         <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
-            <!-- Векторная иконка Солнце / Луна -->
-            <Path x:Name="ThemeIconPath"
-                  Data="{StaticResource IconMoon}"
-                  Stroke="{DynamicResource TextPrimary}"
-                  StrokeThickness="2"
-                  StrokeLineCap="Round"
-                  StrokeLineJoin="Round"
-                  Aspect="Uniform"
-                  WidthRequest="16"
-                  HeightRequest="16"
-                  VerticalOptions="Center" />
+            <!-- Векторная иконка Солнце / Луна через IconView -->
+            <vctrl:IconView x:Name="ThemeIcon"
+                            Icon="moon"
+                            Size="16"
+                            IconColor="TextPrimary"
+                            VerticalOptions="Center" />
 
+            <!-- Трек переключателя 40x22 на базе AbsoluteLayout -->
             <Border WidthRequest="40"
                     HeightRequest="22"
                     BackgroundColor="{DynamicResource ToggleTrackBg}"
                     StrokeThickness="0"
                     StrokeShape="RoundRectangle 11"
                     VerticalOptions="Center">
-                <Border x:Name="ToggleThumb"
-                        WidthRequest="16"
-                        HeightRequest="16"
-                        BackgroundColor="White"
-                        StrokeThickness="0"
-                        StrokeShape="RoundRectangle 8"
-                        HorizontalOptions="Start"
-                        VerticalOptions="Center"
-                        Margin="3,0,0,0" />
+                <AbsoluteLayout WidthRequest="40" HeightRequest="22">
+                    <Border x:Name="ToggleThumb"
+                            AbsoluteLayout.LayoutBounds="3, 3, 16, 16"
+                            AbsoluteLayout.LayoutFlags="None"
+                            WidthRequest="16"
+                            HeightRequest="16"
+                            BackgroundColor="White"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 8" />
+                </AbsoluteLayout>
             </Border>
         </HorizontalStackLayout>
     </Border>

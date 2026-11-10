@@ -2,12 +2,13 @@
 <!--
  ==============================================================================
  НАЗНАЧЕНИЕ: Унифицированный компонент строки списка с векторной иконкой, заголовком и избранным
- СОДЕРЖИМОЕ: ContentView, Grid, Label, Border, Path
- ЗАВИСИМОСТИ: GosTek.Views.ListRow, GosTek.Controls.BounceEffect, GosTek.Resources.Styles.Icons
+ СОДЕРЖИМОЕ: ContentView, Grid, Label, Border, IconView, Path
+ ЗАВИСИМОСТИ: GosTek.Views.ListRow, GosTek.Controls.BounceEffect, GosTek.Views.Controls.IconView
  ==============================================================================
 -->
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vctrl="clr-namespace:GosTek.Views.Controls"
              x:Class="GosTek.Views.ListRow">
 
     <!-- Строка-карточка: векторная иконка в плашке, заголовок, подпись, избранное, стрелка перехода -->
@@ -33,27 +34,27 @@
                     WidthRequest="42"
                     HeightRequest="42"
                     VerticalOptions="Center">
-                <Path x:Name="IconPath"
-                      Data="{StaticResource IconFileText}"
-                      Stroke="{DynamicResource BrandGreen}"
-                      StrokeThickness="2"
-                      StrokeLineCap="Round"
-                      StrokeLineJoin="Round"
-                      Aspect="Uniform"
-                      WidthRequest="20"
-                      HeightRequest="20"
-                      HorizontalOptions="Center"
-                      VerticalOptions="Center" />
+                <vctrl:IconView x:Name="IconCtrl"
+                                Icon="file"
+                                IconColor="BrandGreen"
+                                Size="20"
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center" />
             </Border>
 
             <!-- Заголовок и подзаголовок -->
-            <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                 <Label x:Name="TitleLabel"
                        FontSize="15"
                        FontAttributes="Bold"
                        TextColor="{DynamicResource TextPrimary}" />
                 <Label x:Name="SubtitleLabel"
                        FontSize="12.5"
+                       TextColor="{DynamicResource TextSecondary}"
+                       LineBreakMode="TailTruncation" />
+                <Label x:Name="DetailsLabel"
+                       IsVisible="False"
+                       FontSize="11.5"
                        TextColor="{DynamicResource TextSecondary}"
                        LineBreakMode="TailTruncation" />
             </VerticalStackLayout>
@@ -72,18 +73,12 @@
                     <TapGestureRecognizer Tapped="OnFavoriteTapped" />
                 </Border.GestureRecognizers>
                 <!-- Векторная звезда избранного -->
-                <Path x:Name="FavoritePath"
-                      Data="{StaticResource IconStar}"
-                      Stroke="{DynamicResource TextSecondary}"
-                      Fill="Transparent"
-                      StrokeThickness="2"
-                      StrokeLineCap="Round"
-                      StrokeLineJoin="Round"
-                      Aspect="Uniform"
-                      WidthRequest="18"
-                      HeightRequest="18"
-                      HorizontalOptions="Center"
-                      VerticalOptions="Center" />
+                <vctrl:IconView x:Name="FavoriteCtrl"
+                                Icon="star"
+                                IconColor="TextSecondary"
+                                Size="18"
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center" />
             </Border>
 
             <!-- Векторная стрелка перехода -->

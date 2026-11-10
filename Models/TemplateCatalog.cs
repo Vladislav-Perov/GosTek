@@ -32,9 +32,35 @@ public static class TemplateCatalog
     {
         var defs = TemplateEngine.Scan(SettingsService.TemplatesFolder);
         _defs = defs.ToDictionary(d => d.Id);
-        Items = defs.Select(d => new TemplateItem(d.Id, d.Title,
-            d.Fields.Length == 0 ? "Без полей для заполнения" : $"Полей для заполнения: {d.Fields.Length}",
-            d.Category)).ToArray();
+        Items = defs.Select(d =>
+        {
+            string modifiedText = ".docx";
+            try
+            {
+                if (!string.IsNullOrEmpty(d.FilePath) && File.Exists(d.FilePath))
+                {
+                    var dt = File.GetLastWriteTime(d.FilePath);
+                    var now = DateTime.Now;
+                    if (dt.Date == now.Date)
+                        modifiedText = $"Изменен сегодня, {dt:HH:mm} • .docx";
+                    else if (dt.Date == now.Date.AddDays(-1))
+                        modifiedText = "Изменен вчера • .docx";
+                    else
+                        modifiedText = $"Изменен {dt:dd.MM.yyyy} • .docx";
+                }
+            }
+            catch
+            {
+                modifiedText = ".docx";
+            }
+
+            return new TemplateItem(
+                d.Id,
+                d.Title,
+                d.Fields.Length == 0 ? "Без полей для заполнения" : $"Полей для заполнения: {d.Fields.Length}",
+                d.Category,
+                modifiedText);
+        }).ToArray();
     }
 
     /// <summary>

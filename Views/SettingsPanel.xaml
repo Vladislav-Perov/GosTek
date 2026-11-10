@@ -2,12 +2,13 @@
 <!--
  ==============================================================================
  НАЗНАЧЕНИЕ: Интерфейс боковой шторки настроек приложения (выбор папки, темы, приватность, очистка)
- СОДЕРЖИМОЕ: ContentView, Grid, Border, Label, ScrollView
- ЗАВИСИМОСТИ: GosTek.Views.SettingsPanel, GosTek.SettingsService, GosTek.ThemeService
+ СОДЕРЖИМОЕ: ContentView, Grid, Border, Label, ScrollView, IconView
+ ЗАВИСИМОСТИ: GosTek.Views.SettingsPanel, GosTek.SettingsService, GosTek.ThemeService, GosTek.Views.Controls.IconView
  ==============================================================================
 -->
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vctrl="clr-namespace:GosTek.Views.Controls"
              x:Class="GosTek.Views.SettingsPanel"
              IsVisible="False">
 
@@ -51,16 +52,11 @@
                             WidthRequest="36"
                             HeightRequest="36"
                             VerticalOptions="Center">
-                        <Path Data="{StaticResource IconSliders}"
-                              Stroke="{DynamicResource BrandGreen}"
-                              StrokeThickness="2"
-                              StrokeLineCap="Round"
-                              StrokeLineJoin="Round"
-                              Aspect="Uniform"
-                              WidthRequest="18"
-                              HeightRequest="18"
-                              HorizontalOptions="Center"
-                              VerticalOptions="Center" />
+                        <vctrl:IconView Icon="sliders"
+                                        IconColor="BrandGreen"
+                                        Size="18"
+                                        HorizontalOptions="Center"
+                                        VerticalOptions="Center" />
                     </Border>
 
                     <Label Grid.Column="1"
@@ -121,16 +117,11 @@
                                                 WidthRequest="34"
                                                 HeightRequest="34"
                                                 VerticalOptions="Center">
-                                            <Path Data="{StaticResource IconFolder}"
-                                                  Stroke="{DynamicResource BrandGreen}"
-                                                  StrokeThickness="2"
-                                                  StrokeLineCap="Round"
-                                                  StrokeLineJoin="Round"
-                                                  Aspect="Uniform"
-                                                  WidthRequest="16"
-                                                  HeightRequest="16"
-                                                  HorizontalOptions="Center"
-                                                  VerticalOptions="Center" />
+                                            <vctrl:IconView Icon="folder"
+                                                            IconColor="BrandGreen"
+                                                            Size="16"
+                                                            HorizontalOptions="Center"
+                                                            VerticalOptions="Center" />
                                         </Border>
 
                                         <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
@@ -157,15 +148,10 @@
                                             <TapGestureRecognizer Tapped="OnOpenTemplatesTapped" />
                                         </Border.GestureRecognizers>
                                         <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
-                                            <Path Data="{StaticResource IconFolder}"
-                                                  Stroke="{DynamicResource TextPrimary}"
-                                                  StrokeThickness="2"
-                                                  StrokeLineCap="Round"
-                                                  StrokeLineJoin="Round"
-                                                  Aspect="Uniform"
-                                                  WidthRequest="14"
-                                                  HeightRequest="14"
-                                                  VerticalOptions="Center" />
+                                            <vctrl:IconView Icon="folder"
+                                                            IconColor="TextPrimary"
+                                                            Size="14"
+                                                            VerticalOptions="Center" />
                                             <Label Text="Открыть в проводнике"
                                                    FontSize="13"
                                                    FontAttributes="Bold"
@@ -246,16 +232,11 @@
                                                     WidthRequest="34"
                                                     HeightRequest="34"
                                                     VerticalOptions="Center">
-                                                <Path Data="{StaticResource IconSave}"
-                                                      Stroke="{DynamicResource BrandGreen}"
-                                                      StrokeThickness="2"
-                                                      StrokeLineCap="Round"
-                                                      StrokeLineJoin="Round"
-                                                      Aspect="Uniform"
-                                                      WidthRequest="16"
-                                                      HeightRequest="16"
-                                                      HorizontalOptions="Center"
-                                                      VerticalOptions="Center" />
+                                                <vctrl:IconView Icon="save"
+                                                                IconColor="BrandGreen"
+                                                                Size="16"
+                                                                HorizontalOptions="Center"
+                                                                VerticalOptions="Center" />
                                             </Border>
 
                                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
@@ -402,16 +383,11 @@
                                                 WidthRequest="34"
                                                 HeightRequest="34"
                                                 VerticalOptions="Center">
-                                            <Path Data="{StaticResource IconShield}"
-                                                  Stroke="{DynamicResource BrandGreen}"
-                                                  StrokeThickness="2"
-                                                  StrokeLineCap="Round"
-                                                  StrokeLineJoin="Round"
-                                                  Aspect="Uniform"
-                                                  WidthRequest="16"
-                                                  HeightRequest="16"
-                                                  HorizontalOptions="Center"
-                                                  VerticalOptions="Center" />
+                                            <vctrl:IconView Icon="shield"
+                                                            IconColor="BrandGreen"
+                                                            Size="16"
+                                                            HorizontalOptions="Center"
+                                                            VerticalOptions="Center" />
                                         </Border>
                                         <Label Grid.Column="1"
                                                Text="Все данные хранятся строго локально на этом устройстве и не передаются в сеть."
@@ -449,15 +425,10 @@
                                             <TapGestureRecognizer Tapped="OnDeleteProfileTapped" />
                                         </Border.GestureRecognizers>
                                         <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
-                                            <Path Data="{StaticResource IconTrash}"
-                                                  Stroke="#EF4444"
-                                                  StrokeThickness="2"
-                                                  StrokeLineCap="Round"
-                                                  StrokeLineJoin="Round"
-                                                  Aspect="Uniform"
-                                                  WidthRequest="14"
-                                                  HeightRequest="14"
-                                                  VerticalOptions="Center" />
+                                            <vctrl:IconView Icon="trash"
+                                                            IconColor="#EF4444"
+                                                            Size="14"
+                                                            VerticalOptions="Center" />
                                             <Label Text="Удалить профиль"
                                                    FontSize="13"
                                                    FontAttributes="Bold"
@@ -476,15 +447,10 @@
                                             <TapGestureRecognizer Tapped="OnDeleteAllTapped" />
                                         </Border.GestureRecognizers>
                                         <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
-                                            <Path Data="{StaticResource IconAlertTriangle}"
-                                                  Stroke="#EF4444"
-                                                  StrokeThickness="2"
-                                                  StrokeLineCap="Round"
-                                                  StrokeLineJoin="Round"
-                                                  Aspect="Uniform"
-                                                  WidthRequest="14"
-                                                  HeightRequest="14"
-                                                  VerticalOptions="Center" />
+                                            <vctrl:IconView Icon="alerttriangle"
+                                                            IconColor="#EF4444"
+                                                            Size="14"
+                                                            VerticalOptions="Center" />
                                             <Label Text="Сбросить все данные приложения"
                                                    FontSize="13"
                                                    FontAttributes="Bold"
@@ -521,16 +487,11 @@
                                                 WidthRequest="34"
                                                 HeightRequest="34"
                                                 VerticalOptions="Center">
-                                            <Path Data="{StaticResource IconFileText}"
-                                                  Stroke="{DynamicResource BrandGreen}"
-                                                  StrokeThickness="2"
-                                                  StrokeLineCap="Round"
-                                                  StrokeLineJoin="Round"
-                                                  Aspect="Uniform"
-                                                  WidthRequest="16"
-                                                  HeightRequest="16"
-                                                  HorizontalOptions="Center"
-                                                  VerticalOptions="Center" />
+                                            <vctrl:IconView Icon="file"
+                                                            IconColor="BrandGreen"
+                                                            Size="16"
+                                                            HorizontalOptions="Center"
+                                                            VerticalOptions="Center" />
                                         </Border>
                                         <Label x:Name="VersionLabel"
                                                Grid.Column="1"
@@ -550,15 +511,10 @@
                                             <TapGestureRecognizer Tapped="OnHelpTapped" />
                                         </Border.GestureRecognizers>
                                         <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
-                                            <Path Data="{StaticResource IconInfo}"
-                                                  Stroke="{DynamicResource TextPrimary}"
-                                                  StrokeThickness="2"
-                                                  StrokeLineCap="Round"
-                                                  StrokeLineJoin="Round"
-                                                  Aspect="Uniform"
-                                                  WidthRequest="14"
-                                                  HeightRequest="14"
-                                                  VerticalOptions="Center" />
+                                            <vctrl:IconView Icon="info"
+                                                            IconColor="TextPrimary"
+                                                            Size="14"
+                                                            VerticalOptions="Center" />
                                             <Label Text="Как пользоваться"
                                                    FontSize="13"
                                                    FontAttributes="Bold"

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+ ==============================================================================
+ НАЗНАЧЕНИЕ: Компонент скелетон-загрузки (Loading Skeleton) с эффектом мерцания (Shimmer)
+ СОДЕРЖИМОЕ: LoadingSkeleton (ContentView)
+ ЗАВИСИМОСТИ: Microsoft.Maui.Controls, GosTek.Views.Controls
+ ==============================================================================
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GosTek.Views.Controls.LoadingSkeleton"
+             x:Name="SkeletonRoot"
+             IsVisible="False"
+             InputTransparent="True">
+
+    <VerticalStackLayout Spacing="10" HorizontalOptions="Fill">
+
+        <!-- Скелетон карточки 1 -->
+        <Border BackgroundColor="{DynamicResource CardBg}"
+                Stroke="{DynamicResource CardStroke}"
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 16"
+                Padding="16, 14">
+            <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12" VerticalOptions="Center">
+                <Border WidthRequest="40"
+                        HeightRequest="40"
+                        StrokeShape="RoundRectangle 12"
+                        StrokeThickness="0"
+                        BackgroundColor="{DynamicResource CardStroke}" />
+
+                <VerticalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
+                    <BoxView HeightRequest="14"
+                             WidthRequest="180"
+                             HorizontalOptions="Start"
+                             CornerRadius="4"
+                             Color="{DynamicResource CardStroke}" />
+                    <BoxView HeightRequest="10"
+                             WidthRequest="260"
+                             HorizontalOptions="Start"
+                             CornerRadius="3"
+                             Color="{DynamicResource CardStroke}" />
+                </VerticalStackLayout>
+
+                <BoxView Grid.Column="2"
+                         WidthRequest="16"
+                         HeightRequest="16"
+                         CornerRadius="4"
+                         Color="{DynamicResource CardStroke}"
+                         VerticalOptions="Center" />
+            </Grid>
+        </Border>
+
+        <!-- Скелетон карточки 2 -->
+        <Border BackgroundColor="{DynamicResource CardBg}"
+                Stroke="{DynamicResource CardStroke}"
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 16"
+                Padding="16, 14">
+            <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12" VerticalOptions="Center">
+                <Border WidthRequest="40"
+                        HeightRequest="40"
+                        StrokeShape="RoundRectangle 12"
+                        StrokeThickness="0"
+                        BackgroundColor="{DynamicResource CardStroke}" />
+
+                <VerticalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
+                    <BoxView HeightRequest="14"
+                             WidthRequest="140"
+                             HorizontalOptions="Start"
+                             CornerRadius="4"
+                             Color="{DynamicResource CardStroke}" />
+                    <BoxView HeightRequest="10"
+                             WidthRequest="220"
+                             HorizontalOptions="Start"
+                             CornerRadius="3"
+                             Color="{DynamicResource CardStroke}" />
+                </VerticalStackLayout>
+
+                <BoxView Grid.Column="2"
+                         WidthRequest="16"
+                         HeightRequest="16"
+                         CornerRadius="4"
+                         Color="{DynamicResource CardStroke}"
+                         VerticalOptions="Center" />
+            </Grid>
+        </Border>
+
+        <!-- Скелетон карточки 3 -->
+        <Border BackgroundColor="{DynamicResource CardBg}"
+                Stroke="{DynamicResource CardStroke}"
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 16"
+                Padding="16, 14">
+            <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12" VerticalOptions="Center">
+                <Border WidthRequest="40"
+                        HeightRequest="40"
+                        StrokeShape="RoundRectangle 12"
+                        StrokeThickness="0"
+                        BackgroundColor="{DynamicResource CardStroke}" />
+
+                <VerticalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
+                    <BoxView HeightRequest="14"
+                             WidthRequest="200"
+                             HorizontalOptions="Start"
+                             CornerRadius="4"
+                             Color="{DynamicResource CardStroke}" />
+                    <BoxView HeightRequest="10"
+                             WidthRequest="190"
+                             HorizontalOptions="Start"
+                             CornerRadius="3"
+                             Color="{DynamicResource CardStroke}" />
+                </VerticalStackLayout>
+
+                <BoxView Grid.Column="2"
+                         WidthRequest="16"
+                         HeightRequest="16"
+                         CornerRadius="4"
+                         Color="{DynamicResource CardStroke}"
+                         VerticalOptions="Center" />
+            </Grid>
+        </Border>
+
+    </VerticalStackLayout>
+</ContentView>

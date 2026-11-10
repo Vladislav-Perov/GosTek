@@ -1,33 +1,37 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!--
  ==============================================================================
- НАЗНАЧЕНИЕ: Главный дашборд приложения с радиальным градиентом, векторными иконками и градиентными кнопками
+ НАЗНАЧЕНИЕ: Главный дашборд приложения с радиальным градиентом, векторными иконками и левым rail на Windows
  СОДЕРЖИМОЕ: MainPage (ContentPage)
- ЗАВИСИМОСТИ: GosTek.Views, GosTek.Models, GosTek.Views.SettingsPanel, GosTek.Views.AppTabBar, GosTek.Resources.Styles.Icons
+ ЗАВИСИМОСТИ: GosTek.Views, GosTek.Models, GosTek.Views.SettingsPanel, GosTek.Views.AppTabBar, GosTek.Views.Controls.IconView
  ==============================================================================
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:views="clr-namespace:GosTek.Views"
              xmlns:models="clr-namespace:GosTek.Models"
+             xmlns:vctrl="clr-namespace:GosTek.Views.Controls"
              x:Class="GosTek.Views.MainPage"
              Title="Главная"
              Shell.NavBarIsVisible="False">
 
     <!-- Радиальный фон дизайн-системы для избавления от плоского вида -->
-    <Grid RowDefinitions="Auto, *, Auto"
+    <Grid ColumnDefinitions="{OnPlatform Android='*', WinUI='220, *'}"
+          RowDefinitions="{OnPlatform Android='Auto, *, Auto', WinUI='Auto, *, 0'}"
           Background="{DynamicResource MainPageBackgroundBrush}">
 
         <!-- ==================== ШАПКА ==================== -->
         <Grid Grid.Row="0"
+              Grid.Column="{OnPlatform Android=0, WinUI=1}"
               Padding="20, 16, 20, 8"
-              ColumnDefinitions="44, *, 44"
+              ColumnDefinitions="{OnPlatform Android='44, *, 44', WinUI='*'}"
               VerticalOptions="Center"
               MaximumWidthRequest="700"
               HorizontalOptions="Fill">
 
-            <!-- Кнопка «Настройки» (ползунки Sliders в карточке 44x44) -->
+            <!-- Кнопка «Настройки» (только на Android; на Windows настройки размещены в левом rail) -->
             <Border Grid.Column="0"
+                    IsVisible="{OnPlatform Android=True, WinUI=False, Default=False}"
                     StyleClass="HoverCard"
                     StrokeThickness="1"
                     Stroke="{DynamicResource CardStroke}"
@@ -42,20 +46,15 @@
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnSettingsTapped" />
                 </Border.GestureRecognizers>
-                <Path Data="{StaticResource IconSliders}"
-                      Stroke="{DynamicResource TextPrimary}"
-                      StrokeThickness="2"
-                      StrokeLineCap="Round"
-                      StrokeLineJoin="Round"
-                      WidthRequest="18"
-                      HeightRequest="18"
-                      Aspect="Uniform"
-                      HorizontalOptions="Center"
-                      VerticalOptions="Center" />
+                <vctrl:IconView Icon="sliders"
+                                Size="18"
+                                IconColor="TextPrimary"
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center" />
             </Border>
 
             <!-- Логотип GosTek по центру -->
-            <Label Grid.Column="1"
+            <Label Grid.Column="{OnPlatform Android=1, WinUI=0}"
                    Text="GosTek"
                    FontSize="30"
                    FontAttributes="Bold"
@@ -64,16 +63,18 @@
                    HorizontalOptions="Center"
                    VerticalOptions="Center" />
 
-            <!-- Переключатель темы справа -->
+            <!-- Переключатель темы справа (только на Android; на Windows — в левом rail) -->
             <views:ThemeToggle Grid.Column="2"
+                               IsVisible="{OnPlatform Android=True, WinUI=False, Default=False}"
                                HorizontalOptions="End"
                                VerticalOptions="Center" />
         </Grid>
 
         <!-- ==================== КОНТЕНТ ==================== -->
         <ScrollView Grid.Row="1"
+                    Grid.Column="{OnPlatform Android=0, WinUI=1}"
                     VerticalScrollBarVisibility="Never"
-                    Padding="20, 8, 20, 24">
+                    Padding="{OnPlatform Android='20, 8, 20, 80', WinUI='20, 8, 20, 24'}">
 
             <VerticalStackLayout Spacing="16"
                                  MaximumWidthRequest="660"
@@ -140,10 +141,11 @@
                 <Grid ColumnDefinitions="*, *" ColumnSpacing="12">
 
                     <!-- Плитка «Проверить» -->
-                    <Border Grid.Column="0"
+                    <Border x:Name="CheckCard"
+                            Grid.Column="0"
                             StyleClass="HoverCard"
                             StrokeShape="RoundRectangle 18"
-                            StrokeThickness="1"
+                            StrokeThickness="1.5"
                             Stroke="{DynamicResource CardStroke}"
                             BackgroundColor="{DynamicResource CardBg}"
                             Padding="16, 18">
@@ -161,16 +163,11 @@
                                     WidthRequest="42"
                                     HeightRequest="42"
                                     HorizontalOptions="Start">
-                                <Path Data="{StaticResource IconShield}"
-                                      Stroke="{DynamicResource BrandGreen}"
-                                      StrokeThickness="2"
-                                      StrokeLineCap="Round"
-                                      StrokeLineJoin="Round"
-                                      Aspect="Uniform"
-                                      WidthRequest="20"
-                                      HeightRequest="20"
-                                      HorizontalOptions="Center"
-                                      VerticalOptions="Center" />
+                                <vctrl:IconView Icon="shield"
+                                                IconColor="BrandGreen"
+                                                Size="20"
+                                                HorizontalOptions="Center"
+                                                VerticalOptions="Center" />
                             </Border>
 
                             <VerticalStackLayout Spacing="3">
@@ -187,10 +184,11 @@
                     </Border>
 
                     <!-- Плитка «Сканировать» -->
-                    <Border Grid.Column="1"
+                    <Border x:Name="ScanCard"
+                            Grid.Column="1"
                             StyleClass="HoverCard"
                             StrokeShape="RoundRectangle 18"
-                            StrokeThickness="1"
+                            StrokeThickness="1.5"
                             Stroke="{DynamicResource CardStroke}"
                             BackgroundColor="{DynamicResource CardBg}"
                             Padding="16, 18">
@@ -208,16 +206,11 @@
                                     WidthRequest="42"
                                     HeightRequest="42"
                                     HorizontalOptions="Start">
-                                <Path Data="{StaticResource IconCamera}"
-                                      Stroke="{DynamicResource BrandGreen}"
-                                      StrokeThickness="2"
-                                      StrokeLineCap="Round"
-                                      StrokeLineJoin="Round"
-                                      Aspect="Uniform"
-                                      WidthRequest="20"
-                                      HeightRequest="20"
-                                      HorizontalOptions="Center"
-                                      VerticalOptions="Center" />
+                                <vctrl:IconView Icon="camera"
+                                                IconColor="BrandGreen"
+                                                Size="20"
+                                                HorizontalOptions="Center"
+                                                VerticalOptions="Center" />
                             </Border>
 
                             <VerticalStackLayout Spacing="3">
@@ -253,15 +246,10 @@
 
                     <VerticalStackLayout Spacing="10">
                         <Grid ColumnDefinitions="Auto, *, Auto, Auto" ColumnSpacing="8" VerticalOptions="Center">
-                            <Path Data="{StaticResource IconUser}"
-                                  Stroke="{DynamicResource BrandGreen}"
-                                  StrokeThickness="2"
-                                  StrokeLineCap="Round"
-                                  StrokeLineJoin="Round"
-                                  Aspect="Uniform"
-                                  WidthRequest="16"
-                                  HeightRequest="16"
-                                  VerticalOptions="Center" />
+                            <vctrl:IconView Icon="user"
+                                            IconColor="BrandGreen"
+                                            Size="16"
+                                            VerticalOptions="Center" />
                             <Label Grid.Column="1"
                                    Text="Мой профиль"
                                    FontSize="15"
@@ -322,6 +310,7 @@
                                 <views:ListRow Icon="file"
                                                Title="{Binding Title}"
                                                Subtitle="{Binding Description}"
+                                               Details="{Binding LastModified}"
                                                Tapped="OnTemplateTapped" />
                             </DataTemplate>
                         </BindableLayout.ItemTemplate>
@@ -331,11 +320,17 @@
             </VerticalStackLayout>
         </ScrollView>
 
-        <!-- ==================== ТАББАР ==================== -->
-        <views:AppTabBar x:Name="BottomTabs" Grid.Row="2" ActiveTab="home" />
+        <!-- ==================== ТАББАР (на Windows — левый rail, на Android — нижний) ==================== -->
+        <views:AppTabBar x:Name="BottomTabs"
+                         Grid.Row="{OnPlatform Android=2, WinUI=0}"
+                         Grid.RowSpan="{OnPlatform Android=1, WinUI=3}"
+                         Grid.Column="0"
+                         ActiveTab="home" />
 
         <!-- ==================== ПАНЕЛЬ НАСТРОЕК (поверх всего) ==================== -->
-        <views:SettingsPanel x:Name="Settings" Grid.RowSpan="3" />
+        <views:SettingsPanel x:Name="Settings"
+                             Grid.RowSpan="3"
+                             Grid.ColumnSpan="{OnPlatform Android=1, WinUI=2}" />
 
     </Grid>
 </ContentPage>

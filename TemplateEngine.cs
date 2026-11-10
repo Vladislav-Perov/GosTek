@@ -119,13 +119,63 @@ public static class TemplateEngine
 
     public static string FieldId(string label) => Regex.Replace(label.Trim(), @"\s+", " ").ToLowerInvariant();
 
-    private static (string Label, string Hint) ParseToken(Match m)
+    /// <summary>
+    /// Разбирает токен поля на Label, Hint и режим детализации (например, [Поле|расписать] или [Поле|кратко]).
+    /// </summary>
+    public static (string Label, string Hint, FieldExpansionMode Mode) ParseTokenDetails(string inner)
     {
-        var inner = (m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value).Trim();
+        if (string.IsNullOrWhiteSpace(inner))
+            return ("", "", FieldExpansionMode.Normal);
+
+        inner = inner.Trim();
+        var mode = FieldExpansionMode.Normal;
+
+        // Распознавание директивы режима через разделитель '|'
+        int pipeIdx = inner.IndexOf('|');
+        if (pipeIdx >= 0)
+        {
+            var beforePipe = inner[..pipeIdx].Trim();
+            var afterPipe = inner[(pipeIdx + 1)..].Trim();
+
+            if (afterPipe.Equals("расписать", StringComparison.OrdinalIgnoreCase) ||
+                afterPipe.Equals("развернуть", StringComparison.OrdinalIgnoreCase) ||
+                afterPipe.Equals("подробно", StringComparison.OrdinalIgnoreCase))
+            {
+                mode = FieldExpansionMode.Elaborate;
+                inner = beforePipe;
+            }
+            else if (afterPipe.Equals("кратко", StringComparison.OrdinalIgnoreCase) ||
+                     afterPipe.Equals("коротко", StringComparison.OrdinalIgnoreCase))
+            {
+                mode = FieldExpansionMode.Brief;
+                inner = beforePipe;
+            }
+            else if (beforePipe.Equals("расписать", StringComparison.OrdinalIgnoreCase) ||
+                     beforePipe.Equals("развернуть", StringComparison.OrdinalIgnoreCase) ||
+                     beforePipe.Equals("подробно", StringComparison.OrdinalIgnoreCase))
+            {
+                mode = FieldExpansionMode.Elaborate;
+                inner = afterPipe;
+            }
+            else if (beforePipe.Equals("кратко", StringComparison.OrdinalIgnoreCase) ||
+                     beforePipe.Equals("коротко", StringComparison.OrdinalIgnoreCase))
+            {
+                mode = FieldExpansionMode.Brief;
+                inner = afterPipe;
+            }
+        }
+
         int i = inner.IndexOfAny(Seps);
         if (i <= 0)
-            return (inner, "");
-        return (inner[..i].Trim(), inner[(i + 1)..].Trim());
+            return (inner, "", mode);
+
+        return (inner[..i].Trim(), inner[(i + 1)..].Trim(), mode);
+    }
+
+    private static (string Label, string Hint, FieldExpansionMode Mode) ParseToken(Match m)
+    {
+        var inner = (m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value).Trim();
+        return ParseTokenDetails(inner);
     }
 
     private static TemplateField[] ReadFieldsCached(string file)
@@ -149,7 +199,7 @@ public static class TemplateEngine
         foreach (var root in Roots(doc))
             foreach (var p in root.Descendants<Paragraph>()) {
                 foreach (Match m in Rx.Matches(ParagraphText(p))) {
-                    var (label, hint) = ParseToken(m);
+                    var (label, hint, mode) = ParseToken(m);
                     var id = FieldId(label);
                     if (id.Length == 0)
                         continue;
@@ -159,10 +209,16 @@ public static class TemplateEngine
                         // Подсказка могла быть только в одном из вхождений
                         if (list[existing].Placeholder.Length == 0 && hint.Length > 0)
                             list[existing] = list[existing] with { Placeholder = hint };
+                        if (list[existing].ExpansionMode == FieldExpansionMode.Normal && mode != FieldExpansionMode.Normal)
+                            list[existing] = list[existing] with {
+                                ExpansionMode = mode,
+                                Multiline = mode == FieldExpansionMode.Elaborate || list[existing].Multiline
+                            };
                         continue;
                     }
 
-                    list.Add(new TemplateField(id, label, hint, GuessSource(label), IsMultiline(label)));
+                    bool multiline = mode == FieldExpansionMode.Elaborate || IsMultiline(label);
+                    list.Add(new TemplateField(id, label, hint, GuessSource(label), multiline, mode));
                 }
             }
 

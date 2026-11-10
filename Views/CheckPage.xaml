@@ -2,26 +2,28 @@
 <!--
  ==============================================================================
  НАЗНАЧЕНИЕ: Профессиональный интерфейс аудита оформления документов по ГОСТ
- СОДЕРЖИМОЕ: ContentPage, Dropzone, Summary Card, ChipBar, Accordions, AppTabBar, ThemeToggle
- ЗАВИСИМОСТИ: GosTek.Views.CheckPage, GosTek.Controls.ChipBar, GosTek.Views.ThemeToggle, GosTek.Views.AppTabBar, GosTek.Resources.Styles.Icons
+ СОДЕРЖИМОЕ: ContentPage, Dropzone, Summary Card, ChipBar, Accordions, AppTabBar, IconView
+ ЗАВИСИМОСТИ: GosTek.Views.CheckPage, GosTek.Controls.ChipBar, GosTek.Views.AppTabBar, GosTek.Views.Controls.IconView
  ==============================================================================
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:views="clr-namespace:GosTek.Views"
              xmlns:controls="clr-namespace:GosTek.Controls"
+             xmlns:vctrl="clr-namespace:GosTek.Views.Controls"
              x:Class="GosTek.Views.CheckPage"
              Title="Проверка"
              BackgroundColor="{DynamicResource PageBg}"
              Shell.NavBarIsVisible="False">
 
-    <Grid RowDefinitions="Auto, *, Auto, Auto">
+    <Grid ColumnDefinitions="{OnPlatform Android='*', WinUI='220, *'}"
+          RowDefinitions="{OnPlatform Android='Auto, *, Auto, Auto', WinUI='Auto, *, Auto, 0'}">
 
         <!-- ==================== ШАПКА ==================== -->
         <Grid Grid.Row="0"
+              Grid.Column="{OnPlatform Android=0, WinUI=1}"
               Padding="20, 15, 20, 10"
-              ColumnDefinitions="*, Auto"
-              ColumnSpacing="12"
+              ColumnDefinitions="*"
               BackgroundColor="{DynamicResource PageBg}">
             <VerticalStackLayout Spacing="2" VerticalOptions="Center">
                 <Label Text="Проверка"
@@ -32,15 +34,15 @@
                        FontSize="13"
                        TextColor="{DynamicResource TextSecondary}" />
             </VerticalStackLayout>
-
-            <views:ThemeToggle Grid.Column="1" HorizontalOptions="End" VerticalOptions="Center" />
         </Grid>
 
         <!-- ==================== ТЕЛО СТРАНИЦЫ ==================== -->
-        <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
+        <ScrollView Grid.Row="1"
+                    Grid.Column="{OnPlatform Android=0, WinUI=1}"
+                    VerticalScrollBarVisibility="Never">
             <VerticalStackLayout MaximumWidthRequest="700"
                                  HorizontalOptions="Fill"
-                                 Padding="20, 6, 20, 20"
+                                 Padding="{OnPlatform Android='20, 6, 20, 80', WinUI='20, 6, 20, 24'}"
                                  Spacing="16">
 
                 <!-- 1. Зона выбора файла (Dropzone) с пунктирной рамкой (когда файл ещё не выбран) -->
@@ -68,16 +70,11 @@
                                 WidthRequest="54"
                                 HeightRequest="54"
                                 HorizontalOptions="Center">
-                            <Path Data="{StaticResource IconFileText}"
-                                  Stroke="{DynamicResource BrandGreen}"
-                                  StrokeThickness="2"
-                                  StrokeLineCap="Round"
-                                  StrokeLineJoin="Round"
-                                  Aspect="Uniform"
-                                  WidthRequest="26"
-                                  HeightRequest="26"
-                                  HorizontalOptions="Center"
-                                  VerticalOptions="Center" />
+                            <vctrl:IconView Icon="file"
+                                            IconColor="BrandGreen"
+                                            Size="26"
+                                            HorizontalOptions="Center"
+                                            VerticalOptions="Center" />
                         </Border>
 
                         <Label Text="Перетащите файл .docx или нажмите для выбора"
@@ -113,16 +110,11 @@
                                 WidthRequest="44"
                                 HeightRequest="44"
                                 VerticalOptions="Center">
-                            <Path Data="{StaticResource IconFileText}"
-                                  Stroke="{DynamicResource BrandGreen}"
-                                  StrokeThickness="2"
-                                  StrokeLineCap="Round"
-                                  StrokeLineJoin="Round"
-                                  Aspect="Uniform"
-                                  WidthRequest="20"
-                                  HeightRequest="20"
-                                  HorizontalOptions="Center"
-                                  VerticalOptions="Center" />
+                            <vctrl:IconView Icon="file"
+                                            IconColor="BrandGreen"
+                                            Size="20"
+                                            HorizontalOptions="Center"
+                                            VerticalOptions="Center" />
                         </Border>
 
                         <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
@@ -172,13 +164,10 @@
                             <HorizontalStackLayout.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnEditCurrentRuleTapped" />
                             </HorizontalStackLayout.GestureRecognizers>
-                            <Path Data="{StaticResource IconPen}"
-                                  Stroke="{DynamicResource BrandGreen}"
-                                  StrokeThickness="2"
-                                  WidthRequest="14"
-                                  HeightRequest="14"
-                                  Aspect="Uniform"
-                                  VerticalOptions="Center" />
+                            <vctrl:IconView Icon="pen"
+                                            IconColor="BrandGreen"
+                                            Size="14"
+                                            VerticalOptions="Center" />
                             <Label x:Name="EditCurrentRuleLabel"
                                    Text="Настроить"
                                    FontSize="12.5"
@@ -216,16 +205,11 @@
                                     WidthRequest="36"
                                     HeightRequest="36"
                                     VerticalOptions="Center">
-                                <Path Data="{StaticResource IconRuler}"
-                                      Stroke="{DynamicResource BrandGreen}"
-                                      StrokeThickness="2"
-                                      StrokeLineCap="Round"
-                                      StrokeLineJoin="Round"
-                                      Aspect="Uniform"
-                                      WidthRequest="18"
-                                      HeightRequest="18"
-                                      HorizontalOptions="Center"
-                                      VerticalOptions="Center" />
+                                <vctrl:IconView Icon="ruler"
+                                                IconColor="BrandGreen"
+                                                Size="18"
+                                                HorizontalOptions="Center"
+                                                VerticalOptions="Center" />
                             </Border>
 
                             <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
@@ -252,13 +236,10 @@
                                     <TapGestureRecognizer Tapped="OnCreateNewRuleTapped" />
                                 </Border.GestureRecognizers>
                                 <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
-                                    <Path Data="{StaticResource IconPlus}"
-                                          Stroke="{DynamicResource TextPrimary}"
-                                          StrokeThickness="2"
-                                          WidthRequest="14"
-                                          HeightRequest="14"
-                                          Aspect="Uniform"
-                                          VerticalOptions="Center" />
+                                    <vctrl:IconView Icon="plus"
+                                                    IconColor="TextPrimary"
+                                                    Size="14"
+                                                    VerticalOptions="Center" />
                                     <Label Text="С нуля"
                                            FontSize="13"
                                            FontAttributes="Bold"
@@ -279,13 +260,10 @@
                                     <TapGestureRecognizer Tapped="OnCreateBasedOnRuleTapped" />
                                 </Border.GestureRecognizers>
                                 <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
-                                    <Path Data="{StaticResource IconCopy}"
-                                          Stroke="{DynamicResource TextPrimary}"
-                                          StrokeThickness="2"
-                                          WidthRequest="14"
-                                          HeightRequest="14"
-                                          Aspect="Uniform"
-                                          VerticalOptions="Center" />
+                                    <vctrl:IconView Icon="copy"
+                                                    IconColor="TextPrimary"
+                                                    Size="14"
+                                                    VerticalOptions="Center" />
                                     <Label Text="На основе…"
                                            FontSize="13"
                                            FontAttributes="Bold"
@@ -315,14 +293,11 @@
                                 WidthRequest="56"
                                 HeightRequest="56"
                                 HorizontalOptions="Center">
-                            <Path Data="{StaticResource IconShield}"
-                                  Stroke="{DynamicResource BrandGreen}"
-                                  StrokeThickness="2"
-                                  WidthRequest="26"
-                                  HeightRequest="26"
-                                  Aspect="Uniform"
-                                  HorizontalOptions="Center"
-                                  VerticalOptions="Center" />
+                            <vctrl:IconView Icon="shield"
+                                            IconColor="BrandGreen"
+                                            Size="26"
+                                            HorizontalOptions="Center"
+                                            VerticalOptions="Center" />
                         </Border>
 
                         <Label Text="Локальная проверка документа по ГОСТ"
@@ -366,17 +341,12 @@
                                     WidthRequest="48"
                                     HeightRequest="48"
                                     VerticalOptions="Center">
-                                <Path x:Name="SummaryIconPath"
-                                      Data="{StaticResource IconShield}"
-                                      Stroke="{DynamicResource BrandGreen}"
-                                      StrokeThickness="2"
-                                      StrokeLineCap="Round"
-                                      StrokeLineJoin="Round"
-                                      Aspect="Uniform"
-                                      WidthRequest="24"
-                                      HeightRequest="24"
-                                      HorizontalOptions="Center"
-                                      VerticalOptions="Center" />
+                                <vctrl:IconView x:Name="SummaryIconCtrl"
+                                                Icon="shield"
+                                                IconColor="BrandGreen"
+                                                Size="24"
+                                                HorizontalOptions="Center"
+                                                VerticalOptions="Center" />
                             </Border>
 
                             <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
@@ -404,6 +374,7 @@
 
         <ActivityIndicator x:Name="Loader"
                            Grid.Row="1"
+                           Grid.Column="{OnPlatform Android=0, WinUI=1}"
                            IsRunning="False"
                            IsVisible="False"
                            HorizontalOptions="Center"
@@ -411,7 +382,10 @@
                            Color="{DynamicResource BrandGreen}" />
 
         <!-- ==================== ПАНЕЛЬ ДЕЙСТВИЙ (ФИКСИРОВАННЫЙ ФУТЕР) ==================== -->
-        <VerticalStackLayout Grid.Row="2" Spacing="0" BackgroundColor="{DynamicResource PageBg}">
+        <VerticalStackLayout Grid.Row="2"
+                             Grid.Column="{OnPlatform Android=0, WinUI=1}"
+                             Spacing="0"
+                             BackgroundColor="{DynamicResource PageBg}">
             <BoxView HeightRequest="1" Color="{DynamicResource Divider}" />
 
             <Grid x:Name="ActionBar"
@@ -468,8 +442,12 @@
             </Grid>
         </VerticalStackLayout>
 
-        <!-- ==================== ТАББАР ==================== -->
-        <views:AppTabBar x:Name="BottomTabs" Grid.Row="3" ActiveTab="check" />
+        <!-- ==================== ТАББАР (на Windows — левый rail, на Android — нижний) ==================== -->
+        <views:AppTabBar x:Name="BottomTabs"
+                         Grid.Row="{OnPlatform Android=3, WinUI=0}"
+                         Grid.RowSpan="{OnPlatform Android=1, WinUI=4}"
+                         Grid.Column="0"
+                         ActiveTab="check" />
 
     </Grid>
 </ContentPage>

@@ -1,26 +1,25 @@
 /*
  * ==============================================================================
- * НАЗНАЧЕНИЕ: Компонент нижней навигационной панели приложения с векторными иконками
+ * НАЗНАЧЕНИЕ: Компонент навигационной панели (левый rail на Windows, нижний бар на Android)
  * СОДЕРЖИМОЕ: AppTabBar
- * ЗАВИСИМОСТИ: Microsoft.Maui.Controls, GosTek.Resources.Styles.Icons, GosTek.Services.HapticHelper
+ * ЗАВИСИМОСТИ: Microsoft.Maui.Controls, GosTek.Views.Controls.IconView, GosTek.Services.HapticHelper
  * ==============================================================================
  */
-using GosTek.Resources.Styles;
 using GosTek.Services;
+using GosTek.Views.Controls;
 using Microsoft.Maui.Controls.Shapes;
-using MauiPath = Microsoft.Maui.Controls.Shapes.Path;
 
 namespace GosTek.Views;
 
 /// <summary>
-/// Общий нижний таббар с векторными иконками. Страница указывает активную вкладку: ActiveTab="home".
+/// Адаптивный таббар: на Windows отображается как левый вертикальный rail (боковая панель),
+/// на Android — как нижняя навигационная панель.
 /// Ключи вкладок: home, templates, scan, check, profile.
 /// </summary>
 public partial class AppTabBar : ContentView
 {
-    private const double HoverScale = 1.08;
+    private const double HoverScale = 1.05;
 
-    // Route = null: перехода нет, вкладка показывает заглушку (сейчас такой вкладки нет)
     private sealed record Tab(string Key, string IconKey, string Title, string? Route);
 
     private static readonly Tab[] TabList =
@@ -42,50 +41,81 @@ public partial class AppTabBar : ContentView
         set => SetValue(ActiveTabProperty, value);
     }
 
-    private readonly List<(string Key, Border Border)> _tabs = new();
+    /// <summary>
+    /// Событие запроса открытия настроек из левого rail на Windows.
+    /// </summary>
+    public event EventHandler? SettingsRequested;
+
+    private readonly List<(string Key, Border Border, IconView Icon, Label Label, bool IsRail)> _tabViews = new();
     private string? _hoveredKey;
 
     public AppTabBar()
     {
         InitializeComponent();
 
-        for (int i = 0; i < TabList.Length; i++) {
-            var border = CreateTab(TabList[i]);
+        BuildAndroidTabs();
+        BuildWindowsRailTabs();
+        ApplyStates();
+    }
+
+    private void BuildAndroidTabs()
+    {
+        for (int i = 0; i < TabList.Length; i++)
+        {
+            var tab = TabList[i];
+            var (border, icon, label) = CreateAndroidTab(tab);
             Grid.SetColumn(border, i);
 
             TabsGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
             TabsGrid.Children.Add(border);
-            _tabs.Add((TabList[i].Key, border));
+            _tabViews.Add((tab.Key, border, icon, label, false));
         }
-
-        ApplyStates();
     }
 
-    /// <summary>
-    /// Сбрасывает наведение. Вызывается со страницы в OnAppearing:
-    /// при смене страницы PointerExited не приходит, и вкладка оставалась «залипшей».
-    /// </summary>
+    private void BuildWindowsRailTabs()
+    {
+        for (int i = 0; i < TabList.Length; i++)
+        {
+            var tab = TabList[i];
+            var (border, icon, label) = CreateWindowsRailTab(tab);
+            WindowsTabsStack.Children.Add(border);
+            _tabViews.Add((tab.Key, border, icon, label, true));
+        }
+    }
+
     public void ResetHover()
     {
         _hoveredKey = null;
         ApplyStates();
     }
 
-    // Вкладка: векторная иконка и подпись в скруглённой рамке + жесты. Цвета выставляет ApplyStates
-    private Border CreateTab(Tab tab)
+    private (Border Border, IconView Icon, Label Label) CreateAndroidTab(Tab tab)
     {
-        var content = new VerticalStackLayout { Spacing = 3 };
-        var iconPath = Icons.CreatePath(Icons.ResolvePath(tab.IconKey), size: 18, strokeColorResource: "TextSecondary");
-        content.Children.Add(iconPath);
+        var icon = new IconView
+        {
+            Icon = tab.IconKey,
+            Size = 18,
+            IconColor = "TextSecondary",
+            HorizontalOptions = LayoutOptions.Center,
+            VerticalOptions = LayoutOptions.Center,
+        };
 
-        content.Children.Add(new Label {
+        var label = new Label
+        {
             Text = tab.Title,
             FontSize = 10,
             LineBreakMode = LineBreakMode.NoWrap,
             HorizontalOptions = LayoutOptions.Center,
-        });
+        };
 
-        var border = new Border {
+        var content = new VerticalStackLayout
+        {
+            Spacing = 3,
+            Children = { icon, label }
+        };
+
+        var border = new Border
+        {
             Margin = new Thickness(2, 0),
             StrokeThickness = 0,
             StrokeShape = new RoundRectangle { CornerRadius = 12 },
@@ -93,19 +123,71 @@ public partial class AppTabBar : ContentView
             Content = content,
         };
 
+        AttachGestures(border, tab);
+        return (border, icon, label);
+    }
+
+    private (Border Border, IconView Icon, Label Label) CreateWindowsRailTab(Tab tab)
+    {
+        var icon = new IconView
+        {
+            Icon = tab.IconKey,
+            Size = 20,
+            IconColor = "TextSecondary",
+            VerticalOptions = LayoutOptions.Center,
+        };
+
+        var label = new Label
+        {
+            Text = tab.Title,
+            FontSize = 13.5,
+            FontAttributes = FontAttributes.Bold,
+            VerticalOptions = LayoutOptions.Center,
+        };
+
+        var grid = new Grid
+        {
+            ColumnDefinitions =
+            {
+                new ColumnDefinition(GridLength.Auto),
+                new ColumnDefinition(GridLength.Star),
+            },
+            ColumnSpacing = 12,
+            VerticalOptions = LayoutOptions.Center,
+            Children = { icon }
+        };
+
+        Grid.SetColumn(icon, 0);
+        Grid.SetColumn(label, 1);
+        grid.Children.Add(label);
+
+        var border = new Border
+        {
+            StrokeThickness = 0,
+            StrokeShape = new RoundRectangle { CornerRadius = 12 },
+            Padding = new Thickness(12, 10),
+            Content = grid,
+        };
+
+        AttachGestures(border, tab);
+        return (border, icon, label);
+    }
+
+    private void AttachGestures(Border border, Tab tab)
+    {
         var tap = new TapGestureRecognizer();
         tap.Tapped += async (_, _) => await OnTabTappedAsync(tab);
 
         var pointer = new PointerGestureRecognizer();
         pointer.PointerEntered += (_, _) => SetHover(tab.Key);
-        pointer.PointerExited += (_, _) => {
+        pointer.PointerExited += (_, _) =>
+        {
             if (_hoveredKey == tab.Key)
                 SetHover(null);
         };
 
         border.GestureRecognizers.Add(tap);
         border.GestureRecognizers.Add(pointer);
-        return border;
     }
 
     private async Task OnTabTappedAsync(Tab tab)
@@ -128,34 +210,46 @@ public partial class AppTabBar : ContentView
         ApplyStates();
     }
 
-    // ===== Внешний вид: обычная / наведённая / активная вкладка =====
     private void ApplyStates()
     {
-        foreach (var (key, border) in _tabs) {
+        foreach (var (key, border, icon, label, isRail) in _tabViews)
+        {
             bool active = key == ActiveTab;
             bool hover = key == _hoveredKey;
 
-            // Фон: активная > наведённая > прозрачная.
-            // DynamicResource, чтобы цвета менялись вместе с темой.
-            if (active) {
-                border.SetDynamicResource(VisualElement.BackgroundColorProperty, "TabActiveBg");
-            } else if (hover) {
+            if (active)
+            {
+                border.SetDynamicResource(VisualElement.BackgroundColorProperty, isRail ? "IconBoxBg" : "TabActiveBg");
+                icon.IconColor = "BrandGreen";
+                label.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
+            }
+            else if (hover)
+            {
                 border.SetDynamicResource(VisualElement.BackgroundColorProperty, "CardHoverBg");
-            } else {
+                icon.IconColor = "TextPrimary";
+                label.SetDynamicResource(Label.TextColorProperty, "TextPrimary");
+            }
+            else
+            {
                 border.RemoveDynamicResource(VisualElement.BackgroundColorProperty);
                 border.BackgroundColor = Colors.Transparent;
+                icon.IconColor = "TextSecondary";
+                label.SetDynamicResource(Label.TextColorProperty, "TextSecondary");
             }
 
             border.Scale = hover ? HoverScale : 1.0;
-
-            // Иконка и подпись
-            if (border.Content is Layout layout) {
-                foreach (var path in layout.Children.OfType<MauiPath>())
-                    path.SetDynamicResource(MauiPath.StrokeProperty, active ? "AccentGreen" : "TextSecondary");
-
-                foreach (var label in layout.Children.OfType<Label>())
-                    label.SetDynamicResource(Label.TextColorProperty, active ? "AccentGreen" : "TextSecondary");
-            }
         }
+    }
+
+    private async void OnSettingsClicked(object? sender, EventArgs e)
+    {
+        HapticHelper.Click();
+        if (SettingsRequested is not null)
+        {
+            SettingsRequested.Invoke(this, EventArgs.Empty);
+            return;
+        }
+
+        await Shell.Current.GoToAsync("//MainPage?openSettings=true");
     }
 }

@@ -2,9 +2,11 @@
  * ==============================================================================
  * НАЗНАЧЕНИЕ: Интерактивная форма заполнения полей выбранного шаблона с живым предпросмотром А4 по ГОСТ
  * СОДЕРЖИМОЕ: FieldsPage
- * ЗАВИСИМОСТИ: GosTek.Models, GosTek.Services, GosTek.TemplateEngine
+ * ЗАВИСИМОСТИ: GosTek.Models, GosTek.Services, GosTek.TemplateEngine, GosTek.Helpers
  * ==============================================================================
  */
+using GosTek.Controls;
+using GosTek.Helpers;
 using GosTek.Models;
 using GosTek.Resources.Styles;
 using GosTek.Services;
@@ -29,20 +31,46 @@ public partial class FieldsPage : ContentPage
     private static readonly string SerifFont =
         DeviceInfo.Platform == DevicePlatform.Android ? "serif" : "Times New Roman";
 
-    // Поле на экране: само поле ввода, рамка, красная подпись, контейнер и бейдж профиля
-    private sealed record FieldUi(
-        TemplateField Field,
-        InputView Input,
-        Border Box,
-        Label Error,
-        View Container,
-        View? ProfileTag = null);
+    // Поле на экране: само поле ввода, рамка, красная подпись, контейнер, бейдж профиля и признак источника
+    private sealed class FieldUi
+    {
+        public TemplateField Field { get; }
+        public InputView Input { get; }
+        public Border Box { get; }
+        public Label Error { get; }
+        public View Container { get; }
+        public View? ProfileTag { get; set; }
+        public bool IsFromProfile { get; set; }
+
+        public FieldUi(
+            TemplateField field,
+            InputView input,
+            Border box,
+            Label error,
+            View container,
+            View? profileTag = null,
+            bool isFromProfile = false)
+        {
+            Field = field;
+            Input = input;
+            Box = box;
+            Error = error;
+            Container = container;
+            ProfileTag = profileTag;
+            IsFromProfile = isFromProfile;
+        }
+    }
 
     private TemplateDef? _template;
     private RuleSet? _activeRule;
     private List<PreviewPara> _previewParas = new();
     private readonly List<FieldUi> _fields = new();
     private Dictionary<string, string> _values = new();
+
+    private bool _isChatMaximized;
+    private double _originalChatHeight = 540;
+    private bool _isProgrammaticFilling;
+    private string? _targetField;
 
     private int _statusVersion;
     private int _layoutVersion;
@@ -135,6 +163,7 @@ public partial class FieldsPage : ContentPage
         _template = TemplateCatalog.Find(_templateId);
         FieldsHost.Children.Clear();
         _fields.Clear();
+        AiMemory.Instance.Clear();
 
         if (_template is null)
             return;
@@ -179,13 +208,16 @@ public partial class FieldsPage : ContentPage
         var labelRow = new HorizontalStackLayout { Spacing = 8 };
         labelRow.Children.Add(label);
 
-        View? profileTag = null;
-        if (field.Source != ProfileSource.None)
+        // Маркер поля, требующего развернутого описания ([Поле|расписать])
+        if (field.RequiresExpansion)
         {
-            profileTag = CreateProfileTag();
-            profileTag.IsVisible = !string.IsNullOrWhiteSpace(saved);
-            labelRow.Children.Add(profileTag);
+            var elaborateBadge = CreateElaborateBadge();
+            labelRow.Children.Add(elaborateBadge);
         }
+
+        var profileTag = CreateProfileTag();
+        profileTag.IsVisible = false;
+        labelRow.Children.Add(profileTag);
 
         // Рамка + поле ввода
         var box = new Border();
@@ -215,6 +247,10 @@ public partial class FieldsPage : ContentPage
             input = entry;
         }
         box.Content = input;
+
+        // Кнопка ИИ у каждого поля для точечного расширения
+        var aiFieldBtn = CreateFieldAiButton(field, input);
+        labelRow.Children.Add(aiFieldBtn);
 
         var keyboard = SmartInputHelper.ResolveKeyboard(field.Label, field.Placeholder, field.Id);
         if (input is Entry ent)
@@ -255,6 +291,14 @@ public partial class FieldsPage : ContentPage
         // Текст изменился: сохранить в черновик, убрать подсветку, обновить лист
         void Changed(string? text)
         {
+            if (!_isProgrammaticFilling && ui.IsFromProfile)
+            {
+                ui.IsFromProfile = false;
+                if (ui.ProfileTag is not null)
+                    ui.ProfileTag.IsVisible = false;
+                SetInputFromProfileStyle(ui.Input, false);
+            }
+
             if (isFio && !string.IsNullOrEmpty(text))
             {
                 var titleCased = SmartInputHelper.ToTitleCase(text);
@@ -271,8 +315,6 @@ public partial class FieldsPage : ContentPage
             }
 
             draft[field.Id] = text ?? "";
-            if (ui.ProfileTag is not null)
-                ui.ProfileTag.IsVisible = !string.IsNullOrWhiteSpace(text) && field.Source != ProfileSource.None;
             if (!IsEmpty(ui))
                 FieldValidationHelper.Mark(ui.Box, ui.Error, false);
             QueueRender();
@@ -291,7 +333,7 @@ public partial class FieldsPage : ContentPage
 
     private static View CreateProfileTag()
     {
-        var icon = Icons.CreatePath(Icons.User, size: 10, strokeColorResource: "BrandGreen");
+        var icon = Icons.CreatePath(Icons.User, size: 10, strokeColorResource: "TextSecondary");
         var text = new Label
         {
             Text = "из профиля",
@@ -299,7 +341,7 @@ public partial class FieldsPage : ContentPage
             FontAttributes = FontAttributes.Bold,
             VerticalOptions = LayoutOptions.Center,
         };
-        text.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
+        text.SetDynamicResource(Label.TextColorProperty, "TextSecondary");
 
         var stack = new HorizontalStackLayout
         {
@@ -310,14 +352,25 @@ public partial class FieldsPage : ContentPage
 
         var tag = new Border
         {
-            StrokeThickness = 0,
+            StrokeThickness = 1,
             StrokeShape = new RoundRectangle { CornerRadius = 8 },
             Padding = new Thickness(6, 2),
             VerticalOptions = LayoutOptions.Center,
             Content = stack,
+            Opacity = 0.85
         };
-        tag.SetDynamicResource(VisualElement.BackgroundColorProperty, "IconBoxBg");
+        tag.SetDynamicResource(Border.StrokeProperty, "CardStroke");
+        tag.SetDynamicResource(VisualElement.BackgroundColorProperty, "CardBg");
         return tag;
+    }
+
+    private static void SetInputFromProfileStyle(InputView input, bool fromProfile)
+    {
+        var colorKey = fromProfile ? "TextSecondary" : "TextPrimary";
+        if (input is Entry en)
+            en.SetDynamicResource(Entry.TextColorProperty, colorKey);
+        else if (input is Editor ed)
+            ed.SetDynamicResource(Editor.TextColorProperty, colorKey);
     }
 
     private static View CreateTodayChip(Action onTap)
@@ -365,26 +418,35 @@ public partial class FieldsPage : ContentPage
     private int FillFromProfile(ProfileData profile, bool onlyEmpty)
     {
         int filled = 0;
-
-        foreach (var f in _fields)
+        _isProgrammaticFilling = true;
+        try
         {
-            if (onlyEmpty && !IsEmpty(f))
-                continue;
+            foreach (var f in _fields)
+            {
+                if (onlyEmpty && !IsEmpty(f))
+                    continue;
 
-            string? value = null;
-            if (f.Field.Source != ProfileSource.None)
-                value = TemplateCatalog.FromProfile(f.Field.Source, profile);
+                string? value = null;
+                if (f.Field.Source != ProfileSource.None)
+                    value = TemplateCatalog.FromProfile(f.Field.Source, profile);
 
-            if (string.IsNullOrWhiteSpace(value))
-                value = TemplateEngine.ResolveCustomField(f.Field.Label, profile.CustomFields);
+                if (string.IsNullOrWhiteSpace(value))
+                    value = TemplateEngine.ResolveCustomField(f.Field.Label, profile.CustomFields);
 
-            if (string.IsNullOrWhiteSpace(value))
-                continue;
+                if (string.IsNullOrWhiteSpace(value))
+                    continue;
 
-            f.Input.Text = value;   // TextChanged сохранит значение, уберёт подсветку, обновит лист
-            if (f.ProfileTag is not null)
-                f.ProfileTag.IsVisible = true;
-            filled++;
+                f.Input.Text = value;   // TextChanged сохранит значение, уберёт подсветку, обновит лист
+                f.IsFromProfile = true;
+                if (f.ProfileTag is not null)
+                    f.ProfileTag.IsVisible = true;
+                SetInputFromProfileStyle(f.Input, true);
+                filled++;
+            }
+        }
+        finally
+        {
+            _isProgrammaticFilling = false;
         }
 
         return filled;
@@ -426,6 +488,35 @@ public partial class FieldsPage : ContentPage
             FillStatusLabel.IsVisible = false;
     }
 
+    private CancellationTokenSource? _pulseCts;
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        StartBuildPulse();
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        StopBuildPulse();
+    }
+
+    private void StartBuildPulse()
+    {
+        StopBuildPulse();
+        _pulseCts = new CancellationTokenSource();
+        _ = AnimationHelper.AnimatePulseAsync(BuildButton, _pulseCts.Token);
+    }
+
+    private void StopBuildPulse()
+    {
+        _pulseCts?.Cancel();
+        _pulseCts?.Dispose();
+        _pulseCts = null;
+        AnimationHelper.StopPulse(BuildButton);
+    }
+
     // ===== Назад =====
     private async void OnBackTapped(object? sender, TappedEventArgs e)
     {
@@ -435,6 +526,7 @@ public partial class FieldsPage : ContentPage
     // ===== Собрать документ =====
     private async void OnBuildTapped(object? sender, TappedEventArgs e)
     {
+        StopBuildPulse();
         HapticHelper.Click();
         if (_template is null)
             return;
@@ -482,6 +574,7 @@ public partial class FieldsPage : ContentPage
             if (result is null)
                 return;
 
+            AiMemory.Instance.Clear();
             CloseExport();
             HapticHelper.Success();
             Toast.Show("Документ Word сохранён", "file");
@@ -505,6 +598,7 @@ public partial class FieldsPage : ContentPage
             if (result is null)
                 return;
 
+            AiMemory.Instance.Clear();
             CloseExport();
             HapticHelper.Click();
             Toast.Show("Файл готов к отправке", "share");
@@ -528,6 +622,7 @@ public partial class FieldsPage : ContentPage
             if (result is null)
                 return;
 
+            AiMemory.Instance.Clear();
             CloseExport();
             HapticHelper.Success();
             Toast.Show("Документ PDF сохранён", "file");
@@ -688,4 +783,641 @@ public partial class FieldsPage : ContentPage
         FontFamily = EffectiveFont,
         Margin = new Thickness(0, _font * 0.5, 0, 0),
     };
+
+    // =====================================================================
+    //  ИИ-ПОМОЩНИК: ЧАТ, ЗАПОЛНЕНИЕ ПОЛЕЙ И МАСКИРОВАНИЕ
+    // =====================================================================
+
+    private static Border CreateElaborateBadge()
+    {
+        var badge = new Border
+        {
+            StrokeThickness = 1,
+            StrokeShape = new RoundRectangle { CornerRadius = 6 },
+            Padding = new Thickness(6, 2),
+            VerticalOptions = LayoutOptions.Center
+        };
+        badge.SetDynamicResource(VisualElement.BackgroundColorProperty, "IconBoxBg");
+        badge.SetDynamicResource(Border.StrokeProperty, "BrandGreen");
+
+        var lbl = new Label
+        {
+            Text = "✍️ Расписать",
+            FontSize = 10.5,
+            FontAttributes = FontAttributes.Bold,
+            VerticalOptions = LayoutOptions.Center
+        };
+        lbl.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
+        badge.Content = lbl;
+        return badge;
+    }
+
+    private Border CreateFieldAiButton(TemplateField field, InputView input)
+    {
+        var btn = new Border
+        {
+            StyleClass = new[] { "HoverCard" },
+            WidthRequest = 26,
+            HeightRequest = 26,
+            StrokeThickness = 1,
+            StrokeShape = new RoundRectangle { CornerRadius = 7 },
+            Padding = 0,
+            VerticalOptions = LayoutOptions.Center
+        };
+        AutomationProperties.SetName(btn, $"Помощь ИИ для {field.Label}");
+        SemanticProperties.SetDescription(btn, $"Помощь ИИ для {field.Label}");
+        btn.SetDynamicResource(VisualElement.BackgroundColorProperty, "IconBoxBg");
+        btn.SetDynamicResource(Border.StrokeProperty, "CardStroke");
+
+        var icon = new GosTek.Views.Controls.IconView
+        {
+            Icon = "sparkles",
+            Size = 13,
+            IconColor = "BrandGreen",
+            HorizontalOptions = LayoutOptions.Center,
+            VerticalOptions = LayoutOptions.Center
+        };
+        btn.Content = icon;
+
+        btn.GestureRecognizers.Add(new TapGestureRecognizer
+        {
+            Command = new Command(async () =>
+            {
+                HapticHelper.Click();
+                await btn.AnimateBounceAsync();
+                OpenChatForField(field, input);
+            })
+        });
+
+        return btn;
+    }
+
+    private void OpenChatForField(TemplateField field, InputView input)
+    {
+        _targetField = field.Label;
+        var text = input.Text?.Trim();
+
+        if (!string.IsNullOrWhiteSpace(text))
+            ChatInput.Text = $"Расширь и сделай официальным: {text}";
+        else
+            ChatInput.Text = $"Помоги официально заполнить поле \"{field.Label}\"";
+
+        OpenChat();
+    }
+
+    private void OpenChat()
+    {
+        HapticHelper.Click();
+        AiAutoApplySwitch.IsToggled = SettingsService.AiAutoApplyMode;
+
+        _originalChatHeight = DeviceInfo.Platform == DevicePlatform.Android ? 520 : 560;
+        if (!_isChatMaximized)
+            ChatSheet.HeightRequest = _originalChatHeight;
+
+        if (ChatMessagesStack.Children.Count == 0)
+        {
+            AddBotMessageBubble("Привет! Расскажите, какой документ и для чего вам нужен. Можете описать ситуацию в свободной форме, а я выделю нужные данные и сам запрошу недостающие.");
+        }
+
+        ChatOverlay.IsVisible = true;
+        ChatSheet.TranslationY = 700;
+        _ = ChatSheet.TranslateToAsync(0, 0, 250, Easing.CubicOut);
+        ChatInput.Focus();
+    }
+
+    private void OnOpenChatTapped(object? sender, TappedEventArgs e)
+    {
+        _targetField = null;
+        OpenChat();
+    }
+
+    private async void OnToggleChatMaximizeTapped(object? sender, TappedEventArgs e)
+    {
+        HapticHelper.Click();
+        if (sender is VisualElement ve)
+            await ve.AnimateBounceAsync();
+
+        _isChatMaximized = !_isChatMaximized;
+        ChatMaximizeIcon.Icon = _isChatMaximized ? "minimize" : "maximize";
+
+        double startHeight = ChatSheet.HeightRequest > 0 ? ChatSheet.HeightRequest : (ChatSheet.Height > 0 ? ChatSheet.Height : 540);
+        double endHeight = _isChatMaximized
+            ? (this.Height > 100 ? this.Height * 0.95 : 750)
+            : _originalChatHeight;
+
+        var animation = new Animation(v => ChatSheet.HeightRequest = v, startHeight, endHeight, Easing.CubicOut);
+        animation.Commit(ChatSheet, "ChatSheetMaximize", length: 250);
+    }
+
+    private async void OnCloseChatTapped(object? sender, TappedEventArgs e)
+    {
+        HapticHelper.Click();
+        MemoryPanel.IsVisible = false;
+        await ChatSheet.TranslateToAsync(0, 700, 200, Easing.CubicIn);
+        ChatOverlay.IsVisible = false;
+        if (_isChatMaximized)
+        {
+            _isChatMaximized = false;
+            ChatMaximizeIcon.Icon = "maximize";
+            ChatSheet.HeightRequest = _originalChatHeight;
+        }
+    }
+
+    private async void OnChatOverlayBackgroundTapped(object? sender, TappedEventArgs e)
+    {
+        MemoryPanel.IsVisible = false;
+        await ChatSheet.TranslateToAsync(0, 700, 200, Easing.CubicIn);
+        ChatOverlay.IsVisible = false;
+        if (_isChatMaximized)
+        {
+            _isChatMaximized = false;
+            ChatMaximizeIcon.Icon = "maximize";
+            ChatSheet.HeightRequest = _originalChatHeight;
+        }
+    }
+
+    private void OnChatSheetTapped(object? sender, TappedEventArgs e)
+    {
+        // Предотвращаем закрытие шторки при клике на саму панель
+    }
+
+    private void OnToggleMemoryTapped(object? sender, TappedEventArgs e)
+    {
+        HapticHelper.Click();
+        MemoryPanel.IsVisible = !MemoryPanel.IsVisible;
+        if (MemoryPanel.IsVisible)
+            RefreshMemoryUi();
+    }
+
+    private void OnCloseMemoryTapped(object? sender, TappedEventArgs e)
+    {
+        HapticHelper.Click();
+        MemoryPanel.IsVisible = false;
+    }
+
+    private void OnClearAllMemoryTapped(object? sender, TappedEventArgs e)
+    {
+        HapticHelper.Click();
+        AiMemory.Instance.Clear();
+        RefreshMemoryUi();
+        ShowStatus("Память ассистента очищена");
+    }
+
+    private void RefreshMemoryUi()
+    {
+        MemoryStack.Children.Clear();
+        var facts = AiMemory.Instance.Facts;
+
+        MemoryEmptyLabel.IsVisible = facts.Count == 0;
+        ClearMemoryButton.IsVisible = facts.Count > 0;
+
+        foreach (var fact in facts)
+        {
+            var factBorder = new Border
+            {
+                StyleClass = new[] { "HoverCard" },
+                Padding = new Thickness(10, 8),
+                StrokeThickness = 1,
+                StrokeShape = new RoundRectangle { CornerRadius = 10 }
+            };
+            factBorder.SetDynamicResource(VisualElement.BackgroundColorProperty, "PageBg");
+            factBorder.SetDynamicResource(Border.StrokeProperty, "CardStroke");
+
+            var rowGrid = new Grid
+            {
+                ColumnDefinitions =
+                {
+                    new ColumnDefinition(GridLength.Star),
+                    new ColumnDefinition(GridLength.Auto)
+                },
+                ColumnSpacing = 8
+            };
+
+            var textLabel = new Label
+            {
+                Text = $"Помню ({fact.Key}): {fact.Value}",
+                FontSize = 12,
+                LineBreakMode = LineBreakMode.WordWrap,
+                VerticalOptions = LayoutOptions.Center
+            };
+            textLabel.SetDynamicResource(Label.TextColorProperty, "TextPrimary");
+            Grid.SetColumn(textLabel, 0);
+            rowGrid.Children.Add(textLabel);
+
+            var deleteBtn = new Border
+            {
+                WidthRequest = 24,
+                HeightRequest = 24,
+                StrokeThickness = 0,
+                StrokeShape = new RoundRectangle { CornerRadius = 6 },
+                VerticalOptions = LayoutOptions.Center
+            };
+            deleteBtn.SetDynamicResource(VisualElement.BackgroundColorProperty, "IconBoxBg");
+            deleteBtn.Content = new Label
+            {
+                Text = "✕",
+                FontSize = 11,
+                FontAttributes = FontAttributes.Bold,
+                TextColor = Color.FromArgb("#EF4444"),
+                HorizontalOptions = LayoutOptions.Center,
+                VerticalOptions = LayoutOptions.Center
+            };
+
+            deleteBtn.GestureRecognizers.Add(new TapGestureRecognizer
+            {
+                Command = new Command(() =>
+                {
+                    HapticHelper.Click();
+                    AiMemory.Instance.RemoveFact(fact.Key);
+                    RefreshMemoryUi();
+                })
+            });
+
+            Grid.SetColumn(deleteBtn, 1);
+            rowGrid.Children.Add(deleteBtn);
+
+            factBorder.Content = rowGrid;
+            MemoryStack.Children.Add(factBorder);
+        }
+    }
+
+    private void OnAiAutoApplySwitchToggled(object? sender, ToggledEventArgs e)
+    {
+        SettingsService.AiAutoApplyMode = e.Value;
+    }
+
+    private async void OnChatInputCompleted(object? sender, EventArgs e)
+    {
+        await SendChatMessageAsync();
+    }
+
+    private async void OnSendMessageTapped(object? sender, TappedEventArgs e)
+    {
+        await SendChatMessageAsync();
+    }
+
+    private async Task SendChatMessageAsync()
+    {
+        var userText = ChatInput.Text?.Trim();
+        if (string.IsNullOrWhiteSpace(userText))
+            return;
+
+        HapticHelper.Click();
+        ChatInput.Text = string.Empty;
+
+        AddUserMessageBubble(userText);
+        _ = ChatScrollView.ScrollToAsync(ChatMessagesStack, ScrollToPosition.End, true);
+
+        TypingIndicator.IsVisible = true;
+        SendButton.IsEnabled = false;
+
+        try
+        {
+            var fieldNames = _template?.Fields.Select(f => f.Label).ToList() ?? new();
+            var currentFormFields = _fields
+                .Where(f => !string.IsNullOrWhiteSpace(f.Field.Label))
+                .ToDictionary(f => f.Field.Label, f => f.Input.Text?.Trim() ?? string.Empty);
+
+            var profile = await ProfileStorage.LoadAsync();
+            var maskedText = PrivacyMasker.Mask(
+                userText,
+                out var extractedPlaceholders,
+                out var suspiciousNames,
+                profile: profile,
+                numbered: true);
+
+            var response = await AiAssistantService.Instance.ProcessRequestAsync(
+                maskedText,
+                fieldNames,
+                currentFormFields: currentFormFields,
+                extractedPlaceholders: extractedPlaceholders,
+                targetField: _targetField,
+                templateName: _template?.Title,
+                memory: AiMemory.Instance.FormatForPrompt());
+
+            _targetField = null;
+
+            TypingIndicator.IsVisible = false;
+
+            if (!string.IsNullOrWhiteSpace(response.Question))
+            {
+                // Если question не пустой — выводим в чат как обычное сообщение от бота (не создавая карточку с полями)
+                AddBotMessageBubble(response.Question);
+            }
+            else
+            {
+                var filledFields = response.Fields
+                    .Where(kv => !string.IsNullOrWhiteSpace(kv.Value) &&
+                                 !string.Equals(kv.Value.Trim(), "null", StringComparison.OrdinalIgnoreCase))
+                    .ToDictionary(kv => kv.Key, kv => kv.Value);
+
+                if (filledFields.Count > 0)
+                {
+                    if (SettingsService.AiAutoApplyMode)
+                    {
+                        int applied = ApplyFieldsToForm(filledFields);
+                        AddBotMessageBubble($"✅ Поля заполнены автоматически ({applied} из {filledFields.Count})!");
+                    }
+                    else
+                    {
+                        AddProposedFieldsCard(filledFields);
+                    }
+                }
+                else
+                {
+                    AddBotMessageBubble("Не удалось извлечь поля из текста. Пожалуйста, укажите конкретные данные (например: «ФИО: Иванов Иван, причина: отпуск»).");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            TypingIndicator.IsVisible = false;
+            AddErrorMessageBubble($"⚠️ Ошибка: {ex.Message}");
+        }
+        finally
+        {
+            TypingIndicator.IsVisible = false;
+            SendButton.IsEnabled = true;
+            _ = ChatScrollView.ScrollToAsync(ChatMessagesStack, ScrollToPosition.End, true);
+        }
+    }
+
+    /// <summary>
+    /// Применяет словарь значений полей, возвращенный ИИ, к UI и DraftStore.
+    /// </summary>
+    public int ApplyFieldsToForm(Dictionary<string, string> fields)
+    {
+        int applied = 0;
+
+        foreach (var (key, value) in fields)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                continue;
+
+            // Поиск по Label или Id (точное или неполное совпадение)
+            var targetField = _fields.FirstOrDefault(f =>
+                string.Equals(f.Field.Label, key, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(f.Field.Id, key, StringComparison.OrdinalIgnoreCase))
+                ?? _fields.FirstOrDefault(f =>
+                    f.Field.Label.Contains(key, StringComparison.OrdinalIgnoreCase) ||
+                    key.Contains(f.Field.Label, StringComparison.OrdinalIgnoreCase));
+
+            if (targetField is not null)
+            {
+                targetField.Input.Text = value.Trim();
+                if (targetField.ProfileTag is not null)
+                    targetField.ProfileTag.IsVisible = true;
+                applied++;
+            }
+        }
+
+        if (applied > 0)
+        {
+            QueueRender();
+            ShowStatus($"ИИ применил {applied} полей");
+        }
+
+        return applied;
+    }
+
+    private void AddUserMessageBubble(string text)
+    {
+        var label = new Label
+        {
+            Text = text,
+            TextColor = Colors.White,
+            FontSize = 13.5,
+            LineBreakMode = LineBreakMode.WordWrap
+        };
+
+        var border = new Border
+        {
+            HorizontalOptions = LayoutOptions.End,
+            MaximumWidthRequest = 480,
+            Padding = new Thickness(14, 10),
+            StrokeThickness = 0,
+            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(16, 16, 2, 16) }
+        };
+        border.SetDynamicResource(VisualElement.BackgroundProperty, "BrandGreenGradient");
+        border.Content = label;
+
+        ChatMessagesStack.Children.Add(border);
+    }
+
+    private void AddBotMessageBubble(string text)
+    {
+        var label = new Label
+        {
+            Text = text,
+            FontSize = 13.5,
+            LineBreakMode = LineBreakMode.WordWrap
+        };
+        label.SetDynamicResource(Label.TextColorProperty, "TextPrimary");
+
+        var border = new Border
+        {
+            HorizontalOptions = LayoutOptions.Start,
+            MaximumWidthRequest = 480,
+            Padding = new Thickness(14, 10),
+            StrokeThickness = 1,
+            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(16, 16, 16, 2) }
+        };
+        border.SetDynamicResource(VisualElement.BackgroundColorProperty, "CardBg");
+        border.SetDynamicResource(Border.StrokeProperty, "CardStroke");
+        border.Content = label;
+
+        ChatMessagesStack.Children.Add(border);
+    }
+
+    private void AddErrorMessageBubble(string text)
+    {
+        var label = new Label
+        {
+            Text = text,
+            FontSize = 12.5,
+            TextColor = Color.FromArgb("#EF4444"),
+            LineBreakMode = LineBreakMode.WordWrap
+        };
+
+        var border = new Border
+        {
+            HorizontalOptions = LayoutOptions.Start,
+            MaximumWidthRequest = 480,
+            Padding = new Thickness(12, 9),
+            StrokeThickness = 1,
+            Stroke = new SolidColorBrush(Color.FromArgb("#EF4444")),
+            BackgroundColor = Color.FromArgb("#15EF4444"),
+            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(14) },
+            Content = label
+        };
+
+        ChatMessagesStack.Children.Add(border);
+    }
+
+    private void AddProposedFieldsCard(Dictionary<string, string> fields)
+    {
+        var filledFields = fields
+            .Where(kv => !string.IsNullOrWhiteSpace(kv.Value) &&
+                         !string.Equals(kv.Value.Trim(), "null", StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(kv => kv.Key, kv => kv.Value);
+
+        if (filledFields.Count == 0)
+            return;
+
+        var contentStack = new VerticalStackLayout { Spacing = 10 };
+
+        var headerLabel = new Label
+        {
+            Text = "Предложенные данные для полей:",
+            FontSize = 13.5,
+            FontAttributes = FontAttributes.Bold
+        };
+        headerLabel.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
+        contentStack.Children.Add(headerLabel);
+
+        // Блок живого предпросмотра: аккуратный список (каждое поле с новой строки, название поля жирным, значение обычным)
+        var previewBox = new Border
+        {
+            StrokeThickness = 1,
+            StrokeShape = new RoundRectangle { CornerRadius = 10 },
+            Padding = new Thickness(12, 10),
+            Margin = new Thickness(0, 2, 0, 2)
+        };
+        previewBox.SetDynamicResource(VisualElement.BackgroundColorProperty, "PageBg");
+        previewBox.SetDynamicResource(Border.StrokeProperty, "CardStroke");
+
+        var previewStack = new VerticalStackLayout { Spacing = 6 };
+        foreach (var (k, v) in filledFields)
+        {
+            var rowLabel = new Label
+            {
+                FontSize = 12.5,
+                LineBreakMode = LineBreakMode.WordWrap
+            };
+            var formatted = new FormattedString();
+
+            var boldSpan = new Span
+            {
+                Text = $"{k}: ",
+                FontAttributes = FontAttributes.Bold
+            };
+            boldSpan.SetDynamicResource(Span.TextColorProperty, "TextPrimary");
+
+            var valSpan = new Span
+            {
+                Text = v
+            };
+            valSpan.SetDynamicResource(Span.TextColorProperty, "TextSecondary");
+
+            formatted.Spans.Add(boldSpan);
+            formatted.Spans.Add(valSpan);
+
+            rowLabel.FormattedText = formatted;
+            previewStack.Children.Add(rowLabel);
+        }
+        previewBox.Content = previewStack;
+        contentStack.Children.Add(previewBox);
+
+        var actionsGrid = new Grid
+        {
+            ColumnDefinitions =
+            {
+                new ColumnDefinition(GridLength.Star),
+                new ColumnDefinition(GridLength.Star)
+            },
+            ColumnSpacing = 10,
+            Margin = new Thickness(0, 4, 0, 0)
+        };
+
+        var applyButton = new Border
+        {
+            StyleClass = new[] { "HoverGreen" },
+            StrokeThickness = 0,
+            StrokeShape = new RoundRectangle { CornerRadius = 12 },
+            Padding = new Thickness(10, 8),
+            Content = new Label
+            {
+                Text = "Применить",
+                FontSize = 13,
+                FontAttributes = FontAttributes.Bold,
+                TextColor = Colors.White,
+                HorizontalOptions = LayoutOptions.Center
+            }
+        };
+        applyButton.SetDynamicResource(VisualElement.BackgroundProperty, "BrandGreenGradient");
+
+        var cancelButton = new Border
+        {
+            StyleClass = new[] { "HoverCard" },
+            StrokeThickness = 1,
+            StrokeShape = new RoundRectangle { CornerRadius = 12 },
+            Padding = new Thickness(10, 8)
+        };
+        cancelButton.SetDynamicResource(VisualElement.BackgroundColorProperty, "CardBg");
+        cancelButton.SetDynamicResource(Border.StrokeProperty, "CardStroke");
+
+        var cancelLabel = new Label
+        {
+            Text = "Отменить",
+            FontSize = 13,
+            FontAttributes = FontAttributes.Bold,
+            HorizontalOptions = LayoutOptions.Center
+        };
+        cancelLabel.SetDynamicResource(Label.TextColorProperty, "TextSecondary");
+        cancelButton.Content = cancelLabel;
+
+        Grid.SetColumn(applyButton, 0);
+        Grid.SetColumn(cancelButton, 1);
+        actionsGrid.Children.Add(applyButton);
+        actionsGrid.Children.Add(cancelButton);
+
+        contentStack.Children.Add(actionsGrid);
+
+        var statusLabel = new Label
+        {
+            FontSize = 12.5,
+            FontAttributes = FontAttributes.Bold,
+            IsVisible = false
+        };
+        contentStack.Children.Add(statusLabel);
+
+        var cardBorder = new Border
+        {
+            HorizontalOptions = LayoutOptions.Start,
+            MaximumWidthRequest = 480,
+            Padding = new Thickness(14, 12),
+            StrokeThickness = 1,
+            StrokeShape = new RoundRectangle { CornerRadius = 16 },
+            Content = contentStack
+        };
+        cardBorder.SetDynamicResource(VisualElement.BackgroundColorProperty, "CardBg");
+        cardBorder.SetDynamicResource(Border.StrokeProperty, "CardStroke");
+
+        var applyTap = new TapGestureRecognizer();
+        applyTap.Tapped += async (_, _) =>
+        {
+            HapticHelper.Click();
+            await applyButton.AnimateBounceAsync();
+            actionsGrid.IsVisible = false;
+            int count = ApplyFieldsToForm(filledFields);
+            statusLabel.Text = $"✅ Применено к документу ({count} полей)";
+            statusLabel.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
+            statusLabel.IsVisible = true;
+        };
+        applyButton.GestureRecognizers.Add(applyTap);
+
+        var cancelTap = new TapGestureRecognizer();
+        cancelTap.Tapped += async (_, _) =>
+        {
+            HapticHelper.Click();
+            await cancelButton.AnimateBounceAsync();
+            actionsGrid.IsVisible = false;
+            statusLabel.Text = "✕ Применение отменено";
+            statusLabel.SetDynamicResource(Label.TextColorProperty, "TextSecondary");
+            statusLabel.IsVisible = true;
+        };
+        cancelButton.GestureRecognizers.Add(cancelTap);
+
+        ChatMessagesStack.Children.Add(cardBorder);
+    }
 }

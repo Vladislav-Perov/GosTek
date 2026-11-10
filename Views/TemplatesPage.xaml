@@ -2,8 +2,8 @@
 <!--
  ==============================================================================
  НАЗНАЧЕНИЕ: Каталог шаблонов документов с автообновлением, категоризацией и полнотекстовым поиском
- СОДЕРЖИМОЕ: ContentPage, Grid, ScrollView, Border, Entry, ChipBar, ListRow, AppTabBar, ThemeToggle, Path
- ЗАВИСИМОСТИ: GosTek.Views.TemplatesPage, GosTek.Controls.ChipBar, GosTek.Views.ThemeToggle, GosTek.Views.AppTabBar, GosTek.Views.ListRow, GosTek.Resources.Styles.Icons
+ СОДЕРЖИМОЕ: ContentPage, Grid, ScrollView, Border, Entry, ChipBar, ListRow, AppTabBar, IconView
+ ЗАВИСИМОСТИ: GosTek.Views.TemplatesPage, GosTek.Controls.ChipBar, GosTek.Views.AppTabBar, GosTek.Views.ListRow, GosTek.Views.Controls.IconView, GosTek.Views.Controls.LoadingSkeleton
  ==============================================================================
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
@@ -11,6 +11,7 @@
              xmlns:views="clr-namespace:GosTek.Views"
              xmlns:models="clr-namespace:GosTek.Models"
              xmlns:controls="clr-namespace:GosTek.Controls"
+             xmlns:vctrl="clr-namespace:GosTek.Views.Controls"
              x:Class="GosTek.Views.TemplatesPage"
              Title="Шаблоны"
              BackgroundColor="{DynamicResource PageBg}"
@@ -28,29 +29,27 @@
         </DataTemplate>
     </ContentPage.Resources>
 
-    <Grid RowDefinitions="Auto, *, Auto">
+    <Grid ColumnDefinitions="{OnPlatform Android='*', WinUI='220, *'}"
+          RowDefinitions="{OnPlatform Android='Auto, *, Auto', WinUI='Auto, *, 0'}">
 
         <!-- ==================== ШАПКА + ПОИСК + ФИЛЬТРЫ ==================== -->
         <VerticalStackLayout Grid.Row="0"
+                             Grid.Column="{OnPlatform Android=0, WinUI=1}"
                              Padding="20, 16, 20, 10"
                              Spacing="14"
                              MaximumWidthRequest="700"
                              HorizontalOptions="Fill">
 
-            <!-- Заголовок страницы и переключатель темы -->
-            <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12" VerticalOptions="Center">
-                <VerticalStackLayout Spacing="2" VerticalOptions="Center">
-                    <Label Text="Шаблоны"
-                           FontSize="26"
-                           FontAttributes="Bold"
-                           TextColor="{DynamicResource TextPrimary}" />
-                    <Label Text="Каталог официальных бланков и работ по ГОСТ"
-                           FontSize="12.5"
-                           TextColor="{DynamicResource TextSecondary}" />
-                </VerticalStackLayout>
-
-                <views:ThemeToggle Grid.Column="1" HorizontalOptions="End" VerticalOptions="Center" />
-            </Grid>
+            <!-- Заголовок страницы -->
+            <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                <Label Text="Шаблоны"
+                       FontSize="26"
+                       FontAttributes="Bold"
+                       TextColor="{DynamicResource TextPrimary}" />
+                <Label Text="Каталог официальных бланков и работ по ГОСТ"
+                       FontSize="12.5"
+                       TextColor="{DynamicResource TextSecondary}" />
+            </VerticalStackLayout>
 
             <!-- Поисковая строка с векторной иконкой -->
             <Border BackgroundColor="{DynamicResource CardBg}"
@@ -96,11 +95,16 @@
         </VerticalStackLayout>
 
         <!-- ==================== СПИСОК ШАБЛОНОВ ==================== -->
-        <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
+        <ScrollView Grid.Row="1"
+                    Grid.Column="{OnPlatform Android=0, WinUI=1}"
+                    VerticalScrollBarVisibility="Never">
             <VerticalStackLayout MaximumWidthRequest="700"
                                  HorizontalOptions="Fill"
-                                 Padding="20, 6, 20, 24"
+                                 Padding="{OnPlatform Android='20, 6, 20, 80', WinUI='20, 6, 20, 24'}"
                                  Spacing="14">
+
+                <!-- Скелетон загрузки каталога (Shimmer Effect) -->
+                <vctrl:LoadingSkeleton x:Name="CatalogSkeleton" Margin="0, 4, 0, 8" />
 
                 <!-- Избранное (показываются, когда нет поиска и фильтра, и есть избранные) -->
                 <VerticalStackLayout x:Name="FavoritesSection" IsVisible="False" Spacing="10">
@@ -111,14 +115,12 @@
                                CharacterSpacing="0.8"
                                TextColor="{DynamicResource BrandGreen}"
                                VerticalOptions="Center" />
-                        <Path Grid.Column="1"
-                              Data="{StaticResource IconStarFilled}"
-                              Stroke="{DynamicResource BrandGreen}"
-                              Fill="{DynamicResource BrandGreen}"
-                              WidthRequest="14"
-                              HeightRequest="14"
-                              Aspect="Uniform"
-                              VerticalOptions="Center" />
+                        <vctrl:IconView Grid.Column="1"
+                                        Icon="starfilled"
+                                        Filled="True"
+                                        IconColor="BrandGreen"
+                                        Size="14"
+                                        VerticalOptions="Center" />
                     </Grid>
 
                     <VerticalStackLayout x:Name="FavoritesList"
@@ -137,14 +139,11 @@
                                CharacterSpacing="0.8"
                                TextColor="{DynamicResource TextSecondary}"
                                VerticalOptions="Center" />
-                        <Path Grid.Column="1"
-                              Data="{StaticResource IconCalendar}"
-                              Stroke="{DynamicResource TextSecondary}"
-                              StrokeThickness="2"
-                              WidthRequest="14"
-                              HeightRequest="14"
-                              Aspect="Uniform"
-                              VerticalOptions="Center" />
+                        <vctrl:IconView Grid.Column="1"
+                                        Icon="calendar"
+                                        IconColor="TextSecondary"
+                                        Size="14"
+                                        VerticalOptions="Center" />
                     </Grid>
 
                     <VerticalStackLayout x:Name="RecentList"
@@ -187,14 +186,11 @@
                                 WidthRequest="56"
                                 HeightRequest="56"
                                 HorizontalOptions="Center">
-                            <Path Data="{StaticResource IconFileText}"
-                                  Stroke="{DynamicResource BrandGreen}"
-                                  StrokeThickness="2"
-                                  WidthRequest="26"
-                                  HeightRequest="26"
-                                  Aspect="Uniform"
-                                  HorizontalOptions="Center"
-                                  VerticalOptions="Center" />
+                            <vctrl:IconView Icon="file"
+                                            IconColor="BrandGreen"
+                                            Size="26"
+                                            HorizontalOptions="Center"
+                                            VerticalOptions="Center" />
                         </Border>
 
                         <Label x:Name="EmptyLabel"
@@ -216,8 +212,12 @@
             </VerticalStackLayout>
         </ScrollView>
 
-        <!-- ==================== ТАББАР ==================== -->
-        <views:AppTabBar x:Name="BottomTabs" Grid.Row="2" ActiveTab="templates" />
+        <!-- ==================== ТАББАР (на Windows — левый rail, на Android — нижний) ==================== -->
+        <views:AppTabBar x:Name="BottomTabs"
+                         Grid.Row="{OnPlatform Android=2, WinUI=0}"
+                         Grid.RowSpan="{OnPlatform Android=1, WinUI=3}"
+                         Grid.Column="0"
+                         ActiveTab="templates" />
 
     </Grid>
 </ContentPage>

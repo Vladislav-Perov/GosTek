@@ -2,16 +2,17 @@
  * ==============================================================================
  * НАЗНАЧЕНИЕ: Главный дашборд приложения со статусом профиля, быстрым доступом и шторкой настроек
  * СОДЕРЖИМОЕ: MainPage
- * ЗАВИСИМОСТИ: GosTek.Views, GosTek.SettingsService, GosTek.FileSaveService
+ * ЗАВИСИМОСТИ: GosTek.Views, GosTek.SettingsService, GosTek.FileSaveService, GosTek.Helpers
  * ==============================================================================
  */
 using GosTek.Controls;
+using GosTek.Helpers;
 using GosTek.Models;
 using GosTek.Services;
 
 namespace GosTek.Views;
 
-public partial class MainPage : ContentPage
+public partial class MainPage : ContentPage, IQueryAttributable
 {
     private int _lastSubtitleIndex = -1;
 
@@ -37,6 +38,36 @@ public partial class MainPage : ContentPage
 
         // Данные удалили в настройках: обновить плашку профиля
         Settings.DataCleared += async () => await RefreshProfileCardAsync();
+        BottomTabs.SettingsRequested += async (_, _) => await Settings.OpenAsync();
+
+        AttachHoverEffect(CheckCard);
+        AttachHoverEffect(ScanCard);
+    }
+
+    private static void AttachHoverEffect(Border border)
+    {
+        var pointer = new PointerGestureRecognizer();
+        pointer.PointerEntered += (_, _) =>
+        {
+            _ = border.ScaleToAsync(1.02, 100);
+            if (Application.Current?.Resources.TryGetValue("AccentGreen", out var color) == true && color is Color c)
+                border.Stroke = new SolidColorBrush(c);
+        };
+        pointer.PointerExited += (_, _) =>
+        {
+            _ = border.ScaleToAsync(1.0, 100);
+            if (Application.Current?.Resources.TryGetValue("CardStroke", out var color) == true && color is Color c)
+                border.Stroke = new SolidColorBrush(c);
+        };
+        border.GestureRecognizers.Add(pointer);
+    }
+
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        if (query.TryGetValue("openSettings", out var val) && val?.ToString() == "true")
+        {
+            Dispatcher.Dispatch(async () => await Settings.OpenAsync());
+        }
     }
 
     protected override async void OnAppearing()
@@ -50,6 +81,15 @@ public partial class MainPage : ContentPage
         BindableLayout.SetItemsSource(QuickStartList, quick);
         QuickStartSection.IsVisible = quick.Count > 0;   // нет шаблонов — нет и блока
         QuickStartDivider.IsVisible = quick.Count > 0;
+        if (quick.Count > 0)
+        {
+            Dispatcher.Dispatch(async () =>
+            {
+                var rows = QuickStartList.Children.OfType<VisualElement>().ToList();
+                if (rows.Count > 0)
+                    await AnimationHelper.AnimateStaggeredEntranceAsync(rows);
+            });
+        }
         BottomTabs.ResetHover();   // сбросить «залипшее» наведение таббара
 #if WINDOWS
         HookEscape();
@@ -136,7 +176,7 @@ public partial class MainPage : ContentPage
         ProfileDivider.IsVisible = !complete;
 
         ProfilePercentLabel.Text = $"{summary.Percent}%";
-        ProfileProgress.Progress = summary.Progress;
+        _ = ProfileProgress.ProgressTo(summary.Progress, 800, Easing.CubicOut);
         ProfileHintLabel.Text = status == ProfileLoadStatus.Failed
             ? "Не удалось прочитать сохранённый профиль. Откройте его и заполните заново."
             : $"Заполнено на {summary.Percent}%. {summary.Hint}";

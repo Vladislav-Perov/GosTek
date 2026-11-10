@@ -2,9 +2,10 @@
  * ==============================================================================
  * НАЗНАЧЕНИЕ: Страница аудита оформления документов Word по стандартам ГОСТ с пакетным исправлением и конструктором правил
  * СОДЕРЖИМОЕ: CheckPage
- * ЗАВИСИМОСТИ: GosTek.Services.DocumentChecker, GosTek.Models.CheckModels, GosTek.Services.ExportService, GosTek.Services.CustomRulesService
+ * ЗАВИСИМОСТИ: GosTek.Services.DocumentChecker, GosTek.Models.CheckModels, GosTek.Services.ExportService, GosTek.Services.CustomRulesService, GosTek.Helpers
  * ==============================================================================
  */
+using GosTek.Helpers;
 using GosTek.Models;
 using GosTek.Resources.Styles;
 using GosTek.Services;
@@ -64,11 +65,39 @@ public partial class CheckPage : ContentPage
         }
     }
 
+    private CancellationTokenSource? _pulseCts;
+
     protected override async void OnAppearing()
     {
         base.OnAppearing();
         BottomTabs.ResetHover();   // сбросить «залипшее» наведение таббара
         await RefreshRulesAsync();
+        if (_workPath is null)
+            StartChoosePulse();
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        StopChoosePulse();
+    }
+
+    private void StartChoosePulse()
+    {
+        if (_workPath is not null)
+            return;
+
+        StopChoosePulse();
+        _pulseCts = new CancellationTokenSource();
+        _ = AnimationHelper.AnimatePulseAsync(PrimaryButton, _pulseCts.Token);
+    }
+
+    private void StopChoosePulse()
+    {
+        _pulseCts?.Cancel();
+        _pulseCts?.Dispose();
+        _pulseCts = null;
+        AnimationHelper.StopPulse(PrimaryButton);
     }
 
     private async Task RefreshRulesAsync()
@@ -327,6 +356,7 @@ public partial class CheckPage : ContentPage
 
     private async void OnPrimaryTapped(object? sender, TappedEventArgs e)
     {
+        StopChoosePulse();
         HapticHelper.Click();
         if (_busy)
             return;
@@ -437,8 +467,11 @@ public partial class CheckPage : ContentPage
             PrimaryLabel.Text = "Выбрать документ";
             SaveButton.IsVisible = false;
             Grid.SetColumnSpan(PrimaryButton, 2);
+            StartChoosePulse();
             return;
         }
+
+        StopChoosePulse();
 
         FileNameLabel.Text = _sourceName;
         FileInfoLabel.Text = BuildInfoText();
@@ -467,8 +500,8 @@ public partial class CheckPage : ContentPage
         {
             SummaryBox.BackgroundColor = ThemeService.IsDark ? Color.FromArgb("#064E3B") : Color.FromArgb("#ECFDF5");
             SummaryBox.Stroke = new SolidColorBrush(Color.FromArgb(ThemeService.IsDark ? "#059669" : "#10B981"));
-            SummaryIconPath.Data = (Geometry)new PathGeometryConverter().ConvertFromInvariantString(Icons.Shield)!;
-            SummaryIconPath.Stroke = Color.FromArgb(ThemeService.IsDark ? "#34D399" : "#059669");
+            SummaryIconCtrl.Icon = "shield";
+            SummaryIconCtrl.IconColor = ThemeService.IsDark ? "#34D399" : "#059669";
             SummaryTitle.Text = "Документ идеален по ГОСТ!";
             SummaryTitle.TextColor = Color.FromArgb(ThemeService.IsDark ? "#6EE7B7" : "#065F46");
             SummarySubtitle.Text = "Все параметры оформления (поля страницы, гарнитура, интервалы) полностью соответствуют выбранным правилам.";
@@ -477,8 +510,8 @@ public partial class CheckPage : ContentPage
         {
             SummaryBox.BackgroundColor = ThemeService.IsDark ? Color.FromArgb("#064E3B") : Color.FromArgb("#ECFDF5");
             SummaryBox.Stroke = new SolidColorBrush(Color.FromArgb(ThemeService.IsDark ? "#059669" : "#10B981"));
-            SummaryIconPath.Data = (Geometry)new PathGeometryConverter().ConvertFromInvariantString(Icons.Check)!;
-            SummaryIconPath.Stroke = Color.FromArgb(ThemeService.IsDark ? "#34D399" : "#059669");
+            SummaryIconCtrl.Icon = "check";
+            SummaryIconCtrl.IconColor = ThemeService.IsDark ? "#34D399" : "#059669";
             SummaryTitle.Text = "Все замечания устранены!";
             SummaryTitle.TextColor = Color.FromArgb(ThemeService.IsDark ? "#6EE7B7" : "#065F46");
             SummarySubtitle.Text = "Документ исправлен по стандарту ГОСТ и готов к сохранению или экспорту.";
@@ -487,8 +520,8 @@ public partial class CheckPage : ContentPage
         {
             SummaryBox.BackgroundColor = ThemeService.IsDark ? Color.FromArgb("#451A03") : Color.FromArgb("#FEF2F2");
             SummaryBox.Stroke = new SolidColorBrush(Color.FromArgb(ThemeService.IsDark ? "#B45309" : "#F87171"));
-            SummaryIconPath.Data = (Geometry)new PathGeometryConverter().ConvertFromInvariantString(Icons.AlertTriangle)!;
-            SummaryIconPath.Stroke = Color.FromArgb(ThemeService.IsDark ? "#FBBF24" : "#DC2626");
+            SummaryIconCtrl.Icon = "alerttriangle";
+            SummaryIconCtrl.IconColor = ThemeService.IsDark ? "#FBBF24" : "#DC2626";
             SummaryTitle.Text = $"Найдено {_issues.Count} замечаний ({fixable.Count} можно исправить)";
             SummaryTitle.TextColor = Color.FromArgb(ThemeService.IsDark ? "#FDE68A" : "#991B1B");
             SummarySubtitle.Text = fixable.Count > 0 

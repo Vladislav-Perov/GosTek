@@ -2,13 +2,14 @@
 <!--
  ==============================================================================
  НАЗНАЧЕНИЕ: Интерфейс конструктора правил оформления ГОСТ с визуальным предпросмотром «Было / Стало»
- СОДЕРЖИМОЕ: ContentPage, Grid, ScrollView, Border, Entry, Picker, Switch
- ЗАВИСИМОСТИ: GosTek.Views.RuleEditorPage, GosTek.Models.RuleSet, GosTek.Services.CustomRulesService, GosTek.Views.ThemeToggle
+ СОДЕРЖИМОЕ: ContentPage, Grid, ScrollView, Border, Entry, Picker, Switch, IconView
+ ЗАВИСИМОСТИ: GosTek.Views.RuleEditorPage, GosTek.Models.RuleSet, GosTek.Services.CustomRulesService, GosTek.Views.Controls.IconView
  ==============================================================================
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:views="clr-namespace:GosTek.Views"
+             xmlns:vctrl="clr-namespace:GosTek.Views.Controls"
              x:Class="GosTek.Views.RuleEditorPage"
              Title="Конструктор правил ГОСТ"
              BackgroundColor="{DynamicResource PageBg}"
@@ -21,7 +22,7 @@
             <!-- ==================== ШАПКА ==================== -->
             <Grid Grid.Row="0"
                   Padding="20, 15, 20, 10"
-                  ColumnDefinitions="Auto, *, Auto"
+                  ColumnDefinitions="Auto, *"
                   ColumnSpacing="14">
 
                 <Border Grid.Column="0"
@@ -45,7 +46,6 @@
                           VerticalOptions="Center" />
                 </Border>
 
-                <views:ThemeToggle Grid.Column="2" HorizontalOptions="End" VerticalOptions="Center" />
                 <Label x:Name="PageTitleLabel"
                        Grid.Column="1"
                        Text="Конструктор правила"
@@ -288,15 +288,10 @@
                             <TapGestureRecognizer Tapped="OnPreviewTapped" />
                         </Border.GestureRecognizers>
                         <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
-                            <Path Data="{StaticResource IconEye}"
-                                  Stroke="{DynamicResource TextPrimary}"
-                                  StrokeThickness="2"
-                                  StrokeLineCap="Round"
-                                  StrokeLineJoin="Round"
-                                  Aspect="Uniform"
-                                  WidthRequest="16"
-                                  HeightRequest="16"
-                                  VerticalOptions="Center" />
+                            <vctrl:IconView Icon="eye"
+                                            IconColor="TextPrimary"
+                                            Size="16"
+                                            VerticalOptions="Center" />
                             <Label Text="Предпросмотр"
                                    FontSize="15"
                                    FontAttributes="Bold"
@@ -316,15 +311,10 @@
                             <TapGestureRecognizer Tapped="OnSaveTapped" />
                         </Border.GestureRecognizers>
                         <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
-                            <Path Data="{StaticResource IconSave}"
-                                  Stroke="White"
-                                  StrokeThickness="2"
-                                  StrokeLineCap="Round"
-                                  StrokeLineJoin="Round"
-                                  Aspect="Uniform"
-                                  WidthRequest="16"
-                                  HeightRequest="16"
-                                  VerticalOptions="Center" />
+                            <vctrl:IconView Icon="save"
+                                            IconColor="White"
+                                            Size="16"
+                                            VerticalOptions="Center" />
                             <Label Text="Сохранить"
                                    FontSize="15"
                                    FontAttributes="Bold"
@@ -348,15 +338,10 @@
                         <TapGestureRecognizer Tapped="OnDeleteTapped" />
                     </Border.GestureRecognizers>
                     <HorizontalStackLayout HorizontalOptions="Center" Spacing="6">
-                        <Path Data="{StaticResource IconTrash}"
-                              Stroke="#EF4444"
-                              StrokeThickness="2"
-                              StrokeLineCap="Round"
-                              StrokeLineJoin="Round"
-                              Aspect="Uniform"
-                              WidthRequest="14"
-                              HeightRequest="14"
-                              VerticalOptions="Center" />
+                        <vctrl:IconView Icon="trash"
+                                        IconColor="#EF4444"
+                                        Size="14"
+                                        VerticalOptions="Center" />
                         <Label Text="Удалить это правило"
                                FontSize="14"
                                FontAttributes="Bold"
