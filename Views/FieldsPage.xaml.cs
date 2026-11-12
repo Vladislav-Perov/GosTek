@@ -925,9 +925,18 @@ public partial class FieldsPage : ContentPage
         animation.Commit(ChatSheet, "ChatSheetMaximize", length: 250);
     }
 
+    private CancellationTokenSource? _chatRequestCts;
+
+    private void OnCancelChatRequestTapped(object? sender, TappedEventArgs e)
+    {
+        HapticHelper.Click();
+        _chatRequestCts?.Cancel();
+    }
+
     private async void OnCloseChatTapped(object? sender, TappedEventArgs e)
     {
         HapticHelper.Click();
+        _chatRequestCts?.Cancel();
         MemoryPanel.IsVisible = false;
         await ChatSheet.TranslateToAsync(0, 700, 200, Easing.CubicIn);
         ChatOverlay.IsVisible = false;
@@ -941,6 +950,7 @@ public partial class FieldsPage : ContentPage
 
     private async void OnChatOverlayBackgroundTapped(object? sender, TappedEventArgs e)
     {
+        _chatRequestCts?.Cancel();
         MemoryPanel.IsVisible = false;
         await ChatSheet.TranslateToAsync(0, 700, 200, Easing.CubicIn);
         ChatOverlay.IsVisible = false;
@@ -1104,6 +1114,9 @@ public partial class FieldsPage : ContentPage
         AddUserMessageBubble(userText);
         _ = ChatScrollView.ScrollToAsync(ChatMessagesStack, ScrollToPosition.End, true);
 
+        _chatRequestCts?.Cancel();
+        _chatRequestCts = new CancellationTokenSource();
+
         TypingIndicator.IsVisible = true;
         SendButton.IsEnabled = false;
 
@@ -1129,7 +1142,8 @@ public partial class FieldsPage : ContentPage
                 extractedPlaceholders: extractedPlaceholders,
                 targetField: _targetField,
                 templateName: _template?.Title,
-                memory: AiMemory.Instance.FormatForPrompt());
+                memory: AiMemory.Instance.FormatForPrompt(),
+                cancellationToken: _chatRequestCts.Token);
 
             _targetField = null;
 
@@ -1165,15 +1179,24 @@ public partial class FieldsPage : ContentPage
                 }
             }
         }
+        catch (OperationCanceledException)
+        {
+            TypingIndicator.IsVisible = false;
+            AddBotMessageBubble("Запрос к сервису ИИ был отменен.");
+        }
         catch (Exception ex)
         {
             TypingIndicator.IsVisible = false;
-            AddErrorMessageBubble($"⚠️ Ошибка: {ex.Message}");
+            AddErrorMessageBubble(ex is AiAssistantException
+                ? ex.Message
+                : "Произошла ошибка при обращении к сервису ИИ. Попробуйте еще раз.");
         }
         finally
         {
             TypingIndicator.IsVisible = false;
             SendButton.IsEnabled = true;
+            _chatRequestCts?.Dispose();
+            _chatRequestCts = null;
             _ = ChatScrollView.ScrollToAsync(ChatMessagesStack, ScrollToPosition.End, true);
         }
     }

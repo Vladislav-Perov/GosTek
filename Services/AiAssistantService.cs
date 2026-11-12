@@ -145,7 +145,7 @@ public class AiAssistantService
 {
     public const string DefaultEndpoint = "https://gostek-proxy.d13225135.workers.dev";
     public const int MaxRetryAttempts = 3;
-    public static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(2);
+    public static readonly TimeSpan RetryDelay = TimeSpan.FromMilliseconds(200);
 
     private readonly HttpClient _httpClient;
     private readonly string _endpoint;
@@ -161,7 +161,7 @@ public class AiAssistantService
 
     public AiAssistantService(HttpClient? httpClient = null, string endpoint = DefaultEndpoint)
     {
-        _httpClient = httpClient ?? new HttpClient { Timeout = TimeSpan.FromSeconds(35) };
+        _httpClient = httpClient ?? new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
         _endpoint = endpoint;
     }
 
@@ -461,17 +461,21 @@ public class AiAssistantService
                 var restoredFields = await RestorePlaceholdersAsync(parsed.Fields, allPlaceholders, profile);
                 return parsed with { Fields = restoredFields };
             }
-            catch (HttpRequestException ex) when (attempt < MaxRetryAttempts && ex.StatusCode == HttpStatusCode.ServiceUnavailable)
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(RetryDelay, cancellationToken);
+                throw new AiAssistantException("Запрос к сервису ИИ был отменен.");
             }
             catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
             {
-                throw new AiAssistantException("Истекло время ожидания ответа от сервиса ИИ.", ex);
+                throw new AiAssistantException("Истекло время ожидания ответа от сервиса ИИ (превышен лимит 20 сек).", ex);
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new AiAssistantException("Не удалось связаться с сервером ИИ. Проверьте подключение к сети.", ex);
             }
         }
 
-        throw new AiAssistantException("Не удалось получить ответ от ИИ после серии повторных попыток.");
+        throw new AiAssistantException("Сервис ИИ временно перегружен или недоступен.");
     }
 
     /// <summary>

@@ -700,21 +700,34 @@
                                          BackgroundColor="{DynamicResource PageBg}">
                         <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 0, 0, 4" />
 
-                        <!-- Индикатор набора / ожидания ответа -->
-                        <HorizontalStackLayout x:Name="TypingIndicator"
-                                               IsVisible="False"
-                                               Spacing="8"
-                                               Padding="8, 2"
-                                               VerticalOptions="Center">
+                        <!-- Индикатор набора / ожидания ответа с кнопкой отмены -->
+                        <Grid x:Name="TypingIndicator"
+                              IsVisible="False"
+                              ColumnDefinitions="Auto, *, Auto"
+                              ColumnSpacing="8"
+                              Padding="8, 2"
+                              VerticalOptions="Center">
                             <ActivityIndicator IsRunning="True"
                                                WidthRequest="16"
                                                HeightRequest="16"
-                                               Color="{DynamicResource BrandGreen}" />
-                            <Label Text="ИИ анализирует поля документа..."
+                                               Color="{DynamicResource BrandGreen}"
+                                               VerticalOptions="Center" />
+                            <Label Grid.Column="1"
+                                   Text="ИИ анализирует поля документа..."
                                    FontSize="12"
                                    TextColor="{DynamicResource BrandGreen}"
                                    VerticalOptions="Center" />
-                        </HorizontalStackLayout>
+                            <Label Grid.Column="2"
+                                   Text="Отмена"
+                                   FontSize="12"
+                                   FontAttributes="Bold"
+                                   TextColor="#EF4444"
+                                   VerticalOptions="Center">
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnCancelChatRequestTapped" />
+                                </Label.GestureRecognizers>
+                            </Label>
+                        </Grid>
 
                         <!-- Поле ввода + кнопка отправки -->
                         <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10" VerticalOptions="Center">
