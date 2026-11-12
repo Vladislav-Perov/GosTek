@@ -115,13 +115,13 @@ public static class FileSaveService
 #endif
     }
 
-    /// <summary>Удаляет временные .docx из кэша приложения. Возвращает, сколько удалено.</summary>
+    /// <summary>Удаляет временные файлы (.docx, .pdf, .jpg, .jpeg, .png, .bmp, .tmp) из кэша приложения. Возвращает, сколько удалено.</summary>
     public static int ClearTemp()
     {
         int count = 0;
 
         try {
-            foreach (var pattern in new[] { "*.docx", "*.pdf" }) {
+            foreach (var pattern in new[] { "*.docx", "*.pdf", "*.jpg", "*.jpeg", "*.png", "*.bmp", "*.tmp" }) {
                 foreach (var file in Directory.EnumerateFiles(FileSystem.CacheDirectory, pattern)) {
                     try {
                         File.Delete(file);
