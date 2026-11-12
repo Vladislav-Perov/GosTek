@@ -418,6 +418,25 @@
 
                                     <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 2" />
 
+                                    <Grid ColumnDefinitions="*, Auto" Margin="0, 2" VerticalOptions="Center">
+                                        <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                                            <Label Text="Мягкое маскирование имён"
+                                                   FontSize="13"
+                                                   FontAttributes="Bold"
+                                                   TextColor="{DynamicResource TextPrimary}" />
+                                            <Label Text="Автоматически маскировать одиночные подозрительные имена"
+                                                   FontSize="11"
+                                                   TextColor="{DynamicResource TextSecondary}" />
+                                        </VerticalStackLayout>
+                                        <Switch Grid.Column="1"
+                                                x:Name="AiMaskSilentSwitch"
+                                                Toggled="OnAiMaskSilentToggled"
+                                                OnColor="{DynamicResource BrandGreen}"
+                                                VerticalOptions="Center" />
+                                    </Grid>
+
+                                    <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 2" />
+
                                     <Border StyleClass="HoverCard"
                                             StrokeThickness="1"
                                             Stroke="{DynamicResource CardStroke}"

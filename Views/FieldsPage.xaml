@@ -463,13 +463,16 @@
             </Grid.GestureRecognizers>
 
             <Border x:Name="ChatSheet"
-                    VerticalOptions="End"
-                    MaximumWidthRequest="700"
+                    VerticalOptions="{OnPlatform Android=End, WinUI=End}"
+                    HorizontalOptions="{OnPlatform Android=Fill, WinUI=End}"
+                    MaximumWidthRequest="{OnPlatform Android=700, WinUI=500}"
+                    WidthRequest="{OnPlatform WinUI=490}"
+                    Margin="{OnPlatform Android=0, WinUI='0,0,24,24'}"
                     HeightRequest="{OnPlatform Android=520, WinUI=560}"
                     BackgroundColor="{DynamicResource PageBg}"
                     Stroke="{DynamicResource CardStroke}"
                     StrokeThickness="1"
-                    StrokeShape="RoundRectangle 24,24,0,0"
+                    StrokeShape="{OnPlatform Android='RoundRectangle 24,24,0,0', WinUI='RoundRectangle 20'}"
                     Padding="0">
                 <Border.Shadow>
                     <Shadow Brush="Black" Offset="0, -4" Radius="20" Opacity="0.22" />

@@ -29,6 +29,7 @@ public static class SettingsService
     private const string KeyAfterSave = "set_after_save";
     private const string KeyAiAutoApply = "set_ai_auto_apply";
     private const string KeyAiConsent = "set_ai_consent_accepted";
+    private const string KeyAiMaskSilent = "set_ai_mask_ambiguous_silent";
 
     /// <summary>Изменилась любая настройка. На событие подписана панель настроек.</summary>
     public static event Action? Changed;
@@ -126,6 +127,27 @@ public static class SettingsService
         set
         {
             Preferences.Default.Set(KeyAiAutoApply, value);
+            Changed?.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// Действие при обнаружении неоднозначных потенциальных ПДн средней уверенности:
+    /// True (по умолчанию) = автоматически мягко маскировать безопасным плейсхолдером;
+    /// False = помечать как подозрительные и требовать явного подтверждения пользователя.
+    /// </summary>
+    public static bool AiMaskAmbiguousSilent
+    {
+        get
+        {
+            try { return Preferences.Default.Get(KeyAiMaskSilent, Services.PrivacyMasker.MaskAmbiguousSilent); }
+            catch { return Services.PrivacyMasker.MaskAmbiguousSilent; }
+        }
+        set
+        {
+            Services.PrivacyMasker.MaskAmbiguousSilent = value;
+            try { Preferences.Default.Set(KeyAiMaskSilent, value); }
+            catch { }
             Changed?.Invoke();
         }
     }

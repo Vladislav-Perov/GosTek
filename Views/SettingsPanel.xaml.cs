@@ -217,11 +217,17 @@ public partial class SettingsPanel : ContentView
         TemplatesPathLabel.Text = SettingsService.TemplatesFolder;
         ResetTemplatesButton.IsVisible = !SettingsService.IsDefaultTemplatesFolder;
         AiConsentSwitch.IsToggled = SettingsService.AiConsentAccepted;
+        AiMaskSilentSwitch.IsToggled = SettingsService.AiMaskAmbiguousSilent;
     }
 
     private void OnAiConsentToggled(object? sender, ToggledEventArgs e)
     {
         SettingsService.AiConsentAccepted = e.Value;
+    }
+
+    private void OnAiMaskSilentToggled(object? sender, ToggledEventArgs e)
+    {
+        SettingsService.AiMaskAmbiguousSilent = e.Value;
     }
 
     // =====================================================================

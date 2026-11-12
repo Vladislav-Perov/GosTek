@@ -70,7 +70,6 @@ public partial class FieldsPage : ContentPage
     private bool _isChatMaximized;
     private double _originalChatHeight = 540;
     private bool _isProgrammaticFilling;
-    private string? _targetField;
 
     private int _statusVersion;
     private int _layoutVersion;
@@ -247,10 +246,6 @@ public partial class FieldsPage : ContentPage
             input = entry;
         }
         box.Content = input;
-
-        // Кнопка ИИ у каждого поля для точечного расширения
-        var aiFieldBtn = CreateFieldAiButton(field, input);
-        labelRow.Children.Add(aiFieldBtn);
 
         var keyboard = SmartInputHelper.ResolveKeyboard(field.Label, field.Placeholder, field.Id);
         if (input is Entry ent)
@@ -828,59 +823,6 @@ public partial class FieldsPage : ContentPage
         return badge;
     }
 
-    private Border CreateFieldAiButton(TemplateField field, InputView input)
-    {
-        var btn = new Border
-        {
-            StyleClass = new[] { "HoverCard" },
-            WidthRequest = 26,
-            HeightRequest = 26,
-            StrokeThickness = 1,
-            StrokeShape = new RoundRectangle { CornerRadius = 7 },
-            Padding = 0,
-            VerticalOptions = LayoutOptions.Center
-        };
-        AutomationProperties.SetName(btn, $"Помощь ИИ для {field.Label}");
-        SemanticProperties.SetDescription(btn, $"Помощь ИИ для {field.Label}");
-        btn.SetDynamicResource(VisualElement.BackgroundColorProperty, "IconBoxBg");
-        btn.SetDynamicResource(Border.StrokeProperty, "CardStroke");
-
-        var icon = new GosTek.Views.Controls.IconView
-        {
-            Icon = "sparkles",
-            Size = 13,
-            IconColor = "BrandGreen",
-            HorizontalOptions = LayoutOptions.Center,
-            VerticalOptions = LayoutOptions.Center
-        };
-        btn.Content = icon;
-
-        btn.GestureRecognizers.Add(new TapGestureRecognizer
-        {
-            Command = new Command(async () =>
-            {
-                HapticHelper.Click();
-                await btn.AnimateBounceAsync();
-                OpenChatForField(field, input);
-            })
-        });
-
-        return btn;
-    }
-
-    private void OpenChatForField(TemplateField field, InputView input)
-    {
-        _targetField = field.Label;
-        var text = input.Text?.Trim();
-
-        if (!string.IsNullOrWhiteSpace(text))
-            ChatInput.Text = $"Расширь и сделай официальным: {text}";
-        else
-            ChatInput.Text = $"Помоги официально заполнить поле \"{field.Label}\"";
-
-        OpenChat();
-    }
-
     private void OpenChat()
     {
         HapticHelper.Click();
@@ -903,7 +845,6 @@ public partial class FieldsPage : ContentPage
 
     private void OnOpenChatTapped(object? sender, TappedEventArgs e)
     {
-        _targetField = null;
         OpenChat();
     }
 
@@ -1140,12 +1081,9 @@ public partial class FieldsPage : ContentPage
                 fieldNames,
                 currentFormFields: currentFormFields,
                 extractedPlaceholders: extractedPlaceholders,
-                targetField: _targetField,
                 templateName: _template?.Title,
                 memory: AiMemory.Instance.FormatForPrompt(),
                 cancellationToken: _chatRequestCts.Token);
-
-            _targetField = null;
 
             TypingIndicator.IsVisible = false;
 
