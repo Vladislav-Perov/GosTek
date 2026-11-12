@@ -16,6 +16,9 @@ public static class DraftStore
 {
     private static readonly Dictionary<string, Dictionary<string, string>> Data = new();
 
+    /// <summary>Распознанный текст из сканера для переноса в шаблон документа.</summary>
+    public static string? PendingOcrText { get; set; }
+
     public static Dictionary<string, string> For(string templateId)
     {
         if (!Data.TryGetValue(templateId, out var draft))

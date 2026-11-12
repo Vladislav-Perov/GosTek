@@ -498,6 +498,14 @@ public partial class FieldsPage : ContentPage
         }
 #endif
         StartBuildPulse();
+
+        if (!string.IsNullOrWhiteSpace(DraftStore.PendingOcrText))
+        {
+            string ocrText = DraftStore.PendingOcrText;
+            DraftStore.PendingOcrText = null;
+            ChatInput.Text = $"Заполни поля документа по тексту:\n{ocrText}";
+            OpenChat();
+        }
     }
 
     protected override void OnDisappearing()

@@ -598,7 +598,7 @@ public partial class ScanPage : ContentPage
     }
 
     // Показать результат под выбранный тип документа
-    private void ApplyResult(string text)
+    private async void ApplyResult(string text)
     {
         RawTextEditor.Text = text;
 
@@ -606,9 +606,40 @@ public partial class ScanPage : ContentPage
         ExtractedSection.IsVisible = passport;
 
         if (passport) {
+            var profile = await ProfileStorage.LoadAsync();
+            OldNameLabel.Text = string.IsNullOrWhiteSpace(profile.FullName) ? "Было: —" : $"Было: {profile.FullName}";
+            OldPassportLabel.Text = string.IsNullOrWhiteSpace(profile.Passport) ? "Было: —" : $"Было: {profile.Passport}";
+            OldPersonalLabel.Text = "Было: —";
+
             var data = DocumentDataExtractor.Extract(text);
             NameEntry.Text = data.FullName ?? "";
             PassportEntry.Text = data.Passport ?? "";
+            PersonalEntry.Text = data.PersonalNumber ?? "";
+
+            ApplyNameCheck.IsChecked = !string.IsNullOrWhiteSpace(data.FullName);
+            ApplyPassportCheck.IsChecked = !string.IsNullOrWhiteSpace(data.Passport);
+            ApplyPersonalCheck.IsChecked = !string.IsNullOrWhiteSpace(data.PersonalNumber);
+
+            if (data.IsMrz)
+            {
+                MrzStatusBadge.IsVisible = true;
+                if (data.IsValid)
+                {
+                    MrzStatusBadge.BackgroundColor = Color.FromArgb("#1510B981");
+                    MrzStatusLabel.TextColor = Color.FromArgb("#10B981");
+                    MrzStatusLabel.Text = "✓ ICAO 9303 MRZ проверена";
+                }
+                else
+                {
+                    MrzStatusBadge.BackgroundColor = Color.FromArgb("#15F59E0B");
+                    MrzStatusLabel.TextColor = Color.FromArgb("#F59E0B");
+                    MrzStatusLabel.Text = "⚠ Контрольная сумма не сошлась";
+                }
+            }
+            else
+            {
+                MrzStatusBadge.IsVisible = false;
+            }
         }
     }
 
@@ -627,31 +658,43 @@ public partial class ScanPage : ContentPage
             CopyLabel.Text = "Копировать";
     }
 
+    // ===== Перенос распознанного текста в шаблон =====
+    private async void OnApplyToTemplateTapped(object? sender, TappedEventArgs e)
+    {
+        HapticHelper.Click();
+        DraftStore.PendingOcrText = RawTextEditor.Text;
+        Toast.Show("Текст готов для вставки в шаблон", "filetext");
+        await Shell.Current.GoToAsync("//TemplatesPage");
+    }
+
     // ===== Сохранение в профиль =====
     private async void OnSaveToProfileTapped(object? sender, TappedEventArgs e)
     {
         var profile = await ProfileStorage.LoadAsync();
 
+        string? newName = (ApplyNameCheck.IsChecked && !string.IsNullOrWhiteSpace(NameEntry.Text))
+            ? ProfileRules.Normalize(ProfileField.FullName, NameEntry.Text)
+            : profile.FullName;
+
+        string? newPassport = (ApplyPassportCheck.IsChecked && !string.IsNullOrWhiteSpace(PassportEntry.Text))
+            ? ProfileRules.Normalize(ProfileField.Passport, PassportEntry.Text)
+            : profile.Passport;
+
         var updated = profile with {
-            FullName = string.IsNullOrWhiteSpace(NameEntry.Text)
-                ? profile.FullName
-                : ProfileRules.Normalize(ProfileField.FullName, NameEntry.Text),
-            Passport = string.IsNullOrWhiteSpace(PassportEntry.Text)
-                ? profile.Passport
-                : ProfileRules.Normalize(ProfileField.Passport, PassportEntry.Text),
+            FullName = newName,
+            Passport = newPassport
         };
 
         try {
             await ProfileStorage.SaveAsync(updated);
             HapticHelper.Success();
-            Toast.Show("Данные добавлены в профиль", "user");
+            Toast.Show("Выбранные данные сохранены в профиль", "user");
 
             if (_mode == "passport")
                 await Shell.Current.GoToAsync("//ProfilePage");
         } catch (OperationCanceledException) {
-            // Распознавание прервано пользователем
             return;
-            } catch (Exception ex) {
+        } catch (Exception ex) {
             await Dialogs.AlertAsync("Не удалось сохранить", ex.Message, DialogKind.Danger);
         }
     }

@@ -204,7 +204,7 @@
                         </Border>
                     </HorizontalStackLayout>
 
-                    <!-- Блок автоматически извлечённых реквизитов (Паспорт / ID) -->
+                    <!-- Блок автоматически извлечённых реквизитов (Паспорт / ID) с diff-проверкой -->
                     <VerticalStackLayout x:Name="ExtractedSection" Spacing="12">
                         <Border BackgroundColor="{DynamicResource CardBg}"
                                 Stroke="{DynamicResource CardStroke}"
@@ -216,7 +216,7 @@
                             </Border.Shadow>
 
                             <VerticalStackLayout Spacing="12">
-                                <Grid ColumnDefinitions="Auto, *" ColumnSpacing="10" VerticalOptions="Center">
+                                <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="10" VerticalOptions="Center">
                                     <Border BackgroundColor="{DynamicResource IconBoxBg}"
                                             StrokeThickness="0"
                                             StrokeShape="RoundRectangle 8"
@@ -230,20 +230,42 @@
                                                         VerticalOptions="Center" />
                                     </Border>
                                     <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
-                                        <Label Text="Найдено автоматически"
+                                        <Label Text="Сравнение с профилем"
                                                FontSize="15"
                                                FontAttributes="Bold"
                                                TextColor="{DynamicResource TextPrimary}" />
-                                        <Label Text="Реквизиты документа для вашего профиля"
+                                        <Label Text="Выберите распознанные данные для применения"
                                                FontSize="11.5"
                                                TextColor="{DynamicResource TextSecondary}" />
                                     </VerticalStackLayout>
+
+                                    <!-- Бейдж статуса ICAO 9303 / OCR -->
+                                    <Border x:Name="MrzStatusBadge"
+                                            Grid.Column="2"
+                                            StrokeThickness="0"
+                                            StrokeShape="RoundRectangle 8"
+                                            Padding="8, 4"
+                                            BackgroundColor="#1510B981"
+                                            VerticalOptions="Center">
+                                        <Label x:Name="MrzStatusLabel"
+                                               Text="✓ MRZ ICAO"
+                                               FontSize="11"
+                                               FontAttributes="Bold"
+                                               TextColor="#10B981" />
+                                    </Border>
                                 </Grid>
 
                                 <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 2" />
 
+                                <!-- ФИО -->
                                 <VerticalStackLayout Spacing="4">
-                                    <Label Text="ФИО" StyleClass="FieldLabel" />
+                                    <Grid ColumnDefinitions="Auto, *, Auto" VerticalOptions="Center">
+                                        <CheckBox x:Name="ApplyNameCheck" IsChecked="True" VerticalOptions="Center" />
+                                        <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                                            <Label Text="ФИО" StyleClass="FieldLabel" />
+                                            <Label x:Name="OldNameLabel" Text="Было: —" FontSize="11" TextColor="{DynamicResource TextSecondary}" />
+                                        </VerticalStackLayout>
+                                    </Grid>
                                     <Border StyleClass="FieldBox">
                                         <Entry x:Name="NameEntry"
                                                StyleClass="FieldEntry"
@@ -251,10 +273,33 @@
                                     </Border>
                                 </VerticalStackLayout>
 
+                                <!-- Паспорт -->
                                 <VerticalStackLayout Spacing="4">
-                                    <Label Text="Паспорт" StyleClass="FieldLabel" />
+                                    <Grid ColumnDefinitions="Auto, *, Auto" VerticalOptions="Center">
+                                        <CheckBox x:Name="ApplyPassportCheck" IsChecked="True" VerticalOptions="Center" />
+                                        <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                                            <Label Text="Паспорт (серия и номер)" StyleClass="FieldLabel" />
+                                            <Label x:Name="OldPassportLabel" Text="Было: —" FontSize="11" TextColor="{DynamicResource TextSecondary}" />
+                                        </VerticalStackLayout>
+                                    </Grid>
                                     <Border StyleClass="FieldBox">
                                         <Entry x:Name="PassportEntry"
+                                               StyleClass="FieldEntry"
+                                               Placeholder="Не найдено — введите вручную" />
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <!-- Личный идентификационный номер РБ -->
+                                <VerticalStackLayout Spacing="4">
+                                    <Grid ColumnDefinitions="Auto, *, Auto" VerticalOptions="Center">
+                                        <CheckBox x:Name="ApplyPersonalCheck" IsChecked="True" VerticalOptions="Center" />
+                                        <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                                            <Label Text="Идентификационный (личный) номер РБ" StyleClass="FieldLabel" />
+                                            <Label x:Name="OldPersonalLabel" Text="Было: —" FontSize="11" TextColor="{DynamicResource TextSecondary}" />
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                    <Border StyleClass="FieldBox">
+                                        <Entry x:Name="PersonalEntry"
                                                StyleClass="FieldEntry"
                                                Placeholder="Не найдено — введите вручную" />
                                     </Border>
@@ -272,7 +317,7 @@
                                     <Border.GestureRecognizers>
                                         <TapGestureRecognizer Tapped="OnSaveToProfileTapped" />
                                     </Border.GestureRecognizers>
-                                    <Label Text="Сохранить в профиль"
+                                    <Label Text="Применить выбранные в профиль"
                                            FontSize="14.5"
                                            FontAttributes="Bold"
                                            TextColor="#FFFFFF"
@@ -329,6 +374,29 @@
                                         FontSize="13"
                                         TextColor="{DynamicResource TextPrimary}"
                                         BackgroundColor="Transparent" />
+                            </Border>
+
+                            <Border StyleClass="HoverCard"
+                                    Stroke="{DynamicResource CardStroke}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 12"
+                                    BackgroundColor="{DynamicResource CardBg}"
+                                    Padding="12, 10"
+                                    HorizontalOptions="Fill">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnApplyToTemplateTapped" />
+                                </Border.GestureRecognizers>
+                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                                    <vctrl:IconView Icon="filetext"
+                                                    IconColor="BrandGreen"
+                                                    Size="16"
+                                                    VerticalOptions="Center" />
+                                    <Label Text="Перенести текст в шаблон документа..."
+                                           FontSize="13"
+                                           FontAttributes="Bold"
+                                           TextColor="{DynamicResource BrandGreen}"
+                                           VerticalOptions="Center" />
+                                </HorizontalStackLayout>
                             </Border>
                         </VerticalStackLayout>
                     </Border>
