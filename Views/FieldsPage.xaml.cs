@@ -493,12 +493,28 @@ public partial class FieldsPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
+        Shell.SetFlyoutBehavior(this, FlyoutBehavior.Disabled);
+        Shell.SetTabBarIsVisible(this, false);
+#if WINDOWS
+        if (Shell.Current is { } shell)
+        {
+            shell.FlyoutBehavior = FlyoutBehavior.Disabled;
+            shell.FlyoutWidth = 0;
+        }
+#endif
         StartBuildPulse();
     }
 
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+#if WINDOWS
+        if (Shell.Current is { } shell)
+        {
+            shell.FlyoutBehavior = FlyoutBehavior.Locked;
+            shell.FlyoutWidth = Preferences.Get("rail_collapsed", false) ? 64 : 220;
+        }
+#endif
         StopBuildPulse();
     }
 
@@ -1420,4 +1436,38 @@ public partial class FieldsPage : ContentPage
 
         ChatMessagesStack.Children.Add(cardBorder);
     }
+
+    /// <summary>Закрыть открытые оверлеи (панель памяти, чат ИИ, окно экспорта). true, если что-то было открыто.</summary>
+    public bool TryDismissOverlays()
+    {
+        if (MemoryPanel.IsVisible)
+        {
+            MemoryPanel.IsVisible = false;
+            return true;
+        }
+
+        if (ChatOverlay.IsVisible)
+        {
+            MemoryPanel.IsVisible = false;
+            ChatOverlay.IsVisible = false;
+            if (_isChatMaximized)
+            {
+                _isChatMaximized = false;
+                ChatMaximizeIcon.Icon = "maximize";
+                ChatSheet.HeightRequest = _originalChatHeight;
+            }
+            return true;
+        }
+
+        if (ExportOverlay.IsVisible)
+        {
+            CloseExport();
+            return true;
+        }
+
+        return false;
+    }
+
+    protected override bool OnBackButtonPressed()
+        => TryDismissOverlays() || base.OnBackButtonPressed();
 }

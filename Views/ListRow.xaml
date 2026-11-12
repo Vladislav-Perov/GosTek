@@ -9,7 +9,8 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vctrl="clr-namespace:GosTek.Views.Controls"
-             x:Class="GosTek.Views.ListRow">
+             x:Class="GosTek.Views.ListRow"
+             HorizontalOptions="Fill">
 
     <!-- Строка-карточка: векторная иконка в плашке, заголовок, подпись, избранное, стрелка перехода -->
     <Border StyleClass="HoverCard"
@@ -17,7 +18,8 @@
             Stroke="{DynamicResource CardStroke}"
             BackgroundColor="{DynamicResource CardBg}"
             StrokeThickness="1"
-            Padding="16, 14">
+            Padding="16, 14"
+            HorizontalOptions="Fill">
         <Border.Shadow>
             <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.08" />
         </Border.Shadow>

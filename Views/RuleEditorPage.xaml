@@ -13,7 +13,9 @@
              x:Class="GosTek.Views.RuleEditorPage"
              Title="Конструктор правил ГОСТ"
              BackgroundColor="{DynamicResource PageBg}"
-             Shell.NavBarIsVisible="False">
+             Shell.NavBarIsVisible="False"
+             Shell.FlyoutBehavior="Disabled"
+             Shell.TabBarIsVisible="False">
 
     <Grid>
         <!-- ОСНОВНОЙ КОНТЕНТ СТРАНИЦЫ -->

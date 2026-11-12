@@ -45,6 +45,7 @@ public static class Icons
     public const string ChevronUp = "M18 15l-6-6-6 6";
     public const string ChevronRight = "M9 18l6-6-6-6";
     public const string ChevronLeft = "M15 18l-6-6 6-6";
+    public const string Menu = "M3 12h18M3 6h18M3 18h18";
     public const string Brain = "M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04zm5 0A2.5 2.5 0 0 1 19 4.5a2.5 2.5 0 0 1 1.32 4.24 3 3 0 0 1-.34 5.58 2.5 2.5 0 0 1-2.96 3.08A2.5 2.5 0 0 1 12 19.5v-15A2.5 2.5 0 0 1 14.5 2z";
 
     /// <summary>
@@ -96,6 +97,7 @@ public static class Icons
             "chevronup" or "chevron_up" => ChevronUp,
             "chevronright" or "chevron_right" => ChevronRight,
             "chevronleft" or "chevron_left" => ChevronLeft,
+            "menu" or "hamburger" or "bars" => Menu,
             _ => FileText,
         };
     }

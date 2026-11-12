@@ -13,10 +13,9 @@
              x:Class="GosTek.Views.AppTabBar">
 
     <Grid>
-        <!-- На Windows: Вертикальный левый Navigation Rail (220 px) -->
+        <!-- На Windows: Вертикальный левый Navigation Rail (220 px / 64 px) -->
         <Border x:Name="WindowsRail"
                 IsVisible="{OnPlatform WinUI=True, Android=False, Default=True}"
-                WidthRequest="220"
                 HorizontalOptions="Fill"
                 VerticalOptions="Fill"
                 BackgroundColor="{DynamicResource TabBarBg}"
@@ -24,35 +23,63 @@
                 StrokeThickness="1"
                 Padding="0">
             <Grid RowDefinitions="Auto, *, Auto">
-                <!-- Сверху: Логотип приложения «ГосТек» -->
-                <Grid Grid.Row="0"
-                      Padding="20, 24, 20, 16"
-                      ColumnDefinitions="Auto, *"
-                      ColumnSpacing="10"
+                <!-- Сверху: Логотип приложения «GosTek» и кнопка сворачивания -->
+                <Grid x:Name="WindowsHeaderGrid"
+                      Grid.Row="0"
+                      Padding="14, 20, 14, 16"
+                      ColumnDefinitions="Auto, *, Auto"
+                      ColumnSpacing="8"
                       VerticalOptions="Center">
-                    <vctrl:IconView Icon="file"
+                    <vctrl:IconView x:Name="LogoIcon"
+                                    Icon="file"
                                     Size="24"
                                     IconColor="BrandGreen"
                                     VerticalOptions="Center" />
-                    <Label Grid.Column="1"
-                           Text="ГосТек"
-                           FontSize="22"
-                           FontAttributes="Bold"
+                    <Label x:Name="LogoLabel"
+                           Grid.Column="1"
+                           Text="GosTek"
+                           FontFamily="PTSansBold"
+                           FontSize="27"
                            TextColor="{DynamicResource BrandGreen}"
-                           VerticalOptions="Center" />
+                           VerticalOptions="Center"
+                           LineBreakMode="NoWrap" />
+                    <Border x:Name="RailToggleBtn"
+                            Grid.Column="2"
+                            StyleClass="HoverCard"
+                            StrokeThickness="1"
+                            Stroke="{DynamicResource CardStroke}"
+                            BackgroundColor="{DynamicResource CardBg}"
+                            StrokeShape="RoundRectangle 10"
+                            WidthRequest="32"
+                            HeightRequest="32"
+                            Padding="0"
+                            HorizontalOptions="End"
+                            VerticalOptions="Center"
+                            AutomationProperties.Name="Свернуть/Развернуть панель">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnRailToggleTapped" />
+                        </Border.GestureRecognizers>
+                        <vctrl:IconView x:Name="RailToggleIcon"
+                                        Icon="chevronleft"
+                                        Size="16"
+                                        IconColor="TextSecondary"
+                                        HorizontalOptions="Center"
+                                        VerticalOptions="Center" />
+                    </Border>
                 </Grid>
 
                 <!-- Ниже: 5 вкладок вертикальным списком -->
                 <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
                     <VerticalStackLayout x:Name="WindowsTabsStack"
                                          Spacing="6"
-                                         Padding="12, 6" />
+                                         Padding="10, 6" />
                 </ScrollView>
 
                 <!-- Снизу: ThemeToggle и кнопка «Настройки» -->
-                <VerticalStackLayout Grid.Row="2"
+                <VerticalStackLayout x:Name="WindowsFooterStack"
+                                     Grid.Row="2"
                                      Spacing="10"
-                                     Padding="14, 12, 14, 18">
+                                     Padding="10, 12, 10, 18">
                     <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 0, 0, 4" />
 
                     <!-- Кнопка «Настройки» -->
@@ -66,12 +93,15 @@
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnSettingsClicked" />
                         </Border.GestureRecognizers>
-                        <Grid ColumnDefinitions="Auto, *" ColumnSpacing="10" VerticalOptions="Center">
-                            <vctrl:IconView Icon="sliders"
+                        <Grid x:Name="WindowsSettingsGrid" ColumnDefinitions="Auto, *" ColumnSpacing="10" VerticalOptions="Center">
+                            <vctrl:IconView x:Name="WindowsSettingsIcon"
+                                            Icon="sliders"
                                             Size="18"
                                             IconColor="TextPrimary"
+                                            HorizontalOptions="Center"
                                             VerticalOptions="Center" />
-                            <Label Grid.Column="1"
+                            <Label x:Name="WindowsSettingsLabel"
+                                   Grid.Column="1"
                                    Text="Настройки"
                                    FontSize="13.5"
                                    FontAttributes="Bold"
@@ -80,11 +110,13 @@
                         </Grid>
                     </Border>
 
-                    <!-- Переключатель темы -->
-                    <Grid ColumnDefinitions="*, Auto"
+                    <!-- Переключатель темы (в развернутом виде) -->
+                    <Grid x:Name="WindowsThemeRow"
+                          ColumnDefinitions="*, Auto"
                           Padding="4, 2"
                           VerticalOptions="Center">
-                        <Label Text="Тема"
+                        <Label x:Name="WindowsThemeLabel"
+                               Text="Тема"
                                FontSize="13"
                                TextColor="{DynamicResource TextSecondary}"
                                VerticalOptions="Center" />
@@ -92,6 +124,30 @@
                                            HorizontalOptions="End"
                                            VerticalOptions="Center" />
                     </Grid>
+
+                    <!-- Компактный переключатель темы (в свернутом виде 64px) -->
+                    <Border x:Name="WindowsCompactThemeBtn"
+                            IsVisible="False"
+                            StyleClass="HoverCard"
+                            StrokeThickness="1"
+                            Stroke="{DynamicResource CardStroke}"
+                            BackgroundColor="{DynamicResource CardBg}"
+                            StrokeShape="RoundRectangle 12"
+                            WidthRequest="40"
+                            HeightRequest="40"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center"
+                            Padding="0">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnCompactThemeClicked" />
+                        </Border.GestureRecognizers>
+                        <vctrl:IconView x:Name="CompactThemeIcon"
+                                        Icon="moon"
+                                        Size="18"
+                                        IconColor="TextPrimary"
+                                        HorizontalOptions="Center"
+                                        VerticalOptions="Center" />
+                    </Border>
                 </VerticalStackLayout>
             </Grid>
         </Border>

@@ -16,84 +16,81 @@
              Shell.NavBarIsVisible="False">
 
     <!-- Радиальный фон дизайн-системы для избавления от плоского вида -->
-    <Grid ColumnDefinitions="{OnPlatform Android='*', WinUI='220, *'}"
-          RowDefinitions="{OnPlatform Android='Auto, *, Auto', WinUI='Auto, *, 0'}"
+    <Grid RowDefinitions="*"
           Background="{DynamicResource MainPageBackgroundBrush}">
 
-        <!-- ==================== ШАПКА ==================== -->
-        <Grid Grid.Row="0"
-              Grid.Column="{OnPlatform Android=0, WinUI=1}"
-              Padding="20, 16, 20, 8"
-              ColumnDefinitions="{OnPlatform Android='44, *, 44', WinUI='*'}"
-              VerticalOptions="Center"
-              MaximumWidthRequest="700"
-              HorizontalOptions="Fill">
-
-            <!-- Кнопка «Настройки» (только на Android; на Windows настройки размещены в левом rail) -->
-            <Border Grid.Column="0"
-                    IsVisible="{OnPlatform Android=True, WinUI=False, Default=False}"
-                    StyleClass="HoverCard"
-                    StrokeThickness="1"
-                    Stroke="{DynamicResource CardStroke}"
-                    BackgroundColor="{DynamicResource CardBg}"
-                    StrokeShape="RoundRectangle 14"
-                    WidthRequest="44"
-                    HeightRequest="44"
-                    Padding="0"
-                    HorizontalOptions="Start"
-                    VerticalOptions="Center"
-                    AutomationProperties.Name="Настройки">
-                <Border.GestureRecognizers>
-                    <TapGestureRecognizer Tapped="OnSettingsTapped" />
-                </Border.GestureRecognizers>
-                <vctrl:IconView Icon="sliders"
-                                Size="18"
-                                IconColor="TextPrimary"
-                                HorizontalOptions="Center"
-                                VerticalOptions="Center" />
-            </Border>
-
-            <!-- Логотип GosTek по центру -->
-            <Label Grid.Column="{OnPlatform Android=1, WinUI=0}"
-                   Text="GosTek"
-                   FontSize="30"
-                   FontAttributes="Bold"
-                   CharacterSpacing="0.5"
-                   TextColor="{DynamicResource BrandGreen}"
-                   HorizontalOptions="Center"
-                   VerticalOptions="Center" />
-
-            <!-- Переключатель темы справа (только на Android; на Windows — в левом rail) -->
-            <views:ThemeToggle Grid.Column="2"
-                               IsVisible="{OnPlatform Android=True, WinUI=False, Default=False}"
-                               HorizontalOptions="End"
-                               VerticalOptions="Center" />
-        </Grid>
-
         <!-- ==================== КОНТЕНТ ==================== -->
-        <ScrollView Grid.Row="1"
-                    Grid.Column="{OnPlatform Android=0, WinUI=1}"
-                    VerticalScrollBarVisibility="Never"
-                    Padding="{OnPlatform Android='20, 8, 20, 80', WinUI='20, 8, 20, 24'}">
+        <ScrollView Grid.Row="0"
+                    VerticalScrollBarVisibility="Never">
 
             <VerticalStackLayout Spacing="16"
-                                 MaximumWidthRequest="660"
-                                 HorizontalOptions="Fill">
+                                 MaximumWidthRequest="950"
+                                 HorizontalOptions="Fill"
+                                 Padding="{OnPlatform Android='20, 16, 20, 80', WinUI='20, 20, 20, 24'}">
 
-                <!-- Заголовок-приветствие -->
-                <Label x:Name="SubtitleLabel"
-                       Text="Что оформим сегодня?"
-                       FontSize="26"
-                       FontAttributes="Bold"
-                       TextColor="{DynamicResource TextPrimary}"
-                       HorizontalTextAlignment="Center"
-                       Margin="0, 4, 0, 4" />
+                <!-- ==================== ШАПКА ==================== -->
+                <Grid IsVisible="{OnPlatform Android=True, WinUI=False, Default=False}"
+                      Padding="0, 8, 0, 8"
+                      ColumnDefinitions="44, *, 44"
+                      VerticalOptions="Center"
+                      HorizontalOptions="Fill">
+
+                    <!-- Кнопка «Настройки» (только на Android; на Windows настройки размещены в левом rail) -->
+                    <Border Grid.Column="0"
+                            StyleClass="HoverCard"
+                            StrokeThickness="1"
+                            Stroke="{DynamicResource CardStroke}"
+                            BackgroundColor="{DynamicResource CardBg}"
+                            StrokeShape="RoundRectangle 14"
+                            WidthRequest="44"
+                            HeightRequest="44"
+                            Padding="0"
+                            HorizontalOptions="Start"
+                            VerticalOptions="Center"
+                            AutomationProperties.Name="Настройки">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnSettingsTapped" />
+                        </Border.GestureRecognizers>
+                        <vctrl:IconView Icon="sliders"
+                                        Size="18"
+                                        IconColor="TextPrimary"
+                                        HorizontalOptions="Center"
+                                        VerticalOptions="Center" />
+                    </Border>
+
+                    <!-- Логотип GosTek по центру (только на Android, чтобы не дублировать логотип левого rail Windows) -->
+                    <Label Grid.Column="1"
+                           Text="GosTek"
+                           FontFamily="PTSansBold"
+                           FontSize="28"
+                           TextColor="{DynamicResource BrandGreen}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+
+                    <!-- Переключатель темы справа (только на Android; на Windows — в левом rail) -->
+                    <views:ThemeToggle Grid.Column="2"
+                                       HorizontalOptions="End"
+                                       VerticalOptions="Center" />
+                </Grid>
+
+                <!-- Заголовок страницы -->
+                <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                    <Label Text="Главная"
+                           FontSize="26"
+                           FontAttributes="Bold"
+                           TextColor="{DynamicResource TextPrimary}" />
+                    <Label x:Name="SubtitleLabel"
+                           Text="Что оформим сегодня?"
+                           FontSize="13"
+                           TextColor="{DynamicResource TextSecondary}" />
+                </VerticalStackLayout>
 
                 <!-- Главная премиальная градиентная карточка «Создать документ» -->
                 <Border StyleClass="HoverGreen"
-                        StrokeShape="RoundRectangle 22"
+                        StrokeShape="RoundRectangle 20"
                         StrokeThickness="0"
                         Padding="22, 20"
+                        HorizontalOptions="Fill"
                         Background="{DynamicResource BrandGreenGradient}">
                     <Border.Shadow>
                         <Shadow Brush="Black" Offset="0,4" Radius="12" Opacity="0.22" />
@@ -138,7 +135,7 @@
                 </Border>
 
                 <!-- Две карточки быстрых действий в ряд: «Проверить» и «Сканировать» -->
-                <Grid ColumnDefinitions="*, *" ColumnSpacing="12">
+                <Grid ColumnDefinitions="*, *" ColumnSpacing="16" HorizontalOptions="Fill">
 
                     <!-- Плитка «Проверить» -->
                     <Border x:Name="CheckCard"
@@ -148,6 +145,7 @@
                             StrokeThickness="1.5"
                             Stroke="{DynamicResource CardStroke}"
                             BackgroundColor="{DynamicResource CardBg}"
+                            HorizontalOptions="Fill"
                             Padding="16, 18">
                         <Border.Shadow>
                             <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.08" />
@@ -191,6 +189,7 @@
                             StrokeThickness="1.5"
                             Stroke="{DynamicResource CardStroke}"
                             BackgroundColor="{DynamicResource CardBg}"
+                            HorizontalOptions="Fill"
                             Padding="16, 18">
                         <Border.Shadow>
                             <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.08" />
@@ -227,7 +226,7 @@
                     </Border>
                 </Grid>
 
-                <BoxView x:Name="ProfileDivider" HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 2" />
+                <BoxView x:Name="ProfileDivider" HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 2" HorizontalOptions="Fill" />
 
                 <!-- Карточка профиля со статусом готовности -->
                 <Border x:Name="ProfileCard"
@@ -236,6 +235,7 @@
                         StrokeThickness="1"
                         Stroke="{DynamicResource CardStroke}"
                         BackgroundColor="{DynamicResource CardBg}"
+                        HorizontalOptions="Fill"
                         Padding="18, 16">
                     <Border.Shadow>
                         <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.08" />
@@ -293,18 +293,18 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <BoxView x:Name="QuickStartDivider" IsVisible="False" HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 2" />
+                <BoxView x:Name="QuickStartDivider" IsVisible="False" HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 2" HorizontalOptions="Fill" />
 
                 <!-- Секция «Быстрый старт» -->
-                <VerticalStackLayout x:Name="QuickStartSection" IsVisible="False" Spacing="10">
+                <VerticalStackLayout x:Name="QuickStartSection" IsVisible="False" Spacing="10" HorizontalOptions="Fill">
                     <Label Text="Быстрый старт"
                            FontSize="14"
                            FontAttributes="Bold"
                            TextColor="{DynamicResource TextSecondary}"
                            Margin="0, 4, 0, 0" />
 
-                    <!-- Первые шаблоны из каталога -->
-                    <VerticalStackLayout x:Name="QuickStartList" Spacing="10">
+                    <!-- Первые три шаблона из каталога в виде компактных плашек -->
+                    <VerticalStackLayout x:Name="QuickStartList" Spacing="10" HorizontalOptions="Fill">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="models:TemplateItem">
                                 <views:ListRow Icon="file"
@@ -319,18 +319,6 @@
 
             </VerticalStackLayout>
         </ScrollView>
-
-        <!-- ==================== ТАББАР (на Windows — левый rail, на Android — нижний) ==================== -->
-        <views:AppTabBar x:Name="BottomTabs"
-                         Grid.Row="{OnPlatform Android=2, WinUI=0}"
-                         Grid.RowSpan="{OnPlatform Android=1, WinUI=3}"
-                         Grid.Column="0"
-                         ActiveTab="home" />
-
-        <!-- ==================== ПАНЕЛЬ НАСТРОЕК (поверх всего) ==================== -->
-        <views:SettingsPanel x:Name="Settings"
-                             Grid.RowSpan="3"
-                             Grid.ColumnSpan="{OnPlatform Android=1, WinUI=2}" />
 
     </Grid>
 </ContentPage>

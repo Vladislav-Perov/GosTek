@@ -165,14 +165,58 @@ public static class ThemeService
     {
 #if WINDOWS
         var w = window ?? Application.Current?.Windows.FirstOrDefault();
-        if (w?.Handler?.PlatformView is Microsoft.UI.Xaml.Window win && win.Content is Microsoft.UI.Xaml.FrameworkElement fe)
+        if (w?.Handler?.PlatformView is Microsoft.UI.Xaml.Window win)
         {
-            fe.RequestedTheme = IsDark 
-                ? Microsoft.UI.Xaml.ElementTheme.Dark 
-                : Microsoft.UI.Xaml.ElementTheme.Light;
+            if (win.Content is Microsoft.UI.Xaml.FrameworkElement fe)
+            {
+                fe.RequestedTheme = IsDark 
+                    ? Microsoft.UI.Xaml.ElementTheme.Dark 
+                    : Microsoft.UI.Xaml.ElementTheme.Light;
+            }
+
+            ApplyTitleBarTheme(win);
         }
 #endif
     }
+
+#if WINDOWS
+    /// <summary>Кастомизация TitleBar окна Windows: расширение контента и прозрачные кнопки управления.</summary>
+    public static void ApplyTitleBarTheme(Microsoft.UI.Xaml.Window win)
+    {
+        if (win.AppWindow is { } appWindow && Microsoft.UI.Windowing.AppWindowTitleBar.IsCustomizationSupported())
+        {
+            var titleBar = appWindow.TitleBar;
+            titleBar.ExtendsContentIntoTitleBar = true;
+            titleBar.BackgroundColor = Microsoft.UI.Colors.Transparent;
+            titleBar.InactiveBackgroundColor = Microsoft.UI.Colors.Transparent;
+            titleBar.ButtonBackgroundColor = Microsoft.UI.Colors.Transparent;
+            titleBar.ButtonInactiveBackgroundColor = Microsoft.UI.Colors.Transparent;
+
+            var fgColor = IsDark 
+                ? Microsoft.UI.Colors.White 
+                : Microsoft.UI.Colors.Black;
+
+            titleBar.ButtonForegroundColor = fgColor;
+            titleBar.ButtonHoverForegroundColor = fgColor;
+            titleBar.ButtonPressedForegroundColor = fgColor;
+            titleBar.ButtonInactiveForegroundColor = IsDark 
+                ? global::Windows.UI.Color.FromArgb(120, 255, 255, 255)
+                : global::Windows.UI.Color.FromArgb(120, 0, 0, 0);
+
+            titleBar.ButtonHoverBackgroundColor = IsDark
+                ? Microsoft.UI.ColorHelper.FromArgb(25, 255, 255, 255)
+                : Microsoft.UI.ColorHelper.FromArgb(20, 0, 0, 0);
+
+            titleBar.ButtonPressedBackgroundColor = IsDark
+                ? Microsoft.UI.ColorHelper.FromArgb(50, 255, 255, 255)
+                : Microsoft.UI.ColorHelper.FromArgb(40, 0, 0, 0);
+        }
+        else
+        {
+            win.ExtendsContentIntoTitleBar = true;
+        }
+    }
+#endif
 
     private static void Apply()
     {

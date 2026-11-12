@@ -15,40 +15,33 @@
              BackgroundColor="{DynamicResource PageBg}"
              Shell.NavBarIsVisible="False">
 
-    <Grid ColumnDefinitions="{OnPlatform Android='*', WinUI='220, *'}"
-          RowDefinitions="{OnPlatform Android='Auto, *, Auto, Auto', WinUI='Auto, *, Auto, 0'}">
-
-        <!-- ==================== ШАПКА ==================== -->
-        <Grid Grid.Row="0"
-              Grid.Column="{OnPlatform Android=0, WinUI=1}"
-              Padding="20, 15, 20, 10"
-              ColumnDefinitions="*"
-              BackgroundColor="{DynamicResource PageBg}">
-            <VerticalStackLayout Spacing="2" VerticalOptions="Center">
-                <Label Text="Мой профиль"
-                       FontSize="26"
-                       FontAttributes="Bold"
-                       TextColor="{DynamicResource TextPrimary}" />
-                <Label Text="Реквизиты для автозаполнения документов"
-                       FontSize="13"
-                       TextColor="{DynamicResource TextSecondary}" />
-            </VerticalStackLayout>
-        </Grid>
+    <Grid RowDefinitions="*">
 
         <!-- ==================== КОНТЕНТ ==================== -->
-        <ScrollView Grid.Row="1"
-                    Grid.Column="{OnPlatform Android=0, WinUI=1}"
+        <ScrollView Grid.Row="0"
                     VerticalScrollBarVisibility="Never">
-            <VerticalStackLayout Padding="{OnPlatform Android='20, 6, 20, 80', WinUI='20, 6, 20, 24'}"
+            <VerticalStackLayout Padding="{OnPlatform Android='20, 16, 20, 80', WinUI='20, 20, 20, 24'}"
                                  Spacing="16"
-                                 MaximumWidthRequest="700"
+                                 MaximumWidthRequest="950"
                                  HorizontalOptions="Fill">
+
+                <!-- ШАПКА -->
+                <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                    <Label Text="Мой профиль"
+                           FontSize="26"
+                           FontAttributes="Bold"
+                           TextColor="{DynamicResource TextPrimary}" />
+                    <Label Text="Реквизиты для автозаполнения документов"
+                           FontSize="13"
+                           TextColor="{DynamicResource TextSecondary}" />
+                </VerticalStackLayout>
 
                 <!-- Карточка прогресса заполненности профиля -->
                 <Border BackgroundColor="{DynamicResource CardBg}"
                         Stroke="{DynamicResource CardStroke}"
                         StrokeThickness="1"
                         StrokeShape="RoundRectangle 20"
+                        HorizontalOptions="Fill"
                         Padding="18, 16">
                     <Border.Shadow>
                         <Shadow Brush="Black" Offset="0,2" Radius="8" Opacity="0.06" />
@@ -99,6 +92,7 @@
                         Stroke="{DynamicResource BrandGreen}"
                         StrokeThickness="1.5"
                         StrokeShape="RoundRectangle 18"
+                        HorizontalOptions="Fill"
                         Padding="16, 14"
                         AutomationProperties.Name="Заполнить по фото паспорта">
                     <Border.Shadow>
@@ -155,7 +149,8 @@
                         Stroke="{DynamicResource CardStroke}"
                         StrokeThickness="1"
                         StrokeShape="RoundRectangle 14"
-                        Padding="14, 10">
+                        HorizontalOptions="Fill"
+                        Padding="16, 14">
                     <Grid ColumnDefinitions="Auto, *" ColumnSpacing="10" VerticalOptions="Center">
                         <vctrl:IconView Icon="shield"
                                         IconColor="BrandGreen"
@@ -178,13 +173,13 @@
                        Margin="2, 4, 2, -6" />
 
                 <!-- Поля создаются динамически из кода (ProfilePage.xaml.cs) -->
-                <VerticalStackLayout x:Name="FieldsHost" Spacing="14" />
+                <VerticalStackLayout x:Name="FieldsHost" Spacing="16" HorizontalOptions="Fill" />
 
                 <!-- Разделитель -->
-                <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 8, 0, 4" />
+                <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 8, 0, 4" HorizontalOptions="Fill" />
 
                 <!-- Секция дополнительных пользовательских полей (CustomFields) -->
-                <VerticalStackLayout Spacing="12">
+                <VerticalStackLayout Spacing="12" HorizontalOptions="Fill">
                     <Grid ColumnDefinitions="*, Auto" Margin="2, 0" VerticalOptions="Center">
                         <Label Text="Дополнительные поля"
                                FontSize="15"
@@ -193,7 +188,7 @@
                                VerticalOptions="Center" />
                     </Grid>
 
-                    <VerticalStackLayout x:Name="CustomFieldsHost" Spacing="12" />
+                    <VerticalStackLayout x:Name="CustomFieldsHost" Spacing="12" HorizontalOptions="Fill" />
 
                     <!-- Кнопка «+ Добавить свое поле» -->
                     <Border StyleClass="HoverCard"
@@ -223,67 +218,55 @@
                     </Border>
                 </VerticalStackLayout>
 
+                <!-- ==================== ПАНЕЛЬ ДЕЙСТВИЯ (КНОПКА «СОХРАНИТЬ») ==================== -->
+                <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 8, 0, 0" HorizontalOptions="Fill" />
+
+                <!-- Появляется только когда в полях есть ошибки -->
+                <Grid x:Name="IgnoreRow"
+                      IsVisible="False"
+                      ColumnDefinitions="Auto, *"
+                      ColumnSpacing="8"
+                      HorizontalOptions="Fill"
+                      Padding="0, 8, 0, 0">
+                    <CheckBox x:Name="IgnoreCheck"
+                              Color="{DynamicResource BrandGreen}"
+                              VerticalOptions="Center"
+                              CheckedChanged="OnIgnoreChanged" />
+                    <Label Grid.Column="1"
+                           VerticalOptions="Center"
+                           FontSize="13"
+                           Text="Игнорировать ошибки и сохранить как есть"
+                           TextColor="{DynamicResource TextSecondary}"
+                           LineBreakMode="WordWrap">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnIgnoreLabelTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                </Grid>
+
+                <Border StyleClass="HoverGreen"
+                        StrokeShape="RoundRectangle 16"
+                        StrokeThickness="0"
+                        Padding="8, 15"
+                        Margin="0, 4, 0, 10"
+                        HorizontalOptions="Fill"
+                        Background="{DynamicResource BrandGreenGradient}">
+                    <Border.Shadow>
+                        <Shadow Brush="Black" Offset="0, 4" Radius="10" Opacity="0.18" />
+                    </Border.Shadow>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnSaveTapped" />
+                    </Border.GestureRecognizers>
+                    <Label x:Name="SaveLabel"
+                           Text="Сохранить"
+                           FontSize="15.5"
+                           FontAttributes="Bold"
+                           TextColor="#FFFFFF"
+                           HorizontalOptions="Center" />
+                </Border>
+
             </VerticalStackLayout>
         </ScrollView>
-
-        <!-- ==================== ПАНЕЛЬ ДЕЙСТВИЯ (КНОПКА «СОХРАНИТЬ») ==================== -->
-        <VerticalStackLayout Grid.Row="2"
-                             Grid.Column="{OnPlatform Android=0, WinUI=1}"
-                             Spacing="0"
-                             BackgroundColor="{DynamicResource PageBg}">
-            <BoxView HeightRequest="1" Color="{DynamicResource Divider}" />
-
-            <!-- Появляется только когда в полях есть ошибки -->
-            <Grid x:Name="IgnoreRow"
-                  IsVisible="False"
-                  ColumnDefinitions="Auto, *"
-                  ColumnSpacing="8"
-                  Padding="20, 10, 20, 0"
-                  MaximumWidthRequest="700">
-                <CheckBox x:Name="IgnoreCheck"
-                          Color="{DynamicResource BrandGreen}"
-                          VerticalOptions="Center"
-                          CheckedChanged="OnIgnoreChanged" />
-                <Label Grid.Column="1"
-                       VerticalOptions="Center"
-                       FontSize="13"
-                       Text="Игнорировать ошибки и сохранить как есть"
-                       TextColor="{DynamicResource TextSecondary}"
-                       LineBreakMode="WordWrap">
-                    <Label.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnIgnoreLabelTapped" />
-                    </Label.GestureRecognizers>
-                </Label>
-            </Grid>
-
-            <Border StyleClass="HoverGreen"
-                    StrokeShape="RoundRectangle 16"
-                    StrokeThickness="0"
-                    Padding="0, 16"
-                    Margin="20, 12"
-                    MaximumWidthRequest="700"
-                    Background="{DynamicResource BrandGreenGradient}">
-                <Border.Shadow>
-                    <Shadow Brush="Black" Offset="0, 4" Radius="10" Opacity="0.18" />
-                </Border.Shadow>
-                <Border.GestureRecognizers>
-                    <TapGestureRecognizer Tapped="OnSaveTapped" />
-                </Border.GestureRecognizers>
-                <Label x:Name="SaveLabel"
-                       Text="Сохранить"
-                       FontSize="16.5"
-                       FontAttributes="Bold"
-                       TextColor="#FFFFFF"
-                       HorizontalOptions="Center" />
-            </Border>
-        </VerticalStackLayout>
-
-        <!-- ==================== ТАББАР (на Windows — левый rail, на Android — нижний) ==================== -->
-        <views:AppTabBar x:Name="BottomTabs"
-                         Grid.Row="{OnPlatform Android=3, WinUI=0}"
-                         Grid.RowSpan="{OnPlatform Android=1, WinUI=4}"
-                         Grid.Column="0"
-                         ActiveTab="profile" />
 
     </Grid>
 </ContentPage>

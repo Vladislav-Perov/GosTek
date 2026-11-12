@@ -99,27 +99,31 @@ public partial class ProfilePage : ContentPage
     // Подпись, рамка с полем ввода и скрытая красная подпись для текста ошибки
     private VerticalStackLayout CreateField(FieldSpec spec)
     {
-        var label = new Label { Text = spec.Label, StyleClass = new[] { "FieldLabel" } };
+        var label = new Label { Text = spec.Label, StyleClass = new[] { "FieldLabel" }, HorizontalOptions = LayoutOptions.Fill };
 
-        var entry = new Entry {
+        var entry = new Entry
+        {
             Placeholder = spec.Placeholder,
             Keyboard = spec.Keyboard,
             MaxLength = spec.MaxLength,
             StyleClass = new[] { "FieldEntry" },
+            HorizontalOptions = LayoutOptions.Fill,
         };
 
-        var box = new Border { Content = entry, StyleClass = new[] { "FieldBox" } };
+        var box = new Border { Content = entry, StyleClass = new[] { "FieldBox" }, HorizontalOptions = LayoutOptions.Fill };
 
-        var error = new Label {
+        var error = new Label
+        {
             FontSize = 12,
             TextColor = ThemeService.ErrorColor,
             IsVisible = false,
             LineBreakMode = LineBreakMode.WordWrap,
+            HorizontalOptions = LayoutOptions.Fill,
         };
 
         _fields.Add(new FieldUi(spec.Field, entry, box, error));
 
-        var stack = new VerticalStackLayout { Spacing = 6 };
+        var stack = new VerticalStackLayout { Spacing = 6, HorizontalOptions = LayoutOptions.Fill };
         stack.Children.Add(label);
         stack.Children.Add(box);
         stack.Children.Add(error);
@@ -152,6 +156,7 @@ public partial class ProfilePage : ContentPage
 
         var headerGrid = new Grid
         {
+            HorizontalOptions = LayoutOptions.Fill,
             ColumnDefinitions =
             {
                 new ColumnDefinition { Width = GridLength.Star },
@@ -168,6 +173,7 @@ public partial class ProfilePage : ContentPage
             Placeholder = $"Значение для «{fieldName}»",
             Text = initialValue ?? "",
             StyleClass = new[] { "FieldEntry" },
+            HorizontalOptions = LayoutOptions.Fill,
         };
 
         entry.TextChanged += (_, _) =>
@@ -179,10 +185,11 @@ public partial class ProfilePage : ContentPage
         var box = new Border
         {
             Content = entry,
-            StyleClass = new[] { "FieldBox" }
+            StyleClass = new[] { "FieldBox" },
+            HorizontalOptions = LayoutOptions.Fill,
         };
 
-        var stack = new VerticalStackLayout { Spacing = 6 };
+        var stack = new VerticalStackLayout { Spacing = 6, HorizontalOptions = LayoutOptions.Fill };
         stack.Children.Add(headerGrid);
         stack.Children.Add(box);
 
@@ -235,7 +242,6 @@ public partial class ProfilePage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        BottomTabs.ResetHover();   // сбросить «залипшее» наведение таббара
 
         if (Shell.Current is { } shell)
             shell.Navigating += OnShellNavigating;

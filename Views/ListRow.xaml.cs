@@ -126,6 +126,17 @@ public partial class ListRow : ContentView
     }
 
     /// <summary>
+    /// Плавная анимация нажатия на звездочку избранного (сжатие -> смена иконки/цвета -> разжатие с отскоком).
+    /// </summary>
+    public async Task AnimateFavoriteToggleAsync()
+    {
+        await FavoriteCtrl.ScaleToAsync(0.65, 90, Easing.CubicIn);
+        IsFavorite = !IsFavorite;
+        await FavoriteCtrl.ScaleToAsync(1.25, 110, Easing.CubicOut);
+        await FavoriteCtrl.ScaleToAsync(1.0, 90, Easing.CubicInOut);
+    }
+
+    /// <summary>
     /// Подсвечивает совпадение поискового запроса в заголовке с помощью FormattedString.
     /// </summary>
     public void SetHighlightedTitle(string fullTitle, string query, Color highlightColor)

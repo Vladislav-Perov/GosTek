@@ -94,4 +94,7 @@
     <x:String x:Key="IconMaximize">M15 3h6v6 M9 21H3v-6 M21 3l-7 7 M3 21l7-7</x:String>
     <x:String x:Key="IconMinimize">M4 14h6v6 M20 10h-6V4 M14 10l7-7 M10 14l-7 7</x:String>
 
+    <!-- 26. Меню / Гамбургер (Menu) -->
+    <x:String x:Key="IconMenu">M3 12h18M3 6h18M3 18h18</x:String>
+
 </ResourceDictionary>

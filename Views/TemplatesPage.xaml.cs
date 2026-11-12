@@ -17,13 +17,17 @@ public partial class TemplatesPage : ContentPage
     private const string RecentKey = "recent_templates";
     private const int RecentMax = 3;
 
-    private string? _category;   // null = «Все»
-    private string[] _categories = Array.Empty<string>();   // категории чипов (кроме «Все»)
+    private const string FavoritesChipTitle = "⭐ Избранное";
+    private bool _isFavoriteFilter;
+
+    private string? _category;   // null = «Все» (или режим «Избранное»)
+    private string[] _categories = Array.Empty<string>();   // категории чипов (кроме «Избранное» и «Все»)
     private string _query = "";
 
     private IDispatcherTimer? _watchTimer;
     private string _signature = "";
     private bool _isFirstLoad = true;
+    private bool _isUpdatingFavorite;
 
     public TemplatesPage()
     {
@@ -41,7 +45,6 @@ public partial class TemplatesPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        BottomTabs.ResetHover();   // сбросить «залипшее» наведение таббара
         StartWatching();
 
         if (_isFirstLoad)
@@ -49,7 +52,6 @@ public partial class TemplatesPage : ContentPage
             _isFirstLoad = false;
             CatalogSkeleton.StartShimmer();
             ResultsList.IsVisible = false;
-            FavoritesSection.IsVisible = false;
             RecentSection.IsVisible = false;
 
             await Task.Delay(250);   // реалистичная скелетон-анимация при открытии каталога
@@ -99,7 +101,7 @@ public partial class TemplatesPage : ContentPage
             if (sig != _signature)
             {
                 await Task.Delay(500);   // дать файлу докопироваться
-                ReloadTemplates();
+                MainThread.BeginInvokeOnMainThread(ReloadTemplates);
             }
         }
         catch (Exception ex)
@@ -123,61 +125,102 @@ public partial class TemplatesPage : ContentPage
     // ===== Категории (берутся из имён файлов) =====
     private void RebuildChips()
     {
-        var cats = TemplateCatalog.Categories;
-        if (_category is not null && !cats.Contains(_category))
+        var rawCats = TemplateCatalog.Categories;
+        var sortedCats = rawCats
+            .Distinct()
+            .OrderBy(c => c, StringComparer.CurrentCultureIgnoreCase)
+            .ToArray();
+
+        if (_category is not null && !sortedCats.Contains(_category))
             _category = null;
 
-        _categories = cats;
+        _categories = sortedCats;
 
-        var titles = new List<string> { "Все" };
-        titles.AddRange(cats);
+        // Порядок категорий:
+        // 1. Первым элементом (индекс 0) ВСЕГДА идет категория "Все".
+        // 2. Вторым элементом (индекс 1) ВСЕГДА идет категория "Избранное" (со звездочкой).
+        // 3. Все остальные категории выводятся строго по алфавиту (А-Я) после первых двух.
+        var titles = new List<string> { "Все", FavoritesChipTitle };
+        titles.AddRange(sortedCats);
 
-        int selected = _category is null ? 0 : Array.IndexOf(cats, _category) + 1;
+        int selected;
+        if (_isFavoriteFilter)
+            selected = 1;
+        else if (_category is null)
+            selected = 0;
+        else
+        {
+            int catIdx = Array.IndexOf(sortedCats, _category);
+            selected = catIdx >= 0 ? catIdx + 2 : 0;
+        }
+
         CategoryChips.SetItems(titles, selected);
     }
 
-    // Выбрали чип: 0 = «Все», дальше категории по порядку
+    // Выбрали чип: 0 = «Все», 1 = «⭐ Избранное», дальше категории по алфавиту
     private void OnCategoryChanged(object? sender, int index)
     {
         HapticHelper.Click();
-        _category = index <= 0 || index > _categories.Length ? null : _categories[index - 1];
+        if (index == 0)
+        {
+            _isFavoriteFilter = false;
+            _category = null;
+        }
+        else if (index == 1)
+        {
+            _isFavoriteFilter = true;
+            _category = null;
+        }
+        else
+        {
+            _isFavoriteFilter = false;
+            int catIdx = index - 2;
+            _category = (catIdx >= 0 && catIdx < _categories.Length) ? _categories[catIdx] : null;
+        }
         ApplyFilter();
     }
 
     // ===== Фильтрация =====
     private void ApplyFilter()
     {
-        var results = TemplateCatalog.Items
-            .Where(t => _category is null || t.Category == _category)
-            .Where(t => _query.Length == 0
-                     || t.Title.Contains(_query, StringComparison.CurrentCultureIgnoreCase)
-                     || t.Description.Contains(_query, StringComparison.CurrentCultureIgnoreCase))
-            .ToList();
+        var favIds = FavoritesService.Instance.GetAll();
+
+        var queryable = TemplateCatalog.Items.AsEnumerable();
+
+        if (_isFavoriteFilter)
+            queryable = queryable.Where(t => favIds.Contains(t.Id));
+        else if (_category is not null)
+            queryable = queryable.Where(t => t.Category == _category);
+
+        if (_query.Length > 0)
+        {
+            queryable = queryable.Where(t =>
+                t.Title.Contains(_query, StringComparison.CurrentCultureIgnoreCase)
+                || t.Description.Contains(_query, StringComparison.CurrentCultureIgnoreCase));
+        }
+
+        var results = queryable.ToList();
 
         BindableLayout.SetItemsSource(ResultsList, results);
         EmptyLabel.IsVisible = results.Count == 0;
         EmptyCard.IsVisible = results.Count == 0;
         if (TemplateCatalog.Items.Length == 0)
+        {
             EmptyLabel.Text = $"В папке шаблонов нет файлов .docx:\n{SettingsService.TemplatesFolder}\n\nИзменить папку можно в настройках.";
+        }
+        else if (results.Count == 0 && _isFavoriteFilter)
+        {
+            EmptyLabel.Text = "У вас пока нет избранных шаблонов.\nНажмите на звёздочку в карточке шаблона, чтобы добавить его сюда.";
+        }
 
-        // «Избранные» — только когда нет ни поиска, ни фильтра
-        var favIds = FavoritesService.Instance.GetAll();
-        var favorites = favIds
-            .Select(id => TemplateCatalog.Items.FirstOrDefault(t => t.Id == id))
-            .OfType<TemplateItem>()
-            .ToList();
-        BindableLayout.SetItemsSource(FavoritesList, favorites);
-        FavoritesSection.IsVisible = _query.Length == 0 && _category is null && favorites.Count > 0;
-
-        // «Недавние» — только когда нет ни поиска, ни фильтра
+        // «Недавние» — только когда нет поиска, не включён фильтр избранного и выбрано «Все»
         var recent = LoadRecent();
         BindableLayout.SetItemsSource(RecentList, recent);
-        RecentSection.IsVisible = _query.Length == 0 && _category is null && recent.Count > 0;
+        RecentSection.IsVisible = _query.Length == 0 && !_isFavoriteFilter && _category is null && recent.Count > 0;
 
         // Синхронизация состояния строк (звёздочки избранного и подсветка совпадений)
         Dispatcher.Dispatch(async () =>
         {
-            UpdateRowsState(FavoritesList, favIds, "");
             UpdateRowsState(RecentList, favIds, "");
             UpdateRowsState(ResultsList, favIds, _query);
 
@@ -200,12 +243,25 @@ public partial class TemplatesPage : ContentPage
         }
     }
 
-    private void OnFavoriteTapped(object? sender, EventArgs e)
+    private async void OnFavoriteTapped(object? sender, EventArgs e)
     {
-        if (sender is ListRow { BindingContext: TemplateItem item })
+        if (_isUpdatingFavorite)
+            return;
+
+        if (sender is ListRow row && row.BindingContext is TemplateItem item)
         {
-            bool isFav = FavoritesService.Instance.Toggle(item.Id);
-            Toast.Show(isFav ? "Добавлено в избранное" : "Удалено из избранного", isFav ? "star" : "trash");
+            _isUpdatingFavorite = true;
+            try
+            {
+                await row.AnimateFavoriteToggleAsync();
+
+                bool isFav = FavoritesService.Instance.Toggle(item.Id);
+                Toast.Show(isFav ? "Добавлено в избранное" : "Удалено из избранного", isFav ? "starfilled" : "star");
+            }
+            finally
+            {
+                _isUpdatingFavorite = false;
+            }
         }
     }
 

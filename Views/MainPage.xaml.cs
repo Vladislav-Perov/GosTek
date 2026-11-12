@@ -37,8 +37,7 @@ public partial class MainPage : ContentPage, IQueryAttributable
         InitializeComponent();
 
         // Данные удалили в настройках: обновить плашку профиля
-        Settings.DataCleared += async () => await RefreshProfileCardAsync();
-        BottomTabs.SettingsRequested += async (_, _) => await Settings.OpenAsync();
+        SettingsOverlay.DataCleared += async () => await RefreshProfileCardAsync();
 
         AttachHoverEffect(CheckCard);
         AttachHoverEffect(ScanCard);
@@ -66,7 +65,7 @@ public partial class MainPage : ContentPage, IQueryAttributable
     {
         if (query.TryGetValue("openSettings", out var val) && val?.ToString() == "true")
         {
-            Dispatcher.Dispatch(async () => await Settings.OpenAsync());
+            Dispatcher.Dispatch(async () => await SettingsOverlay.ShowAsync(this));
         }
     }
 
@@ -75,9 +74,9 @@ public partial class MainPage : ContentPage, IQueryAttributable
         base.OnAppearing();
         ShowRandomSubtitle();
 
-        // «Быстрый старт»: первые два шаблона из папки шаблонов
+        // «Быстрый старт»: первые три шаблона из папки шаблонов
         TemplateCatalog.Refresh();
-        var quick = TemplateCatalog.Items.Take(2).ToList();
+        var quick = TemplateCatalog.Items.Take(3).ToList();
         BindableLayout.SetItemsSource(QuickStartList, quick);
         QuickStartSection.IsVisible = quick.Count > 0;   // нет шаблонов — нет и блока
         QuickStartDivider.IsVisible = quick.Count > 0;
@@ -90,20 +89,7 @@ public partial class MainPage : ContentPage, IQueryAttributable
                     await AnimationHelper.AnimateStaggeredEntranceAsync(rows);
             });
         }
-        BottomTabs.ResetHover();   // сбросить «залипшее» наведение таббара
-#if WINDOWS
-        HookEscape();
-#endif
-
         await RefreshProfileCardAsync();
-    }
-
-    protected override void OnDisappearing()
-    {
-        base.OnDisappearing();
-#if WINDOWS
-        UnhookEscape();
-#endif
     }
 
     // ===== Настройки =====
@@ -112,57 +98,33 @@ public partial class MainPage : ContentPage, IQueryAttributable
         HapticHelper.Click();
         if (sender is VisualElement ve)
             await ve.AnimateBounceAsync();
-        await Settings.OpenAsync();
+        await SettingsOverlay.ShowAsync(this);
     }
 
     // «Назад» на Android: сначала закрываем панель, а не выходим с главной
     protected override bool OnBackButtonPressed()
     {
-        if (Settings.IsShown) {
-            _ = Settings.CloseAsync();
+        if (SettingsOverlay.IsOpen) {
+            _ = SettingsOverlay.CloseAsync();
             return true;
         }
 
         return base.OnBackButtonPressed();
     }
 
-#if WINDOWS
-    // Esc на Windows закрывает панель. Горячая клавиша ставится на корень окна,
-    // поэтому работает, даже если фокус не в панели
-    private Microsoft.UI.Xaml.Input.KeyboardAccelerator? _escape;
-    private Microsoft.UI.Xaml.UIElement? _escapeRoot;
+    /// <summary>Флаг отображения шторки настроек.</summary>
+    public bool IsSettingsShown => SettingsOverlay.IsOpen;
 
-    private void HookEscape()
+    /// <summary>Закрыть шторку настроек. Возвращает true, если панель была открыта.</summary>
+    public async Task<bool> TryCloseSettingsAsync()
     {
-        if (_escape is not null)
-            return;
-
-        if (Application.Current?.Windows.FirstOrDefault()?.Handler?.PlatformView is not MauiWinUIWindow window
-            || window.Content is not Microsoft.UI.Xaml.UIElement root)
-            return;
-
-        _escape = new Microsoft.UI.Xaml.Input.KeyboardAccelerator { Key = global::Windows.System.VirtualKey.Escape };
-        _escape.Invoked += (sender, args) => {
-            if (!Settings.IsShown)
-                return;
-
-            args.Handled = true;
-            _ = Settings.CloseAsync();
-        };
-
-        root.KeyboardAccelerators.Add(_escape);
-        _escapeRoot = root;
+        if (SettingsOverlay.IsOpen)
+        {
+            await SettingsOverlay.CloseAsync();
+            return true;
+        }
+        return false;
     }
-
-    private void UnhookEscape()
-    {
-        if (_escape is not null && _escapeRoot is not null)
-            _escapeRoot.KeyboardAccelerators.Remove(_escape);
-
-        _escape = null;
-        _escapeRoot = null;
-    }
-#endif
 
     // ===== Плашка «Мой профиль»: те же данные и правила, что на странице профиля =====
     private async Task RefreshProfileCardAsync()

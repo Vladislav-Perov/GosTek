@@ -70,7 +70,6 @@ public partial class CheckPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        BottomTabs.ResetHover();   // сбросить «залипшее» наведение таббара
         await RefreshRulesAsync();
         if (_workPath is null)
             StartChoosePulse();
@@ -105,40 +104,51 @@ public partial class CheckPage : ContentPage
         await CustomRulesService.Instance.LoadRulesAsync();
         _allRules = CustomRulesService.Instance.GetAllRules().ToList();
 
-        int prevIndex = RuleChips.SelectedIndex;
-        RuleChips.SetItems(_allRules.Select(r => r.Title).ToList());
-        if (prevIndex >= 0 && prevIndex < _allRules.Count)
-            RuleChips.SelectedIndex = prevIndex;
-        else
-            RuleChips.SelectedIndex = 0;
+        await MainThread.InvokeOnMainThreadAsync(() =>
+        {
+            int prevIndex = RuleChips.SelectedIndex;
+            RuleChips.SetItems(_allRules.Select(r => r.Title).ToList());
+            if (prevIndex >= 0 && prevIndex < _allRules.Count)
+                RuleChips.SelectedIndex = prevIndex;
+            else
+                RuleChips.SelectedIndex = 0;
 
-        UpdateCustomRulesList();
-        UpdateUi();
+            UpdateCustomRulesList();
+            UpdateUi();
+        });
     }
 
     private void UpdateCustomRulesList()
     {
-        CustomRulesHost.Children.Clear();
-        var customRules = CustomRulesService.Instance.GetCustomRules();
-
-        if (customRules.Count == 0) {
-            var emptyLabel = new Label {
-                Text = "Пользовательские правила пока не созданы. Нажмите «С нуля» или «На основе...», чтобы добавить своё правило.",
-                FontSize = 12,
-                Margin = new Thickness(0, 4),
-            };
-            emptyLabel.SetDynamicResource(Label.TextColorProperty, "TextSecondary");
-            CustomRulesHost.Children.Add(emptyLabel);
+        if (!MainThread.IsMainThread)
+        {
+            MainThread.BeginInvokeOnMainThread(UpdateCustomRulesList);
             return;
         }
 
-        foreach (var rule in customRules) {
-            var card = new Border {
-                StrokeThickness = 1,
-                StrokeShape = new RoundRectangle { CornerRadius = 10 },
-                Padding = new Thickness(12, 8),
-            };
-            card.SetDynamicResource(VisualElement.BackgroundColorProperty, "CardBg");
+        try
+        {
+            CustomRulesHost.Children.Clear();
+            var customRules = CustomRulesService.Instance.GetCustomRules();
+
+            if (customRules.Count == 0) {
+                var emptyLabel = new Label {
+                    Text = "Пользовательские правила пока не созданы. Нажмите «С нуля» или «На основе...», чтобы добавить своё правило.",
+                    FontSize = 12,
+                    Margin = new Thickness(0, 4),
+                };
+                emptyLabel.SetDynamicResource(Label.TextColorProperty, "TextSecondary");
+                CustomRulesHost.Children.Add(emptyLabel);
+                return;
+            }
+
+            foreach (var rule in customRules) {
+                var card = new Border {
+                    StrokeThickness = 1,
+                    StrokeShape = new RoundRectangle { CornerRadius = 10 },
+                    Padding = new Thickness(12, 8),
+                };
+                card.SetDynamicResource(VisualElement.BackgroundColorProperty, "CardBg");
             card.SetDynamicResource(Border.StrokeProperty, "CardStroke");
 
             var grid = new Grid {
@@ -220,6 +230,11 @@ public partial class CheckPage : ContentPage
             CustomRulesHost.Children.Add(card);
         }
     }
+    catch (Exception ex)
+    {
+        System.Diagnostics.Debug.WriteLine($"[CheckPage] UpdateCustomRulesList error: {ex}");
+    }
+}
 
     // =====================================================================
     //  ВЫБОР ФАЙЛА

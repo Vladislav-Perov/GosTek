@@ -12,4 +12,16 @@
     xmlns:maui="using:Microsoft.Maui"
     xmlns:local="using:GosTek.WinUI">
 
+    <maui:MauiWinUIApplication.Resources>
+        <ResourceDictionary>
+            <!-- Принудительное обнуление системных фонов WinUI 3 NavigationView для бесшовного левого rail -->
+            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="Transparent" />
+            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="Transparent" />
+            <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="Transparent" />
+            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent" />
+            <SolidColorBrush x:Key="NavigationViewHeaderBackground" Color="Transparent" />
+            <SolidColorBrush x:Key="NavigationViewTitlebarArea" Color="Transparent" />
+        </ResourceDictionary>
+    </maui:MauiWinUIApplication.Resources>
+
 </maui:MauiWinUIApplication>

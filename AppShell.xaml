@@ -1,43 +1,53 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
  ==============================================================================
- НАЗНАЧЕНИЕ: Корневая визуальная оболочка приложения (Shell) с навигацией
- СОДЕРЖИМОЕ: Shell, TabBar, Tab, ShellContent
- ЗАВИСИМОСТИ: Views/MainPage.xaml, Views/TemplatesPage.xaml, Views/CheckPage.xaml, Views/ProfilePage.xaml
+ НАЗНАЧЕНИЕ: Корневая визуальная оболочка приложения (Shell) с адаптивной навигацией
+ СОДЕРЖИМОЕ: Shell, FlyoutContent (Windows Navigation Rail), TabBar (Android Bottom Navigation)
+ ЗАВИСИМОСТИ: Views/MainPage.xaml, Views/TemplatesPage.xaml, Views/ScanPage.xaml, Views/CheckPage.xaml, Views/ProfilePage.xaml, Views/AppTabBar.xaml
  ==============================================================================
 -->
 <Shell x:Class="GosTek.AppShell"
        xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
        xmlns:views="clr-namespace:GosTek.Views"
-       Title="GosTek"
-       FlyoutBehavior="Disabled"
-       Shell.TabBarIsVisible="False"
-       Shell.BackgroundColor="{DynamicResource PageBg}"
-       Shell.ForegroundColor="{DynamicResource TextPrimary}"
+       FlyoutBehavior="{OnPlatform WinUI=Locked, Default=Disabled}"
+       FlyoutWidth="{OnPlatform WinUI=220, Default=0}"
+       FlyoutBackgroundColor="{DynamicResource TabBarBg}"
+       Shell.NavBarIsVisible="False"
+       Shell.TabBarIsVisible="{OnPlatform Android=True, WinUI=False, Default=False}"
+       Shell.BackgroundColor="{DynamicResource TabBarBg}"
+       Shell.ForegroundColor="{DynamicResource BrandGreen}"
        Shell.TitleColor="{DynamicResource TextPrimary}"
        Shell.UnselectedColor="{DynamicResource TextSecondary}"
        BackgroundColor="{DynamicResource PageBg}">
 
-    <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate views:MainPage}"
-        Route="MainPage" />
+    <!-- Кастомное содержимое Flyout для Windows: единая постоянная боковая панель AppTabBar -->
+    <Shell.FlyoutHeaderTemplate>
+        <DataTemplate>
+            <Grid HeightRequest="0" WidthRequest="0" Margin="0" Padding="0" BackgroundColor="Transparent" />
+        </DataTemplate>
+    </Shell.FlyoutHeaderTemplate>
 
-    <ShellContent
-        Title="Templates"
-        ContentTemplate="{DataTemplate views:TemplatesPage}"
-        Route="TemplatesPage" />
-    <ShellContent
-        Title="Scan"
-        ContentTemplate="{DataTemplate views:ScanPage}"
-        Route="ScanPage" />
-    <ShellContent
-        Title="Check"
-        ContentTemplate="{DataTemplate views:CheckPage}"
-        Route="CheckPage" />
-    <ShellContent
-        Title="Profile"
-        ContentTemplate="{DataTemplate views:ProfilePage}"
-        Route="ProfilePage" />
+    <Shell.FlyoutContent>
+        <views:AppTabBar x:Name="FlyoutRail" />
+    </Shell.FlyoutContent>
+
+    <!-- Навигация: TabBar для Android (на Windows скрыт через Shell.TabBarIsVisible="False") -->
+    <TabBar>
+        <Tab Title="Главная" Route="MainPage" Icon="tab_home.png">
+            <ShellContent ContentTemplate="{DataTemplate views:MainPage}" />
+        </Tab>
+        <Tab Title="Шаблоны" Route="TemplatesPage" Icon="tab_templates.png">
+            <ShellContent ContentTemplate="{DataTemplate views:TemplatesPage}" />
+        </Tab>
+        <Tab Title="Скан" Route="ScanPage" Icon="tab_scan.png">
+            <ShellContent ContentTemplate="{DataTemplate views:ScanPage}" />
+        </Tab>
+        <Tab Title="Проверка" Route="CheckPage" Icon="tab_check.png">
+            <ShellContent ContentTemplate="{DataTemplate views:CheckPage}" />
+        </Tab>
+        <Tab Title="Профиль" Route="ProfilePage" Icon="tab_profile.png">
+            <ShellContent ContentTemplate="{DataTemplate views:ProfilePage}" />
+        </Tab>
+    </TabBar>
 </Shell>

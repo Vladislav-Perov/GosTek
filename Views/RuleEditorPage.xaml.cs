@@ -35,8 +35,29 @@ public partial class RuleEditorPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
+        Shell.SetFlyoutBehavior(this, FlyoutBehavior.Disabled);
+        Shell.SetTabBarIsVisible(this, false);
+#if WINDOWS
+        if (Shell.Current is { } shell)
+        {
+            shell.FlyoutBehavior = FlyoutBehavior.Disabled;
+            shell.FlyoutWidth = 0;
+        }
+#endif
         _editingRule = TargetRule;
         LoadRuleData(_editingRule);
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+#if WINDOWS
+        if (Shell.Current is { } shell)
+        {
+            shell.FlyoutBehavior = FlyoutBehavior.Locked;
+            shell.FlyoutWidth = Preferences.Get("rail_collapsed", false) ? 64 : 220;
+        }
+#endif
     }
 
     private void InitPickers()

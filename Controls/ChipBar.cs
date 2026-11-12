@@ -56,6 +56,12 @@ public sealed class ChipBar : ContentView
     {
         get => _selected;
         set {
+            if (!MainThread.IsMainThread)
+            {
+                MainThread.BeginInvokeOnMainThread(() => SelectedIndex = value);
+                return;
+            }
+
             if (value < 0 || value >= _chips.Count || value == _selected)
                 return;
 
@@ -68,7 +74,7 @@ public sealed class ChipBar : ContentView
 
     public ChipBar()
     {
-        _host = new HorizontalStackLayout { Spacing = 10, Padding = new Thickness(0, 2, 0, 8) };
+        _host = new HorizontalStackLayout { Spacing = 10, Padding = new Thickness(8, 6, 8, 8) };
         _scroll = new ScrollView {
             Orientation = ScrollOrientation.Horizontal,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Never,
@@ -93,6 +99,11 @@ public sealed class ChipBar : ContentView
         grid.Children.Add(_rightArrow);
         Content = grid;
 
+        // Синхронизация темы оформления
+        ThemeService.Changed += OnThemeChanged;
+        Loaded += (_, _) => OnThemeChanged();
+        Unloaded += (_, _) => ThemeService.Changed -= OnThemeChanged;
+
         // Стрелки показываем, только когда есть куда листать
         _scroll.Scrolled += (_, _) => UpdateArrows();
         _scroll.SizeChanged += (_, _) => UpdateArrows();
@@ -103,23 +114,58 @@ public sealed class ChipBar : ContentView
 #endif
     }
 
-    /// <summary>Заменить чипы. selected — какой выбрать (если номер неверный, первый).</summary>
-    public void SetItems(IReadOnlyList<string> titles, int selected = 0)
+    private void OnThemeChanged()
     {
-        _host.Children.Clear();
-        _chips.Clear();
+        if (!MainThread.IsMainThread)
+        {
+            MainThread.BeginInvokeOnMainThread(() => {
+                UpdateChips();
+                UpdateArrows();
+            });
+            return;
+        }
 
-        for (int i = 0; i < titles.Count; i++)
-            AddChip(titles[i], i);
-
-        _selected = selected >= 0 && selected < titles.Count ? selected : 0;
         UpdateChips();
         UpdateArrows();
     }
 
+    /// <summary>Заменить чипы. selected — какой выбрать (если номер неверный, первый).</summary>
+    public void SetItems(IReadOnlyList<string> titles, int selected = 0)
+    {
+        if (!MainThread.IsMainThread)
+        {
+            MainThread.BeginInvokeOnMainThread(() => SetItems(titles, selected));
+            return;
+        }
+
+        try
+        {
+            _host.Children.Clear();
+            _chips.Clear();
+
+            for (int i = 0; i < titles.Count; i++)
+                AddChip(titles[i], i);
+
+            _selected = selected >= 0 && selected < titles.Count ? selected : 0;
+            UpdateChips();
+            UpdateArrows();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ChipBar] SetItems error safely handled: {ex}");
+        }
+    }
+
     private void AddChip(string title, int index)
     {
-        var label = new Label { Text = title, FontSize = 14 };
+        var inactiveTextColor = ThemeService.IsDark ? Color.FromArgb("#F8FAFC") : Color.FromArgb("#16213A");
+        var label = new Label {
+            Text = title,
+            FontSize = 14,
+            TextColor = inactiveTextColor,
+        };
+        label.SetDynamicResource(Label.TextColorProperty, "TextPrimary");
+
         var chip = new Border {
             StrokeShape = new RoundRectangle { CornerRadius = 20 },
             Padding = new Thickness(18, 9),
@@ -145,6 +191,14 @@ public sealed class ChipBar : ContentView
     // Активный чип залит AccentGreen с белым текстом и легкой тенью, остальные с рамкой
     private void UpdateChips()
     {
+        if (!MainThread.IsMainThread)
+        {
+            MainThread.BeginInvokeOnMainThread(UpdateChips);
+            return;
+        }
+
+        var inactiveTextColor = ThemeService.IsDark ? Color.FromArgb("#F8FAFC") : Color.FromArgb("#16213A");
+
         for (int i = 0; i < _chips.Count; i++) {
             var (chip, label) = _chips[i];
             bool active = i == _selected;
@@ -152,7 +206,7 @@ public sealed class ChipBar : ContentView
             if (active) {
                 chip.SetDynamicResource(VisualElement.BackgroundColorProperty, "AccentGreen");
                 chip.StrokeThickness = 0;
-                label.RemoveDynamicResource(Label.TextColorProperty);
+                label.ClearValue(Label.TextColorProperty);
                 label.TextColor = Colors.White;
                 label.FontAttributes = FontAttributes.Bold;
                 chip.Shadow = new Shadow {
@@ -165,7 +219,9 @@ public sealed class ChipBar : ContentView
                 chip.SetDynamicResource(VisualElement.BackgroundColorProperty, "CardBg");
                 chip.SetDynamicResource(Border.StrokeProperty, "CardStroke");
                 chip.StrokeThickness = 1;
+                label.ClearValue(Label.TextColorProperty);
                 label.SetDynamicResource(Label.TextColorProperty, "TextPrimary");
+                label.TextColor = inactiveTextColor;
                 label.FontAttributes = FontAttributes.None;
                 chip.Shadow = null;
             }
@@ -205,7 +261,10 @@ public sealed class ChipBar : ContentView
         SemanticProperties.SetDescription(arrow, description);
 
         var tap = new TapGestureRecognizer();
-        tap.Tapped += (_, _) => onTap();
+        tap.Tapped += (_, _) => {
+            if (arrow.IsEnabled)
+                onTap();
+        };
         arrow.GestureRecognizers.Add(tap);
         return arrow;
     }
@@ -218,9 +277,28 @@ public sealed class ChipBar : ContentView
             return;
         }
 
-        double max = _scroll.ContentSize.Width - _scroll.Width;
-        _leftArrow.IsVisible = _scroll.ScrollX > 1;
-        _rightArrow.IsVisible = max > 1 && _scroll.ScrollX < max - 1;
+        _leftArrow.IsVisible = true;
+        _rightArrow.IsVisible = true;
+
+        double max = Math.Max(0, _scroll.ContentSize.Width - _scroll.Width);
+        bool canScrollLeft = _scroll.ScrollX > 3;
+        bool canScrollRight = max > 3 && _scroll.ScrollX < max - 3;
+
+        UpdateArrowState(_leftArrow, canScrollLeft);
+        UpdateArrowState(_rightArrow, canScrollRight);
+    }
+
+    private static void UpdateArrowState(Border arrow, bool enabled)
+    {
+        arrow.IsEnabled = enabled;
+        arrow.Opacity = enabled ? 1.0 : 0.35;
+        if (arrow.Content is Shape shape)
+        {
+            if (enabled)
+                shape.SetDynamicResource(Shape.StrokeProperty, "TextPrimary");
+            else
+                shape.SetDynamicResource(Shape.StrokeProperty, "TextSecondary");
+        }
     }
 
     private async void ScrollBy(double delta)

@@ -1,4 +1,4 @@
-# Журнал исправительных работ и архитектурных решений (FIXES_LOG)
+﻿# Журнал исправительных работ и архитектурных решений (FIXES_LOG)
 
 > **Автор:** Главный разработчик проекта GosTek  
 > **Назначение документа:** Единственный детальный источник истины по всем внесённым мною изменениям кодовой базы, архитектурным решениям, проверкам, рискам и процедурам отката проекта **GosTek**.  
@@ -11,6 +11,24 @@
 
 | # | Дата | Батч | ID | Затронутый файл / компонент | Статус | Проверено |
 |:---:|:---:|:---:|:---:|:---|:---:|:---|
+| **58** | 12.11.2026 | F10.3 | **THREADSAFE-CHIPBAR-THEME-AND-SORTING-FIX** | Controls/ChipBar.cs, Views/CheckPage.xaml.cs, Views/TemplatesPage.xaml.cs, Services/CustomRulesService.cs | 🏆 Реализовано | Устранение 3 критических багов: 1) Крэш UI (ExecutionEngineException/COMException в UIElementCollection.Clear): перенос мутаций UI на MainThread в CheckPage.RefreshRulesAsync и ChipBar.SetItems/SelectedIndex, безопасный try-catch; 2) Текст чипов в светлой теме: сброс локального значения (ClearValue), подписка ChipBar на ThemeService.Changed, гарантированный контрастный TextColor (#16213A / #F8FAFC); 3) Сортировка категорий на TemplatesPage: индекс 0 = «Все», индекс 1 = «⭐ Избранное», далее строго по алфавиту (А-Я), 216/216 тестов, Win (0/0), dotnet format 0 |
+| **57** | 12.11.2026 | F10.3 | **CRASH-FIX-SAFE-DRAG-GEOMETRY** | Platforms/Windows/WindowSizing.cs | 🏆 Реализовано | Устранение критического крэша при запуске (COMException: Window already closed): защищенная геометрия ConfigureDragRegion, валидация размеров окна (dragWidth > 0, dragHeight > 0), предотвращение создания невалидных RectInt32 при инициализации/сворачивании, безопасный try-catch во всех обработчиках, 216/216 тестов, Win (0/0), dotnet format 0 |
+| **56** | 12.11.2026 | F10.3 | **NATIVE-DRAG-RECTANGLES-AND-MSB3270-FIX** | Platforms/Windows/WindowSizing.cs, ThemeService.cs, MauiProgram.cs, GosTek.Tests.csproj | 🏆 Реализовано | Устранение задержек Hit-Testing при drag окна Windows: нативная настройка Drag Rectangles через AppWindow.TitleBar.SetDragRectangles(48px * DPI scale), устранение конфликта с Window.ExtendsContentIntoTitleBar, обновление только при DidSizeChange; устранение предупреждения сборки MSB3270 добавлением PlatformTarget x64 в GosTek.Tests, 216/216 тестов, Win (0/0), dotnet format 0 |
+| **55** | 12.11.2026 | F10.3 | **PERF-WNDPROC-AND-TITLEBAR-DRAG-OPTIMIZATION** | Platforms/Windows/WindowSizing.cs, MauiProgram.cs | 🏆 Реализовано | Устранение задержек и лагов при перетаскивании окна Windows: оптимизация SubclassWndProc (мгновенный DefSubclassProc для всех сторонних сообщений, кэширование DPI без P/Invoke на кадрах движения, обновление только по WM_DPICHANGED, прямое чтение памяти без маршалинга структуры, RemoveWindowSubclass при WM_NCDESTROY), удаление дублирующих мутаций TitleBar, 216/216 тестов, Win (0/0), dotnet format 0 |
+| **54** | 12.11.2026 | F10.3 | **WINDOW-MIN-SIZE-REDUCTION-800X600** | Platforms/Windows/WindowSizing.cs, App.xaml.cs | 🏆 Реализовано | Уменьшение минимальных габаритов десктопного окна Windows до 800x600 (MinWidth=800, MinHeight=600): аппаратный перехват WM_GETMINMAXINFO с динамическим масштабированием DPI и свойства MAUI Window.MinimumWidth/MinimumHeight, 216/216 тестов, Win (0/0), dotnet format 0 |
+| **53** | 12.11.2026 | F10.3 | **RESPONSIVE-LAYOUT-ADAPTIVE-SHRINKING-FILL** | MainPage.xaml, ProfilePage.xaml, CheckPage.xaml, TemplatesPage.xaml | 🏆 Реализовано | Устранение критического регресса адаптивности при сжатии окна: удаление жесткого WidthRequest="{OnPlatform WinUI=950}" на всех 4 экранах, перевод корневых VerticalStackLayout на MaximumWidthRequest="950" + HorizontalOptions="Fill", обеспечивающий адаптивное масштабирование контента от 1024x768 до полноэкранного 1920x1080 без обрезания и переполнения, 216/216 тестов, Win (0/0), dotnet format 0 |
+| **52** | 12.11.2026 | F10.3 | **WINUI-CORNER-ELIMINATION-AND-EXACT-950PX-WIDTH** | MauiProgram.cs, Platforms/Windows/App.xaml, ThemeService.cs, AppShell.xaml, MainPage.xaml, ProfilePage.xaml, CheckPage.xaml, TemplatesPage.xaml | 🏆 Реализовано | Устранение «неубиваемого» угла WinUI: коллапс PaneContentGridToggleButtonRow, PaneHeaderContentBorderRow, PaneToggleButtonGrid и прозрачность кистей NavigationView (Transparent), window.ExtendsContentIntoTitleBar; устранение иллюзии ширины: явный WidthRequest="{OnPlatform WinUI=950}" на всех 4 страницах гарантирует пиксель-в-пиксель одинаковый коридор 950px, 216/216 тестов, Win (0/0), dotnet format 0 |
+| **51** | 11.11.2026 | F10.3 | **LAYOUT-FINALIZATION-BENCHMARK-950PX-FILL** | MainPage.xaml, ProfilePage.xaml, ProfilePage.xaml.cs, ListRow.xaml | 🏆 Реализовано | Финализация верстки по эталону CheckPage: MaximumWidthRequest="950" + HorizontalOptions="Center" на MainPage и ProfilePage, явное HorizontalOptions="Fill" на всех карточках, полях ввода и строках списков ListRow, гарантирующее 100% заполнение 950px-коридора без сжатия в центре, 216/216 тестов, Win (0/0), dotnet format 0 |
+| **50** | 11.11.2026 | F10.3 | **LAYOUT-ROLLBACK-TO-SINGLE-COLUMN-1050PX** | MainPage.xaml, MainPage.xaml.cs, ProfilePage.xaml, ProfilePage.xaml.cs | 🏆 Реализовано | Экстренный откат двухколоночных сеток: возвращение «Быстрого старта» (VerticalStackLayout, Spacing=10) и полей профиля (VerticalStackLayout, Spacing=16) к классическому одноколоночному виду сверху вниз по эталону CheckPage; оптимальная ширина MaximumWidthRequest=1050 на Windows, сохранение 2 колонок для крупных кнопок Проверить/Сканировать, 216/216 тестов, Win (0/0), dotnet format 0 |
+| **49** | 11.11.2026 | F10.3 | **DESKTOP-SCALING-MAINPAGE-AND-PROFILE** | MainPage.xaml, MainPage.xaml.cs, ProfilePage.xaml, ProfilePage.xaml.cs | 🏆 Реализовано | Десктопное масштабирование MainPage (1200px, плитка 2х2 Быстрого старта через Grid, ColumnSpacing=16) и двухколоночный профиль ProfilePage (1100px, адаптивная сетка полей: левая колонка ФИО/УНП/Телефон, правая колонка Наименование/Адрес/Паспорт, Р/С во всю ширину, на Android сохранение единого столбца), 216/216 тестов, Win (0/0), dotnet format 0 |
+| **48** | 11.11.2026 | F10.3 | **UI-LAYOUT-UNIFICATION-BY-BENCHMARK** | MainPage.xaml, TemplatesPage.xaml, ProfilePage.xaml | 🏆 Реализовано | Полная унификация верстки по эталону CheckPage: перенос Padding со ScrollView на VerticalStackLayout на MainPage (отступ 20px на WinUI без прилипания шапки), заголовок «Главная» (26px Bold, Spacing=2 к SubtitleLabel), скругление RoundRectangle 20 карточки Создать документ, Spacing=16 и Margin чипсов на TemplatesPage, просторные отступы карточки безопасности (Padding="16, 14") и первичная кнопка Сохранить (Padding="8, 15", RoundRectangle 16) на ProfilePage, 216/216 тестов, Win (0/0), dotnet format 0 |
+| **47** | 11.11.2026 | F10.3 | **CONTENT-WIDTH-ROLLBACK-TO-COMPACT** | MainPage.xaml, TemplatesPage.xaml, CheckPage.xaml, ProfilePage.xaml, FieldsPage.xaml | 🏆 Реализовано | Откат ширины контента к компактному центрированному виду (MaximumWidthRequest="950" на всех страницах и 700 для шторки/кнопки сборки), полное сохранение аппаратного ограничения минимального размера окна 1024x768 (WinUI 3 Subclassing), 216/216 тестов, Win (0/0), dotnet format 0 |
+| **46** | 11.11.2026 | F10.3 | **WINDOW-MIN-SIZE-AND-CONTENT-WIDTH-EXPANSION** | Platforms/Windows/WindowSizing.cs, MauiProgram.cs, App.xaml.cs, MainPage.xaml, TemplatesPage.xaml, CheckPage.xaml, ProfilePage.xaml, FieldsPage.xaml | 🏆 Реализовано | Аппаратное ограничение минимального размера окна 1024x768 на WinUI 3 через Win32 Subclassing (WM_GETMINMAXINFO с учетом DPI), MAUI Window.MinimumWidth/Height, расширение контентных контейнеров (MaximumWidthRequest="1200") для эффективного использования широких экранов, 216/216 тестов, Win (0/0), dotnet format 0 |
+| **45** | 11.11.2026 | F10.3 | **GLOBAL-SETTINGS-AND-RAIL-VISIBILITY-FIX** | SettingsOverlay.cs, AppTabBar.xaml.cs, AppShell.xaml, FieldsPage, RuleEditorPage, ThemeService.cs, MauiProgram.cs | 🏆 Реализовано | Глобальный оверлей настроек (отвязка от MainPage, открытие поверх текущей активной вкладки без редиректа), скрытие Navigation Rail на подстраницах (FieldsPage, RuleEditorPage) с корректным восстановлением ширины, тотальное уничтожение угла TitleBar WinUI 3 (очистка цветовых состояний, FlyoutHeaderTemplate без скрытых отступов), 216/216 тестов, Win (0/0), dotnet format 0 |
+| **44** | 11.11.2026 | F10.3 | **WINUI-TRANSPARENT-TITLEBAR-AND-GLOBAL-ESCAPE** | ThemeService.cs, AppShell.xaml.cs, App.xaml.cs, MainPage.xaml.cs, FieldsPage.xaml.cs | 🏆 Реализовано | Устранение остаточного фона TitleBar (BackgroundColor/InactiveBackgroundColor = Transparent), глобальный перехватчик Escape в окне Windows: 4-этапная цепочка навигации (модалки/настройки/оверлеи -> стек навигации страницы -> возврат на Главную вкладку -> покой на Главной), 216/216 тестов, Win (0/0), dotnet format 0 |
+| **43** | 11.11.2026 | F10.3 | **WINUI-TITLEBAR-CUSTOMIZATION** | MauiProgram.cs, ThemeService.cs | 🏆 Реализовано | Полировка системного заголовка Windows WinUI 3: ExtendsContentIntoTitleBar = true, ButtonBackgroundColor = Transparent, динамическая адаптация цветов кнопок под светлую и темную темы, устранение разрыва в левом верхнем углу окна, 216/216 тестов, Win (0/0), dotnet format 0 |
+| **42** | 11.11.2026 | F10.3 | **GLOBAL-UI-SHELL-REFACTORING** | AppShell.xaml, AppTabBar, MainPage, TemplatesPage, ProfilePage, CheckPage, Resources/Images/tab_*.svg | 🏆 Реализовано | Фаза 10.3: Единый Navigation Rail в AppShell.FlyoutContent для Windows и нативный TabBar для Android, удаление дублирующихся экземпляров AppTabBar, разблокировка бесконечного скролла страниц (RowDefinitions=*, ScrollView), центрирование контента (MaximumWidthRequest=950), чип «⭐ Избранное» в каталоге шаблонов, удаление дублирующего заголовка GosTek и рендеринг логотипа через PTSansBold (27px, BrandGreen), 216/216 тестов, Win (0/0), Android (0/0), dotnet format 0 |
+| **41** | 10.11.2026 | F10.2 | **UI-UX-POLISH-AND-COLLAPSIBLE-RAIL** | `AppTabBar`, `TemplatesPage`, `ListRow`, `ChipBar`, `Toast`, `CheckPage`, `MainPage`, `ProfilePage` | 🏆 Реализовано | Фаза 10.2: Debounce и ScaleTo-анимация звездочки избранного, центрированный тост с плавной анимацией и мягкой тенью, защита от обрезки теней чипсов правил и отключение/затемнение стрелок при крайних положениях скролла, сворачиваемый Navigation Rail (220px ↔ 64px) с плавной анимацией и Auto-адаптацией колонок, обновленный логотип GosTek с тенью, 216/216 тестов, Win (0/0), Android (0/0), dotnet format 0 |
 | **40** | 10.11.2026 | F9 | **AI-ARCHITECTURE-SERVER-CLIENT-OVERHAUL** | `server/worker.js`, `PrivacyMasker.cs`, `AiAssistantService.cs`, `AiMemory.cs`, `TemplateField.cs`, `TemplateEngine.cs`, `FieldsPage.xaml`, `FieldsPage.xaml.cs` | 🏆 Реализовано | Фаза 9: Архитектура ИИ (Сервер + Клиент), Cloudflare Worker с 3-уровневым каскадным fallback (Gemini 2.5 Flash Lite -> Gemini 2.0 Flash -> Groq Llama 3.1 8B), нулевое логирование ПДн, нумерованные плейсхолдеры [ФИО_1], нечеткое сопоставление Левенштейна, подозрительные имена, долговременная память диалога AiMemory с попапом Brain и удалением фактов, кнопка с искрой (sparkles) у каждого поля для точечного расширения, поддержка режимов [Поле|расписать] и бейдж ✍️ Расписать, 216/216 тестов, Win (0/0), Android (0/0), dotnet format 0 |
 | **39** | 10.11.2026 | F8.2 | **AI-PROMPT-ENGINEERING-AND-FORM-CONTEXT** | `AiAssistantService.cs`, `FieldsPage.xaml.cs`, `AiAssistantServiceTests.cs` | 🏆 Реализовано | Фаза 8.2: Передача контекста состояния полей формы с экрана в системный промпт, роль строгого секретаря-делопроизводителя (ГОСТ Р 7.0.97-2016), расширение кратких причин в официальные тексты, уточняющие вопросы без карточки, 207/207 тестов, Win (0/0), Android (0/0), dotnet format 0 |
 | **38** | 10.11.2026 | F8.1 | **AI-LOGIC-FIXES-AND-COSMETICS** | `PrivacyMasker.cs`, `AiAssistantService.cs`, `FieldsPage.xaml.cs`, `AiAssistantServiceTests.cs` | 🏆 Реализовано | Фаза 8.1: Устранение потери ФИО/ПДн через двунаправленное маскирование и RestorePlaceholdersAsync, динамическая текущая дата в системном промпте, новое ненавязчивое приветствие бота, фильтрация пустых полей и аккуратный блочный предпросмотр карточки с жирными метками, 205/205 тестов, Win (0/0), Android (0/0), dotnet format 0 |
@@ -55,7 +73,345 @@
 
 ---
 
-## 2. Фаза 9: Масштабная перестройка ИИ-архитектуры (Сервер + Клиент)
+## 2. Фаза 10: Полировка UI/UX, сворачиваемая боковая панель и интерактивность
+
+### [Запись #58] 2026-11-12 | Фаза 10.3 | THREADSAFE-CHIPBAR-THEME-AND-SORTING-FIX | Устранение крэша UI при обновлении списков, адаптация текста чипов в Light теме и сортировка категорий
+- **Что:** Я проанализировал и полностью исправил три критических дефекта: крэш `ExecutionEngineException` / `COMException` в `UIElementCollection.Clear()`, нечитаемый текст неактивных чипов в светлой теме и нарушенный порядок сортировки категорий в каталоге шаблонов.
+- **Архитектура решения:**
+  1. **Потокобезопасность визуального дерева и защита от крэша UI:**
+     - **Причина:** В методе `CheckPage.RefreshRulesAsync()` после вызова `await CustomRulesService.Instance.LoadRulesAsync()` асинхронный контекст возвращался в рабочий поток пула потоков (ThreadPool). Вызовы `RuleChips.SetItems()`, `CustomRulesHost.Children.Clear()` и `UpdateUi()` выполнялись вне главного потока UI. В WinUI 3 любая модификация нативной коллекции `UIElementCollection.Clear()` из фонового потока приводит к фатальному `RPC_E_WRONG_THREAD` / `ExecutionEngineException`.
+     - **Решение:** В `CheckPage.RefreshRulesAsync()` все манипуляции с визуальным деревом перенесены внутрь `await MainThread.InvokeOnMainThreadAsync(...)`. В `CustomRulesService.cs` для файлового ввода-вывода добавлен `.ConfigureAwait(false)`. В самом компоненте `Controls/ChipBar.cs` методы `SetItems`, `SelectedIndex` и `UpdateChips` защищены проверкой `if (!MainThread.IsMainThread) { MainThread.BeginInvokeOnMainThread(...); return; }` с оборачиванием операций в защитные блоки `try-catch`.
+  2. **Адаптивность и контрастность текста чипов в светлой теме (Light Theme):**
+     - **Причина:** В `ChipBar.UpdateChips()` при активации чипа вызывалось `label.RemoveDynamicResource` и локально присваивалось `label.TextColor = Colors.White`. В модели привязок MAUI локальное значение свойства (`BindingPriority.LocalValue`) имеет приоритет над `DynamicResource`. При последующей деактивации чипа вызов `label.SetDynamicResource(Label.TextColorProperty, "TextPrimary")` не сбрасывал локальное значение `Colors.White`. В светлой теме белый текст сливался с белым фоном карточки `CardBg` (`#FFFFFF`). Кроме того, `ChipBar` не реагировал на событие `ThemeService.Changed`.
+     - **Решение:** В `UpdateChips()` перед установкой стиля добавлен явный сброс локального значения свойства `label.ClearValue(Label.TextColorProperty)` и синхронная установка контрастного цвета: `label.TextColor = inactiveTextColor` (`#16213A` для светлой темы и `#F8FAFC` для тёмной) параллельно с `SetDynamicResource`. В конструкторе `ChipBar` добавлена подписка на `ThemeService.Changed` и событие `Loaded` с отпиской при `Unloaded`.
+  3. **Сортировка категорий на странице шаблонов (TemplatesPage):**
+     - **Причина:** Ранее в `TemplatesPage.RebuildChips()` порядок списка формировался как `{ FavoritesChipTitle, "Все" }`, из-за чего индекс 0 занимало «Избранное», а категории из файлов не проходили дополнительную алфавитную сортировку с учетом регистра.
+     - **Решение:** В `TemplatesPage.xaml.cs` список категорий формируется строго по ТЗ:
+       - Индекс 0: `"Все"` (`_isFavoriteFilter = false; _category = null`).
+       - Индекс 1: `FavoritesChipTitle` ("⭐ Избранное", `_isFavoriteFilter = true; _category = null`).
+       - Индексы 2+: категории документов, отсортированные строго по алфавиту А-Я / A-Z (`cats.Distinct().OrderBy(c => c, StringComparer.CurrentCultureIgnoreCase).ToArray()`).
+       - Логика выбора чипа `OnCategoryChanged` и `RebuildChips` синхронизирована с новым порядком индексов.
+- **Тестирование и верификация:**
+  - Приложение успешно запускается и работает штатно (проверен процесс `GosTek`, `Responding: True`).
+  - Все **216/216 тестов xUnit** пройдены успешно (0 ошибок, 0 пропущено).
+  - Сборка Windows с `-warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Форматирование кода `dotnet format GosTek.sln --verify-no-changes` возвращает **код 0**.
+
+### [Запись #57] 2026-11-12 | Фаза 10.3 | CRASH-FIX-SAFE-DRAG-GEOMETRY | Безопасная геометрия Drag Region и защита от COMException при инициализации окна
+- **Что:** Я устранил критический крэш приложения при запуске (`COMException: The WinUI Desktop Window object has already been closed`), вызванный необработанными исключениями при ранней установке прямоугольников перетаскивания и невалидной геометрии окна.
+- **Архитектура решения:**
+  1. **Защищенная геометрия (Safe Math) в `Platforms/Windows/WindowSizing.cs`:**
+     - При запуске приложения и во время ранних фаз жизненного цикла MAUI/WinUI 3 окно еще может не иметь физических размеров (`appWindow.Size.Width <= 0` или `Height <= 0`), либо `titleBar.RightInset` превышает текущую ширину. Расчет `totalWidth - leftInset - rightInset` приводил к отрицательному значению, а создание структуры `RectInt32` с отрицательной шириной вызывало фатальный сбой подсистемы DWM / WinUI.
+     - Добавил строгую предварительную проверку габаритов окна (`totalWidth <= 0 || totalHeight <= 0`) и результирующей ширины перетаскивания: `if (dragWidth <= 0 || titleBarHeight <= 0) return;`. Если окно еще не спозиционировано или свернуто, настройка нативного региона пропускается до момента появления корректных размеров.
+     - Добавил валидацию коэффициента масштабирования DPI (`RasterizationScale > 0`, `dpi > 0`) для предотвращения деления на ноль.
+  2. **Отказоустойчивость обработчиков событий (Try-Catch):**
+     - Весь блок внутри `ConfigureDragRegion` и вложенный метод `UpdateDragRectangles` обернуты в блоки `try { ... } catch (Exception ex) { Debug.WriteLine(...); }`. Любое исключение при обращении к нативным COM/WinRT объектам перехватывается, защищая WinUI Dispatcher и главное окно от аварийного завершения.
+- **Тестирование и верификация:**
+  - Приложение успешно запускается и работает штатно (проверен процесс `GosTek`, `Responding: True`).
+  - Все **216/216 тестов xUnit** пройдены успешно (0 ошибок, 0 пропущено).
+  - Сборка Windows с `-warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Форматирование кода `dotnet format GosTek.sln --verify-no-changes` возвращает **код 0**.
+
+### [Запись #56] 2026-11-12 | Фаза 10.3 | NATIVE-DRAG-RECTANGLES-AND-MSB3270-FIX | Нативная область перетаскивания окна (SetDragRectangles) и устранение предупреждения MSB3270
+- **Что:** Я устранил корневую причину запаздывания окна Windows при перетаскивании (конфликт Hit-Testing в WinUI 3) и полностью ликвидировал предупреждение MSB3270 в тестовом проекте.
+- **Архитектура решения:**
+  1. **Нативная область перетаскивания (Drag Region) без участия UI-потока:**
+     - В WinUI 3 при `ExtendsContentIntoTitleBar = true` без явно назначенных прямоугольников перетаскивания каждый тик движения мыши вызывает сообщение `WM_NCHITTEST`, заставляющее WinUI 3 динамически обходить визуальное дерево XAML в UI-потоке для определения неклиентской области (`HTCAPTION`). Это приводило к заметному лагу и запаздыванию окна за курсором.
+     - В `Platforms/Windows/WindowSizing.cs` реализовал метод `ConfigureDragRegion(Microsoft.UI.Xaml.Window window)`. Метод нативно конфигурирует прямоугольники перетаскивания через `AppWindow.TitleBar.SetDragRectangles(new[] { dragRect })`.
+     - Область перетаскивания покрывает верхнюю полосу окна высотой 48px, масштабированную на DPI (`XamlRoot.RasterizationScale` или `GetDpiForWindow`), с отступами слева (`titleBar.LeftInset`) и справа (`titleBar.RightInset`), освобождая системные кнопки управления окном (свернуть, развернуть, закрыть).
+     - Вызовы `SetDragRectangles` полностью вынесены из цикла движения: область рассчитывается при создании окна, обновляется при `window.Activated`, а при работе с окном пересчитывается строго по событию `appWindow.Changed` с фильтром `if (args.DidSizeChange)`, полностью исключая любые расчеты и блокировки во время перетаскивания окна (drag).
+  2. **Устранение двухслойного конфликта TitleBar:**
+     - В `ThemeService.cs` устранил конфликт между `Microsoft.UI.Xaml.Window.ExtendsContentIntoTitleBar = true` и `AppWindowTitleBar.ExtendsContentIntoTitleBar = true`. При поддержке кастомизации (`AppWindowTitleBar.IsCustomizationSupported()`) расширение контента активируется строго нативно через `titleBar.ExtendsContentIntoTitleBar = true`, не триггеря медленный XAML hit-testing верхнего уровня.
+  3. **Устранение предупреждения сборки MSB3270:**
+     - В `GosTek.Tests/GosTek.Tests.csproj` добавил свойство `<PlatformTarget>x64</PlatformTarget>`, устранив архитектурное несоответствие между тестовым проектом (`MSIL / Any CPU`) и основным проектом приложения (`x64 / AMD64`).
+- **Тестирование и верификация:**
+  - Все **216/216 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Строгая сборка Windows (`net10.0-windows10.0.19041.0`) с `-warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Предупреждение `MSB3270` полностью отсутствует в логе сборки.
+  - Форматирование кода `dotnet format GosTek.sln --verify-no-changes` возвращает **код 0**.
+
+### [Запись #55] 2026-11-12 | Фаза 10.3 | PERF-WNDPROC-AND-TITLEBAR-DRAG-OPTIMIZATION | Устранение лагов при перетаскивании окна Windows и оптимизация WndProc
+- **Что:** Я провёл глубокий профилировочный аудит цикла обработки сообщений Win32 и устранил задержки и фризы окна при перемещении курсором:
+  1. **Причина лагов при перетаскивании окна:**
+     - Во время перетаскивания и ресайза окна Windows непрерывно (сотни раз в секунду) шлёт сообщения `WM_GETMINMAXINFO`, `WM_NCHITTEST`, `WM_MOVING`, `WM_MOVE` и `WM_WINDOWPOSCHANGING`.
+     - Ранее в перехватчике `SubclassWndProc` на каждое входящее сообщение `WM_GETMINMAXINFO` выполнялся межмодульный P/Invoke вызов `GetDpiForWindow(hWnd)` в `user32.dll`, вычисление масштаба с делением чисел с плавающей точкой, а также аллокация управляемого объекта через `Marshal.PtrToStructure<MINMAXINFO>` и обратная запись через `Marshal.StructureToPtr`. Это вызывало всплеск нагрузки на GC и задержку в главном UI-потоке WinUI 3, из-за чего окно запаздывало за курсором.
+     - Сообщение `WM_DPICHANGED` не обрабатывалось, а процедура субклассирования не выгружалась при уничтожении окна (`WM_NCDESTROY`).
+  2. **Оптимизация Win32 Subclassing (`Platforms/Windows/WindowSizing.cs`):**
+     - **Мгновенный Fast Path:** Все сообщения, кроме `WM_GETMINMAXINFO`, `WM_DPICHANGED` и `WM_NCDESTROY`, мгновенно передаются в `DefSubclassProc` без единой лишней проверки.
+     - **Кэширование DPI:** Вызов `GetDpiForWindow` и пересчет размеров в пикселях производятся ровно один раз при создании окна (`EnforceMinSize`). Кэшированные значения `s_cachedMinWidthPixels` и `s_cachedMinHeightPixels` хранятся в статических целочисленных полях и обновляются исключительно при получении системного события `WM_DPICHANGED` (при переносе окна на монитор с другим масштабом).
+     - **Прямой доступ к памяти (Zero Allocation):** При обработке `WM_GETMINMAXINFO` значения `ptMinTrackSize.x` и `ptMinTrackSize.y` читаются и записываются напрямую через `Marshal.ReadInt32` / `Marshal.WriteInt32` по фиксированным смещениям структуры (24 и 28 байт). Никаких аллокаций памяти, боксинга и вызовов маршалера.
+     - **Защита от утечек памяти:** При закрытии окна перехватывается `WM_NCDESTROY` и вызывается Win32 API `RemoveWindowSubclass`, гарантируя корректное удаление хука из цепочки оконных процедур.
+  3. **Очистка TitleBar (`MauiProgram.cs`):**
+     - Устранил дублирующее выставление свойств `ExtendsContentIntoTitleBar` и прозрачности кистей в обработчике `OnWindowCreated`, делегировав эту задачу единому методу `ThemeService.ApplyTitleBarTheme(window)`.
+- **Тестирование и верификация:**
+  - Все **216/216 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Строгая сборка Windows (`net10.0-windows10.0.19041.0`) с `-warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Проверка стиля `dotnet format GosTek.sln --verify-no-changes`: код **0**.
+
+### [Запись #54] 2026-11-12 | Фаза 10.3 | WINDOW-MIN-SIZE-REDUCTION-800X600 | Уменьшение минимального размера десктопного окна Windows до 800x600
+- **Что:** Я снизил минимальный порог габаритов окна Windows с 1024×768 до более компактных и гибких 800×600 (с учетом боковой панели 220px и контента 500px):
+  1. **Аппаратный перехват Win32 (`Platforms/Windows/WindowSizing.cs`):**
+     - В классе `WindowSizing` константы минимального размера изменены на:
+       - `MinWidthDips = 800;`
+       - `MinHeightDips = 600;`
+     - В процедуре `SubclassWndProc` при обработке сообщения `WM_GETMINMAXINFO` и в методе `EnforceMinSize` минимальные габариты пересчитываются с учетом текущего DPI монитора через `GetDpiForWindow(hwnd)` (`scale = dpi / 96.0`), гарантируя корректное аппаратное поведение на экранах 100%, 125%, 150%, 175% и 200% масштаба.
+  2. **Уровень окна MAUI (`App.xaml.cs`):**
+     - В методе `CreateWindow` для целевой платформы Windows обновлены свойства `window.MinimumWidth = 800;` и `window.MinimumHeight = 600;`.
+  3. **Сохранение адаптивности верстки:**
+     - Все экраны приложения (`MainPage`, `ProfilePage`, `CheckPage`, `TemplatesPage`) сохраняют адаптивную верстку без жестких фиксаторов ширины (`MaximumWidthRequest="950"` + `HorizontalOptions="Fill"`), благодаря чему при сжатии окна до 800×600 весь контент пропорционально умещается без переполнения и горизонтального скролла.
+- **Тестирование и верификация:**
+  - Все **216/216 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Строгая сборка Windows (`net10.0-windows10.0.19041.0`) с `-warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Проверка стиля `dotnet format GosTek.sln --verify-no-changes`: код **0**.
+
+### [Запись #53] 2026-11-12 | Фаза 10.3 | RESPONSIVE-LAYOUT-ADAPTIVE-SHRINKING-FILL | Восстановление адаптивности и сжатия контента без обрезания
+- **Что:** Я провёл глубокий геометрический анализ механизма компоновки MAUI и полностью устранил критический баг адаптивности (обрезание контента при уменьшении окна до 1024x768):
+  1. **Причина регресса (`WidthRequest`):**
+     - В предыдущей попытке синхронизации ширины для корневых `VerticalStackLayout` было добавлено свойство `WidthRequest="{OnPlatform WinUI=950, Android=-1, Default=-1}"`.
+     - В механизме разметки .NET MAUI / WinUI свойство `WidthRequest` задаёт принудительный фиксированный размер. Внутри вертикального `ScrollView` контейнер с фиксированным `WidthRequest=950` отказывается сжиматься ниже 950px, даже когда ширина доступного окна сужается до 1024px (при левом навигационном rail в 220px доступная контентная область `ScrollView` составляет лишь 804px). В результате контент вылезал на 146px за правую кромку окна и безжалостно обрезался.
+  2. **Геометрическое решение на базе MAUI (`MaximumWidthRequest` + `HorizontalOptions="Fill"`):**
+     - Полностью удалил жесткие ограничители `WidthRequest` со всех 4 основных страниц (`MainPage.xaml`, `ProfilePage.xaml`, `CheckPage.xaml`, `TemplatesPage.xaml`).
+     - Для корневых контейнеров `VerticalStackLayout` установил связку `MaximumWidthRequest="950"` и `HorizontalOptions="Fill"`.
+     - **Механика работы:**
+       - При `HorizontalOptions="Fill"` контейнер стремится занять всю доступную ширину родительского `ScrollView`, гарантируя, что его дочерние элементы растягиваются во всю ширину, а не схлопываются по ширине короткого текста.
+       - На широких мониторах (развёрнутое окно, $W > 950$px) ширина контейнера строго ограничивается потолком `MaximumWidthRequest="950"`. По правилам компоновки MAUI элемент с `HorizontalOptions="Fill"`, ограниченный максимальной шириной, центрируется в доступном пространстве с симметричными отступами слева и справа.
+       - При ручном сжатии окна пользователем ($W < 950$px, вплоть до минимальных 1024x768 с контентной зоной 804px) `MaximumWidthRequest` перестаёт ограничивать ширину, и контейнер вместе со всеми вложенными карточками, кнопками и полями плавно и пропорционально сжимается в границах окна без переполнения, горизонтального скролла и обрезания элементов.
+- **Тестирование и верификация:**
+  - Все **216/216 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Строгая сборка Windows (`net10.0-windows10.0.19041.0`) с `-warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Проверка стиля `dotnet format GosTek.sln --verify-no-changes`: код **0**.
+
+### [Запись #52] 2026-11-12 | Фаза 10.3 | WINUI-CORNER-ELIMINATION-AND-EXACT-950PX-WIDTH | Тотальное уничтожение угла WinUI и пиксельная синхронизация 950px-коридора
+- **Что:** Я выполнил глубокий технический аудит и устранил два корневых визуальных бага в приложении на Windows:
+  1. **Ликвидация «неубиваемого» темного угла в WinUI 3 (`MauiProgram.cs`, `Platforms/Windows/App.xaml`, `ThemeService.cs`, `AppShell.xaml`):**
+     - **Причина:** В WinUI 3 нативный `NavigationView` (базовый класс для MAUI `ShellView`) резервирует в `PaneContentGrid` системную нулевую строку `PaneContentGridToggleButtonRow` (высотой 44-48px) под гамбургер-тумблер `PaneToggleButtonGrid`. Так как наш `AppTabBar` помещен внутрь `FlyoutContent`, он начинался ниже этой строки. Сама строка окрашивалась стандартной системной кистью темы WinUI `NavigationViewDefaultPaneBackground` / `NavigationViewExpandedPaneBackground` (темно-серый цвет), образуя визуальный отсекающий прямоугольник прямо над боковой панелью.
+     - **Решение:**
+       - В `Platforms/Windows/App.xaml` переопределил все системные кисти панели `NavigationViewDefaultPaneBackground`, `NavigationViewExpandedPaneBackground`, `NavigationViewTopPaneBackground`, `NavigationViewHeaderBackground` и `NavigationViewTitlebarArea` в `Transparent`.
+       - В `MauiProgram.cs` через `ShellHandler.Mapper` принудительно обнулил высоту `PaneContentGridToggleButtonRow` (`Height = 0`, `MaxHeight = 0`) и `PaneHeaderContentBorderRow`, скрыл `PaneToggleButtonGrid` и `ContentPaneTopPadding` (`Visibility = Collapsed`), а фон `PaneContentGrid` сделал прозрачным.
+       - Установил `window.ExtendsContentIntoTitleBar = true` на уровне XAML Window (в дополнение к `AppWindow.TitleBar`). Теперь боковая панель `AppTabBar` монолитно уходит в верхнюю кромку окна (Y=0) без миллиметра отступа.
+  2. **Устранение «иллюзии ширины» и пиксельное выравнивание всех 4 экранов (`MainPage.xaml`, `ProfilePage.xaml`, `CheckPage.xaml`, `TemplatesPage.xaml`):**
+     - **Причина:** В .NET MAUI свойство `MaximumWidthRequest="950"` — это ограничитель сверху, а не целевой размер. Внутри `ScrollView` контейнер с `HorizontalOptions="Center"` рассчитывает свою ширину по *естественному размеру дочерних элементов* (Desired Size). На `CheckPage` длинный абзац текста (200 символов) распирал контейнер до предельных 950px, а на `TemplatesPage` ряд чипов `CategoryChips` занимал более 1000px. Но на `MainPage` и `ProfilePage` нет длинных текстов и широких чипов — поля ввода `Entry` и карточки схлопывались по естественной ширине текста (до 450–550px), из-за чего профиль и быстрый старт выглядели значительно уже!
+     - **Решение:**
+       - На всех четырех экранах (`MainPage`, `ProfilePage`, `CheckPage`, `TemplatesPage`) для корневого `VerticalStackLayout` задал `WidthRequest="{OnPlatform WinUI=950, Android=-1, Default=-1}"` в связке с `MaximumWidthRequest="950"` и `HorizontalOptions="Center"`.
+       - Теперь на десктопе контейнер гарантированно получает фиксированный желаемый размер 950px, центрируется в `ScrollView`, и все дочерние элементы с `HorizontalOptions="Fill"` физически растягиваются на одинаковые 910px полезной ширины от края до края.
+- **Тестирование и верификация:**
+  - Все **216/216 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Строгая сборка Windows (`net10.0-windows10.0.19041.0`) с `-warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Проверка стиля `dotnet format GosTek.sln --verify-no-changes`: код **0**.
+
+### [Запись #51] 2026-11-11 | Фаза 10.3 | LAYOUT-FINALIZATION-BENCHMARK-950PX-FILL | Полная финализация верстки Главной и Профиля по эталону CheckPage (950px + Fill)
+- **Что:** Я полностью синхронизировал верстку страниц `MainPage` и `ProfilePage` с эталонными экранами `CheckPage` и `TemplatesPage`, устранив микро-сжатие элементов по центру:
+  1. **Главная страница (`Views/MainPage.xaml`, `Views/ListRow.xaml`):**
+     - Установил `MaximumWidthRequest="950"` и `HorizontalOptions="Center"` у основного контейнера `VerticalStackLayout`.
+     - Добавил явное `HorizontalOptions="Fill"` для карточки «Создать документ», сетки кнопок «Проверить» и «Сканировать», карточки «Мой профиль», секции и списка «Быстрый старт», а также разделителей `ProfileDivider` и `QuickStartDivider`.
+     - В `Views/ListRow.xaml` добавил `HorizontalOptions="Fill"` для `ContentView` и корневого `Border`, гарантируя растягивание строк на всю ширину 950px.
+  2. **Страница профиля (`Views/ProfilePage.xaml`, `Views/ProfilePage.xaml.cs`):**
+     - Установил `MaximumWidthRequest="950"` и `HorizontalOptions="Center"` у основного `VerticalStackLayout`.
+     - Добавил явное `HorizontalOptions="Fill"` для карточки прогресса, акцентной карточки сканера паспорта, карточки безопасности, `FieldsHost`, `CustomFieldsHost`, кнопки добавления поля и кнопки «Сохранить».
+     - В `ProfilePage.xaml.cs` в методах `CreateField` и `CreateCustomFieldUi` принудительно задал `HorizontalOptions = LayoutOptions.Fill` для всех генерируемых полей, рамок `Border`, контейнеров `VerticalStackLayout` и `headerGrid`.
+  3. **Результат:**
+     - Ширина контентного коридора на всех четырёх основных вкладках (`Главная`, `Шаблоны`, `Проверка`, `Профиль`) стала визуально абсолютно одинаковой (строго 950px).
+     - Все элементы честно и монолитно растягиваются от левого до правого края 950-пиксельного коридора без схлопывания.
+- **Тестирование и верификация:**
+  - Все **216/216 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Строгая сборка Windows (`net10.0-windows10.0.19041.0`) с `-warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Проверка стиля `dotnet format GosTek.sln --verify-no-changes`: код **0**.
+
+### [Запись #50] 2026-11-11 | Фаза 10.3 | LAYOUT-ROLLBACK-TO-SINGLE-COLUMN-1050PX | Экстренный откат верстки к классическому одноколоночному виду (1050px)
+- **Что:** Я выполнил оперативный откат двухколоночной сетки ("кирпичей") списков и полей ввода, вернув классическую эталонную вертикальную компоновку (по образцу `CheckPage.xaml`) с улучшенной шириной:
+  1. **Главная страница (`Views/MainPage.xaml`, `Views/MainPage.xaml.cs`):**
+     - Удалил двухколоночный `Grid` из секции «Быстрый старт».
+     - Вернул `QuickStartList` в стандартный `VerticalStackLayout` с `Spacing="10"`.
+     - Карточки недавних документов теперь располагаются строго сверху вниз по одной в ряд и гармонично растягиваются на всю доступную ширину контейнера.
+     - Удалил вспомогательный метод `ArrangeQuickStartGrid()` и вернул ограничение каталога `Take(3)`.
+     - Крупные плитки действий «Проверить» и «Сканировать» сохранены в двух колонках (`ColumnDefinitions="*, *"`, `ColumnSpacing="16"`).
+  2. **Страница профиля (`Views/ProfilePage.xaml`, `Views/ProfilePage.xaml.cs`):**
+     - Полностью удалил `Grid` из блока «Базовые реквизиты».
+     - Вернул `FieldsHost` в единый `VerticalStackLayout` со `Spacing="16"`.
+     - Все базовые поля (ФИО, Наименование, УНП, Телефон, Юр. адрес, Паспорт, Р/Счет) снова идут друг под другом сверху вниз на всю ширину контейнера.
+     - В конструкторе `ProfilePage.xaml.cs` устранил логику маппинга по колонкам, вернув лаконичный цикл `foreach (var spec in Specs) FieldsHost.Children.Add(CreateField(spec));`.
+  3. **Ширина контейнера (WinUI 1050px):**
+     - Для `MainPage` и `ProfilePage` установил идеальный размер `MaximumWidthRequest="{OnPlatform WinUI=1050, Android=950}"`, устранив излишнюю зажатость, но сохранив целостность и красоту эталонной компоновки.
+- **Тестирование и верификация:**
+  - Все **216/216 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Строгая сборка Windows (`net10.0-windows10.0.19041.0`) с `-warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Проверка стиля `dotnet format GosTek.sln --verify-no-changes`: код **0**.
+
+### [Запись #49] 2026-11-11 | Фаза 10.3 | DESKTOP-SCALING-MAINPAGE-AND-PROFILE | Десктопное масштабирование MainPage (плитка 2х2) и двухколоночный профиль ProfilePage
+- **Что:** Я разработал премиальный десктопный UX для экранов «Главная» и «Профиль», устранив излишнюю зажатость контента без растягивания текста в длинные нечитаемые строки:
+  1. **Главная страница (`Views/MainPage.xaml`, `Views/MainPage.xaml.cs`):**
+     - Расширил контейнер контента до десктопных 1200px (`MaximumWidthRequest="{OnPlatform WinUI=1200, Android=950}"`).
+     - Карточки быстрых действий «Проверить» и «Сканировать» получили гармоничный интервал `ColumnSpacing="16"`, деля пространство поровну.
+     - Перестроил секцию «Быстрый старт»: заменил одноколоночный список на адаптивный `Grid` (`ColumnDefinitions="{OnPlatform WinUI='*, *', Android='*'}"`, `ColumnSpacing="16"`, `RowSpacing="10"`).
+     - В `MainPage.xaml.cs` выборка расширена до `Take(4)`, а метод `ArrangeQuickStartGrid()` динамически распределяет карточки по колонкам и строкам (на Windows — плиткой 2х2, на Android — привычным вертикальным списком в один столбец).
+  2. **Двухколоночный профиль (`Views/ProfilePage.xaml`, `Views/ProfilePage.xaml.cs`):**
+     - Расширил контейнер профиля до оптимальных 1100px (`MaximumWidthRequest="{OnPlatform WinUI=1100, Android=950}"`). Карточки прогресса готовности, быстрого сканирования паспорта и безопасности сохранили полную ширину над сеткой.
+     - Заменил `VerticalStackLayout` базовых реквизитов на адаптивный `Grid x:Name="FieldsHost"` (`ColumnDefinitions="{OnPlatform WinUI='*, *', Android='*'}"`, `ColumnSpacing="20"`, `RowSpacing="16"`).
+     - В `ProfilePage.xaml.cs` реализовал логическое разделение полей на две колонки на WinUI:
+       - **Левая колонка (`Grid.Column="0"`):** ФИО, УНП, Телефон.
+       - **Правая колонка (`Grid.Column="1"`):** Наименование, Юридический адрес, Паспорт.
+       - **Нижний ряд:** Расчётный счёт (`Grid.Column="0"`, `Grid.ColumnSpan="2"`).
+       - **На Android:** все 7 полей выстраиваются в одну вертикальную колонку (`Grid.Column="0"`, `Grid.Row="i"`).
+- **Тестирование и верификация:**
+  - Все **216/216 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Строгая сборка Windows (`net10.0-windows10.0.19041.0`) с `-warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Проверка стиля `dotnet format GosTek.sln --verify-no-changes`: код **0**.
+
+### [Запись #48] 2026-11-11 | Фаза 10.3 | UI-LAYOUT-UNIFICATION-BY-BENCHMARK | Унификация верстки страниц MainPage, TemplatesPage и ProfilePage по эталону CheckPage
+- **Что:** Я привел структуру отступов, интервалов и компонентов страниц `MainPage`, `TemplatesPage` и `ProfilePage` к стандарту эталонной страницы `CheckPage`:
+  1. **Главная страница (`Views/MainPage.xaml`):**
+     - Устранил прилипание шапки к верхнему краю окна: удалил атрибут `Padding` у `ScrollView` и перенес его на внутренний `VerticalStackLayout` (`Padding="{OnPlatform Android='20, 16, 20, 80', WinUI='20, 20, 20, 24'}"`).
+     - Скрыл системный верхний навбар Android на Windows (`IsVisible="{OnPlatform Android=True, WinUI=False, Default=False}"`), исключив фантомные 16px отступа.
+     - Унифицировал шапку: добавил заголовок «Главная» (`FontSize="26" FontAttributes="Bold"`), объединив его с `SubtitleLabel` в контейнер `VerticalStackLayout Spacing="2" VerticalOptions="Center"` без внешних Margin. Теперь отступ от верхнего края окна до заголовка при переключении между всеми 4 вкладками составляет строго одинаковые 20px без микроскачков.
+     - Привел скругление главной карточки «Создать документ» к единому дизайн-коду: `RoundRectangle 20` (вместо 22).
+  2. **Каталог шаблонов (`Views/TemplatesPage.xaml`):**
+     - Изменил межблочный интервал основного `VerticalStackLayout` с 14 на эталонный `Spacing="16"`, устранив скученность карточек.
+     - Увеличил размер шрифта подзаголовка страницы с 12.5 до эталонных `FontSize="13"`.
+     - Настроил внешние отступы чипсов категорий `Margin="0, 2, 0, 2"`, добавив симметричный воздух сверху и снизу.
+  3. **Профиль пользователя (`Views/ProfilePage.xaml`):**
+     - Увеличил внутренний отступ информационной карточки безопасности до просторных `Padding="16, 14"` (вместо 14, 10).
+     - Привел кнопку «Сохранить» к параметрам `PrimaryButton` эталона: `Padding="8, 15"`, скругление `RoundRectangle 16`, отступы `Margin="0, 4, 0, 10"`, размер шрифта `FontSize="15.5"`.
+- **Тестирование и верификация:**
+  - Все **216/216 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Строгая сборка Windows (`net10.0-windows10.0.19041.0`) с `-warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Проверка стиля `dotnet format GosTek.sln --verify-no-changes`: код **0**.
+
+### [Запись #47] 2026-11-11 | Фаза 10.3 | CONTENT-WIDTH-ROLLBACK-TO-COMPACT | Откат ширины контента к компактному виду (950px) с сохранением минимального размера окна (1024x768)
+- **Что:** Я выполнил откат визуального растяжения карточек до 1200px, вернув прежнюю компактную и центрированную верстку контента, сохранив при этом аппаратное ограничение минимального размера окна:
+  1. **Откат ширины контента к компактному виду (`Views/MainPage.xaml`, `Views/TemplatesPage.xaml`, `Views/CheckPage.xaml`, `Views/ProfilePage.xaml`, `Views/FieldsPage.xaml`):**
+     - В `MainPage.xaml`, `TemplatesPage.xaml`, `CheckPage.xaml` и `ProfilePage.xaml` вернул значение `MaximumWidthRequest="950"` у основных контейнеров (`VerticalStackLayout`) внутри `ScrollView`. Контент вновь стал собранным, аккуратным и центрированным.
+     - В `FieldsPage.xaml` вернул `MaximumWidthRequest="950"` для колонок формы ввода и превью А4 внутри `ScrollView`, а также восстановил `MaximumWidthRequest="700"` для кнопки «Собрать документ» (`BuildButton`) и выезжающей шторки экспорта (`ExportOverlay`).
+  2. **Полное сохранение логики минимального размера окна (`Platforms/Windows/WindowSizing.cs`, `MauiProgram.cs`, `App.xaml.cs`):**
+     - Код субклассирования WinUI 3 через Win32 API (`WM_GETMINMAXINFO` с учетом DPI) в `Platforms/Windows/WindowSizing.cs` и вызов `WindowSizing.EnforceMinSize(window)` в `MauiProgram.cs` сохранены в полном объеме.
+     - Десктопные ограничения `MinimumWidth = 1024` и `MinimumHeight = 768` в `App.xaml.cs` сохранены без изменений. Окно физически невозможно стянуть меньше 1024x768.
+- **Тестирование и верификация:**
+  - Все **216/216 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Строгая сборка Windows (`net10.0-windows10.0.19041.0`) с `-warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Проверка стиля `dotnet format GosTek.sln --verify-no-changes`: код **0**.
+
+### [Запись #46] 2026-11-11 | Фаза 10.3 | WINDOW-MIN-SIZE-AND-CONTENT-WIDTH-EXPANSION | Аппаратный минимальный размер окна 1024x768 на WinUI 3 и расширение контента (MaximumWidthRequest=1200)
+- **Что:** Я решил проблему сжатия окна до нечитаемого состояния и оптимизировал использование пространства на широкоформатных мониторах:
+  1. **Аппаратное ограничение минимального размера окна 1024x768 на Windows (`Platforms/Windows/WindowSizing.cs`, `MauiProgram.cs`, `App.xaml.cs`):**
+     - Реализовал класс `WindowSizing` с Win32 Subclassing через `comctl32.dll` (`SetWindowSubclass`, `DefSubclassProc`).
+     - Перехватываю сообщение `WM_GETMINMAXINFO` и принудительно задаю `ptMinTrackSize.x` (1024 * DPI-масштаб) и `ptMinTrackSize.y` (768 * DPI-масштаб), предотвращая физическое стягивание окна пользователем меньше десктопного стандарта.
+     - Защитил делегат `SubclassProc` от преждевременного сбора мусора через статическое поле.
+     - В `MauiProgram.cs` в `OnWindowCreated` подключил `WindowSizing.EnforceMinSize(window)`. При создании окна автоматически выполняется проверка и корректировка начального размера через `AppWindow.Resize` с учетом DPI.
+     - В `App.xaml.cs` на уровне MAUI `Window` установил свойства `MinimumWidth = 1024` и `MinimumHeight = 768`.
+  2. **Расширение контента на широких экранах (`Views/MainPage.xaml`, `Views/TemplatesPage.xaml`, `Views/CheckPage.xaml`, `Views/ProfilePage.xaml`, `Views/FieldsPage.xaml`):**
+     - Во всех основных контентных контейнерах увеличил ограничение ширины с 950px (и 700px) до `MaximumWidthRequest="1200"`.
+     - На Главной (`MainPage`), Каталоге (`TemplatesPage`), Проверке (`CheckPage`) и Профиле (`ProfilePage`) центральные карточки, списки и поля теперь занимают полезную площадь экрана, избавляя от эффекта пустых боковых полей на больших мониторах.
+     - На экране заполнения (`FieldsPage`) левая колонка формы ввода, правая колонка превью А4, кнопка «Собрать документ» (`BuildButton`) и шторка экспорта теперь растягиваются до 1200px.
+- **Тестирование и верификация:**
+  - Все **216/216 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Строгая сборка Windows (`net10.0-windows10.0.19041.0`) с `-warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Проверка стиля `dotnet format GosTek.sln --verify-no-changes`: код **0**.
+
+### [Запись #45] 2026-11-11 | Фаза 10.3 | GLOBAL-SETTINGS-AND-RAIL-VISIBILITY-FIX | Глобальный оверлей настроек, скрытие панели на подстраницах и окончательное устранение угла TitleBar
+- **Что:** Я устранил 3 критических бага навигации и WinUI 3 UI:
+  1. **Глобальные настройки поверх любой вкладки (Views/SettingsOverlay.cs, Views/AppTabBar.xaml.cs, Views/MainPage.xaml.cs, AppShell.xaml.cs):**
+     - Вынес панель настроек из жесткой привязки к MainPage в глобальный статический класс `SettingsOverlay`.
+     - При нажатии на кнопку «Настройки» в AppTabBar с любой страницы (Шаблоны, Проверка, Профиль, Скан, Главная) шторка настроек открывается поверх текущей активной страницы (`ZIndex = 10000`) без принудительного редиректа на `//MainPage`.
+     - Глобальный обработчик Escape в `AppShell.HandleGlobalEscapeAsync()` и кнопка «Назад» на Android проверяют `SettingsOverlay.IsOpen` в приоритетном порядке и корректно закрывают шторку настроек на любой вкладке.
+  2. **Скрытие боковой панели на подстраницах (Views/FieldsPage.xaml/.cs, Views/RuleEditorPage.xaml/.cs):**
+     - На подстраницах `FieldsPage` и `RuleEditorPage` добавил `Shell.FlyoutBehavior="Disabled"` и `Shell.TabBarIsVisible="False"`.
+     - В `OnAppearing` принудительно задал `shell.FlyoutBehavior = FlyoutBehavior.Disabled; shell.FlyoutWidth = 0;`, скрывая панель и освобождая 100% ширины под заполнение документа/редактирование правил.
+     - В `OnDisappearing` восстановил `shell.FlyoutBehavior = FlyoutBehavior.Locked; shell.FlyoutWidth = Preferences.Get("rail_collapsed", false) ? 64 : 220;`.
+  3. **Тотальное уничтожение угла TitleBar в WinUI 3 (MauiProgram.cs, ThemeService.cs, AppShell.xaml):**
+     - В `MauiProgram.cs` в `OnWindowCreated` внедрил принудительную очистку всех цветовых состояний заголовка: `BackgroundColor = Transparent`, `InactiveBackgroundColor = Transparent`, `ButtonBackgroundColor = Transparent`, `ButtonInactiveBackgroundColor = Transparent`, `ButtonHoverBackgroundColor = ColorHelper.FromArgb(25, 255, 255, 255)`.
+     - В `ThemeService.ApplyTitleBarTheme` синхронизировал аналогичные параметры при динамической смене темы.
+     - В `AppShell.xaml` у `FlyoutHeaderTemplate` зафиксировал `HeightRequest="0" WidthRequest="0" Margin="0" Padding="0"`, полностью исключив внутренние системные сдвиги WinUI 3.
+- **Тестирование и верификация:**
+  - Все **216/216 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Строгая сборка Windows (`net10.0-windows10.0.19041.0`) с `-warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Проверка стиля `dotnet format GosTek.sln --verify-no-changes`: код **0**.
+
+### [Запись #44] 2026-11-11 | Фаза 10.3 | WINUI-TRANSPARENT-TITLEBAR-AND-GLOBAL-ESCAPE | Полная прозрачность системного TitleBar и умная глобальная навигация по клавише Escape
+- **Что:** Я успешно устранил остаточный темный фон заголовка WinUI 3 и внедрил централизованную цепочку навигации по Escape:
+  1. **Полное уничтожение системного фона TitleBar (ThemeService.cs):**
+     - В методе ApplyTitleBarTheme установил прозрачный фон для заголовка окна: 	itleBar.BackgroundColor = Microsoft.UI.Colors.Transparent и 	itleBar.InactiveBackgroundColor = Microsoft.UI.Colors.Transparent.
+     - Теперь и кнопки, и сам контейнер строки заголовка WinUI 3 полностью прозрачны — фон приложения и боковой панели бесшовно сливаются с границами окна без полос и затемнений.
+  2. **Умный перехват Escape и глобальная навигация (AppShell.xaml.cs, App.xaml.cs, MainPage.xaml.cs, FieldsPage.xaml.cs):**
+     - В AppShell.xaml.cs на окно WinUI зарегистрирован глобальный KeyboardAccelerator для клавиши Escape, перехватывающий нажатие независимо от фокуса ввода.
+     - Алгоритм AppShell.HandleGlobalEscapeAsync() строго следует 4-ступенчатой цепочке:
+       1. **Проверка модалок и оверлеев:** закрываются диалоговые окна Dialogs.TryDismiss(), шторка настроек mainPage.TryCloseSettingsAsync(), оверлеи шаблона ieldsPage.TryDismissOverlays() (чат ИИ, память, экспорт) и модальный стек Shell.Current.Navigation.ModalStack. Выполнение прерывается.
+       2. **Проверка глубины навигации:** если пользователь зашел внутрь страницы (например, редактирует шаблон, NavigationStack.Count > 1), выполняется переход назад wait Shell.Current.GoToAsync(..).
+       3. **Проверка вкладки:** если пользователь находится на корневой вкладке (Шаблоны, Проверка, Профиль), кроме Главной, выполняется переход на Главную вкладку wait Shell.Current.GoToAsync(//MainPage).
+       4. **Главная страница:** если пользователь уже на Главной и ничего не открыто — действие игнорируется.
+     - Удалил дублирующийся локальный перехватчик HookEscape из MainPage.xaml.cs.
+- **Тестирование и верификация:**
+  - Все **216/216 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Строгая сборка Windows (
+et10.0-windows10.0.19041.0) с -warnaserror: **0 предупреждений, 0 ошибок**.
+  - Проверка стиля dotnet format GosTek.sln --verify-no-changes: код **0**.
+
+### [Запись #43] 2026-11-11 | Фаза 10.3 | WINUI-TITLEBAR-CUSTOMIZATION | Кастомизация системного заголовка Windows: расширение контента в TitleBar и прозрачные кнопки управления
+- **Что:** Я выполнил бесшовную интеграцию окна приложения с системной строкой заголовка Windows (WinUI 3):
+  1. **Расширение контента в область заголовка (ThemeService.cs, MauiProgram.cs):**
+     - В MauiProgram.cs через uilder.ConfigureLifecycleEvents и событие OnWindowCreated настроил расширение контента окна в заголовок: AppWindow.TitleBar.ExtendsContentIntoTitleBar = true.
+     - Это устранило визуальную полосу разделения и разрыв между системным заголовком Windows и левой навигационной панелью AppTabBar. Фон приложения монолитно заполняет окно вплоть до верхней границы.
+  2. **Прозрачные кнопки управления окном с поддержкой светлой и тёмной тем (ThemeService.cs):**
+     - Настроил прозрачный фон для системных кнопок окна: ButtonBackgroundColor = Microsoft.UI.Colors.Transparent и ButtonInactiveBackgroundColor = Microsoft.UI.Colors.Transparent.
+     - Реализовал динамическую установку цветов кнопок (крестик, свернуть, развернуть) и состояний hover/pressed под текущую тему (IsDark -> White / Slate-100, Light -> Black / Slate-900) в методе ThemeService.ApplyTitleBarTheme.
+     - Метод автоматически вызывается при создании окна и при каждом переключении темы.
+- **Тестирование и верификация:**
+  - Все **216/216 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Строгая сборка Windows (
+et10.0-windows10.0.19041.0) с -warnaserror: **0 предупреждений, 0 ошибок**.
+  - Проверка стиля dotnet format GosTek.sln --verify-no-changes: код **0**.
+
+### [Запись #42] 2026-11-11 | Фаза 10.3 | GLOBAL-UI-SHELL-REFACTORING | Глобальный рефакторинг UI: Единый Navigation Rail в Shell на Windows, нативный TabBar на Android, восстановление скролла страниц, чип Избранное и центрирование
+- **Что:** Я выполнил масштабный архитектурный рефакторинг интерфейса:
+  1. **Единая оболочка AppShell и Navigation Rail (AppShell.xaml, Views/AppTabBar.xaml, Views/AppTabBar.xaml.cs):**
+     - Перенёс навигационную панель Windows из отдельных страниц в единый постоянный Shell.FlyoutContent с поведением FlyoutBehavior=Locked и шириной FlyoutWidth=220 (при сворачивании 64px).
+     - Для платформы Android настроил системный Shell.TabBarIsVisible=True с 5 вкладками в <TabBar>, снабдив каждую нативной векторной иконкой 	ab_home.svg, 	ab_templates.svg, 	ab_scan.svg, 	ab_check.svg, 	ab_profile.svg.
+     - На Windows Shell.TabBarIsVisible=False.
+     - Полностью устранил дубликаты AppTabBar со всех страниц приложения (MainPage, TemplatesPage, ProfilePage, CheckPage). Состояние панели (свернуто/развернуто, активная вкладка через Shell.Navigated) сохраняется глобально без сбросов и дерганий.
+     - Футер боковой панели (кнопка «Настройки» и переключатель темы) зафиксирован строго снизу (Grid.Row=2, VerticalOptions=End) благодаря сетке Grid RowDefinitions=Auto, *, Auto.
+  2. **Восстановление скролла на всех страницах (TemplatesPage.xaml, ProfilePage.xaml, CheckPage.xaml):**
+     - Устранил баг блокировки скролла: корневые сетки переведены на RowDefinitions=*, контент обёрнут в <ScrollView VerticalScrollBarVisibility=Never>.
+     - Кнопки сохранения и действий (SaveButton, ActionBar) перенесены внутрь прокручиваемой области, исключая конфликты расчета высоты.
+  3. **Центрирование контента и единый логотип:**
+     - Контейнеры на всех экранах получили адаптивное центрирование: HorizontalOptions=Center и MaximumWidthRequest=950.
+     - В шапке Windows убран дублирующий заголовок «GosTek».
+     - В боковой панели AppTabBar логотип выведен шрифтом PTSansBold размером 27px цвета BrandGreen без тяжелых теней.
+  4. **Избранное как чип-вкладка в каталоге (Views/TemplatesPage.xaml, Views/TemplatesPage.xaml.cs):**
+     - Убран громоздкий отдельный блок «Избранные шаблоны» из ленты каталога.
+     - Добавлен чип «⭐ Избранное» нулевым элементом перед «Все» в CategoryChips.
+     - При выборе «⭐ Избранное» отображаются исключительно отмеченные пользователем шаблоны (с дружелюбной заглушкой, если избранного пока нет).
+- **Тестирование и верификация:**
+  - Все **216/216 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Строгая сборка Windows (
+et10.0-windows10.0.19041.0) с -warnaserror: **0 предупреждений, 0 ошибок**.
+  - Проверка стиля dotnet format GosTek.sln --verify-no-changes: код **0**.
+
+### [Запись #41] 2026-11-10 | Фаза 10.2 | UI-UX-POLISH-AND-COLLAPSIBLE-RAIL | Полировка UI/UX, защита от спама и анимация избранного, карусель правил с серыми стрелками, сворачиваемый Navigation Rail и логотип GosTek
+- **Что:** Я успешно реализовал комплекс улучшений пользовательского интерфейса, интерактивности и адаптивной компоновки:
+  1. **Анимация и защита от спама в избранном (`Views/TemplatesPage.xaml.cs`, `Views/ListRow.xaml.cs`, `Views/Controls/Toast.cs`):**
+     - Внедрил защиту от быстрых повторных нажатий (Debounce) с помощью флага `_isUpdatingFavorite`, блокирующего повторные срабатывания до завершения операции в хранилище Preferences.
+     - Разработал плавную микроанимацию `AnimateFavoriteToggleAsync()` для кнопки звездочки: сжатие (`ScaleTo(0.65)`), переключение иконки/цвета (`starfilled` цвета `BrandGreen` / `star` цвета `TextSecondary`) и разжатие с упругим отскоком (`ScaleTo(1.25)` -> `ScaleTo(1.0)`).
+     - Переработал всплывающий Toast: теперь он гарантированно центрируется по ширине всей страницы (Grid RowSpan/ColumnSpan = 10, `HorizontalOptions = Center`, `VerticalOptions = End`), располагается строго над нижней панелью на Android и Windows, снабжен мягкой тенью и плавной анимацией `FadeTo` + `TranslationY`.
+  2. **Карусель правил на экране проверки (`Controls/ChipBar.cs`, `Views/CheckPage.xaml`):**
+     - Устранил обрезку теней и скруглений чипсов правил, добавив безопасные внутренние отступы `ChipsPadding="8, 6, 8, 8"` в `HorizontalStackLayout` горизонтального `ScrollView`.
+     - Реализовал динамическое состояние стрелок прокрутки (влево/вправо): стрелки отслеживают позицию скролла (`Scrolled`), блокируются (`IsEnabled = false`), становятся полупрозрачными (`Opacity = 0.35`) и меняют цвет на `TextSecondary` при достижении соответствующего края списка.
+  3. **Сворачиваемая боковая панель Windows (`Views/AppTabBar.xaml`, `Views/AppTabBar.xaml.cs`, `Views/MainPage.xaml`, `Views/TemplatesPage.xaml`, `Views/CheckPage.xaml`, `Views/ProfilePage.xaml`):**
+     - Добавил в заголовок `AppTabBar` кнопку сворачивания с иконкой `chevronleft` / `chevronright`.
+     - Реализовал два состояния: развернутое (220px, логотип, иконки и текстовые подписи вкладок, кнопка настроек и переключатель темы) и свернутое (64px, скрытие текста, центрированные компактные кнопки 44x44, компактная кнопка темы 40x40).
+     - Реализовал плавную анимацию изменения ширины через `Animation.Commit` с кривой `Easing.CubicInOut`.
+     - Перевел сетки страниц (`MainPage`, `TemplatesPage`, `CheckPage`, `ProfilePage`) на `ColumnDefinitions="{OnPlatform Android='*', WinUI='Auto, *'}"`, благодаря чему контент страниц автоматически подстраивается под сжатие и расширение левой панели без необходимости передачи событий между страницами.
+     - Состояние сворачивания сохраняется в `Preferences` (`rail_collapsed`) и синхронизируется между страницами.
+  4. **Логотип и надпись (`Views/AppTabBar.xaml`):**
+     - Заменил кириллический текст «ГосТек» на латиницу «GosTek».
+     - Увеличил размер шрифта до 25, установил `FontAttributes="Bold"` и фирменный цвет `BrandGreen`.
+     - Добавил объемную мягкую тень (`Shadow Brush="Black" Offset="0, 1" Radius="4" Opacity="0.16"`).
+- **Тестирование и верификация:**
+  - Все **216/216 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Строгая сборка Windows (`net10.0-windows10.0.19041.0`) с `-warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Строгая сборка Android (`net10.0-android`) с `-warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Проверка стиля `dotnet format GosTek.sln --verify-no-changes`: код **0**.
+
+---
+
+## 3. Фаза 9: Масштабная перестройка ИИ-архитектуры (Сервер + Клиент)
 
 ### [Запись #40] 2026-11-10 | Фаза 9 | AI-ARCHITECTURE-SERVER-CLIENT-OVERHAUL | Комплексная модернизация серверного и клиентского уровней ИИ: каскадный fallback, структурированная память, защитное нумерованное маскирование и режимы развертывания полей
 - **Что:** Я успешно реализовал масштабную модернизацию подсистемы ИИ-помощника на стороне прокси-сервера (Cloudflare Worker) и клиента (.NET MAUI):

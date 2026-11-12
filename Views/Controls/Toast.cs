@@ -54,20 +54,20 @@ public static class Toast
                 Stroke = new SolidColorBrush(Color.FromArgb("#334155")),
                 StrokeThickness = 1,
                 StrokeShape = new RoundRectangle { CornerRadius = 16 },
-                Padding = new Thickness(16, 10),
+                Padding = new Thickness(18, 12),
                 HorizontalOptions = LayoutOptions.Center,
                 VerticalOptions = LayoutOptions.End,
-                Margin = new Thickness(20, 0, 20, 36),
+                Margin = new Thickness(20, 0, 20, DeviceInfo.Platform == DevicePlatform.Android ? 86 : 40),
                 InputTransparent = true,
                 ZIndex = 9999,
                 Opacity = 0,
-                TranslationY = 30,
+                TranslationY = 24,
                 Shadow = new Shadow
                 {
                     Brush = new SolidColorBrush(Colors.Black),
                     Offset = new Point(0, 4),
-                    Radius = 12,
-                    Opacity = 0.32f,
+                    Radius = 14,
+                    Opacity = 0.35f,
                 },
                 Content = new HorizontalStackLayout
                 {
@@ -89,19 +89,25 @@ public static class Toast
                 },
             };
 
+            // Растягиваем на всю сетку страницы, чтобы тост центрировался по всему экрану
+            Grid.SetRow(pill, 0);
+            Grid.SetColumn(pill, 0);
+            Grid.SetRowSpan(pill, 10);
+            Grid.SetColumnSpan(pill, 10);
+
             root.Add(pill);
 
             // Анимация появления
             await Task.WhenAll(
-                pill.FadeToAsync(1, 160, Easing.CubicOut),
+                pill.FadeToAsync(1, 180, Easing.CubicOut),
                 pill.TranslateToAsync(0, 0, 200, Easing.CubicOut));
 
             await Task.Delay(durationMs);
 
             // Анимация скрытия
             await Task.WhenAll(
-                pill.FadeToAsync(0, 160, Easing.CubicIn),
-                pill.TranslateToAsync(0, 20, 180, Easing.CubicIn));
+                pill.FadeToAsync(0, 180, Easing.CubicIn),
+                pill.TranslateToAsync(0, 24, 180, Easing.CubicIn));
 
             root.Remove(pill);
         }

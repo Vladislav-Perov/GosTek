@@ -20,10 +20,14 @@ namespace GosTek
         {
             var window = new Window(new AppShell());
 #if WINDOWS
-            // Меньше этого окно уменьшить нельзя: иначе элементы шапки наезжают друг на друга
-            window.MinimumWidth = 500;
-            window.MinimumHeight = 700;
-            window.Created += (_, _) => ThemeService.ApplyPlatformTheme(window);
+            // Минимальные десктопные пропорции окна: 800x600
+            window.MinimumWidth = 800;
+            window.MinimumHeight = 600;
+            window.Created += (_, _) =>
+            {
+                ThemeService.ApplyPlatformTheme(window);
+                (window.Page as AppShell)?.HookGlobalEscape();
+            };
 #endif
             return window;
         }

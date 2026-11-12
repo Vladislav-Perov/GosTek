@@ -77,7 +77,7 @@ public class CustomRulesService : ICustomRulesService
 
     public async Task<IReadOnlyList<RuleSet>> LoadRulesAsync()
     {
-        await _lock.WaitAsync();
+        await _lock.WaitAsync().ConfigureAwait(false);
         try {
             if (!File.Exists(_storageFilePath)) {
                 _loaded = true;
@@ -86,7 +86,7 @@ public class CustomRulesService : ICustomRulesService
 
             string json;
             try {
-                json = await File.ReadAllTextAsync(_storageFilePath);
+                json = await File.ReadAllTextAsync(_storageFilePath).ConfigureAwait(false);
             } catch (Exception ex) {
                 Debug.WriteLine($"[CustomRulesService] Ошибка чтения файла: {ex.Message}");
                 return Array.Empty<RuleSet>();

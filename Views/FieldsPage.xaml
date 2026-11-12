@@ -14,6 +14,8 @@
              Title="Шаблон"
              BackgroundColor="{DynamicResource PageBg}"
              Shell.NavBarIsVisible="False"
+             Shell.FlyoutBehavior="Disabled"
+             Shell.TabBarIsVisible="False"
              SizeChanged="OnPageSizeChanged">
 
     <Grid RowDefinitions="Auto, *, Auto">
@@ -89,7 +91,7 @@
             <ScrollView x:Name="FormScroll" Grid.Column="0" VerticalScrollBarVisibility="Never">
                 <VerticalStackLayout Padding="{OnPlatform Android='20, 8, 20, 80', WinUI='20, 8, 20, 24'}"
                                      Spacing="16"
-                                     MaximumWidthRequest="700"
+                                     MaximumWidthRequest="950"
                                      HorizontalOptions="Fill">
 
                     <!-- Карточка быстрого автозаполнения из профиля -->
@@ -218,7 +220,7 @@
                         VerticalScrollBarVisibility="Never">
                 <VerticalStackLayout Padding="20, 8, 20, 24"
                                      Spacing="12"
-                                     MaximumWidthRequest="700"
+                                     MaximumWidthRequest="950"
                                      HorizontalOptions="Fill">
 
                     <Grid ColumnDefinitions="*, Auto" Margin="2, 4, 2, 0" VerticalOptions="Center">
