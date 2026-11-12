@@ -55,7 +55,7 @@
                             Padding="0"
                             HorizontalOptions="End"
                             VerticalOptions="Center"
-                            AutomationProperties.Name="Свернуть/Развернуть панель">
+                            SemanticProperties.Description="Свернуть/Развернуть панель">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnRailToggleTapped" />
                         </Border.GestureRecognizers>

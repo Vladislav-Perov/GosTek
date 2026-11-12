@@ -47,7 +47,7 @@
                     HeightRequest="42"
                     Padding="0"
                     VerticalOptions="Center"
-                    AutomationProperties.Name="Закрыть сканер">
+                    SemanticProperties.Description="Закрыть сканер">
                 <Border.Shadow>
                     <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.06" />
                 </Border.Shadow>
@@ -366,7 +366,7 @@
                                  Spacing="5"
                                  HorizontalOptions="Center"
                                  VerticalOptions="Center"
-                                 AutomationProperties.Name="Выбрать фото из галереи">
+                                 SemanticProperties.Description="Выбрать фото из галереи">
                 <VerticalStackLayout.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnGalleryTapped" />
                 </VerticalStackLayout.GestureRecognizers>
@@ -402,7 +402,7 @@
                     Stroke="{DynamicResource BrandGreen}"
                     BackgroundColor="Transparent"
                     Padding="5"
-                    AutomationProperties.Name="Сфотографировать">
+                    SemanticProperties.Description="Сфотографировать">
                 <Border.Shadow>
                     <Shadow Brush="Black" Offset="0, 4" Radius="12" Opacity="0.16" />
                 </Border.Shadow>
@@ -425,7 +425,7 @@
                                  Spacing="5"
                                  HorizontalOptions="Center"
                                  VerticalOptions="Center"
-                                 AutomationProperties.Name="Выбрать файл с изображением">
+                                 SemanticProperties.Description="Выбрать файл с изображением">
                 <VerticalStackLayout.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnFileTapped" />
                 </VerticalStackLayout.GestureRecognizers>

@@ -306,6 +306,9 @@ public partial class AppTabBar : ContentView
         s_isRailCollapsed = !s_isRailCollapsed;
         Preferences.Set(PrefRailCollapsed, s_isRailCollapsed);
         ApplyRailCollapsedState(animate: true);
+#if WINDOWS
+        Platforms.Windows.WindowSizing.UpdateDragRegion();
+#endif
     }
 
     private void OnCompactThemeClicked(object? sender, EventArgs e)

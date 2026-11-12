@@ -94,7 +94,7 @@
                         StrokeShape="RoundRectangle 18"
                         HorizontalOptions="Fill"
                         Padding="16, 14"
-                        AutomationProperties.Name="Заполнить по фото паспорта">
+                        SemanticProperties.Description="Заполнить по фото паспорта">
                     <Border.Shadow>
                         <Shadow Brush="Black" Offset="0, 3" Radius="8" Opacity="0.08" />
                     </Border.Shadow>

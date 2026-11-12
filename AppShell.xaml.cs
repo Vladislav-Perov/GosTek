@@ -150,6 +150,8 @@ namespace GosTek
                 FlyoutBehavior = FlyoutBehavior.Locked;
                 FlyoutWidth = Preferences.Get("rail_collapsed", false) ? 64 : 220;
             }
+
+            Platforms.Windows.WindowSizing.UpdateDragRegion();
         }
 #endif
     }

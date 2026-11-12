@@ -47,7 +47,7 @@
                             Padding="0"
                             HorizontalOptions="Start"
                             VerticalOptions="Center"
-                            AutomationProperties.Name="Настройки">
+                            SemanticProperties.Description="Настройки">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnSettingsTapped" />
                         </Border.GestureRecognizers>

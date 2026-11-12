@@ -1,8 +1,9 @@
 /*
  * ==============================================================================
  * НАЗНАЧЕНИЕ: Фиксация минимальных габаритов окна 800x600 на Windows WinUI 3 через Win32 Subclassing (WM_GETMINMAXINFO)
+ *              и нативная область перетаскивания (Drag Region) с учетом ширины Navigation Rail
  * СОДЕРЖИМОЕ: WindowSizing
- * ЗАВИСИМОСТИ: Microsoft.UI.Xaml, WinRT.Interop, System.Runtime.InteropServices
+ * ЗАВИСИМОСТИ: Microsoft.UI.Xaml, WinRT.Interop, System.Runtime.InteropServices, Microsoft.Maui.Controls
  * ==============================================================================
  */
 using System.Runtime.InteropServices;
@@ -11,7 +12,8 @@ using WinRT.Interop;
 namespace GosTek.Platforms.Windows;
 
 /// <summary>
-/// Платформенный помощник для установки аппаратных ограничений минимального размера окна WinUI 3.
+/// Платформенный помощник для установки аппаратных ограничений минимального размера окна WinUI 3
+/// и конфигурации нативной области перетаскивания (Drag Region).
 /// Перехватывает Win32-сообщение WM_GETMINMAXINFO, запрещая уменьшение окна меньше 800x600 с учетом DPI.
 /// Оптимизирован для максимальной производительности: мгновенный возврат DefSubclassProc для всех прочих сообщений,
 /// кэширование DPI без вызовов P/Invoke на кадрах движения и прямое чтение памяти без маршалинга структуры.
@@ -34,6 +36,9 @@ public static class WindowSizing
     private static int s_cachedMinWidthPixels;
     private static int s_cachedMinHeightPixels;
 
+    // Ссылка на текущее активное окно для динамического обновления Drag Region
+    private static WeakReference<Microsoft.UI.Xaml.Window>? s_activeWindowRef;
+
     private delegate IntPtr SubclassProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam, UIntPtr uIdSubclass, IntPtr dwRefData);
 
     [DllImport("comctl32.dll", SetLastError = true)]
@@ -52,6 +57,58 @@ public static class WindowSizing
 
     // Статическая ссылка на делегат защищает от сбора сборщиком мусора (.NET GC)
     private static readonly SubclassProc s_subclassProc = SubclassWndProc;
+
+    /// <summary>
+    /// Вычисляет геометрию прямоугольника области перетаскивания (Drag Region) окна.
+    /// Смещается вправо на ширину Navigation Rail (220px или 64px),
+    /// чтобы верхняя часть боковой панели (логотип, тумблер сворачивания) получала события клика мыши.
+    /// Чистая функция, покрытая модульными тестами.
+    /// </summary>
+    public static global::Windows.Graphics.RectInt32 CalculateDragRect(
+        int totalWidthPixels,
+        double rasterizationScale,
+        int railWidthDips,
+        int leftInsetPixels = 0,
+        int rightInsetPixels = 0,
+        int titleBarHeightDips = 48)
+    {
+        double scale = rasterizationScale > 0 ? rasterizationScale : 1.0;
+        int titleBarHeight = (int)Math.Round(titleBarHeightDips * scale);
+        int railWidthPixels = (int)Math.Round(railWidthDips * scale);
+
+        int startX = Math.Max(leftInsetPixels, railWidthPixels);
+        int dragWidth = totalWidthPixels - startX - rightInsetPixels;
+
+        if (dragWidth <= 0 || titleBarHeight <= 0)
+            return new global::Windows.Graphics.RectInt32(0, 0, 0, 0);
+
+        return new global::Windows.Graphics.RectInt32(startX, 0, dragWidth, titleBarHeight);
+    }
+
+    /// <summary>
+    /// Получить текущую ширину левой панели (Navigation Rail) в DIP.
+    /// </summary>
+    public static int GetCurrentRailWidthDips()
+    {
+        if (Shell.Current is { } shell)
+        {
+            if (shell.FlyoutBehavior == FlyoutBehavior.Disabled ||
+                shell.CurrentPage is Views.FieldsPage or Views.RuleEditorPage)
+            {
+                return 0;
+            }
+
+            try
+            {
+                return Preferences.Default.Get("rail_collapsed", false) ? 64 : 220;
+            }
+            catch
+            {
+                return 220;
+            }
+        }
+        return 220;
+    }
 
     /// <summary>
     /// Зарегистрировать перехватчик WM_GETMINMAXINFO и задать минимальный размер окна.
@@ -89,71 +146,19 @@ public static class WindowSizing
     {
         try
         {
+            s_activeWindowRef = new WeakReference<Microsoft.UI.Xaml.Window>(window);
+
             if (window.AppWindow is not { } appWindow)
                 return;
 
             if (!Microsoft.UI.Windowing.AppWindowTitleBar.IsCustomizationSupported())
                 return;
 
-            void UpdateDragRectangles()
-            {
-                try
-                {
-                    var titleBar = appWindow.TitleBar;
-                    if (titleBar == null)
-                        return;
-
-                    var hwnd = WindowNative.GetWindowHandle(window);
-                    if (hwnd == IntPtr.Zero)
-                        return;
-
-                    double scale = 1.0;
-                    if (window.Content?.XamlRoot is { } xamlRoot && xamlRoot.RasterizationScale > 0)
-                    {
-                        scale = xamlRoot.RasterizationScale;
-                    }
-                    else
-                    {
-                        uint dpi = GetDpiForWindow(hwnd);
-                        if (dpi > 0)
-                        {
-                            scale = dpi / 96.0;
-                        }
-                    }
-
-                    if (scale <= 0)
-                        scale = 1.0;
-
-                    int titleBarHeight = (int)Math.Round(48 * scale);
-                    int totalWidth = appWindow.Size.Width;
-                    int totalHeight = appWindow.Size.Height;
-
-                    // Если окно свернуто или еще не имеет физических размеров на экране
-                    if (totalWidth <= 0 || totalHeight <= 0)
-                        return;
-
-                    int leftInset = titleBar.LeftInset;
-                    int rightInset = titleBar.RightInset;
-                    int dragWidth = totalWidth - leftInset - rightInset;
-
-                    // Жесткая проверка: предотвращаем создание RectInt32 с отрицательными или нулевыми габаритами
-                    if (dragWidth <= 0 || titleBarHeight <= 0)
-                        return;
-
-                    var dragRect = new global::Windows.Graphics.RectInt32(leftInset, 0, dragWidth, titleBarHeight);
-                    titleBar.SetDragRectangles(new[] { dragRect });
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[WindowSizing] SetDragRectangles safely skipped: {ex}");
-                }
-            }
-
-            // Безопасная первичная установка
-            UpdateDragRectangles();
+            // Первичная установка
+            UpdateDragRegion(window);
 
             // Обновление при готовности XAML-дерева / активации окна
-            window.Activated += (_, _) => UpdateDragRectangles();
+            window.Activated += (_, _) => UpdateDragRegion(window);
 
             // Обновление ТОЛЬКО при реальном изменении размера окна, исключая вызовы во время движения
             appWindow.Changed += (_, args) =>
@@ -162,7 +167,7 @@ public static class WindowSizing
                 {
                     if (args.DidSizeChange)
                     {
-                        UpdateDragRectangles();
+                        UpdateDragRegion(window);
                     }
                 }
                 catch (Exception ex)
@@ -174,6 +179,73 @@ public static class WindowSizing
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[WindowSizing] ConfigureDragRegion failed safely: {ex}");
+        }
+    }
+
+    /// <summary>
+    /// Запрос на пересчет и обновление Drag Region активного окна.
+    /// Вызывается при сворачивании/разворачивании Navigation Rail или переходе на страницы без панели.
+    /// </summary>
+    public static void UpdateDragRegion(Microsoft.UI.Xaml.Window? window = null)
+    {
+        try
+        {
+            Microsoft.UI.Xaml.Window? targetWindow = window;
+            if (targetWindow == null && s_activeWindowRef != null && s_activeWindowRef.TryGetTarget(out var activeWin))
+            {
+                targetWindow = activeWin;
+            }
+
+            if (targetWindow?.AppWindow is not { } appWindow)
+                return;
+
+            var titleBar = appWindow.TitleBar;
+            if (titleBar == null)
+                return;
+
+            var hwnd = WindowNative.GetWindowHandle(targetWindow);
+            if (hwnd == IntPtr.Zero)
+                return;
+
+            double scale = 1.0;
+            if (targetWindow.Content?.XamlRoot is { } xamlRoot && xamlRoot.RasterizationScale > 0)
+            {
+                scale = xamlRoot.RasterizationScale;
+            }
+            else
+            {
+                uint dpi = GetDpiForWindow(hwnd);
+                if (dpi > 0)
+                {
+                    scale = dpi / 96.0;
+                }
+            }
+
+            if (scale <= 0)
+                scale = 1.0;
+
+            int totalWidth = appWindow.Size.Width;
+            int totalHeight = appWindow.Size.Height;
+
+            // Если окно свернуто или еще не имеет физических размеров на экране
+            if (totalWidth <= 0 || totalHeight <= 0)
+                return;
+
+            int railWidthDips = GetCurrentRailWidthDips();
+            int leftInset = titleBar.LeftInset;
+            int rightInset = titleBar.RightInset;
+
+            var dragRect = CalculateDragRect(totalWidth, scale, railWidthDips, leftInset, rightInset, 48);
+
+            // Если доступная ширина перетаскивания валидна
+            if (dragRect.Width > 0 && dragRect.Height > 0)
+            {
+                titleBar.SetDragRectangles(new[] { dragRect });
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[WindowSizing] UpdateDragRegion safely handled: {ex}");
         }
     }
 
