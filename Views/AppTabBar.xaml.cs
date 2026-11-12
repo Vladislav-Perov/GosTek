@@ -247,10 +247,13 @@ public partial class AppTabBar : ContentView
 
         ResetHover();
 
-        if (tab.Route is not null)
-            await Shell.Current.GoToAsync(tab.Route);
-        else
-            await Stubs.ShowAsync(tab.Key);
+        await NavigationGuard.NavigateAsync(async () =>
+        {
+            if (tab.Route is not null)
+                await Shell.Current.GoToAsync(tab.Route);
+            else
+                await Stubs.ShowAsync(tab.Key);
+        });
     }
 
     private void SetHover(string? key)

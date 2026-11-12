@@ -453,6 +453,12 @@ public partial class CheckPage : ContentPage
 
     private void SetBusy(bool busy)
     {
+        if (!MainThread.IsMainThread)
+        {
+            MainThread.BeginInvokeOnMainThread(() => SetBusy(busy));
+            return;
+        }
+
         _busy = busy;
         Loader.IsVisible = busy;
         Loader.IsRunning = busy;
@@ -460,6 +466,12 @@ public partial class CheckPage : ContentPage
 
     private void UpdateUi()
     {
+        if (!MainThread.IsMainThread)
+        {
+            MainThread.BeginInvokeOnMainThread(UpdateUi);
+            return;
+        }
+
         bool hasFile = _workPath is not null;
 
         var desc = CurrentRules.Description;

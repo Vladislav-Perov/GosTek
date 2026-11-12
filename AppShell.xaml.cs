@@ -19,6 +19,7 @@ namespace GosTek
 
 #if WINDOWS
             Loaded += (s, e) => HookGlobalEscape();
+            Navigated += (s, e) => EnsureFlyoutState(CurrentPage);
 #endif
         }
 
@@ -50,6 +51,19 @@ namespace GosTek
         /// </summary>
         public static async Task<bool> HandleGlobalEscapeAsync()
         {
+#if WINDOWS
+            if (Application.Current?.Windows.FirstOrDefault()?.Handler?.PlatformView is Microsoft.UI.Xaml.Window win
+                && win.Content?.XamlRoot != null)
+            {
+                var focused = Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(win.Content.XamlRoot);
+                if (focused is Microsoft.UI.Xaml.Controls.TextBox or Microsoft.UI.Xaml.Controls.PasswordBox or Microsoft.UI.Xaml.Controls.RichEditBox)
+                {
+                    (win.Content as Microsoft.UI.Xaml.Controls.Control)?.Focus(Microsoft.UI.Xaml.FocusState.Programmatic);
+                    return true;
+                }
+            }
+#endif
+
             // 1. ПРОВЕРКА МОДАЛОК / НАСТРОЕК / ОВЕРЛЕЕВ
             if (Views.Dialogs.TryDismiss())
                 return true;
@@ -122,6 +136,20 @@ namespace GosTek
 
             root.KeyboardAccelerators.Add(_globalEscape);
             _acceleratorRoot = root;
+        }
+
+        public void EnsureFlyoutState(Page? page)
+        {
+            if (page is Views.FieldsPage or Views.RuleEditorPage)
+            {
+                FlyoutBehavior = FlyoutBehavior.Disabled;
+                FlyoutWidth = 0;
+            }
+            else
+            {
+                FlyoutBehavior = FlyoutBehavior.Locked;
+                FlyoutWidth = Preferences.Get("rail_collapsed", false) ? 64 : 220;
+            }
         }
 #endif
     }

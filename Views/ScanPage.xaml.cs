@@ -36,9 +36,12 @@ public partial class ScanPage : ContentPage
 
     // Живая камера в рамке: CameraView создаётся только после выдачи доступа к камере
     private CameraView? _camera;
+    private readonly CameraLifecycleController _cameraController = new();
     private bool _previewOn;
     private bool _previewStarting;
     private bool _cameraNoteShown;   // в ErrorLabel сейчас сообщение про камеру (а не про распознавание)
+    private int _visibilityToken;
+    private bool _isPageVisible;
     private readonly List<string> _tempFilesToClean = new();
 
     private void RegisterTempFile(string? path)
@@ -91,17 +94,22 @@ public partial class ScanPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        _isPageVisible = true;
+        int token = ++_visibilityToken;
 
         if (!ResultPanel.IsVisible)
         {
-            await StartPreviewAsync();
-            StartLaserAnimation();
+            await StartPreviewAsync(token);
+            if (_isPageVisible && _visibilityToken == token)
+                StartLaserAnimation();
         }
     }
 
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        _isPageVisible = false;
+        ++_visibilityToken;
 
         // Камеру отпускаем при уходе с вкладки
         StopLaserAnimation();
@@ -151,15 +159,28 @@ public partial class ScanPage : ContentPage
         }
     }
 
-    private async Task StartPreviewAsync()
+    private async Task StartPreviewAsync(int? expectedToken = null)
     {
-        if (_previewOn || _previewStarting || ResultPanel.IsVisible)
+        int token = expectedToken ?? _visibilityToken;
+
+        if (_previewOn || _previewStarting || ResultPanel.IsVisible || !_isPageVisible || _visibilityToken != token)
+            return;
+
+        if (!_cameraController.TryBeginStart(token))
             return;
 
         _previewStarting = true;
         try {
             if (!await EnsureCameraPermissionAsync()) {
-                ShowCameraNote("Нет доступа к камере. Разрешите её в настройках или выберите фото через «Галерею» или «Файл».");
+                _cameraController.Stop();
+                if (_isPageVisible && _visibilityToken == token)
+                    ShowCameraNote("Нет доступа к камере. Разрешите её в настройках или выберите фото через «Галерею» или «Файл».");
+                return;
+            }
+
+            if (!_isPageVisible || _visibilityToken != token || ResultPanel.IsVisible)
+            {
+                _cameraController.Stop();
                 return;
             }
 
@@ -174,13 +195,32 @@ public partial class ScanPage : ContentPage
             _camera.IsVisible = true;
             LinesHost.IsVisible = false;
 
-            // Только что созданный CameraView получает нативный обработчик не сразу:
-            // без ожидания StartCameraPreview падает с «Unable to retrieve Handler»
+            // Только что созданный CameraView получает нативный обработчик не сразу
             for (int i = 0; i < 60 && _camera.Handler is null; i++)
+            {
+                if (!_isPageVisible || _visibilityToken != token || ResultPanel.IsVisible)
+                {
+                    _cameraController.Stop();
+                    return;
+                }
                 await Task.Delay(50);
+            }
+
+            if (!_isPageVisible || _visibilityToken != token || ResultPanel.IsVisible)
+            {
+                _cameraController.Stop();
+                return;
+            }
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             await _camera.StartCameraPreview(cts.Token);
+
+            if (!_isPageVisible || _visibilityToken != token || ResultPanel.IsVisible || !_cameraController.CompleteStart(token))
+            {
+                _cameraController.Stop();
+                try { _camera.StopCameraPreview(); } catch { }
+                return;
+            }
 
             _previewOn = true;
 
@@ -189,15 +229,16 @@ public partial class ScanPage : ContentPage
                 ErrorLabel.IsVisible = false;
             }
         } catch (OperationCanceledException) {
-            // Распознавание прервано пользователем
+            _cameraController.Stop();
             return;
-            } catch (Exception ex) {
-            // Камеры нет или она занята: возвращаем линии «листа», сканировать можно из галереи и файла
+        } catch (Exception ex) {
+            _cameraController.Stop();
             if (_camera is not null)
                 _camera.IsVisible = false;
             LinesHost.IsVisible = true;
 
-            ShowCameraNote($"Камера недоступна: {ex.Message}\nВыберите фото через «Галерею» или «Файл».");
+            if (_isPageVisible && _visibilityToken == token)
+                ShowCameraNote($"Камера недоступна: {ex.Message}\nВыберите фото через «Галерею» или «Файл».");
         } finally {
             _previewStarting = false;
         }
@@ -205,10 +246,9 @@ public partial class ScanPage : ContentPage
 
     private void StopPreview()
     {
-        if (!_previewOn)
-            return;
-
+        _cameraController.Stop();
         _previewOn = false;
+        _previewStarting = false;
         try { _camera?.StopCameraPreview(); } catch (Exception) { /* камера уже остановлена */ }
     }
 
@@ -224,19 +264,23 @@ public partial class ScanPage : ContentPage
     private void StartLaserAnimation()
     {
         StopLaserAnimation();
+        if (!_isPageVisible || ResultPanel.IsVisible)
+            return;
+
         _laserCts = new CancellationTokenSource();
         var ct = _laserCts.Token;
+        int token = _visibilityToken;
 
         _ = Task.Run(async () =>
         {
-            while (!ct.IsCancellationRequested)
+            while (!ct.IsCancellationRequested && _isPageVisible && _visibilityToken == token)
             {
                 try
                 {
                     bool finished = false;
                     await MainThread.InvokeOnMainThreadAsync(async () =>
                     {
-                        if (ct.IsCancellationRequested || LaserLine is null)
+                        if (ct.IsCancellationRequested || !_isPageVisible || _visibilityToken != token || LaserLine is null)
                             return;
 
                         double h = ViewfinderArea?.Height ?? 0;

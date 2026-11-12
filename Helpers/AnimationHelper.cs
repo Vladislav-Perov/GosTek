@@ -13,6 +13,11 @@ namespace GosTek.Helpers;
 public static class AnimationHelper
 {
     /// <summary>
+    /// Флаг принудительного отключения анимаций (уменьшение движения / энергосбережение).
+    /// </summary>
+    public static bool ReduceMotionEnabled { get; set; } = false;
+
+    /// <summary>
     /// Каскадное появление коллекции визуальных элементов (плавный выезд снизу с нарастанием прозрачности).
     /// </summary>
     /// <param name="elements">Коллекция элементов для анимации.</param>
@@ -31,6 +36,16 @@ public static class AnimationHelper
         var list = elements.Where(e => e is not null).Cast<VisualElement>().ToList();
         if (list.Count == 0)
             return;
+
+        if (ReduceMotionEnabled)
+        {
+            foreach (var element in list)
+            {
+                element.Opacity = 1.0;
+                element.TranslationY = 0;
+            }
+            return;
+        }
 
         // 1. Предварительная установка начального скрытого состояния
         foreach (var element in list)
@@ -72,7 +87,7 @@ public static class AnimationHelper
         VisualElement? element,
         CancellationToken cancellationToken = default)
     {
-        if (element is null)
+        if (element is null || ReduceMotionEnabled)
             return;
 
         try
@@ -108,7 +123,7 @@ public static class AnimationHelper
     /// <param name="element">Элемент, анимации которого необходимо остановить.</param>
     public static void StopPulse(VisualElement? element)
     {
-        if (element is null)
+        if (element is null || ReduceMotionEnabled)
             return;
 
         try
