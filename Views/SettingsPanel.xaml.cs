@@ -216,6 +216,12 @@ public partial class SettingsPanel : ContentView
         ResetFolderButton.IsVisible = !SettingsService.IsDefaultFolder;
         TemplatesPathLabel.Text = SettingsService.TemplatesFolder;
         ResetTemplatesButton.IsVisible = !SettingsService.IsDefaultTemplatesFolder;
+        AiConsentSwitch.IsToggled = SettingsService.AiConsentAccepted;
+    }
+
+    private void OnAiConsentToggled(object? sender, ToggledEventArgs e)
+    {
+        SettingsService.AiConsentAccepted = e.Value;
     }
 
     // =====================================================================

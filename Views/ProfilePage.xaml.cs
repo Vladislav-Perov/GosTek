@@ -434,9 +434,12 @@ public partial class ProfilePage : ContentPage
         }
 
         try {
-            var profile = ReadForm(normalize: true);
+            var invalidFields = invalid.Select(f => f.Field).ToList();
+            var profile = ReadForm(normalize: true) with {
+                AcceptedFields = invalidFields.Select(f => f.ToString()).ToList()
+            };
             await ProfileStorage.SaveAsync(profile);
-            ProfileRules.SetAccepted(profile, invalid.Select(f => f.Field));
+            ProfileRules.SetAccepted(profile, invalidFields);
 
             _isUpdatingFields = true;
             try {

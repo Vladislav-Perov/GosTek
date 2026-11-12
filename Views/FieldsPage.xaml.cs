@@ -1078,6 +1078,26 @@ public partial class FieldsPage : ContentPage
         if (string.IsNullOrWhiteSpace(userText))
             return;
 
+        if (!SettingsService.AiConsentAccepted)
+        {
+            var accepted = await Dialogs.ConfirmAsync(
+                "Использование ИИ-ассистента",
+                "Для интеллектуального заполнения полей текст вашего запроса и структура полей шаблона отправляются через защищённый облачный сервис.\n\n" +
+                "Персональные данные (ФИО, паспорт, телефон, адрес, УНП, банковские счета) маскируются локально на устройстве перед отправкой.\n\n" +
+                "Разрешить использование сервиса ИИ?",
+                "Разрешить",
+                DialogKind.Info,
+                cancel: "Отклонить");
+
+            if (!accepted)
+            {
+                AddBotMessageBubble("Использование сервиса ИИ отклонено. Вы можете включить его в Настройках приложения в любое время.");
+                return;
+            }
+
+            SettingsService.AiConsentAccepted = true;
+        }
+
         HapticHelper.Click();
         ChatInput.Text = string.Empty;
 

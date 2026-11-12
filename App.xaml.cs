@@ -14,6 +14,7 @@ namespace GosTek
             InitializeComponent();
             ThemeService.Init();
             _ = GosTek.Services.TemplateSeeder.EnsureDefaultTemplatesAsync();
+            _ = Task.Run(() => FileSaveService.ClearTemp());
         }
 
         protected override Window CreateWindow(IActivationState? activationState)

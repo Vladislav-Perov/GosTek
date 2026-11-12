@@ -226,13 +226,38 @@ public static class ProfileRules
 
     private static string AcceptKey(ProfileField f) => "accepted_" + f;
 
+    private static readonly HashSet<ProfileField> _acceptedFields = new();
+
+    public static void LoadAccepted(IEnumerable<string>? acceptedNames)
+    {
+        _acceptedFields.Clear();
+        if (acceptedNames != null)
+        {
+            foreach (var name in acceptedNames)
+            {
+                if (Enum.TryParse<ProfileField>(name, true, out var f))
+                    _acceptedFields.Add(f);
+            }
+        }
+    }
+
+    public static IReadOnlyCollection<ProfileField> GetAccepted() => _acceptedFields.ToList();
+
     private static bool IsAccepted(ProfileField field)
-        => Prefs.Get(AcceptKey(field), false);
+    {
+        if (PreferencesProvider != null)
+            return PreferencesProvider.Get(AcceptKey(field), false);
+
+        return _acceptedFields.Contains(field);
+    }
 
     /// <summary>Запомнить значения полей с ошибками как принятые пользователем; у остальных полей отметка снимается.</summary>
     public static void SetAccepted(ProfileData p, IEnumerable<ProfileField> withErrors)
     {
         var set = withErrors.ToHashSet();
+        _acceptedFields.Clear();
+        foreach (var f in set)
+            _acceptedFields.Add(f);
 
         foreach (var field in All) {
             if (set.Contains(field))
@@ -244,11 +269,13 @@ public static class ProfileRules
 
     public static void ForgetAccepted(ProfileField field)
     {
+        _acceptedFields.Remove(field);
         Prefs.Remove(AcceptKey(field));
     }
 
     public static void ForgetAccepted()
     {
+        _acceptedFields.Clear();
         foreach (var field in All)
             Prefs.Remove(AcceptKey(field));
     }

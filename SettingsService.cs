@@ -28,6 +28,7 @@ public static class SettingsService
     private const string KeyConflict = "set_conflict_mode";
     private const string KeyAfterSave = "set_after_save";
     private const string KeyAiAutoApply = "set_ai_auto_apply";
+    private const string KeyAiConsent = "set_ai_consent_accepted";
 
     /// <summary>Изменилась любая настройка. На событие подписана панель настроек.</summary>
     public static event Action? Changed;
@@ -106,6 +107,19 @@ public static class SettingsService
     /// Режим автоматического заполнения полей от ИИ без подтверждения.
     /// False (по умолчанию) = показывать карточку с подтверждением; True = заполнять сразу.
     /// </summary>
+    /// <summary>
+    /// Согласие пользователя на обработку обезличенных запросов облачным сервисом ИИ.
+    /// </summary>
+    public static bool AiConsentAccepted
+    {
+        get => Preferences.Default.Get(KeyAiConsent, false);
+        set
+        {
+            Preferences.Default.Set(KeyAiConsent, value);
+            Changed?.Invoke();
+        }
+    }
+
     public static bool AiAutoApplyMode
     {
         get => Preferences.Default.Get(KeyAiAutoApply, false);

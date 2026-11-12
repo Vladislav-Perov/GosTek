@@ -115,14 +115,38 @@ public static class FileSaveService
 #endif
     }
 
+    public static Func<string>? CacheDirectoryResolver { get; set; }
+
+    public static string CacheDirectory
+    {
+        get
+        {
+            if (CacheDirectoryResolver != null)
+                return CacheDirectoryResolver();
+
+            try
+            {
+                return FileSystem.CacheDirectory;
+            }
+            catch
+            {
+                return Path.Combine(Path.GetTempPath(), "GosTek_Cache");
+            }
+        }
+    }
+
     /// <summary>Удаляет временные файлы (.docx, .pdf, .jpg, .jpeg, .png, .bmp, .tmp) из кэша приложения. Возвращает, сколько удалено.</summary>
     public static int ClearTemp()
     {
         int count = 0;
 
         try {
+            var cacheDir = CacheDirectory;
+            if (!Directory.Exists(cacheDir))
+                return 0;
+
             foreach (var pattern in new[] { "*.docx", "*.pdf", "*.jpg", "*.jpeg", "*.png", "*.bmp", "*.tmp" }) {
-                foreach (var file in Directory.EnumerateFiles(FileSystem.CacheDirectory, pattern)) {
+                foreach (var file in Directory.EnumerateFiles(cacheDir, pattern)) {
                     try {
                         File.Delete(file);
                         count++;

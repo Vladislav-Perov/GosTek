@@ -390,11 +390,30 @@
                                                             VerticalOptions="Center" />
                                         </Border>
                                         <Label Grid.Column="1"
-                                               Text="Все данные хранятся строго локально на этом устройстве и не передаются в сеть."
+                                               Text="Профиль и шаблоны хранятся локально в зашифрованном виде. При использовании ИИ-ассистента текст запроса и структура полей формы обезличиваются локально перед отправкой в облачный сервис."
                                                FontSize="12"
                                                TextColor="{DynamicResource TextSecondary}"
                                                LineBreakMode="WordWrap"
                                                VerticalOptions="Center" />
+                                    </Grid>
+
+                                    <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 2" />
+
+                                    <Grid ColumnDefinitions="*, Auto" Margin="0, 2" VerticalOptions="Center">
+                                        <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                                            <Label Text="Разрешить облачный ИИ"
+                                                   FontSize="13"
+                                                   FontAttributes="Bold"
+                                                   TextColor="{DynamicResource TextPrimary}" />
+                                            <Label Text="Отправка обезличенных запросов в сервис ИИ"
+                                                   FontSize="11"
+                                                   TextColor="{DynamicResource TextSecondary}" />
+                                        </VerticalStackLayout>
+                                        <Switch Grid.Column="1"
+                                                x:Name="AiConsentSwitch"
+                                                Toggled="OnAiConsentToggled"
+                                                OnColor="{DynamicResource BrandGreen}"
+                                                VerticalOptions="Center" />
                                     </Grid>
 
                                     <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 2" />

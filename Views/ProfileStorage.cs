@@ -1,11 +1,12 @@
 /*
  * ==============================================================================
- * НАЗНАЧЕНИЕ: Защищенное хранение персональных данных профиля и кастомных полей в зашифрованном SecureStorage
+ * НАЗНАЧЕНИЕ: Защищенное хранение персональных данных профиля, кастомных полей и принятых флагов в SecureStorage
  * СОДЕРЖИМОЕ: ProfileData, ProfileStorage, ProfileLoadStatus
- * ЗАВИСИМОСТИ: Microsoft.Maui.Storage.SecureStorage, GosTek.Views.ProfileRules
+ * ЗАВИСИМОСТИ: Microsoft.Maui.Storage.SecureStorage, Microsoft.Maui.Storage.Preferences, GosTek.Views.ProfileRules
  * ==============================================================================
  */
 using System.Text.Json;
+using Microsoft.Maui.Storage;
 
 namespace GosTek;
 
@@ -17,12 +18,16 @@ public record ProfileData(
     string Phone = "",
     string Passport = "",
     string Account = "",
-    Dictionary<string, string>? CustomFields = null)
+    Dictionary<string, string>? CustomFields = null,
+    List<string>? AcceptedFields = null)
 {
     public Dictionary<string, string> CustomFields { get; init; } =
         CustomFields != null
             ? new Dictionary<string, string>(CustomFields, StringComparer.OrdinalIgnoreCase)
             : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    public List<string> AcceptedFields { get; init; } =
+        AcceptedFields != null ? new List<string>(AcceptedFields) : new List<string>();
 }
 
 /// <summary>Итог чтения профиля: нет данных — это не то же самое, что не удалось прочитать.</summary>
@@ -30,8 +35,8 @@ public enum ProfileLoadStatus { Ok, Empty, Failed }
 
 /// <summary>
 /// Хранение профиля только на устройстве. Данные лежат в SecureStorage
-/// (Android Keystore) одним JSON-значением, то есть в зашифрованном виде.
-/// Поддерживает базовые белорусские реквизиты и динамические CustomFields.
+/// (Android Keystore / Windows DPAPI) одним JSON-значением, то есть в зашифрованном виде.
+/// Поддерживает базовые белорусские реквизиты, динамические CustomFields и принятые ошибки валидации.
 /// </summary>
 public static class ProfileStorage
 {
@@ -62,7 +67,33 @@ public static class ProfileStorage
                 ? new Dictionary<string, string>(data.CustomFields, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            return (data with { CustomFields = custom }, ProfileLoadStatus.Ok);
+            var accepted = data.AcceptedFields != null ? new List<string>(data.AcceptedFields) : new List<string>();
+
+            // Миграция старых флагов accepted_* из незашифрованного Preferences в зашифрованный ProfileData
+            bool migratedFromPreferences = false;
+            if (accepted.Count == 0)
+            {
+                foreach (GosTek.Views.ProfileField pf in Enum.GetValues<GosTek.Views.ProfileField>())
+                {
+                    string oldKey = "accepted_" + pf;
+                    if (Preferences.Default.ContainsKey(oldKey) && Preferences.Default.Get(oldKey, false))
+                    {
+                        accepted.Add(pf.ToString());
+                        Preferences.Default.Remove(oldKey);
+                        migratedFromPreferences = true;
+                    }
+                }
+            }
+
+            var loadedProfile = data with { CustomFields = custom, AcceptedFields = accepted };
+            GosTek.Views.ProfileRules.LoadAccepted(accepted);
+
+            if (migratedFromPreferences)
+            {
+                _ = SaveAsync(loadedProfile);
+            }
+
+            return (loadedProfile, ProfileLoadStatus.Ok);
         } catch (JsonException) {
             return (new ProfileData(CustomFields: new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)), ProfileLoadStatus.Failed);
         }

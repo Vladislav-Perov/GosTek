@@ -129,6 +129,14 @@ public class AiAssistantException : Exception
 }
 
 /// <summary>
+/// Исключение нарушения локальной политики безопасности и конфиденциальности данных при обращении к ИИ.
+/// </summary>
+public class AiAssistantSecurityException : AiAssistantException
+{
+    public AiAssistantSecurityException(string message) : base(message) { }
+}
+
+/// <summary>
 /// Сервис облачного ИИ-помощника для разбора текста и автозаполнения полей шаблонов документов.
 /// Поддерживает повторные попытки (retry) при временной перегрузке (HTTP 503),
 /// нумерованные плейсхолдеры и операции над контекстной памятью.
@@ -157,6 +165,222 @@ public class AiAssistantService
         _endpoint = endpoint;
     }
 
+    private static readonly Regex RawPassportRegex = new(
+        @"(?<!\[)\b[A-Za-zА-Яа-яЁё]{2}\s*[-]?\s*\d{7}\b(?!\])",
+        RegexOptions.Compiled);
+
+    private static readonly Regex RawPhoneRegex = new(
+        @"(?<!\[)(?:\+375|80)[\s\-]?(?:\(\d{2}\)|\d{2})?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}\b(?!\])",
+        RegexOptions.Compiled);
+
+    private static readonly Regex RawIbanRegex = new(
+        @"(?<!\[)\bBY\d{2}[\s]?[A-Za-z0-9]{4}(?:[\s]?[A-Za-z0-9]{4}){5}\b(?!\])",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    /// <summary>
+    /// Шлюз исходящих запросов к ИИ (Outbound Gateway).
+    /// Обеспечивает сквозное маскирование пользовательского текста, всех полей формы,
+    /// названия шаблона, фактов памяти и целевого поля.
+    /// Выполняет строгую предпроверку (AssertPayloadSafe) перед сериализацией и отправкой в сеть.
+    /// </summary>
+    public static (AiProxyRequest SafeRequest, Dictionary<string, string> AllPlaceholders) SanitizeOutgoingPayload(
+        string userText,
+        List<string> fieldNames,
+        Dictionary<string, string>? currentFormFields = null,
+        Dictionary<string, string>? extractedPlaceholders = null,
+        string? targetField = null,
+        string? templateName = null,
+        List<string>? memory = null,
+        ProfileData? profile = null,
+        DateTime? today = null)
+    {
+        var allPlaceholders = extractedPlaceholders != null
+            ? new Dictionary<string, string>(extractedPlaceholders, StringComparer.OrdinalIgnoreCase)
+            : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        // 1. Санитизируем UserText
+        var safeUserText = PrivacyMasker.Mask(
+            userText,
+            out var uExtracted,
+            out _,
+            profile: profile,
+            numbered: true);
+
+        foreach (var (k, v) in uExtracted)
+            allPlaceholders[k] = v;
+
+        // 2. Санитизируем поля текущей формы (currentFormFields)
+        var safeFormFields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (currentFormFields != null)
+        {
+            foreach (var (fName, fVal) in currentFormFields)
+            {
+                if (string.IsNullOrWhiteSpace(fVal))
+                {
+                    safeFormFields[fName] = string.Empty;
+                    continue;
+                }
+
+                var maskedVal = PrivacyMasker.Mask(
+                    fVal,
+                    out var fExtracted,
+                    out _,
+                    profile: profile,
+                    numbered: true);
+
+                foreach (var (k, v) in fExtracted)
+                    allPlaceholders[k] = v;
+
+                safeFormFields[fName] = maskedVal;
+            }
+        }
+
+        // 3. Санитизируем название шаблона и целевое поле
+        var safeTemplateName = PrivacyMasker.Mask(
+            templateName ?? "Документ",
+            out var tExtracted,
+            out _,
+            profile: profile,
+            numbered: false);
+
+        foreach (var (k, v) in tExtracted)
+            allPlaceholders[k] = v;
+
+        string? safeTargetField = null;
+        if (!string.IsNullOrWhiteSpace(targetField))
+        {
+            safeTargetField = PrivacyMasker.Mask(
+                targetField,
+                out var tgExtracted,
+                out _,
+                profile: profile,
+                numbered: false);
+
+            foreach (var (k, v) in tgExtracted)
+                allPlaceholders[k] = v;
+        }
+
+        // 4. Санитизируем факты памяти
+        List<string>? safeMemory = null;
+        if (memory != null && memory.Count > 0)
+        {
+            safeMemory = new List<string>(memory.Count);
+            foreach (var m in memory)
+            {
+                var safeM = PrivacyMasker.Mask(
+                    m,
+                    out var mExtracted,
+                    out _,
+                    profile: profile,
+                    numbered: false);
+
+                foreach (var (k, v) in mExtracted)
+                    allPlaceholders[k] = v;
+
+                safeMemory.Add(safeM);
+            }
+        }
+
+        // 5. Формируем безопасный системный промпт и контекст полей
+        var safePrompt = BuildPrompt(
+            safeUserText,
+            fieldNames,
+            safeFormFields,
+            today: today,
+            targetField: safeTargetField,
+            memory: safeMemory);
+
+        var request = new AiProxyRequest
+        {
+            Prompt = safePrompt,
+            UserText = safeUserText,
+            TemplateName = safeTemplateName,
+            FieldsContext = FormatFieldsContext(safeFormFields, fieldNames),
+            Memory = safeMemory,
+            TargetField = safeTargetField
+        };
+
+        // 6. Строгая валидация перед отправкой
+        AssertPayloadSafe(request, profile);
+
+        return (request, allPlaceholders);
+    }
+
+    /// <summary>
+    /// Проверяет, что подготовленный запрос не содержит открытых персональных данных.
+    /// В случае обнаружения PII бросает AiAssistantSecurityException, предотвращая утечку.
+    /// </summary>
+    public static void AssertPayloadSafe(AiProxyRequest request, ProfileData? profile)
+    {
+        var parts = new List<string?>
+        {
+            request.Prompt,
+            request.UserText,
+            request.TemplateName,
+            request.FieldsContext,
+            request.TargetField
+        };
+
+        if (request.Memory != null)
+            parts.AddRange(request.Memory);
+
+        foreach (var part in parts)
+        {
+            if (string.IsNullOrWhiteSpace(part))
+                continue;
+
+            // 1. Проверка на сырой паспорт (исключая плейсхолдеры)
+            if (RawPassportRegex.IsMatch(part))
+                throw new AiAssistantSecurityException("Обнаружена попытка отправки незамаскированных паспортных данных.");
+
+            // 2. Проверка на телефон
+            if (RawPhoneRegex.IsMatch(part))
+                throw new AiAssistantSecurityException("Обнаружена попытка отправки незамаскированного номера телефона.");
+
+            // 3. Проверка на IBAN
+            if (RawIbanRegex.IsMatch(part))
+                throw new AiAssistantSecurityException("Обнаружена попытка отправки незамаскированного номера банковского счёта.");
+
+            // 4. Проверка на открытые данные профиля пользователя
+            if (profile != null)
+            {
+                if (!string.IsNullOrWhiteSpace(profile.Passport) &&
+                    profile.Passport.Length >= 7 &&
+                    part.Contains(profile.Passport, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new AiAssistantSecurityException("Обнаружена попытка отправки паспорта пользователя из профиля в открытом виде.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(profile.Phone) &&
+                    profile.Phone.Length >= 9 &&
+                    part.Contains(profile.Phone.Replace(" ", "").Replace("-", ""), StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new AiAssistantSecurityException("Обнаружена попытка отправки телефона пользователя из профиля в открытом виде.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(profile.Account) &&
+                    profile.Account.Length >= 10 &&
+                    part.Contains(profile.Account.Replace(" ", ""), StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new AiAssistantSecurityException("Обнаружена попытка отправки счёта пользователя из профиля в открытом виде.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(profile.FullName))
+                {
+                    var words = profile.FullName
+                        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                        .Where(w => w.Length >= 4)
+                        .ToList();
+
+                    if (words.Count >= 2 && words.All(w => part.Contains(w, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        throw new AiAssistantSecurityException("Обнаружена попытка отправки ФИО пользователя из профиля в открытом виде.");
+                    }
+                }
+            }
+        }
+    }
+
     /// <summary>
     /// Отправляет безопасный (замаскированный) текст, список полей, состояние формы и память в ИИ.
     /// Восстанавливает нумерованные персональные данные и обновляет локальную память при необходимости.
@@ -171,18 +395,20 @@ public class AiAssistantService
         List<string>? memory = null,
         CancellationToken cancellationToken = default)
     {
-        var activeMemory = memory ?? AiMemory.Instance.FormatForPrompt();
-        var prompt = BuildPrompt(maskedUserText, fieldNames, currentFormFields, targetField: targetField, memory: activeMemory);
+        ProfileData? profile = null;
+        try { profile = await ProfileStorage.LoadAsync(); } catch { }
 
-        var requestBody = new AiProxyRequest
-        {
-            Prompt = prompt,
-            UserText = maskedUserText,
-            TemplateName = templateName ?? "Документ",
-            FieldsContext = FormatFieldsContext(currentFormFields, fieldNames),
-            Memory = activeMemory,
-            TargetField = targetField
-        };
+        var activeMemory = memory ?? AiMemory.Instance.FormatForPrompt();
+
+        var (requestBody, allPlaceholders) = SanitizeOutgoingPayload(
+            maskedUserText,
+            fieldNames,
+            currentFormFields: currentFormFields,
+            extractedPlaceholders: extractedPlaceholders,
+            targetField: targetField,
+            templateName: templateName,
+            memory: activeMemory,
+            profile: profile);
 
         for (int attempt = 1; attempt <= MaxRetryAttempts; attempt++)
         {
@@ -215,19 +441,24 @@ public class AiAssistantService
                 var rawJson = await response.Content.ReadAsStringAsync(cancellationToken);
                 var parsed = ParseServerResponse(rawJson);
 
-                // Применяем операции памяти
+                // Применяем операции памяти с предварительным обязательным маскированием фактов
                 if (parsed.MemoryOps != null && parsed.MemoryOps.Count > 0)
                 {
                     foreach (var op in parsed.MemoryOps)
                     {
                         if (string.Equals(op.Action, "add", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(op.Value))
-                            AiMemory.Instance.AddFact(op.Key, op.Value);
+                        {
+                            var safeFact = PrivacyMasker.Mask(op.Value, out _, out _, profile: profile, numbered: false);
+                            AiMemory.Instance.AddFact(op.Key, safeFact);
+                        }
                         else if (string.Equals(op.Action, "remove", StringComparison.OrdinalIgnoreCase))
+                        {
                             AiMemory.Instance.RemoveFact(op.Key);
+                        }
                     }
                 }
 
-                var restoredFields = await RestorePlaceholdersAsync(parsed.Fields, extractedPlaceholders);
+                var restoredFields = await RestorePlaceholdersAsync(parsed.Fields, allPlaceholders, profile);
                 return parsed with { Fields = restoredFields };
             }
             catch (HttpRequestException ex) when (attempt < MaxRetryAttempts && ex.StatusCode == HttpStatusCode.ServiceUnavailable)

@@ -39,6 +39,38 @@ public partial class ScanPage : ContentPage
     private bool _previewOn;
     private bool _previewStarting;
     private bool _cameraNoteShown;   // в ErrorLabel сейчас сообщение про камеру (а не про распознавание)
+    private readonly List<string> _tempFilesToClean = new();
+
+    private void RegisterTempFile(string? path)
+    {
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            lock (_tempFilesToClean)
+            {
+                _tempFilesToClean.Add(path);
+            }
+        }
+    }
+
+    private void CleanupTempFiles()
+    {
+        lock (_tempFilesToClean)
+        {
+            foreach (var path in _tempFilesToClean)
+            {
+                try
+                {
+                    if (File.Exists(path))
+                        File.Delete(path);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Не удалось удалить временный файл {path}: {ex.Message}");
+                }
+            }
+            _tempFilesToClean.Clear();
+        }
+    }
 
     // "passport" — открыто из профиля («Заполнить по фото паспорта»):
     // после сохранения и по кнопке ✕ возвращаемся в профиль
@@ -76,6 +108,7 @@ public partial class ScanPage : ContentPage
         CancelProcessing();
         StopPreview();
 
+        CleanupTempFiles();
         // Страница живёт между переходами: режим «из профиля» не должен прилипнуть.
         // Пока открыто окно выбора файла или идёт распознавание, его не трогаем.
         if (!_busy)
@@ -386,8 +419,19 @@ public partial class ScanPage : ContentPage
             }));
         }, pausePreview: true);
 
-    private static async Task<Stream?> OpenAsync(FileResult? file)
-        => file is null ? null : await file.OpenReadAsync();
+    private async Task<Stream?> OpenAsync(FileResult? file)
+    {
+        if (file is null)
+            return null;
+
+        if (!string.IsNullOrWhiteSpace(file.FullPath))
+            RegisterTempFile(file.FullPath);
+
+        return await file.OpenReadAsync();
+    }
+
+
+
 
     // ===== Получить изображение и распознать =====
 
@@ -432,6 +476,7 @@ public partial class ScanPage : ContentPage
             SetLoading(false);
             _busy = false;
 
+            CleanupTempFiles();
             // Вернулись без результата (отмена, ошибка): камера в рамке снова работает
             if (!ResultPanel.IsVisible)
             {
