@@ -11,6 +11,7 @@
 
 | # | Дата | Батч | ID | Затронутый файл / компонент | Статус | Проверено |
 |:---:|:---:|:---:|:---:|:---|:---:|:---|
+| **65** | 13.11.2026 | AUDIT-S8 | **STAGE-8-RELEASE-BUILDS-DOCS-AND-FINAL-REPORT** | README.md, RELEASE.md, MANUAL_CHECKLIST.md, FINAL_REPORT.md, STAGE_REPORT.md, DECISIONS.md, FIXES_LOG.md | 🏆 Реализовано | Выполнение Этапа 8 комплексного аудита (Полировка, релиз, финализация): 1) Успешная компиляция Android Release (-c Release, net10.0-android, ILLink + R8, 0 warnings, 0 errors); 2) Успешная компиляция Windows Release (-c Release, net10.0-windows10.0.19041.0, 0 warnings, 0 errors); 3) Полная актуализация README.md (архитектура, приватность, сборка); 4) Руководство по релизной публикации RELEASE.md (MSIX, AAB, Keystore); 5) Чек-лист ручной приёмки MANUAL_CHECKLIST.md (6 ключевых сценариев); 6) Итоговый отчет аудита FINAL_REPORT.md; 255/255 тестов зеленые, сборки Win и Android (0/0) |
 | **64** | 13.11.2026 | AUDIT-S7 | **STAGE-7-ICAO-MRZ-PARSER-DIFF-CONFIRMATION-AND-TEMPLATE-LINK** | Services/MrzParser.cs, Services/DocumentDataExtractor.cs, Models/DraftStore.cs, Views/ScanPage.xaml, Views/ScanPage.xaml.cs, Views/FieldsPage.xaml.cs, GosTek.Tests/MrzParserTests.cs | 🏆 Реализовано | Выполнение Этапа 7 комплексного аудита (Камера, OCR, паспорт): 1) Парсер MrzParser биометрических паспортов (TD3, 2x44) и ID-карт (TD1, 3x30) с проверкой контрольных сумм по алгоритму ICAO 9303 (веса 7-3-1), нормализацией частых ошибок OCR (O↔0, I↔1, B↔8, S↔5, Z↔2) и извлечением 14-значного личного номера РБ; 2) Приоритетная связка DocumentDataExtractor.Extract с парсером MRZ; 3) Интерактивный Diff-экран подтверждения в ScanPage («Было в профиле» vs «Распознано с фото», бейдж ICAO MRZ, независимые чекбоксы сохранения полей); 4) Кнопка «Перенести распознанный текст в шаблон...» через DraftStore.PendingOcrText с автоподстановкой в чат ИИ на FieldsPage; 255/255 тестов зеленые, сборки Win и Android (0/0) |
 | **63** | 13.11.2026 | AUDIT-S6 | **STAGE-6-WINDOWS-DRAG-REGION-RAIL-AND-RELEASE-BUILD** | Platforms/Windows/WindowSizing.cs, Views/AppTabBar.xaml.cs, Views/AppTabBar.xaml, AppShell.xaml.cs, Views/FieldsPage.xaml, Views/MainPage.xaml, Views/ProfilePage.xaml, Views/ScanPage.xaml, GosTek.Tests/WindowDragRegionTests.cs | 🏆 Реализовано | Выполнение Этапа 6 комплексного аудита (Платформа Windows): 1) Смещение области перетаскивания окна SetDragRectangles вправо на ширину Navigation Rail (CalculateDragRect: X = railWidthPixels), разблокировка мышиных кликов в шапке панели (RailToggleBtn, логотип); 2) Динамическое обновление Drag Region при сворачивании панели (220px <-> 64px) и переходе на полноэкранные страницы; 3) Устранение 10 ошибок/предупреждений XamlC XC0618 миграцией устаревшего AutomationProperties.Name на SemanticProperties.Description; 4) Успешная сборка Windows в Release-конфигурации (0 warnings, 0 errors с -warnaserror); 246/246 тестов зеленые, сборки Win и Android (0/0) |
 | **62** | 13.11.2026 | AUDIT-S5 | **STAGE-5-AI-QUALITY-ENHANCED-MASKER-AND-CHAT-POLISH** | Services/PrivacyMasker.cs, SettingsService.cs, Views/FieldsPage.xaml, Views/FieldsPage.xaml.cs, Views/SettingsPanel.xaml, Views/SettingsPanel.xaml.cs, Platforms/Android/MainActivity.cs, GosTek.Tests/PrivacyMaskerCorpusTests.cs | 🏆 Реализовано | Выполнение Этапа 5 комплексного аудита (Качество ИИ, маскер, чат): 1) Удаление индивидуальных кнопок-искорок «✨» и targetField в FieldsPage в пользу единого чата; 2) Ограничение ширины шторки чата на Windows до 490px (MaximumWidthRequest=500, HorizontalOptions=End, Margin 24px) и устранение перекрытия полей клавиатурой на Android (SoftInput.AdjustResize); 3) Расширение PrivacyMasker: белорусские адреса [АДРЕС], email [EMAIL], склонения всех падежей ФИО [ФИО], личные 14-значные номера РБ [ПАСПОРТ], адаптивный порог Левенштейна (1 для 4-5 букв, 2 для >=6 букв); 4) Синтетический тестовый корпус 215 кейсов (155+, False Negatives 0%, False Positives 0%); 5) Настройка мягкой маскировки подозрительных имён (AiMaskAmbiguousSilent); 240/240 тестов зеленые, сборки Win и Android (0/0) |
@@ -79,7 +80,27 @@
 
 ---
 
-## 2. Фаза 10: Полировка UI/UX, сворачиваемая боковая панель и интерактивность
+## 2. Этапы комплексного аудита и финализации архитектуры (Этапы 2-8)
+
+### [Запись #65] 2026-11-13 | Этап 8 | STAGE-8-RELEASE-BUILDS-DOCS-AND-FINAL-REPORT | Релизные сборки (Windows/Android 0/0), исчерпывающая документация и чек-лист приёмки
+- **Что:** Я успешно завершил финальный этап комплексного аудита проекта GosTek:
+  1. **Релизная компиляция Windows и Android:**
+     - Выполнил сборку Android Release (`net10.0-android`, `-c Release -p:TreatWarningsAsErrors=true -warnaserror`). Обработаны и связаны все 109 сборок (ILLink + R8) без единого предупреждения или ошибки.
+     - Выполнил сборку Windows Release (`net10.0-windows10.0.19041.0`, `-c Release -p:TreatWarningsAsErrors=true -warnaserror`). Полная совместимость XamlC, нативные заголовки и Drag Rectangles функционируют безукоризненно.
+  2. **Комплект релизной документации:**
+     - `README.md`: архитектура системы, принципы приватности, команды сборки.
+     - `RELEASE.md`: публикация пакетов MSIX и Android AAB/APK, подписание ключами, чек-лист pre-flight.
+     - `MANUAL_CHECKLIST.md`: пошаговый сценарий ручной приёмки (6 сценариев с ожидаемыми результатами).
+     - `FINAL_REPORT.md`: итоговый отчёт аудита с детальным разбором метрик и достигнутых результатов.
+- **Тестирование и верификация:**
+  - Все **255/255 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Сборка Windows (Debug & Release) с `-warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Сборка Android (Debug & Release) с `-warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Проверка стиля `dotnet format GosTek.sln --verify-no-changes`: код **0**.
+
+---
+
+## 3. Фаза 10: Полировка UI/UX, сворачиваемая боковая панель и интерактивность
 
 ### [Запись #58] 2026-11-12 | Фаза 10.3 | THREADSAFE-CHIPBAR-THEME-AND-SORTING-FIX | Устранение крэша UI при обновлении списков, адаптация текста чипов в Light теме и сортировка категорий
 - **Что:** Я проанализировал и полностью исправил три критических дефекта: крэш `ExecutionEngineException` / `COMException` в `UIElementCollection.Clear()`, нечитаемый текст неактивных чипов в светлой теме и нарушенный порядок сортировки категорий в каталоге шаблонов.
