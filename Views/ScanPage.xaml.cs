@@ -79,6 +79,7 @@ public partial class ScanPage : ContentPage
         BuildScanLines();
         ScanLoading.CancelRequested += (_, _) => CancelProcessing();
         ViewfinderArea.SizeChanged += (_, _) => UpdateViewfinderGeometry();
+        this.Loaded += (_, _) => UpdateViewfinderGeometry();
     }
 
     private void UpdateModeUi()
@@ -133,8 +134,17 @@ public partial class ScanPage : ContentPage
             }
         }
 
-        ViewfinderContainer.WidthRequest = targetW;
-        ViewfinderContainer.HeightRequest = targetH;
+        if (targetW > 0 && targetH > 0)
+        {
+            ViewfinderContainer.WidthRequest = targetW;
+            ViewfinderContainer.HeightRequest = targetH;
+
+            if (_camera is not null)
+            {
+                _camera.WidthRequest = targetW;
+                _camera.HeightRequest = targetH;
+            }
+        }
     }
 
     protected override async void OnAppearing()
@@ -242,18 +252,70 @@ public partial class ScanPage : ContentPage
                 return;
             }
 
+            // Защита Windows/WinUI: даем WinUI 3 завершить первичное измерение и компоновку страницы
+            await Task.Delay(100);
+
+            // Ожидаем готовности компоновки контейнера видоискателя
+            for (int i = 0; i < 40; i++)
+            {
+                if (!_isPageVisible || _visibilityToken != token || ResultPanel.IsVisible)
+                {
+                    _cameraController.Stop();
+                    return;
+                }
+
+                UpdateViewfinderGeometry();
+
+                double currentW = ViewfinderContainer?.WidthRequest > 0
+                    ? ViewfinderContainer.WidthRequest
+                    : (ViewfinderContainer?.Width > 0 ? ViewfinderContainer.Width : 0);
+                double currentH = ViewfinderContainer?.HeightRequest > 0
+                    ? ViewfinderContainer.HeightRequest
+                    : (ViewfinderContainer?.Height > 0 ? ViewfinderContainer.Height : 0);
+
+                if (currentW > 0 && currentH > 0 && (CameraHost.Width > 0 || ViewfinderArea.Width > 0 || this.Width > 0))
+                    break;
+
+                await Task.Delay(50);
+            }
+
+            if (!_isPageVisible || _visibilityToken != token || ResultPanel.IsVisible)
+            {
+                _cameraController.Stop();
+                return;
+            }
+
+            double targetW = ViewfinderContainer?.WidthRequest > 0
+                ? ViewfinderContainer.WidthRequest
+                : (ViewfinderContainer?.Width > 0 ? ViewfinderContainer.Width : 480);
+            double targetH = ViewfinderContainer?.HeightRequest > 0
+                ? ViewfinderContainer.HeightRequest
+                : (ViewfinderContainer?.Height > 0 ? ViewfinderContainer.Height : 360);
+
+            if (targetW <= 0 || targetH <= 0)
+            {
+                _cameraController.Stop();
+                return;
+            }
+
             if (_camera is null) {
                 _camera = new CameraView {
                     HorizontalOptions = LayoutOptions.Fill,
                     VerticalOptions = LayoutOptions.Fill,
+                    WidthRequest = targetW,
+                    HeightRequest = targetH,
+                    IsVisible = false // Скрыт до завершения инициализации и проверки геометрии
                 };
                 CameraHost.Children.Add(_camera);
             }
+            else
+            {
+                _camera.WidthRequest = targetW;
+                _camera.HeightRequest = targetH;
+                _camera.IsVisible = false;
+            }
 
-            _camera.IsVisible = true;
-            LinesHost.IsVisible = false;
-
-            // Только что созданный CameraView получает нативный обработчик не сразу
+            // Ожидаем подключения нативного обработчика Handler
             for (int i = 0; i < 60 && _camera.Handler is null; i++)
             {
                 if (!_isPageVisible || _visibilityToken != token || ResultPanel.IsVisible)
@@ -270,6 +332,26 @@ public partial class ScanPage : ContentPage
                 return;
             }
 
+            // Гарантируем ненулевые размеры CameraView перед запуском камеры
+            if (_camera.WidthRequest <= 0 || _camera.HeightRequest <= 0)
+            {
+                _camera.WidthRequest = targetW;
+                _camera.HeightRequest = targetH;
+            }
+
+            // Проверяем актуальные размеры элемента CameraView и контейнера (защита от NullReferenceException)
+            double measuredW = _camera.Width > 0 ? _camera.Width : _camera.WidthRequest;
+            double measuredH = _camera.Height > 0 ? _camera.Height : _camera.HeightRequest;
+            if (measuredW <= 0 || measuredH <= 0)
+            {
+                _cameraController.Stop();
+                return;
+            }
+
+            // Активируем видимость только когда все размеры проверены и заданы
+            _camera.IsVisible = true;
+            await Task.Delay(100);
+
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             await _camera.StartCameraPreview(cts.Token);
 
@@ -281,6 +363,7 @@ public partial class ScanPage : ContentPage
             }
 
             _previewOn = true;
+            LinesHost.IsVisible = false;
 
             if (_cameraNoteShown) {
                 _cameraNoteShown = false;
@@ -308,6 +391,9 @@ public partial class ScanPage : ContentPage
         _previewOn = false;
         _previewStarting = false;
         try { _camera?.StopCameraPreview(); } catch (Exception) { /* камера уже остановлена */ }
+        if (_camera is not null)
+            _camera.IsVisible = false;
+        LinesHost.IsVisible = true;
     }
 
     private void ShowCameraNote(string text)

@@ -11,6 +11,7 @@
 
 | # | Дата | Батч | ID | Затронутый файл / компонент | Статус | Проверено |
 |:---:|:---:|:---:|:---:|:---|:---:|:---|
+| **70** | 13.11.2026 | F11.5 | **WINDOWS-CAMERA-ZERO-SIZE-NPE-GUARD** | Views/ScanPage.xaml.cs | 🏆 Реализовано | Фаза 11.5: Устранен краш CommunityToolkit.Maui.Camera на Windows из-за преждевременной инициализации с нулевыми размерами: 1) Защитная задержка 100 мс перед обращением к визуальному дереву WinUI 3; 2) Ожидание ненулевых размеров контейнера видоискателя и страницы; 3) Инициализация CameraView со скрытой видимостью (IsVisible=false) и явными WidthRequest/HeightRequest; 4) Проверка фактических размеров перед StartCameraPreview; 291/291 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
 | **69** | 13.11.2026 | F11.4 | **PROFILE-REMOVE-PASSPORT-SCAN-INTEGRATION** | Views/ProfilePage.xaml, Views/ProfilePage.xaml.cs | 🏆 Реализовано | Фаза 11.4: Удален функционал заполнения данных по фото паспорта из ProfilePage. Глобальный сканер документов сохранен: 1) Полное удаление промо-карточки «Заполнить по фото паспорта» из XAML-разметки ProfilePage; 2) Удаление обработчика OnPassportScanTapped из code-behind; 3) Глобальный функционал камеры/сканера ScanPage и сервис MrzParserService сохранены интактными; 291/291 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
 | **68** | 13.11.2026 | F11.2 | **MRZ-CRASH-PROTECTION-AND-REGEX-FALLBACKS** | Services/MrzParserService.cs, Services/DocumentDataExtractor.cs, Services/TransliterationHelper.cs, GosTek.Tests/MrzParserServiceTests.cs | 🏆 Реализовано | Фаза 11.2: Внедрены усиленные Regex-фоллбэки в MrzParserService: защита от мусора 'OF BLR', поиск ФИО в двух зонах и восстановление даты из личного номера: 1) Тотальный try-catch вокруг MrzParserService.Parse с возвратом MrzParseResult.Empty, предотвращающий падения UI; 2) Регулярка паспорта ([A-ZА-Я]{2}[0-9A-ZА-Я]{7})\d?BLR с отсечением шапки 'OF BLR'; 3) Двухзонный поиск ФИО (визуальная + MRZ P<BLR) и восстановление даты рождения из личного номера; 291/291 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
 | **67** | 13.11.2026 | F11.1 | **BULLETPROOF-PASSPORT-PARSER-MRZ-AND-DUAL-OCR** | Platforms/Android/OcrEngine.cs, Platforms/Windows/OcrEngine.cs, MauiProgram.cs, Services/MrzSanitizer.cs, Services/TransliterationHelper.cs, Services/MrzParserService.cs, Services/DocumentDataExtractor.cs, GosTek.Tests/MrzParserServiceTests.cs, Resources/Raw/eng.traineddata | 🏆 Реализовано | Фаза 11.1: Бронебойный парсер паспортов РБ (Windows + Android): 1) Поддержка двух языков rus+eng в TesseractOcrMaui на Android (eng.traineddata + rus.traineddata); 2) Двухзонное OCR на Windows через SkiaSharp кропы (верх 75% ru-RU, низ 25% en-US SoftwareBitmap); 3) Сервис MrzSanitizer (удаление пробелов, замена кириллических гомоглифов на латиницу в строках MRZ, SanitizeNumbers только для дат и номеров); 4) Сервис MrzParserService с алгоритмом контрольных сумм 7-3-1 ICAO 9303, поиском BLR на позиции 10 и гибким Fallback личного номера [0-9OIQ]{7}[A-Z][0-9OIQ]{3}[A-Z]{2}[0-9OIQ]; 5) TransliterationHelper с ToUpperInvariant, словарем популярных имен и фонетическими правилами для фамилий; 6) 287/287 тестов зеленые, сборки Win Release (0/0) и Android Release (0/0), dotnet format 0 |
@@ -85,6 +86,28 @@
 ---
 
 ## 2. Этапы комплексного аудита и финализации архитектуры (Этапы 2-8, Фаза 11)
+
+### [Запись #70] 2026-11-13 | Фаза 11.5 | WINDOWS-CAMERA-ZERO-SIZE-NPE-GUARD | Устранен краш CommunityToolkit.Maui.Camera на Windows из-за преждевременной инициализации с нулевыми размерами
+- **Что:** Устранен краш CommunityToolkit.Maui.Camera на Windows из-за преждевременной инициализации с нулевыми размерами.
+- **Архитектура решения:**
+  1. **Защитная задержка и синхронизация разметки:**
+     - В `ScanPage.xaml.cs` добавлен вызов `await Task.Delay(100)` перед обращением к визуальному дереву WinUI 3, что дает системе время завершить первичное измерение и компоновку окна.
+     - Добавлена подписка на событие `Loaded` страницы `ScanPage` для гарантированного пересчета геометрии контейнера `UpdateViewfinderGeometry()`.
+  2. **Ожидание ненулевых размеров контейнера:**
+     - Организован цикл ожидания готовности размеров `ViewfinderContainer` и `CameraHost` (`Width > 0 && Height > 0`) перед началом создания и конфигурации элемента камеры.
+  3. **Инициализация `CameraView` со скрытой видимостью и явными размерами:**
+     - Элемент `CameraView` создается с `IsVisible = false` и явными значениями `WidthRequest = targetW`, `HeightRequest = targetH` (рассчитанными по пропорциям видоискателя), что предотвращает обращение нативного провайдера WinUI 3 к неинициализированной 0x0 поверхности.
+     - Заглушка `LinesHost` со стилизованными полосками листа остается видимой до момента фактического старта стрима видео, исключая белое мерцание экрана.
+  4. **Проверка геометрии перед вызовом `StartCameraPreview`:**
+     - Осуществляется валидация фактических размеров `_camera.Width` / `_camera.WidthRequest > 0`.
+     - Видимость `_camera.IsVisible = true` активируется с паузой в 100 мс перед вызовом `StartCameraPreview`, что полностью защищает от `NullReferenceException` и `ArgumentException: Invalid width or height` в `CommunityToolkit.Maui.Extensions.CameraViewExtensions.InitializeCameraForCameraView`.
+  5. **Безопасная остановка в `StopPreview`:**
+     - При уходе со страницы или закрытии камеры видимость `_camera.IsVisible` сбрасывается в `false`, а `LinesHost.IsVisible` возвращается в `true`.
+- **Тестирование и верификация:**
+  - Все **291/291 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Сборка Windows Release с `/warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Сборка Android Release с `/warnaserror`: **0 предупреждений, 0 ошибок** (109/109 сборок AOT linked).
+  - Проверка стиля `dotnet format GosTek.sln --verify-no-changes`: код **0**.
 
 ### [Запись #69] 2026-11-13 | Фаза 11.4 | PROFILE-REMOVE-PASSPORT-SCAN-INTEGRATION | Удален функционал заполнения данных по фото паспорта из ProfilePage. Глобальный сканер документов сохранен
 - **Что:** Удален функционал заполнения данных по фото паспорта из ProfilePage. Глобальный сканер документов сохранен.
