@@ -837,8 +837,7 @@ public partial class FieldsPage : ContentPage
         AiAutoApplySwitch.IsToggled = SettingsService.AiAutoApplyMode;
 
         _originalChatHeight = DeviceInfo.Platform == DevicePlatform.Android ? 520 : 560;
-        if (!_isChatMaximized)
-            ChatSheet.HeightRequest = _originalChatHeight;
+        ApplyChatCompactLayout();
 
         if (ChatMessagesStack.Children.Count == 0)
         {
@@ -856,22 +855,146 @@ public partial class FieldsPage : ContentPage
         OpenChat();
     }
 
+    private void ApplyChatCompactLayout()
+    {
+        _isChatMaximized = false;
+        ChatMaximizeIcon.Icon = "maximize";
+        if (DeviceInfo.Platform == DevicePlatform.Android)
+        {
+            ChatSheet.HorizontalOptions = LayoutOptions.Fill;
+            ChatSheet.VerticalOptions = LayoutOptions.End;
+            ChatSheet.WidthRequest = -1;
+            ChatSheet.MaximumWidthRequest = 700;
+            ChatSheet.HeightRequest = _originalChatHeight;
+            ChatSheet.Margin = new Thickness(0);
+            ChatSheet.StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle
+            {
+                CornerRadius = new CornerRadius(24, 24, 0, 0)
+            };
+        }
+        else
+        {
+            ChatSheet.HorizontalOptions = LayoutOptions.End;
+            ChatSheet.VerticalOptions = LayoutOptions.End;
+            ChatSheet.WidthRequest = 490;
+            ChatSheet.MaximumWidthRequest = 500;
+            ChatSheet.HeightRequest = _originalChatHeight;
+            ChatSheet.Margin = new Thickness(0, 0, 24, 24);
+            ChatSheet.StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle
+            {
+                CornerRadius = new CornerRadius(20)
+            };
+        }
+    }
+
+    private void ApplyChatMaximizedLayout()
+    {
+        _isChatMaximized = true;
+        ChatMaximizeIcon.Icon = "minimize";
+        ChatSheet.HorizontalOptions = LayoutOptions.Fill;
+        ChatSheet.VerticalOptions = LayoutOptions.Fill;
+        ChatSheet.WidthRequest = -1;
+        ChatSheet.MaximumWidthRequest = double.PositiveInfinity;
+        ChatSheet.HeightRequest = -1;
+        if (DeviceInfo.Platform == DevicePlatform.Android)
+        {
+            ChatSheet.Margin = new Thickness(0);
+            ChatSheet.StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle
+            {
+                CornerRadius = new CornerRadius(0)
+            };
+        }
+        else
+        {
+            ChatSheet.Margin = new Thickness(16, 12, 16, 16);
+            ChatSheet.StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle
+            {
+                CornerRadius = new CornerRadius(16)
+            };
+        }
+    }
+
     private async void OnToggleChatMaximizeTapped(object? sender, TappedEventArgs e)
     {
         HapticHelper.Click();
         if (sender is VisualElement ve)
             await ve.AnimateBounceAsync();
 
-        _isChatMaximized = !_isChatMaximized;
-        ChatMaximizeIcon.Icon = _isChatMaximized ? "minimize" : "maximize";
+        if (!_isChatMaximized)
+        {
+            _isChatMaximized = true;
+            ChatMaximizeIcon.Icon = "minimize";
+            ChatSheet.MaximumWidthRequest = double.PositiveInfinity;
 
-        double startHeight = ChatSheet.HeightRequest > 0 ? ChatSheet.HeightRequest : (ChatSheet.Height > 0 ? ChatSheet.Height : 540);
-        double endHeight = _isChatMaximized
-            ? (this.Height > 100 ? this.Height * 0.95 : 750)
-            : _originalChatHeight;
+            if (DeviceInfo.Platform == DevicePlatform.Android)
+            {
+                double startH = ChatSheet.Height > 0 ? ChatSheet.Height : _originalChatHeight;
+                double endH = ChatOverlay.Height > 100 ? ChatOverlay.Height : (this.Height > 100 ? this.Height : 700);
 
-        var animation = new Animation(v => ChatSheet.HeightRequest = v, startHeight, endHeight, Easing.CubicOut);
-        animation.Commit(ChatSheet, "ChatSheetMaximize", length: 250);
+                var anim = new Animation(v => ChatSheet.HeightRequest = v, startH, endH, Easing.CubicOut);
+                anim.Commit(ChatSheet, "ChatMaximize", length: 250, finished: (_, __) =>
+                {
+                    ApplyChatMaximizedLayout();
+                });
+            }
+            else
+            {
+                double startW = ChatSheet.Width > 0 ? ChatSheet.Width : 490;
+                double startH = ChatSheet.Height > 0 ? ChatSheet.Height : _originalChatHeight;
+                double endW = (ChatOverlay.Width > 100 ? ChatOverlay.Width : this.Width) - 32;
+                double endH = (ChatOverlay.Height > 100 ? ChatOverlay.Height : this.Height) - 28;
+
+                if (endW < 500) endW = 500;
+                if (endH < 560) endH = 560;
+
+                ChatSheet.HorizontalOptions = LayoutOptions.End;
+                ChatSheet.VerticalOptions = LayoutOptions.End;
+
+                var anim = new Animation();
+                anim.Add(0, 1, new Animation(w => ChatSheet.WidthRequest = w, startW, endW, Easing.CubicOut));
+                anim.Add(0, 1, new Animation(h => ChatSheet.HeightRequest = h, startH, endH, Easing.CubicOut));
+                anim.Commit(ChatSheet, "ChatMaximize", length: 250, finished: (_, __) =>
+                {
+                    ApplyChatMaximizedLayout();
+                });
+            }
+        }
+        else
+        {
+            _isChatMaximized = false;
+            ChatMaximizeIcon.Icon = "maximize";
+
+            if (DeviceInfo.Platform == DevicePlatform.Android)
+            {
+                double startH = ChatSheet.Height > 0 ? ChatSheet.Height : 700;
+                double endH = _originalChatHeight;
+
+                var anim = new Animation(v => ChatSheet.HeightRequest = v, startH, endH, Easing.CubicOut);
+                anim.Commit(ChatSheet, "ChatMinimize", length: 250, finished: (_, __) =>
+                {
+                    ApplyChatCompactLayout();
+                });
+            }
+            else
+            {
+                double startW = ChatSheet.Width > 0 ? ChatSheet.Width : 800;
+                double startH = ChatSheet.Height > 0 ? ChatSheet.Height : 700;
+                double endW = 490;
+                double endH = _originalChatHeight;
+
+                ChatSheet.HorizontalOptions = LayoutOptions.End;
+                ChatSheet.VerticalOptions = LayoutOptions.End;
+                ChatSheet.Margin = new Thickness(0, 0, 24, 24);
+
+                var anim = new Animation();
+                anim.Add(0, 1, new Animation(w => ChatSheet.WidthRequest = w, startW, endW, Easing.CubicOut));
+                anim.Add(0, 1, new Animation(h => ChatSheet.HeightRequest = h, startH, endH, Easing.CubicOut));
+                anim.Commit(ChatSheet, "ChatMinimize", length: 250, finished: (_, __) =>
+                {
+                    ApplyChatCompactLayout();
+                });
+            }
+        }
     }
 
     private CancellationTokenSource? _chatRequestCts;
@@ -889,12 +1012,7 @@ public partial class FieldsPage : ContentPage
         MemoryPanel.IsVisible = false;
         await ChatSheet.TranslateToAsync(0, 700, 200, Easing.CubicIn);
         ChatOverlay.IsVisible = false;
-        if (_isChatMaximized)
-        {
-            _isChatMaximized = false;
-            ChatMaximizeIcon.Icon = "maximize";
-            ChatSheet.HeightRequest = _originalChatHeight;
-        }
+        ApplyChatCompactLayout();
     }
 
     private async void OnChatOverlayBackgroundTapped(object? sender, TappedEventArgs e)
@@ -903,12 +1021,7 @@ public partial class FieldsPage : ContentPage
         MemoryPanel.IsVisible = false;
         await ChatSheet.TranslateToAsync(0, 700, 200, Easing.CubicIn);
         ChatOverlay.IsVisible = false;
-        if (_isChatMaximized)
-        {
-            _isChatMaximized = false;
-            ChatMaximizeIcon.Icon = "maximize";
-            ChatSheet.HeightRequest = _originalChatHeight;
-        }
+        ApplyChatCompactLayout();
     }
 
     private void OnChatSheetTapped(object? sender, TappedEventArgs e)
@@ -1439,12 +1552,7 @@ public partial class FieldsPage : ContentPage
         {
             MemoryPanel.IsVisible = false;
             ChatOverlay.IsVisible = false;
-            if (_isChatMaximized)
-            {
-                _isChatMaximized = false;
-                ChatMaximizeIcon.Icon = "maximize";
-                ChatSheet.HeightRequest = _originalChatHeight;
-            }
+            ApplyChatCompactLayout();
             return true;
         }
 

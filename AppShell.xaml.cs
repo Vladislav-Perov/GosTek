@@ -140,7 +140,7 @@ namespace GosTek
 
         public void EnsureFlyoutState(Page? page)
         {
-            if (page is Views.FieldsPage or Views.RuleEditorPage)
+            if (page is Views.RuleEditorPage)
             {
                 FlyoutBehavior = FlyoutBehavior.Disabled;
                 FlyoutWidth = 0;

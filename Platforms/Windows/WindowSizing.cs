@@ -93,7 +93,7 @@ public static class WindowSizing
         if (Shell.Current is { } shell)
         {
             if (shell.FlyoutBehavior == FlyoutBehavior.Disabled ||
-                shell.CurrentPage is Views.FieldsPage or Views.RuleEditorPage)
+                shell.CurrentPage is Views.RuleEditorPage)
             {
                 return 0;
             }

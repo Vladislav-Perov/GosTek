@@ -14,7 +14,6 @@
              Title="Шаблон"
              BackgroundColor="{DynamicResource PageBg}"
              Shell.NavBarIsVisible="False"
-             Shell.FlyoutBehavior="Disabled"
              Shell.TabBarIsVisible="False"
              SizeChanged="OnPageSizeChanged">
 
