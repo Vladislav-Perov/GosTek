@@ -15,24 +15,10 @@ namespace GosTek.Views;
 [QueryProperty(nameof(Mode), "mode")]
 public partial class ScanPage : ContentPage
 {
-    // Тип документа: «Паспорт / ID» разбирает ФИО и паспорт для профиля,
-    // остальные типы пока просто показывают весь распознанный текст
-    private enum ScanKind { Passport, Certificate, Any }
-
-    private static readonly (ScanKind Kind, string Title)[] Kinds =
-    {
-        (ScanKind.Passport, "Паспорт / ID"),
-        (ScanKind.Certificate, "Свидетельство"),
-        (ScanKind.Any, "Любой документ"),
-    };
-
-    private ScanKind _kind = ScanKind.Passport;
-    private string? _lastText;   // последний распознанный текст: при смене типа его разбирают заново
     private string? _mode;
     private bool _busy;
     private int _copyVersion;
     private CancellationTokenSource? _processCts;
-    private CancellationTokenSource? _laserCts;
 
     // Живая камера в рамке: CameraView создаётся только после выдачи доступа к камере
     private CameraView? _camera;
@@ -80,15 +66,75 @@ public partial class ScanPage : ContentPage
     public string? Mode
     {
         get => _mode;
-        set => _mode = value;
+        set
+        {
+            _mode = value;
+            UpdateModeUi();
+        }
     }
 
     public ScanPage()
     {
         InitializeComponent();
         BuildScanLines();
-        BuildChips();
         ScanLoading.CancelRequested += (_, _) => CancelProcessing();
+        ViewfinderArea.SizeChanged += (_, _) => UpdateViewfinderGeometry();
+    }
+
+    private void UpdateModeUi()
+    {
+        bool isPassport = string.Equals(_mode, "passport", StringComparison.OrdinalIgnoreCase);
+
+        if (PageTitleLabel != null)
+            PageTitleLabel.Text = isPassport ? "Сканирование паспорта" : "Сканер документов";
+
+        if (ViewfinderHintLabel != null)
+            ViewfinderHintLabel.Text = isPassport
+                ? "Поместите разворот паспорта или ID-карту с зоной MRZ в рамку."
+                : "Поместите документ целиком в рамку при хорошем освещении.";
+
+        UpdateViewfinderGeometry();
+    }
+
+    private void UpdateViewfinderGeometry()
+    {
+        if (ViewfinderContainer == null)
+            return;
+
+        bool isPassport = string.Equals(_mode, "passport", StringComparison.OrdinalIgnoreCase);
+
+        double availableW = ViewfinderArea?.Width > 50 ? ViewfinderArea.Width : (this.Width > 50 ? this.Width - 40 : 500);
+        double availableH = ViewfinderArea?.Height > 50 ? ViewfinderArea.Height : (this.Height > 150 ? this.Height - 200 : 360);
+
+        if (availableW > 600) availableW = 600;
+        if (availableH > 400) availableH = 400;
+
+        double targetW, targetH;
+        if (isPassport)
+        {
+            // Пропорция паспорта / ID-карты (~1.42)
+            targetW = Math.Min(availableW, 480);
+            targetH = Math.Round(targetW / 1.42);
+            if (targetH > availableH)
+            {
+                targetH = availableH;
+                targetW = Math.Round(targetH * 1.42);
+            }
+        }
+        else
+        {
+            // Стандартный кадр камеры 4:3 (~1.33)
+            targetW = Math.Min(availableW, 520);
+            targetH = Math.Round(targetW / 1.33);
+            if (targetH > availableH)
+            {
+                targetH = availableH;
+                targetW = Math.Round(targetH * 1.33);
+            }
+        }
+
+        ViewfinderContainer.WidthRequest = targetW;
+        ViewfinderContainer.HeightRequest = targetH;
     }
 
     protected override async void OnAppearing()
@@ -96,6 +142,8 @@ public partial class ScanPage : ContentPage
         base.OnAppearing();
         _isPageVisible = true;
         int token = ++_visibilityToken;
+
+        UpdateModeUi();
 
         if (!ResultPanel.IsVisible)
         {
@@ -120,7 +168,10 @@ public partial class ScanPage : ContentPage
         // Страница живёт между переходами: режим «из профиля» не должен прилипнуть.
         // Пока открыто окно выбора файла или идёт распознавание, его не трогаем.
         if (!_busy)
+        {
             _mode = null;
+            UpdateModeUi();
+        }
     }
 
     // «Назад» на Android: из результата — к рамке, иначе — на главную (или в профиль)
@@ -128,7 +179,7 @@ public partial class ScanPage : ContentPage
     {
         if (_busy || ScanLoading.IsLoading) {
             StopLaserAnimation();
-        CancelProcessing();
+            CancelProcessing();
             return true;
         }
 
@@ -137,11 +188,17 @@ public partial class ScanPage : ContentPage
             return true;
         }
 
-        _ = Shell.Current.GoToAsync(ReturnRoute());
+        string route = ReturnRoute();
+        if (!_busy)
+        {
+            _mode = null;
+            UpdateModeUi();
+        }
+        _ = Shell.Current.GoToAsync(route);
         return true;
     }
 
-    private string ReturnRoute() => _mode == "passport" ? "//ProfilePage" : "//MainPage";
+    private string ReturnRoute() => string.Equals(_mode, "passport", StringComparison.OrdinalIgnoreCase) ? "//ProfilePage" : "//MainPage";
 
     // ===== Камера в рамке =====
 
@@ -264,73 +321,40 @@ public partial class ScanPage : ContentPage
     private void StartLaserAnimation()
     {
         StopLaserAnimation();
-        if (!_isPageVisible || ResultPanel.IsVisible)
+        if (!_isPageVisible || ResultPanel.IsVisible || LaserLine is null)
             return;
 
-        _laserCts = new CancellationTokenSource();
-        var ct = _laserCts.Token;
-        int token = _visibilityToken;
+        double h = ViewfinderContainer?.HeightRequest > 0
+            ? ViewfinderContainer.HeightRequest
+            : (ViewfinderContainer?.Height > 0 ? ViewfinderContainer.Height : 320);
+        double startY = 16;
+        double endY = Math.Max(startY + 40, h - 24);
 
-        _ = Task.Run(async () =>
-        {
-            while (!ct.IsCancellationRequested && _isPageVisible && _visibilityToken == token)
-            {
-                try
-                {
-                    bool finished = false;
-                    await MainThread.InvokeOnMainThreadAsync(async () =>
-                    {
-                        if (ct.IsCancellationRequested || !_isPageVisible || _visibilityToken != token || LaserLine is null)
-                            return;
+        LaserLine.TranslationY = startY;
+        LaserLine.Opacity = 0.85;
 
-                        double h = ViewfinderArea?.Height ?? 0;
-                        if (h <= 0) h = 340;
-                        double targetY = Math.Max(80, h - 36);
+        var anim = new Animation();
+        // Плавное опускание сверху вниз за 2000 мс
+        anim.Add(0.0, 0.80, new Animation(v => LaserLine.TranslationY = v, startY, endY, Easing.SinInOut));
+        // Быстрое затухание внизу
+        anim.Add(0.80, 0.88, new Animation(v => LaserLine.Opacity = v, 0.85, 0.1));
+        // Возврат наверх пока невидима
+        anim.Add(0.88, 0.92, new Animation(v => LaserLine.TranslationY = v, endY, startY));
+        // Появление вверху
+        anim.Add(0.92, 1.0, new Animation(v => LaserLine.Opacity = v, 0.1, 0.85));
 
-                        LaserLine.TranslationY = 16;
-                        LaserLine.Opacity = 0.85;
-
-                        // Плавное опускание сверху вниз за 2200 мс с ускорением и замедлением
-                        await LaserLine.TranslateToAsync(0, targetY, 2200, Easing.SinInOut);
-                        if (ct.IsCancellationRequested)
-                            return;
-
-                        // Быстрое затухание внизу и мгновенный возврат наверх
-                        await LaserLine.FadeToAsync(0.1, 150);
-                        LaserLine.TranslationY = 16;
-                        await LaserLine.FadeToAsync(0.85, 150);
-                        finished = true;
-                    });
-
-                    if (!finished && ct.IsCancellationRequested)
-                        break;
-
-                    await Task.Delay(100, ct);
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
-                catch
-                {
-                    break;
-                }
-            }
-        }, ct);
+        anim.Commit(this, "LaserAnimation", rate: 16, length: 2400, repeat: () => _isPageVisible && !ResultPanel.IsVisible && !_busy);
     }
 
     private void StopLaserAnimation()
     {
-        _laserCts?.Cancel();
-        _laserCts?.Dispose();
-        _laserCts = null;
-
-        MainThread.BeginInvokeOnMainThread(() =>
+        this.AbortAnimation("LaserAnimation");
+        if (LaserLine is not null)
         {
-            LaserLine?.CancelAnimations();
-            if (LaserLine is not null)
-                LaserLine.Opacity = 0;
-        });
+            LaserLine.CancelAnimations();
+            LaserLine.Opacity = 0;
+            LaserLine.TranslationY = 16;
+        }
     }
 
     // ===== Внешний вид =====
@@ -348,17 +372,6 @@ public partial class ScanPage : ContentPage
             Grid.SetRow(line, i);
             LinesHost.Children.Add(line);
         }
-    }
-
-    private void BuildChips()
-    {
-        KindChips.SetItems(Kinds.Select(k => k.Title).ToList());
-        KindChips.SelectionChanged += (_, index) => {
-            _kind = Kinds[index].Kind;
-
-            if (_lastText is not null)
-                ApplyResult(_lastText);
-        };
     }
 
     private void CancelProcessing()
@@ -410,7 +423,6 @@ public partial class ScanPage : ContentPage
 
     private void ShowError(string text)
     {
-        _lastText = null;
         ShowResult(false);
 
         _cameraNoteShown = false;
@@ -421,7 +433,20 @@ public partial class ScanPage : ContentPage
     // ===== Кнопки =====
 
     private async void OnCloseTapped(object? sender, TappedEventArgs e)
-        => await Shell.Current.GoToAsync(ReturnRoute());
+    {
+        HapticHelper.Click();
+        StopLaserAnimation();
+        CancelProcessing();
+        StopPreview();
+        CleanupTempFiles();
+        string route = ReturnRoute();
+        if (!_busy)
+        {
+            _mode = null;
+            UpdateModeUi();
+        }
+        await Shell.Current.GoToAsync(route);
+    }
 
     private void OnRetakeTapped(object? sender, TappedEventArgs e) => ShowResult(false);
 
@@ -550,41 +575,44 @@ public partial class ScanPage : ContentPage
                 return;
             }
 
-            _lastText = text;
             ApplyResult(text);
             ShowResult(true);
 
-            // Интеллектуальное автоопределение типа документа
-            var classification = DocumentClassifier.Instance.Classify(text);
-            if (classification.IsDetected) {
-                string detectedCategory = !string.IsNullOrWhiteSpace(classification.Category)
-                    ? classification.Category
-                    : classification.DocumentType;
+            // Интеллектуальное автоопределение типа документа (только для обычного скана, не для паспорта)
+            bool isPassport = string.Equals(_mode, "passport", StringComparison.OrdinalIgnoreCase);
+            if (!isPassport)
+            {
+                var classification = DocumentClassifier.Instance.Classify(text);
+                if (classification.IsDetected) {
+                    string detectedCategory = !string.IsNullOrWhiteSpace(classification.Category)
+                        ? classification.Category
+                        : classification.DocumentType;
 
-                bool apply = await Dialogs.ConfirmAsync(
-                    "Определение документа",
-                    $"Я определил, что это {detectedCategory}. Применить этот шаблон?",
-                    accept: "Да",
-                    kind: DialogKind.Info,
-                    cancel: "Выбрать другой"
-                );
+                    bool apply = await Dialogs.ConfirmAsync(
+                        "Определение документа",
+                        $"Я определил, что это {detectedCategory}. Применить этот шаблон?",
+                        accept: "Да",
+                        kind: DialogKind.Info,
+                        cancel: "Выбрать другой"
+                    );
 
-                if (apply) {
-                    TemplateCatalog.Refresh();
-                    var matching = TemplateCatalog.Items.FirstOrDefault(t =>
-                        string.Equals(t.Category, detectedCategory, StringComparison.OrdinalIgnoreCase) ||
-                        t.Category.Contains(detectedCategory, StringComparison.OrdinalIgnoreCase) ||
-                        detectedCategory.Contains(t.Category, StringComparison.OrdinalIgnoreCase) ||
-                        t.Title.Contains(classification.DocumentType, StringComparison.OrdinalIgnoreCase) ||
-                        classification.DocumentType.Contains(t.Title, StringComparison.OrdinalIgnoreCase));
+                    if (apply) {
+                        TemplateCatalog.Refresh();
+                        var matching = TemplateCatalog.Items.FirstOrDefault(t =>
+                            string.Equals(t.Category, detectedCategory, StringComparison.OrdinalIgnoreCase) ||
+                            t.Category.Contains(detectedCategory, StringComparison.OrdinalIgnoreCase) ||
+                            detectedCategory.Contains(t.Category, StringComparison.OrdinalIgnoreCase) ||
+                            t.Title.Contains(classification.DocumentType, StringComparison.OrdinalIgnoreCase) ||
+                            classification.DocumentType.Contains(t.Title, StringComparison.OrdinalIgnoreCase));
 
-                    if (matching != null) {
-                        await Shell.Current.GoToAsync($"FieldsPage?id={matching.Id}");
+                        if (matching != null) {
+                            await Shell.Current.GoToAsync($"FieldsPage?id={matching.Id}");
+                        } else {
+                            await Shell.Current.GoToAsync("//TemplatesPage");
+                        }
                     } else {
                         await Shell.Current.GoToAsync("//TemplatesPage");
                     }
-                } else {
-                    await Shell.Current.GoToAsync("//TemplatesPage");
                 }
             }
         } catch (OperationCanceledException) {
@@ -602,14 +630,15 @@ public partial class ScanPage : ContentPage
     {
         RawTextEditor.Text = text;
 
-        bool passport = _kind == ScanKind.Passport;
-        ExtractedSection.IsVisible = passport;
+        bool isPassport = string.Equals(_mode, "passport", StringComparison.OrdinalIgnoreCase);
+        ExtractedSection.IsVisible = isPassport;
 
-        if (passport) {
+        if (isPassport) {
             var profile = await ProfileStorage.LoadAsync();
             OldNameLabel.Text = string.IsNullOrWhiteSpace(profile.FullName) ? "Было: —" : $"Было: {profile.FullName}";
             OldPassportLabel.Text = string.IsNullOrWhiteSpace(profile.Passport) ? "Было: —" : $"Было: {profile.Passport}";
-            OldPersonalLabel.Text = "Было: —";
+            profile.CustomFields.TryGetValue("Идентификационный номер", out var oldPersonal);
+            OldPersonalLabel.Text = string.IsNullOrWhiteSpace(oldPersonal) ? "Было: —" : $"Было: {oldPersonal}";
 
             var data = DocumentDataExtractor.Extract(text);
             NameEntry.Text = data.FullName ?? "";
@@ -680,9 +709,16 @@ public partial class ScanPage : ContentPage
             ? ProfileRules.Normalize(ProfileField.Passport, PassportEntry.Text)
             : profile.Passport;
 
+        var customFields = new Dictionary<string, string>(profile.CustomFields, StringComparer.OrdinalIgnoreCase);
+        if (ApplyPersonalCheck.IsChecked && !string.IsNullOrWhiteSpace(PersonalEntry.Text))
+        {
+            customFields["Идентификационный номер"] = PersonalEntry.Text.Trim();
+        }
+
         var updated = profile with {
             FullName = newName,
-            Passport = newPassport
+            Passport = newPassport,
+            CustomFields = customFields
         };
 
         try {
@@ -690,7 +726,7 @@ public partial class ScanPage : ContentPage
             HapticHelper.Success();
             Toast.Show("Выбранные данные сохранены в профиль", "user");
 
-            if (_mode == "passport")
+            if (string.Equals(_mode, "passport", StringComparison.OrdinalIgnoreCase))
                 await Shell.Current.GoToAsync("//ProfilePage");
         } catch (OperationCanceledException) {
             return;

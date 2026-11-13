@@ -24,7 +24,7 @@
         </Style>
     </ContentPage.Resources>
 
-    <Grid RowDefinitions="Auto, *, Auto, Auto"
+    <Grid RowDefinitions="Auto, *, Auto"
           MaximumWidthRequest="700"
           HorizontalOptions="Fill">
 
@@ -63,7 +63,8 @@
             </Border>
 
             <!-- Заголовок страницы -->
-            <Label Grid.Column="1"
+            <Label x:Name="PageTitleLabel"
+                   Grid.Column="1"
                    Text="Сканер документов"
                    FontSize="20"
                    FontAttributes="Bold"
@@ -78,74 +79,79 @@
             <Grid x:Name="FramePanel" RowDefinitions="*, Auto, Auto" RowSpacing="12">
 
                 <!-- Область камеры/видоискателя -->
-                <Grid x:Name="ViewfinderArea" Grid.Row="0">
-                    <Border BackgroundColor="{DynamicResource CardBg}"
-                            Stroke="{DynamicResource CardStroke}"
-                            StrokeThickness="1"
-                            StrokeShape="RoundRectangle 24">
-                        <Border.Shadow>
-                            <Shadow Brush="Black" Offset="0,4" Radius="12" Opacity="0.08" />
-                        </Border.Shadow>
-                    </Border>
+                <Grid x:Name="ViewfinderArea" Grid.Row="0" HorizontalOptions="Fill" VerticalOptions="Fill">
+                    <Grid x:Name="ViewfinderContainer"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center"
+                          IsClippedToBounds="True">
+                        <Border BackgroundColor="{DynamicResource CardBg}"
+                                Stroke="{DynamicResource CardStroke}"
+                                StrokeThickness="1"
+                                StrokeShape="RoundRectangle 24">
+                            <Border.Shadow>
+                                <Shadow Brush="Black" Offset="0,4" Radius="12" Opacity="0.08" />
+                            </Border.Shadow>
+                        </Border>
 
-                    <!-- Имитация строк листа при отсутствии активного видеопотока -->
-                    <Grid x:Name="LinesHost" Margin="24, 30" InputTransparent="True" />
+                        <!-- Имитация строк листа при отсутствии активного видеопотока -->
+                        <Grid x:Name="LinesHost" Margin="24, 30" InputTransparent="True" />
 
-                    <!-- Хост для нативного элемента камеры CommunityToolkit CameraView -->
-                    <Grid x:Name="CameraHost" InputTransparent="True" Margin="2" />
+                        <!-- Хост для нативного элемента камеры CommunityToolkit CameraView -->
+                        <Grid x:Name="CameraHost" InputTransparent="True" Margin="2" />
 
-                    <!-- Затемняющая рамка для фокусировки на документе -->
-                    <Border StrokeThickness="0"
-                            BackgroundColor="#1A000000"
-                            StrokeShape="RoundRectangle 24"
-                            InputTransparent="True" />
+                        <!-- Затемняющая рамка для фокусировки на документе -->
+                        <Border StrokeThickness="0"
+                                BackgroundColor="#1A000000"
+                                StrokeShape="RoundRectangle 24"
+                                InputTransparent="True" />
 
-                    <!-- Стильные акцентные уголки видоискателя -->
-                    <!-- Верхний левый -->
-                    <Grid WidthRequest="36" HeightRequest="36"
-                          HorizontalOptions="Start" VerticalOptions="Start"
-                          Margin="16" InputTransparent="True">
-                        <BoxView Style="{StaticResource CornerBar}" HeightRequest="4" VerticalOptions="Start" HorizontalOptions="Fill" />
-                        <BoxView Style="{StaticResource CornerBar}" WidthRequest="4" HorizontalOptions="Start" VerticalOptions="Fill" />
+                        <!-- Стильные акцентные уголки видоискателя -->
+                        <!-- Верхний левый -->
+                        <Grid WidthRequest="36" HeightRequest="36"
+                              HorizontalOptions="Start" VerticalOptions="Start"
+                              Margin="16" InputTransparent="True">
+                            <BoxView Style="{StaticResource CornerBar}" HeightRequest="4" VerticalOptions="Start" HorizontalOptions="Fill" />
+                            <BoxView Style="{StaticResource CornerBar}" WidthRequest="4" HorizontalOptions="Start" VerticalOptions="Fill" />
+                        </Grid>
+
+                        <!-- Верхний правый -->
+                        <Grid WidthRequest="36" HeightRequest="36"
+                              HorizontalOptions="End" VerticalOptions="Start"
+                              Margin="16" InputTransparent="True">
+                            <BoxView Style="{StaticResource CornerBar}" HeightRequest="4" VerticalOptions="Start" HorizontalOptions="Fill" />
+                            <BoxView Style="{StaticResource CornerBar}" WidthRequest="4" HorizontalOptions="End" VerticalOptions="Fill" />
+                        </Grid>
+
+                        <!-- Нижний левый -->
+                        <Grid WidthRequest="36" HeightRequest="36"
+                              HorizontalOptions="Start" VerticalOptions="End"
+                              Margin="16" InputTransparent="True">
+                            <BoxView Style="{StaticResource CornerBar}" HeightRequest="4" VerticalOptions="End" HorizontalOptions="Fill" />
+                            <BoxView Style="{StaticResource CornerBar}" WidthRequest="4" HorizontalOptions="Start" VerticalOptions="Fill" />
+                        </Grid>
+
+                        <!-- Нижний правый -->
+                        <Grid WidthRequest="36" HeightRequest="36"
+                              HorizontalOptions="End" VerticalOptions="End"
+                              Margin="16" InputTransparent="True">
+                            <BoxView Style="{StaticResource CornerBar}" HeightRequest="4" VerticalOptions="End" HorizontalOptions="Fill" />
+                            <BoxView Style="{StaticResource CornerBar}" WidthRequest="4" HorizontalOptions="End" VerticalOptions="Fill" />
+                        </Grid>
+
+                        <!-- Горизонтальная лазерная полоса сканирования (Laser Line) -->
+                        <BoxView x:Name="LaserLine"
+                                 HeightRequest="2.5"
+                                 HorizontalOptions="Fill"
+                                 VerticalOptions="Start"
+                                 Color="{DynamicResource BrandGreen}"
+                                 Margin="22, 0"
+                                 Opacity="0"
+                                 InputTransparent="True">
+                            <BoxView.Shadow>
+                                <Shadow Brush="{DynamicResource BrandGreen}" Offset="0, 0" Radius="8" Opacity="0.85" />
+                            </BoxView.Shadow>
+                        </BoxView>
                     </Grid>
-
-                    <!-- Верхний правый -->
-                    <Grid WidthRequest="36" HeightRequest="36"
-                          HorizontalOptions="End" VerticalOptions="Start"
-                          Margin="16" InputTransparent="True">
-                        <BoxView Style="{StaticResource CornerBar}" HeightRequest="4" VerticalOptions="Start" HorizontalOptions="Fill" />
-                        <BoxView Style="{StaticResource CornerBar}" WidthRequest="4" HorizontalOptions="End" VerticalOptions="Fill" />
-                    </Grid>
-
-                    <!-- Нижний левый -->
-                    <Grid WidthRequest="36" HeightRequest="36"
-                          HorizontalOptions="Start" VerticalOptions="End"
-                          Margin="16" InputTransparent="True">
-                        <BoxView Style="{StaticResource CornerBar}" HeightRequest="4" VerticalOptions="End" HorizontalOptions="Fill" />
-                        <BoxView Style="{StaticResource CornerBar}" WidthRequest="4" HorizontalOptions="Start" VerticalOptions="Fill" />
-                    </Grid>
-
-                    <!-- Нижний правый -->
-                    <Grid WidthRequest="36" HeightRequest="36"
-                          HorizontalOptions="End" VerticalOptions="End"
-                          Margin="16" InputTransparent="True">
-                        <BoxView Style="{StaticResource CornerBar}" HeightRequest="4" VerticalOptions="End" HorizontalOptions="Fill" />
-                        <BoxView Style="{StaticResource CornerBar}" WidthRequest="4" HorizontalOptions="End" VerticalOptions="Fill" />
-                    </Grid>
-
-                    <!-- Горизонтальная лазерная полоса сканирования (Laser Line) -->
-                    <BoxView x:Name="LaserLine"
-                             HeightRequest="2.5"
-                             HorizontalOptions="Fill"
-                             VerticalOptions="Start"
-                             Color="{DynamicResource BrandGreen}"
-                             Margin="22, 0"
-                             Opacity="0"
-                             InputTransparent="True">
-                        <BoxView.Shadow>
-                            <Shadow Brush="{DynamicResource BrandGreen}" Offset="0, 0" Radius="8" Opacity="0.85" />
-                        </BoxView.Shadow>
-                    </BoxView>
                 </Grid>
 
                 <!-- Подсказка под видоискателем -->
@@ -161,7 +167,8 @@
                                         IconColor="BrandGreen"
                                         Size="16"
                                         VerticalOptions="Center" />
-                        <Label Grid.Column="1"
+                        <Label x:Name="ViewfinderHintLabel"
+                               Grid.Column="1"
                                Text="Поместите документ целиком в рамку при хорошем освещении."
                                FontSize="12.5"
                                TextColor="{DynamicResource TextSecondary}"
@@ -412,14 +419,8 @@
                                Color="{DynamicResource BrandGreen}" />
         </Grid>
 
-        <!-- ==================== ВЫБОР ТИПА ДОКУМЕНТА ==================== -->
-        <controls:ChipBar x:Name="KindChips"
-                          Grid.Row="2"
-                          ChipsPadding="20, 0"
-                          Margin="0, 8, 0, 4" />
-
         <!-- ==================== ПАНЕЛЬ ДЕЙСТВИЙ (ГАЛЕРЕЯ, ЗАТВОР, ФАЙЛ) ==================== -->
-        <Grid Grid.Row="3"
+        <Grid Grid.Row="2"
               ColumnDefinitions="*, Auto, *"
               VerticalOptions="End">
             <Grid.Padding>
