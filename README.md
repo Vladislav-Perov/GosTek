@@ -2,12 +2,12 @@
 
 # 📄 GosTek
 
-**Кроссплатформенное privacy-first приложение для проверки оформления по ГОСТ, генерации документов и OCR/MRZ-сканирования паспортов РБ**
+**Кроссплатформенное privacy-first приложение для проверки оформления по ГОСТ, генерации документов и OCR/MRZ-сканирования**
 
 [![Версия](https://img.shields.io/badge/версия-v0.45.0--stable-blue)](./GosTek.csproj)
 [![Платформа](https://img.shields.io/badge/платформа-.NET%2010%20MAUI-512BD4)](https://dotnet.microsoft.com/)
 [![Сборка](https://img.shields.io/badge/Windows%20%7C%20Android-green-success)](./GosTek.sln)
-[![Тесты](https://img.shields.io/badge/тесты-255%20passed-brightgreen)](./GosTek.Tests/)
+[![Тесты](https://img.shields.io/badge/тесты-291%20passed-brightgreen)](./GosTek.Tests/)
 [![Лицензия](https://img.shields.io/badge/лицензия-Proprietary-red)](#лицензия)
 
 </div>
@@ -16,108 +16,127 @@
 
 ## 📌 О проекте
 
-**GosTek** решает проблему рутинного заполнения и проверки служебных, учебных и деловых документов. Приложение работает в строгом соответствии с концепцией **Privacy-First**: персональные данные граждан, реквизиты организаций и файлы документов хранятся локально в аппаратно зашифрованном виде и никогда не передаются во внешнюю сеть в открытом виде.
+**GosTek** — это современное приложение для автоматизации работы со служебными, деловыми и учебными документами. Оно помогает быстро заполнять типовые шаблоны, проверять готовые файлы на соответствие стандартам ГОСТ и оцифровывать данные с помощью встроенного оптического сканера.
 
-### Ключевые возможности
+Приложение построено по принципу **Privacy-First (приватность прежде всего)**: все персональные данные, реквизиты организаций и создаваемые файлы хранятся исключительно локально на устройстве в зашифрованном виде (Android Keystore / Windows DPAPI) и никогда не передаются в облако в открытом виде.
 
-1. **Аудит оформления по ГОСТ (детерминированный движок на базе OpenXML):**
-   - Прямой анализ структуры `.docx` через OpenXML SDK (поля страницы, гарнитура, кегль, межстрочный интервал, нумерация страниц, абзацный отступ).
-   - Автоматическое устранение замечаний в один клик с сохранением чистой исправленной копии.
-2. **Шаблонизатор документов Word и PDF экспорт:**
-   - Парсинг плейсхолдеров вида `[Название поля-подсказка]` и `{Название поля}`.
-   - Подстановка значений с сохранением оригинального форматирования, поддержкой многострочных вставок и автозаполнением из профиля.
-   - Высококачественный экспорт в PDF с блочной версткой QuestPDF.
-3. **OCR и ICAO 9303 MRZ сканирование паспортов РБ и ID-карт:**
-   - Распознавание фото и сканов через нативные оффлайн-движки: Tesseract (Android) и `Windows.Media.Ocr` (Windows).
-   - Полнофункциональный парсер Machine Readable Zone (MRZ) биометрических паспортов (TD3, 2x44) и ID-карт (TD1, 3x30) с проверкой контрольных сумм по алгоритму ICAO 9303 (веса 7-3-1).
-   - Интерактивный Diff-экран подтверждения перед сохранением в профиль: «Было в профиле» vs «Распознано с фото» с независимыми чекбоксами выбора полей.
-   - Связка сканера со структурой шаблонов: перенос распознанного текста в поля любого выбранного шаблона через ИИ-чат.
-4. **Централизованный ИИ-помощник с Outbound Gateway защитой:**
-   - Понимание свободных текстовых запросов пользователя и автозаполнение сложных документов.
-   - Сквозное локальное маскирование персональных данных (`PrivacyMasker`) перед сетевым вызовом: белорусские адреса, email, ФИО во всех падежах, телефоны, УНП, IBAN и паспорта заменяются безопасными плейсхолдерами.
-   - Строгий шлюз `AssertPayloadSafe`: исключение `AiAssistantSecurityException` при попытке отправки сырых ПДн в сеть.
-   - Серверный Cloudflare Worker с каскадным fallback моделей, общим дедлайном 15 секунд, вторичным Regex-скруббером и политикой нулевого логирования текста (Zero-Text Logging).
-5. **Защищённый профиль организации и гражданина:**
-   - Хранение реквизитов (УНП, IBAN с проверкой mod 97, паспорт, адрес) в зашифрованном системном хранилище `SecureStorage` (Android Keystore / Windows DPAPI).
-   - Полное исключение из облачного бэкапа (`data_extraction_rules.xml`).
-6. **Надежность жизненного цикла и платформенная интеграция:**
-   - Детерминированная машина состояний камеры `CameraLifecycleController` (Stopped, Starting, Running, Disposed) с защитой от гонок при смене вкладок.
-   - Защита от параллельной навигации `NavigationGuard` (устранение белого экрана при кликах).
-   - Аппаратное ограничение габаритов окна Windows 800x600 (Win32 Subclassing).
-   - Нативная область перетаскивания `SetDragRectangles`, смещенная вправо от Navigation Rail для свободных кликов по логотипу и кнопкам панели.
+### 🌟 Ключевые возможности
+
+1. **Проверка документов по ГОСТ (OpenXML):**
+   - Автоматический анализ структуры `.docx` файлов: поля страницы, шрифты, кегль, межстрочные интервалы, абзацные отступы и нумерация страниц.
+   - Устранение всех замечаний в один клик с созданием исправленной копии.
+
+2. **Заполнение шаблонов Word и экспорт в PDF:**
+   - Поддержка умных меток вида `[Название поля-подсказка]` и `{Название поля}`.
+   - Мгновенная генерация Word-документов с сохранением исходного оформления и автоподстановкой реквизитов из профиля.
+   - Быстрый экспорт в PDF с блочной вёрсткой на движке QuestPDF.
+
+3. **Оптический сканер документов (OCR и MRZ):**
+   - Распознавание печатных документов и машиночитаемой зоны (MRZ) через нативные оффлайн-движки: двухъязычный Tesseract `rus+eng` на Android и системный `Windows.Media.Ocr` на Windows.
+   - Умная фильтрация оптических артефактов и исправление типичных ошибок сканирования (гомоглифов).
+   - Автоматический перевод имён и фамилий с латиницы на русский язык (`TransliterationHelper`).
+   - Перенос распознанного текста в поля любого выбранного шаблона.
+
+4. **Встроенный ИИ-ассистент с защитным шлюзом:**
+   - Понимание запросов на естественном языке для заполнения сложных форм.
+   - Локальная маскировка персональных данных (`PrivacyMasker`) перед обращением к облаку: адреса, телефоны, email и паспортные данные заменяются защитными токенами.
+   - Аппаратный контроль `AssertPayloadSafe`: невозможность утечки реальных данных пользователя во внешнюю сеть.
+   - Серверный Cloudflare Worker с каскадом нейросетей, быстрым ответом и нулевым сохранением текстов (Zero-Text Logging).
+
+5. **Защищённый локальный профиль:**
+   - Безопасное хранение реквизитов (ФИО, наименование, УНП, IBAN с валидацией mod 97, адрес).
+   - Защита от утечек и исключение из облачного резервного копирования ОС.
 
 ---
 
 ## 🛠️ Технологический стек
 
-| Компонент | Технологии |
+| Компонент | Технологии и библиотеки |
 |---|---|
-| **Платформа** | [.NET 10 MAUI](https://learn.microsoft.com/dotnet/maui/) (Single Project, `net10.0-windows10.0.19041.0`, `net10.0-android`) |
-| **Работа с DOCX** | [DocumentFormat.OpenXml 3.5.1](https://github.com/dotnet/Open-XML-SDK) (валидация архивов, прямое редактирование WordprocessingML) |
-| **Генерация PDF** | [QuestPDF 2026.9.1](https://www.questpdf.com/) (нативная блочная вёрстка по ГОСТ, Community License) |
-| **Распознавание (OCR)** | [TesseractOcrMaui 1.5.1](https://github.com/maui-ocr/TesseractOcrMaui) (языковая модель `rus.traineddata`, Android), `Windows.Media.Ocr` (Windows) |
-| **Камера и превью** | [CommunityToolkit.Maui.Camera 5.0.0](https://learn.microsoft.com/dotnet/communitytoolkit/maui/) |
-| **Облачный ИИ-прокси** | Cloudflare Workers (JavaScript, AbortSignal 15s, Model Cascade, Zero-Text Logging, WAF Rate Limiting) |
-| **Безопасность** | `Microsoft.Maui.Storage.SecureStorage` (Android Keystore, Windows DPAPI), Outbound Gateway |
-| **Тестирование** | xUnit 2.9, 255 модульных тестов, синтетический корпус ПДн |
+| **Платформа** | [.NET 10 MAUI](https://learn.microsoft.com/dotnet/maui/) (Single Project: Windows `net10.0-windows10.0.19041.0`, Android `net10.0-android`) |
+| **Обработка Word (.docx)** | [DocumentFormat.OpenXml 3.5.1](https://github.com/dotnet/Open-XML-SDK) |
+| **Генерация PDF** | [QuestPDF 2026.9.1](https://www.questpdf.com/) (Community License) |
+| **Оптическое распознавание** | [TesseractOcrMaui 1.5.1](https://github.com/maui-ocr/TesseractOcrMaui) (`rus+eng`, Android), `Windows.Media.Ocr` (Windows) |
+| **Камера видоискателя** | [CommunityToolkit.Maui.Camera 5.0.0](https://learn.microsoft.com/dotnet/communitytoolkit/maui/) |
+| **Локальная безопасность** | `Microsoft.Maui.Storage.SecureStorage` (Windows DPAPI / Android Keystore) |
+| **Облачный ИИ-прокси** | Cloudflare Workers (Edge JS, Zero-Text Logging, Model Cascade) |
+| **Тестирование** | [xUnit 2.9](https://xunit.net/) — 291 автоматизированный юнит-тест |
 
 ---
 
-## 🚀 Сборка и запуск
+## 🚀 Сборка и запуск проекта
 
 ### Требования к окружению
-- **.NET SDK:** `10.0.403` или новее.
-- **Рабочие нагрузки (workloads):** `maui-windows`, `android`.
-- **ОС:** Windows 10/11 (для сборки Windows), Android 10+ (API 29+).
+- **.NET SDK:** `10.0` или новее.
+- **Рабочие нагрузки .NET MAUI:**
+  ```bash
+  dotnet workload install maui-windows android
+  ```
+- **Операционная система:** Windows 10/11 (для сборки Windows-версии) или любая ОС с установленным Android SDK.
 
-### Команды сборки и проверки
+### Основные команды
 
 ```bash
-# 1. Запуск всех unit-тестов (255 тестов)
+# 1. Запуск полного набора юнит-тестов (291 тест)
 dotnet test GosTek.Tests/GosTek.Tests.csproj
 
-# 2. Сборка под Windows (Debug)
-dotnet build GosTek.csproj -f net10.0-windows10.0.19041.0 -p:TreatWarningsAsErrors=true -warnaserror
-
-# 3. Сборка под Windows (Release)
+# 2. Сборка приложения для Windows (Release)
 dotnet build GosTek.csproj -f net10.0-windows10.0.19041.0 -c Release -p:TreatWarningsAsErrors=true -warnaserror
 
-# 4. Сборка APK под Android (Debug)
-dotnet build GosTek.csproj -f net10.0-android -p:TreatWarningsAsErrors=true -warnaserror
-
-# 5. Сборка под Android (Release с R8/AOT оптимизацией)
+# 3. Сборка APK для Android (Release с R8/AOT линковкой)
 dotnet build GosTek.csproj -f net10.0-android -c Release -p:TreatWarningsAsErrors=true -warnaserror
 
-# 6. Проверка форматирования кода
+# 4. Проверка чистоты стиля и форматирования кода
 dotnet format GosTek.sln --verify-no-changes
 ```
 
 ---
 
-## 📂 Структура проекта
+## 📂 Структура каталогов
 
-- **[`GosTek.sln`](./GosTek.sln)** — главное решение проекта.
-- **[`GosTek.csproj`](./GosTek.csproj)** — исходный код клиентского приложения:
-  - `Views/` — экраны ContentPage (`MainPage`, `TemplatesPage`, `FieldsPage`, `CheckPage`, `ScanPage`, `ProfilePage`, `SettingsPanel`).
-  - `Services/` — бизнес-логика (`DocumentChecker`, `TemplateEngine`, `PdfExportService`, `DocumentDataExtractor`, `MrzParser`, `PrivacyMasker`, `AiAssistantService`, `CameraLifecycleController`, `NavigationGuard`).
-  - `Models/` — структуры данных и правила валидации (`CheckModels`, `TemplateDef`, `ProfileData`, `DraftStore`).
-  - `Platforms/` — платформенный код Windows (`WindowSizing.cs`) и Android (`MainActivity.cs`, правила бэкапа).
-  - `Resources/` — векторные иконки, шрифты PT Sans и языковая база Tesseract.
-- **[`server/`](./server/)** — серверная инфраструктура:
-  - `worker.js` — Cloudflare Worker со шлюзом моделей, 15с дедлайном и Zero-Text Logging.
-  - `DEPLOY.md` — подробная инструкция по развертыванию воркера и настройке Cloudflare WAF.
-- **[`GosTek.Tests/`](./GosTek.Tests/)** — 255 модульных тестов:
-  - `OutboundGatewayTests.cs` — сквозное маскирование ПДн и `AssertPayloadSafe`.
-  - `PrivacyMaskerCorpusTests.cs` — синтетический корпус из 215 примеров (False Positives < 3%, False Negatives < 1%).
-  - `Stage4LifecycleTests.cs` — машина состояний камеры и `NavigationGuard`.
-  - `WindowDragRegionTests.cs` — геометрия перетаскивания окна Windows при разных DPI и состояниях rail.
-  - `MrzParserTests.cs` — ICAO 9303 алгоритм 7-3-1, TD3/TD1 форматы, нормализация OCR.
+```text
+GosTek/
+├── App.xaml, AppShell.xaml     # Каркас приложения, навигация (Navigation Rail / TabBar)
+├── MauiProgram.cs              # Точка входа, регистрация сервисов и шрифтов
+├── Controls/                   # Базовые UI-контролы (ChipBar, BounceEffect)
+├── Helpers/                    # Вспомогательные утилиты (AnimationHelper)
+├── Models/                     # Модели данных (CheckModels, TemplateDef, DraftStore, AiMemory)
+├── Platforms/                  # Платформенный код для Windows (Subclassing, DragRegion) и Android (OcrEngine)
+├── Resources/                  # Шрифты PT Sans, векторные иконки, языковые модели OCR (rus+eng)
+├── Services/                   # Ядро бизнес-логики:
+│   ├── DocumentChecker.cs      # Проверка оформления документов по ГОСТ
+│   ├── TemplateEngine.cs       # Разбор и заполнение Word-шаблонов
+│   ├── FileSaveService.cs      # Кроссплатформенное сохранение файлов и MediaStore
+│   ├── SettingsService.cs      # Управление настройками и путями
+│   ├── ThemeService.cs         # Цветовые палитры и тёмная тема Slate Dark
+│   ├── MrzParserService.cs     # Распознавание и детерминированный разбор паспортов
+│   ├── MrzSanitizer.cs         # Санация оптических искажений и гомоглифов
+│   ├── DocumentDataExtractor.cs# Извлечение структурированных реквизитов из OCR
+│   ├── SmartInputHelper.cs     # Умный ввод (TitleCase, маски дат, подбор клавиатуры)
+│   ├── TransliterationHelper.cs# Транслитерация имён и фамилий с латиницы на русский
+│   ├── PrivacyMasker.cs        # Сквозное маскирование ПДн перед отправкой в сеть
+│   └── AiAssistantService.cs   # Клиент ИИ-помощника и Outbound Gateway
+├── Views/                      # Страницы интерфейса:
+│   ├── MainPage.xaml           # Главный экран и быстрый старт
+│   ├── TemplatesPage.xaml      # Каталог шаблонов с категориями и поиском
+│   ├── FieldsPage.xaml         # Заполнение полей документа и ИИ-чат
+│   ├── CheckPage.xaml          # Проверка файлов на соответствие ГОСТ
+│   ├── ScanPage.xaml           # Видоискатель камеры и сканер документов
+│   ├── ProfilePage.xaml        # Реквизиты организации и пользователя
+│   ├── SettingsPanel.xaml      # Боковая шторка настроек
+│   └── Controls/               # Специализированные элементы (DateInputField, IconView, Toast)
+├── server/                     # Облачный прокси (Cloudflare Worker)
+└── GosTek.Tests/               # 291 модульный тест xUnit
+```
 
 ---
 
-## 📚 Документация
+## 📚 Документация проекта
 
-- [`PRIVACY.md`](./PRIVACY.md) — политика конфиденциальности, локальное шифрование и Outbound Gateway.
+- [`PRIVACY.md`](./PRIVACY.md) — детальная архитектура приватности, защита ПДн и Outbound Gateway.
+- [`RELEASE.md`](./RELEASE.md) — руководство по подготовке и публикации релизов (Windows MSIX, Android AAB/APK).
+- [`MANUAL_CHECKLIST.md`](./MANUAL_CHECKLIST.md) — чек-лист ручной приёмки основных пользовательских сценариев.
+- [`FIXES_LOG.md`](./FIXES_LOG.md) — хронологический журнал архитектурных решений и исправлений.
 - [`RELEASE.md`](./RELEASE.md) — инструкции по сборке, развертыванию воркера и чек-лист перед конкурсом.
 - [`MANUAL_CHECKLIST.md`](./MANUAL_CHECKLIST.md) — пошаговый регламент ручной проверки для экспертов и жюри конкурса.
 - [`STAGE_REPORT.md`](./STAGE_REPORT.md) — детальный отчет по всем этапам разработки и аудита.

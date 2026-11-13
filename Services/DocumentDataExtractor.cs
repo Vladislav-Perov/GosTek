@@ -1,6 +1,6 @@
 /*
  * ==============================================================================
- * НАЗНАЧЕНИЕ: Детерминированное извлечение ФИО, паспорта и личного номера гражданина РБ из OCR-текста
+ * НАЗНАЧЕНИЕ: Умное извлечение ФИО, номера паспорта и личного номера из распознанного текста
  * СОДЕРЖИМОЕ: DocumentDataExtractor, ExtractedData
  * ЗАВИСИМОСТИ: System.Text.RegularExpressions, GosTek.Services.MrzParser, GosTek.Services.MrzParserService, GosTek.Services.MrzSanitizer, GosTek.Services.TransliterationHelper
  * ==============================================================================
@@ -10,12 +10,17 @@ using System.Text.RegularExpressions;
 namespace GosTek.Services;
 
 /// <summary>
-/// Извлечение данных из распознанного OCR-текста документа:
-/// приоритет отдается визуальной зоне (крупному тексту), а MRZ (ICAO 9303) служит надежным источником данных и резервом.
-/// При отсутствии или зашумлении MRZ применяются отказоустойчивые регулярные выражения и санитаризация гомоглифов.
+/// Главный сборщик данных из распознанного текста документов.
+/// Что делает: получает сырой текст после работы оптического сканера и аккуратно раскладывает его по полочкам:
+/// находит ФИО, номер паспорта, 14-значный личный номер и дату рождения.
+/// С чем взаимодействует: принимает данные из OcrService, обращается к MrzParser, MrzParserService и TransliterationHelper.
+/// Зачем это нужно: освобождает пользователя от ручного перепечатывания паспортных реквизитов при сканировании.
 /// </summary>
 public static class DocumentDataExtractor
 {
+    /// <summary>
+    /// Набор готовых извлечённых данных для отображения на экране и подстановки в поля шаблонов.
+    /// </summary>
     public sealed record ExtractedData(
         string? FullName,
         string? Passport,
@@ -30,26 +35,31 @@ public static class DocumentDataExtractor
         string? SurnameCyrillic = null,
         string? GivenNameCyrillic = null);
 
-    // Серия паспорта: 2 буквы (кириллица или латиница) + пробел? + 7 цифр
+    // Серия паспорта: 2 буквы (кириллица или латиница) + пробел? + 7 цифр (например "MP 2417879")
     private static readonly Regex PassportRegex =
         new(@"\b([А-ЯA-Z]{2})\s?(\d{7})\b", RegexOptions.Compiled);
 
-    // Три слова с большой буквы подряд — характерно для «Фамилия Имя Отчество»
+    // Три слова с большой буквы подряд — стандартный русский формат «Фамилия Имя Отчество»
     private static readonly Regex FullNameRegex =
         new(@"\b([А-ЯЁ][а-яё]+)\s+([А-ЯЁ][а-яё]+)\s+([А-ЯЁ][а-яё]+)\b", RegexOptions.Compiled);
 
-    // Базовый поиск ФИО после кода BLR: BLR\s+([A-Z]+)\s+([A-Z0-9]+)
+    // Поиск фамилии и имени латиницей после кода Беларуси BLR
     private static readonly Regex BlrFullNameRegex =
         new(@"BLR\s+([A-Za-z]+)\s+([A-Za-z0-9]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-    // Личный номер РБ с учетом возможных гомоглифов в зашумленном OCR
+    // Запасной шаблон личного номера гражданина РБ (с учетом возможных ошибок сканера)
     private static readonly Regex PersonalNumberFallbackRegex =
         new(@"\d{7}[A-Za-zА-Яа-я][0-9OtlIЗQS]{3}[A-Za-zА-Яа-я]{2}[0-9OtlI]", RegexOptions.Compiled);
 
-    // 7 цифр для поиска номера паспорта в очищенном тексте
+    // Шаблон для поиска 7 цифр подряд (номер паспорта без серии)
     private static readonly Regex SevenDigitsRegex =
         new(@"\d{7}", RegexOptions.Compiled);
 
+    /// <summary>
+    /// Основная функция анализа текста: запускает многоуровневый поиск реквизитов.
+    /// Сначала пробует строгий международный стандарт MRZ, затем визуальный текст,
+    /// а если фото не идеальное — подключает алгоритмы автоисправления ошибок сканера.
+    /// </summary>
     public static ExtractedData Extract(string rawText)
     {
         if (string.IsNullOrWhiteSpace(rawText))
@@ -57,7 +67,7 @@ public static class DocumentDataExtractor
 
         try
         {
-            // 1. Полноценная проверка через MrzParser (чистый TD1 / TD3)
+            // 1. Сначала пробуем разобрать чёткие строки машиночитаемой зоны MRZ (стандарты TD1 / TD3)
             var standardMrz = MrzParser.Parse(rawText);
             if (standardMrz.Format != MrzFormat.None)
             {
