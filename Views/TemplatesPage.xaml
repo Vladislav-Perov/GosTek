@@ -45,7 +45,7 @@
                            FontSize="26"
                            FontAttributes="Bold"
                            TextColor="{DynamicResource TextPrimary}" />
-                    <Label Text="Каталог официальных бланков и работ по ГОСТ"
+                    <Label Text="Каталог официальных бланков и студенческих документов по ГОСТ"
                            FontSize="13"
                            TextColor="{DynamicResource TextSecondary}" />
                 </VerticalStackLayout>

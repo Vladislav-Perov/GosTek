@@ -78,6 +78,136 @@ public class TemplateSeederTests
     }
 
     [Fact]
+    public void CreateTemplateDocument_GeneratesValidStudyCertificateTemplate()
+    {
+        string tempPath = Path.Combine(Path.GetTempPath(), $"cert_test_{Guid.NewGuid():N}.docx");
+        try {
+            TemplateSeeder.CreateTemplateDocument(tempPath, TemplateSeeder.StudyCertificateTargetName);
+            Assert.True(File.Exists(tempPath));
+
+            using var doc = WordprocessingDocument.Open(tempPath, false);
+            string? text = doc.MainDocumentPart?.Document?.Body?.InnerText;
+
+            Assert.NotNull(text);
+            Assert.Contains("СПРАВКА", text);
+            Assert.Contains("{{FullName}}", text);
+            Assert.Contains("{{Group}}", text);
+            Assert.Contains("{{Specialty}}", text);
+        } finally {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    [Fact]
+    public void CreateTemplateDocument_GeneratesValidFinancialAidTemplate()
+    {
+        string tempPath = Path.Combine(Path.GetTempPath(), $"aid_test_{Guid.NewGuid():N}.docx");
+        try {
+            TemplateSeeder.CreateTemplateDocument(tempPath, TemplateSeeder.FinancialAidTargetName);
+            Assert.True(File.Exists(tempPath));
+
+            using var doc = WordprocessingDocument.Open(tempPath, false);
+            string? text = doc.MainDocumentPart?.Document?.Body?.InnerText;
+
+            Assert.NotNull(text);
+            Assert.Contains("ЗАЯВЛЕНИЕ", text);
+            Assert.Contains("материальную помощь", text);
+            Assert.Contains("{{Reason}}", text);
+            Assert.Contains("{{FullName}}", text);
+        } finally {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    [Fact]
+    public void CreateTemplateDocument_GeneratesValidDormitoryTemplate()
+    {
+        string tempPath = Path.Combine(Path.GetTempPath(), $"dorm_test_{Guid.NewGuid():N}.docx");
+        try {
+            TemplateSeeder.CreateTemplateDocument(tempPath, TemplateSeeder.DormitoryTargetName);
+            Assert.True(File.Exists(tempPath));
+
+            using var doc = WordprocessingDocument.Open(tempPath, false);
+            string? text = doc.MainDocumentPart?.Document?.Body?.InnerText;
+
+            Assert.NotNull(text);
+            Assert.Contains("ЗАЯВЛЕНИЕ", text);
+            Assert.Contains("общежитии", text);
+            Assert.Contains("{{FullName}}", text);
+            Assert.Contains("{{Group}}", text);
+        } finally {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    [Fact]
+    public void CreateTemplateDocument_GeneratesValidAcademicLeaveTemplate()
+    {
+        string tempPath = Path.Combine(Path.GetTempPath(), $"leave_test_{Guid.NewGuid():N}.docx");
+        try {
+            TemplateSeeder.CreateTemplateDocument(tempPath, TemplateSeeder.AcademicLeaveTargetName);
+            Assert.True(File.Exists(tempPath));
+
+            using var doc = WordprocessingDocument.Open(tempPath, false);
+            string? text = doc.MainDocumentPart?.Document?.Body?.InnerText;
+
+            Assert.NotNull(text);
+            Assert.Contains("ЗАЯВЛЕНИЕ", text);
+            Assert.Contains("академический отпуск", text);
+            Assert.Contains("{{Reason}}", text);
+            Assert.Contains("{{StartDate}}", text);
+        } finally {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    [Fact]
+    public void CreateTemplateDocument_GeneratesValidStudentExplanationTemplate()
+    {
+        string tempPath = Path.Combine(Path.GetTempPath(), $"stud_expl_test_{Guid.NewGuid():N}.docx");
+        try {
+            TemplateSeeder.CreateTemplateDocument(tempPath, TemplateSeeder.StudentExplanationTargetName);
+            Assert.True(File.Exists(tempPath));
+
+            using var doc = WordprocessingDocument.Open(tempPath, false);
+            string? text = doc.MainDocumentPart?.Document?.Body?.InnerText;
+
+            Assert.NotNull(text);
+            Assert.Contains("ОБЪЯСНИТЕЛЬНАЯ ЗАПИСКА", text);
+            Assert.Contains("{{Reason}}", text);
+            Assert.Contains("{{MissedDates}}", text);
+        } finally {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    [Fact]
+    public void CreateTemplateDocument_GeneratesValidIndividualScheduleTemplate()
+    {
+        string tempPath = Path.Combine(Path.GetTempPath(), $"sched_test_{Guid.NewGuid():N}.docx");
+        try {
+            TemplateSeeder.CreateTemplateDocument(tempPath, TemplateSeeder.IndividualScheduleTargetName);
+            Assert.True(File.Exists(tempPath));
+
+            using var doc = WordprocessingDocument.Open(tempPath, false);
+            string? text = doc.MainDocumentPart?.Document?.Body?.InnerText;
+
+            Assert.NotNull(text);
+            Assert.Contains("индивидуального графика сдачи", text);
+            Assert.Contains("{{Reason}}", text);
+            Assert.Contains("{{ScheduleDetails}}", text);
+        } finally {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    [Fact]
     public void SeedResourcesRaw_EnsuresBundledTemplatesExist()
     {
         // Создаем физические файлы в папке Resources/Raw, чтобы они компилировались как MauiAsset

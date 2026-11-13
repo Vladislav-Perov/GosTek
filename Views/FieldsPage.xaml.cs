@@ -201,7 +201,8 @@ public partial class FieldsPage : ContentPage
         draft.TryGetValue(field.Id, out var saved);
 
         // Подпись (+ метка «из профиля»)
-        var label = new Label { Text = field.Label, VerticalOptions = LayoutOptions.Center };
+        var labelText = GetDisplayLabel(field.Label);
+        var label = new Label { Text = labelText, VerticalOptions = LayoutOptions.Center };
         label.StyleClass = new[] { "FieldLabel" };
 
         var labelRow = new HorizontalStackLayout { Spacing = 8 };
@@ -542,7 +543,7 @@ public partial class FieldsPage : ContentPage
                     value = TemplateCatalog.FromProfile(f.Field.Source, profile);
 
                 if (string.IsNullOrWhiteSpace(value))
-                    value = TemplateEngine.ResolveCustomField(f.Field.Label, profile.CustomFields);
+                    value = TemplateEngine.ResolveFromProfile(f.Field.Label, profile);
 
                 if (string.IsNullOrWhiteSpace(value))
                     continue;
@@ -561,6 +562,48 @@ public partial class FieldsPage : ContentPage
         }
 
         return filled;
+    }
+
+    /// <summary>
+    /// Возвращает понятную русскоязычную подпись для стандартных токенов документа.
+    /// </summary>
+    public static string GetDisplayLabel(string label)
+    {
+        if (string.IsNullOrWhiteSpace(label))
+            return "";
+
+        var trimmed = label.Trim();
+        return trimmed.ToLowerInvariant() switch
+        {
+            "fullname" => "ФИО (FullName)",
+            "name" => "Имя (Name)",
+            "surname" => "Фамилия (Surname)",
+            "group" => "Учебная группа (Group)",
+            "specialty" => "Специальность (Specialty)",
+            "faculty" => "Факультет (Faculty)",
+            "course" => "Курс (Course)",
+            "studyform" => "Форма обучения (StudyForm)",
+            "issuereason" => "Место предъявления (IssueReason)",
+            "date" => "Дата документа (Date)",
+            "reason" => "Причина / основание (Reason)",
+            "deanname" => "Декану / Ректору (DeanName)",
+            "rectorname" => "Ректору университета (RectorName)",
+            "phone" => "Контактный телефон (Phone)",
+            "homeaddress" => "Адрес проживания (HomeAddress)",
+            "privilegecategory" => "Льготная категория (PrivilegeCategory)",
+            "academicyear" => "Учебный год (AcademicYear)",
+            "startdate" => "Дата начала (StartDate)",
+            "enddate" => "Дата окончания (EndDate)",
+            "attacheddocs" => "Прилагаемые документы (AttachedDocs)",
+            "misseddates" => "Период пропусков (MissedDates)",
+            "missedclasses" => "Пропущенные занятия (MissedClasses)",
+            "scheduledetails" => "График сдачи дисциплин (ScheduleDetails)",
+            "deadlinedate" => "Срок ликвидации задолженности (DeadlineDate)",
+            "commissionhead" => "Председатель комиссии (CommissionHead)",
+            "university" => "Учреждение образования (University)",
+            "semester" => "Учебный семестр (Semester)",
+            _ => trimmed
+        };
     }
 
     private async Task AutoFillAsync()

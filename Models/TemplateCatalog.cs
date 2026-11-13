@@ -54,10 +54,15 @@ public static class TemplateCatalog
                 modifiedText = ".docx";
             }
 
+            string fieldsText = d.Fields.Length == 0 ? "Без полей" : $"Полей: {d.Fields.Length}";
+            string subtitle = string.IsNullOrWhiteSpace(d.Category) || d.Category == NoCategory
+                ? (d.Fields.Length == 0 ? "Без полей для заполнения" : $"Полей для заполнения: {d.Fields.Length}")
+                : $"{d.Category} • {fieldsText}";
+
             return new TemplateItem(
                 d.Id,
                 d.Title,
-                d.Fields.Length == 0 ? "Без полей для заполнения" : $"Полей для заполнения: {d.Fields.Length}",
+                subtitle,
                 d.Category,
                 modifiedText);
         }).ToArray();
@@ -97,12 +102,21 @@ public static class TemplateCatalog
         return _defs.TryGetValue(id, out var d) ? d : null;
     }
 
-    /// <summary>Значение по умолчанию: сегодняшняя дата для полей вида [Дата-00.00.0000].</summary>
+    /// <summary>Значение по умолчанию: сегодняшняя дата для полей вида [Дата-00.00.0000] или {{Date}}.</summary>
     public static string? DefaultFor(TemplateField f)
-        => f.Label.Contains("дата", StringComparison.CurrentCultureIgnoreCase)
-           && System.Text.RegularExpressions.Regex.IsMatch(f.Placeholder, @"^[0-9дмгДМГ]{2}\.[0-9дмгДМГ]{2}\.[0-9дмгДМГ]{4}$")
-            ? DateTime.Today.ToString("dd.MM.yyyy")
-            : null;
+    {
+        var l = f.Label.ToLowerInvariant();
+        if ((l.Contains("дата") || l.Contains("date"))
+           && (string.IsNullOrWhiteSpace(f.Placeholder)
+               || System.Text.RegularExpressions.Regex.IsMatch(f.Placeholder, @"^[0-9дмгДМГ]{2}\.[0-9дмгДМГ]{2}\.[0-9дмгДМГ]{4}$")
+               || f.Placeholder.Contains("00.00.0000")
+               || f.Placeholder.Contains("дд.мм.гггг")
+               || f.Placeholder.Contains("dd.mm.yyyy")))
+        {
+            return DateTime.Today.ToString("dd.MM.yyyy");
+        }
+        return null;
+    }
 
     public static string FromProfile(ProfileSource source, ProfileData p) => source switch {
         ProfileSource.FullName => p.FullName,

@@ -42,12 +42,12 @@ public static class TemplateEngine
 {
     private const string Blank = "__________";
 
-    // [..] или {..}; внутри обязательно есть буква (чтобы не трогать сноски вида [1])
-    private static readonly Regex Rx = new(@"\[([^\[\]]*\p{L}[^\[\]]*)\]|\{([^{}]*\p{L}[^{}]*)\}", RegexOptions.Compiled);
+    // [..], {{..}} или {..}; внутри обязательно есть буква (чтобы не трогать сноски вида [1])
+    private static readonly Regex Rx = new(@"\[([^\[\]]*\p{L}[^\[\]]*)\]|\{\{([^{}]*\p{L}[^{}]*)\}\}|\{([^{}]*\p{L}[^{}]*)\}", RegexOptions.Compiled);
     private static readonly char[] Seps = { '-', '–', '—', ':', '|' };
 
     private static readonly string[] MultilineWords =
-        { "текст", "описание", "причина", "содержание", "обстоятельств", "пояснение", "примечани", "комментари" };
+        { "текст", "описание", "причина", "содержание", "обстоятельств", "пояснение", "примечани", "комментари", "reason", "description", "details", "график", "schedule" };
 
     // Кэш полей: чтобы не открывать неизменившиеся файлы при каждом обновлении списка
     private static readonly Dictionary<string, (DateTime Time, long Size, TemplateField[] Fields)> Cache = new();
@@ -174,7 +174,9 @@ public static class TemplateEngine
 
     private static (string Label, string Hint, FieldExpansionMode Mode) ParseToken(Match m)
     {
-        var inner = (m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value).Trim();
+        var inner = (m.Groups[1].Success ? m.Groups[1].Value :
+                     m.Groups[2].Success ? m.Groups[2].Value :
+                     m.Groups[3].Value).Trim();
         return ParseTokenDetails(inner);
     }
 
@@ -233,13 +235,13 @@ public static class TemplateEngine
     {
         var l = label.ToLowerInvariant();
 
-        if (l.Contains("и.о") || l.Contains("и. о") || l.Contains("инициал"))
+        if (l.Contains("и.о") || l.Contains("и. о") || l.Contains("инициал") || l == "shortname")
             return ProfileSource.ShortName;
-        if (l.Contains("фио") || l.Contains("ф.и.о") || l.Contains("фамили"))
+        if (l.Contains("фио") || l.Contains("ф.и.о") || l.Contains("фамили") || l.Contains("fullname") || l == "name")
             return ProfileSource.FullName;
-        if (l.Contains("паспорт"))
+        if (l.Contains("паспорт") || l.Contains("passport"))
             return ProfileSource.Passport;
-        if (l.Contains("адрес"))
+        if (l.Contains("адрес") || l.Contains("address"))
             return ProfileSource.Address;
 
         return ProfileSource.None;
@@ -248,25 +250,25 @@ public static class TemplateEngine
     // ===================================================================
     /// <summary>
     /// Автоподстановка значения поля из профиля: базовые реквизиты или CustomFields.
-    /// Если в шаблоне встречается поле [Название] и его нет в базовом профиле, но есть в CustomFields — подставляется.
+    /// Если в шаблоне встречается поле [Название] или {{Field}} и его нет в базовом профиле, но есть в CustomFields — подставляется.
     /// </summary>
     public static string? ResolveFromProfile(string label, ProfileData profile)
     {
         var l = label.Trim().ToLowerInvariant();
 
-        if (l.Contains("и.о") || l.Contains("и. о") || l.Contains("инициал"))
+        if (l.Contains("и.о") || l.Contains("и. о") || l.Contains("инициал") || l == "shortname")
             return TemplateCatalog.ShortName(profile.FullName);
-        if (l.Contains("фио") || l.Contains("ф.и.о") || l.Contains("фамилия") || l.Contains("фамили"))
+        if (l.Contains("фио") || l.Contains("ф.и.о") || l.Contains("фамилия") || l.Contains("фамили") || l.Contains("fullname") || l == "name")
             return profile.FullName;
-        if (l.Contains("наименование") || l.Contains("организаци") || l.Contains("предприяти") || l.Contains("компани"))
+        if (l.Contains("наименование") || l.Contains("организаци") || l.Contains("предприяти") || l.Contains("компани") || l.Contains("вуз") || l.Contains("университет") || l.Contains("учреждение") || l == "university")
             return profile.OrgName;
         if (l.Contains("унп") || l.Contains("инн"))
             return profile.Unp;
-        if (l.Contains("адрес"))
+        if (l.Contains("адрес") || l.Contains("address") || l == "homeaddress")
             return profile.Address;
-        if (l.Contains("телефон") || l.Contains("тел."))
+        if (l.Contains("телефон") || l.Contains("тел.") || l.Contains("phone"))
             return profile.Phone;
-        if (l.Contains("паспорт"))
+        if (l.Contains("паспорт") || l.Contains("passport"))
             return profile.Passport;
         if (l.Contains("счет") || l.Contains("счёт") || l.Contains("iban") || l.Contains("расчетн") || l.Contains("расчётн"))
             return profile.Account;
@@ -302,7 +304,14 @@ public static class TemplateEngine
     public static void FillTo(TemplateDef template, IReadOnlyDictionary<string, string> values, string path)
     {
         string Value(string label)
-            => values.TryGetValue(FieldId(label), out var v) && !string.IsNullOrWhiteSpace(v) ? v.Trim() : Blank;
+        {
+            var id = FieldId(label);
+            if (values.TryGetValue(id, out var v) && !string.IsNullOrWhiteSpace(v))
+                return v.Trim();
+            if (values.TryGetValue(label.Trim(), out var direct) && !string.IsNullOrWhiteSpace(direct))
+                return direct.Trim();
+            return Blank;
+        }
 
         using (var ms = CopyToMemory(template.FilePath)) {
             using (var doc = WordprocessingDocument.Open(ms, true)) {
