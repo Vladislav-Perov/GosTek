@@ -95,4 +95,59 @@ public class MrzParserServiceTests
         Assert.Equal("ЦВЕТКОВ", TransliterationHelper.TransliterateSurname("TSVETKOV"));
         Assert.Equal("ДЗЯМЕНЦЕУ", TransliterationHelper.TransliterateSurname("DZYAMYENTSYEU"));
     }
+
+    [Fact]
+    public void MrzParserService_Parse_NeverThrowsOnMalformedString()
+    {
+        // Невалидные строки разной длины и со спецсимволами
+        var invalidInputs = new[]
+        {
+            "P<BLR",
+            "BLR",
+            "<<<<",
+            new string('<', 100),
+            "P<BLR<<123\nBLR88",
+            "!!!???///\0\b\t",
+            "МРГ41 78795BLR"
+        };
+
+        foreach (var input in invalidInputs)
+        {
+            var result = MrzParserService.Parse(input);
+            Assert.NotNull(result);
+        }
+    }
+
+    [Fact]
+    public void DocumentDataExtractor_Extract_BasicRegexForFullName_ExtractsFromBlrSnippet()
+    {
+        // Задача 2: OF BLR SAYAPIN ANDRE1 -> САЯПИН АНДРЕЙ
+        string snippet = "DOCUMENT SAMPLE OF BLR SAYAPIN ANDRE1 DATE 2026";
+        var data = DocumentDataExtractor.Extract(snippet);
+
+        Assert.Equal("САЯПИН АНДРЕЙ", data.FullName);
+        Assert.Equal("SAYAPIN", data.Surname);
+        Assert.Equal("ANDREI", data.GivenName);
+    }
+
+    [Fact]
+    public void DocumentDataExtractor_Extract_BasicRegexForPersonalNumber_ExtractsFromMessyOcr()
+    {
+        // Задача 3.1: Личный номер 28042683260483AOt lPB648 -> 3260483A011PB6
+        string messyText = "PREFIX 28042683260483AOt lPB648 SUFFIX";
+        var data = DocumentDataExtractor.Extract(messyText);
+
+        Assert.Equal("3260483A011PB6", data.PersonalNumber);
+        Assert.Equal(new DateTime(1983, 4, 26), data.BirthDate);
+    }
+
+    [Fact]
+    public void DocumentDataExtractor_Extract_BasicRegexForPassportNumber_AppendsDefaultSeries()
+    {
+        // Задача 3.2: Номер паспорта OCR выдал 241 78795 -> MP2417879
+        string messyText = "PASSPORT \"241 78795 SOME OTHER TEXT";
+        var data = DocumentDataExtractor.Extract(messyText);
+
+        Assert.Equal("MP2417879", data.Passport);
+    }
 }

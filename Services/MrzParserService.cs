@@ -14,19 +14,22 @@ namespace GosTek.Services;
 /// Результат парсинга паспорта РБ (MRZ + визуальная зона).
 /// </summary>
 public sealed record MrzParseResult(
-    string? Surname,
-    string? Name,
-    string? SurnameCyrillic,
-    string? NameCyrillic,
-    string? PassportNumber,
-    string? PersonalNumber,
-    DateTime? BirthDate,
-    string? BirthDateString,
-    string? Sex,
-    DateTime? ExpiryDate,
-    string? ExpiryDateString,
+    string? Surname = null,
+    string? Name = null,
+    string? SurnameCyrillic = null,
+    string? NameCyrillic = null,
+    string? PassportNumber = null,
+    string? PersonalNumber = null,
+    DateTime? BirthDate = null,
+    string? BirthDateString = null,
+    string? Sex = null,
+    DateTime? ExpiryDate = null,
+    string? ExpiryDateString = null,
     bool Success = true
-);
+)
+{
+    public static MrzParseResult Empty => new(Success: false);
+}
 
 /// <summary>
 /// Сервис парсинга MRZ и данных паспортов РБ с автоисправлением оптических искажений.
@@ -120,83 +123,92 @@ public static class MrzParserService
 
     /// <summary>
     /// Основной метод парсинга паспорта РБ из OCR-текста.
+    /// Защищен от падений try-catch — при любой ошибке возвращается пустой результат.
     /// </summary>
     public static MrzParseResult Parse(string rawText)
     {
         if (string.IsNullOrWhiteSpace(rawText))
-            return new MrzParseResult(null, null, null, null, null, null, null, null, null, null, null, false);
+            return MrzParseResult.Empty;
 
-        string? surname = null;
-        string? name = null;
-        string? passportNumber = null;
-        string? personalNumber = null;
-        DateTime? birthDate = null;
-        string? birthDateStr = null;
-        string? sex = null;
-        DateTime? expiryDate = null;
-        string? expiryDateStr = null;
-
-        // 1. Поиск MRZ
-        var (line1, line2) = FindMrzLines(rawText);
-
-        // 2. Обработка первой строки MRZ (если найдена)
-        if (!string.IsNullOrEmpty(line1))
+        try
         {
-            string cleanLine1 = MrzSanitizer.Sanitize(line1);
-            ParseLine1(cleanLine1, ref surname, ref name);
-        }
+            string? surname = null;
+            string? name = null;
+            string? passportNumber = null;
+            string? personalNumber = null;
+            DateTime? birthDate = null;
+            string? birthDateStr = null;
+            string? sex = null;
+            DateTime? expiryDate = null;
+            string? expiryDateStr = null;
 
-        // 3. Обработка второй строки MRZ (если найдена)
-        if (!string.IsNullOrEmpty(line2))
+            // 1. Поиск MRZ
+            var (line1, line2) = FindMrzLines(rawText);
+
+            // 2. Обработка первой строки MRZ (если найдена)
+            if (!string.IsNullOrEmpty(line1))
+            {
+                string cleanLine1 = MrzSanitizer.Sanitize(line1);
+                ParseLine1(cleanLine1, ref surname, ref name);
+            }
+
+            // 3. Обработка второй строки MRZ (если найдена)
+            if (!string.IsNullOrEmpty(line2))
+            {
+                string cleanLine2 = MrzSanitizer.Sanitize(line2);
+                ParseLine2(cleanLine2, rawText, ref passportNumber, ref personalNumber, ref birthDate, ref birthDateStr, ref sex, ref expiryDate, ref expiryDateStr);
+            }
+
+            // 4. Доизвлечение личного номера при сбоях (Fallback)
+            if (string.IsNullOrEmpty(personalNumber))
+            {
+                personalNumber = ExtractPersonalNumberFallback(rawText);
+            }
+
+            // 5. Доизвлечение номера паспорта из текста, если в MRZ не найден или частичный
+            if (string.IsNullOrEmpty(passportNumber))
+            {
+                passportNumber = ExtractPassportNumberFallback(rawText);
+            }
+
+            // 6. Доизвлечение ФИО из визуальной зоны, если MRZ не дал результатов
+            if (string.IsNullOrEmpty(surname) || string.IsNullOrEmpty(name))
+            {
+                ExtractVisualNames(rawText, ref surname, ref name);
+            }
+
+            // 7. Доизвлечение даты рождения из визуальной зоны или личного номера
+            if (!birthDate.HasValue)
+            {
+                ExtractBirthDate(rawText, personalNumber, ref birthDate, ref birthDateStr);
+            }
+
+            // 8. Транслитерация фамилии и имени
+            string? surnameCyr = !string.IsNullOrEmpty(surname) ? TransliterationHelper.TransliterateSurname(surname) : null;
+            string? nameCyr = !string.IsNullOrEmpty(name) ? TransliterationHelper.TransliterateName(name) : null;
+
+            bool success = !string.IsNullOrEmpty(passportNumber) || !string.IsNullOrEmpty(personalNumber) || !string.IsNullOrEmpty(surname);
+
+            return new MrzParseResult(
+                Surname: surname,
+                Name: name,
+                SurnameCyrillic: surnameCyr,
+                NameCyrillic: nameCyr,
+                PassportNumber: passportNumber,
+                PersonalNumber: personalNumber,
+                BirthDate: birthDate,
+                BirthDateString: birthDateStr,
+                Sex: sex,
+                ExpiryDate: expiryDate,
+                ExpiryDateString: expiryDateStr,
+                Success: success
+            );
+        }
+        catch
         {
-            string cleanLine2 = MrzSanitizer.Sanitize(line2);
-            ParseLine2(cleanLine2, rawText, ref passportNumber, ref personalNumber, ref birthDate, ref birthDateStr, ref sex, ref expiryDate, ref expiryDateStr);
+            // UI больше никогда не должен падать из-за ошибок работы со строками
+            return MrzParseResult.Empty;
         }
-
-        // 4. Доизвлечение личного номера при сбоях (Fallback)
-        if (string.IsNullOrEmpty(personalNumber))
-        {
-            personalNumber = ExtractPersonalNumberFallback(rawText);
-        }
-
-        // 5. Доизвлечение номера паспорта из текста, если в MRZ не найден или частичный
-        if (string.IsNullOrEmpty(passportNumber))
-        {
-            passportNumber = ExtractPassportNumberFallback(rawText);
-        }
-
-        // 6. Доизвлечение ФИО из визуальной зоны, если MRZ не дал результатов
-        if (string.IsNullOrEmpty(surname) || string.IsNullOrEmpty(name))
-        {
-            ExtractVisualNames(rawText, ref surname, ref name);
-        }
-
-        // 7. Доизвлечение даты рождения из визуальной зоны или личного номера
-        if (!birthDate.HasValue)
-        {
-            ExtractBirthDate(rawText, personalNumber, ref birthDate, ref birthDateStr);
-        }
-
-        // 8. Транслитерация фамилии и имени
-        string? surnameCyr = !string.IsNullOrEmpty(surname) ? TransliterationHelper.TransliterateSurname(surname) : null;
-        string? nameCyr = !string.IsNullOrEmpty(name) ? TransliterationHelper.TransliterateName(name) : null;
-
-        bool success = !string.IsNullOrEmpty(passportNumber) || !string.IsNullOrEmpty(personalNumber) || !string.IsNullOrEmpty(surname);
-
-        return new MrzParseResult(
-            Surname: surname,
-            Name: name,
-            SurnameCyrillic: surnameCyr,
-            NameCyrillic: nameCyr,
-            PassportNumber: passportNumber,
-            PersonalNumber: personalNumber,
-            BirthDate: birthDate,
-            BirthDateString: birthDateStr,
-            Sex: sex,
-            ExpiryDate: expiryDate,
-            ExpiryDateString: expiryDateStr,
-            Success: success
-        );
     }
 
     /// <summary>

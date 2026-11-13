@@ -102,6 +102,20 @@ public static class TransliterationHelper
     };
 
     /// <summary>
+    /// Универсальный метод транслитерации слова (имени или фамилии).
+    /// </summary>
+    public static string Transliterate(string rawWord, bool isName = false)
+    {
+        if (string.IsNullOrWhiteSpace(rawWord))
+            return string.Empty;
+
+        if (isName || IsKnownName(rawWord))
+            return TransliterateName(rawWord);
+
+        return TransliterateSurname(rawWord);
+    }
+
+    /// <summary>
     /// Проверяет, содержится ли имя в словаре популярных белорусских имен.
     /// </summary>
     public static bool IsKnownName(string rawName)
