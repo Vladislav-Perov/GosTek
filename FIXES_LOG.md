@@ -11,6 +11,7 @@
 
 | # | Дата | Батч | ID | Затронутый файл / компонент | Статус | Проверено |
 |:---:|:---:|:---:|:---:|:---|:---:|:---|
+| **69** | 13.11.2026 | F11.4 | **PROFILE-REMOVE-PASSPORT-SCAN-INTEGRATION** | Views/ProfilePage.xaml, Views/ProfilePage.xaml.cs | 🏆 Реализовано | Фаза 11.4: Удален функционал заполнения данных по фото паспорта из ProfilePage. Глобальный сканер документов сохранен: 1) Полное удаление промо-карточки «Заполнить по фото паспорта» из XAML-разметки ProfilePage; 2) Удаление обработчика OnPassportScanTapped из code-behind; 3) Глобальный функционал камеры/сканера ScanPage и сервис MrzParserService сохранены интактными; 291/291 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
 | **68** | 13.11.2026 | F11.2 | **MRZ-CRASH-PROTECTION-AND-REGEX-FALLBACKS** | Services/MrzParserService.cs, Services/DocumentDataExtractor.cs, Services/TransliterationHelper.cs, GosTek.Tests/MrzParserServiceTests.cs | 🏆 Реализовано | Фаза 11.2: Внедрены усиленные Regex-фоллбэки в MrzParserService: защита от мусора 'OF BLR', поиск ФИО в двух зонах и восстановление даты из личного номера: 1) Тотальный try-catch вокруг MrzParserService.Parse с возвратом MrzParseResult.Empty, предотвращающий падения UI; 2) Регулярка паспорта ([A-ZА-Я]{2}[0-9A-ZА-Я]{7})\d?BLR с отсечением шапки 'OF BLR'; 3) Двухзонный поиск ФИО (визуальная + MRZ P<BLR) и восстановление даты рождения из личного номера; 291/291 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
 | **67** | 13.11.2026 | F11.1 | **BULLETPROOF-PASSPORT-PARSER-MRZ-AND-DUAL-OCR** | Platforms/Android/OcrEngine.cs, Platforms/Windows/OcrEngine.cs, MauiProgram.cs, Services/MrzSanitizer.cs, Services/TransliterationHelper.cs, Services/MrzParserService.cs, Services/DocumentDataExtractor.cs, GosTek.Tests/MrzParserServiceTests.cs, Resources/Raw/eng.traineddata | 🏆 Реализовано | Фаза 11.1: Бронебойный парсер паспортов РБ (Windows + Android): 1) Поддержка двух языков rus+eng в TesseractOcrMaui на Android (eng.traineddata + rus.traineddata); 2) Двухзонное OCR на Windows через SkiaSharp кропы (верх 75% ru-RU, низ 25% en-US SoftwareBitmap); 3) Сервис MrzSanitizer (удаление пробелов, замена кириллических гомоглифов на латиницу в строках MRZ, SanitizeNumbers только для дат и номеров); 4) Сервис MrzParserService с алгоритмом контрольных сумм 7-3-1 ICAO 9303, поиском BLR на позиции 10 и гибким Fallback личного номера [0-9OIQ]{7}[A-Z][0-9OIQ]{3}[A-Z]{2}[0-9OIQ]; 5) TransliterationHelper с ToUpperInvariant, словарем популярных имен и фонетическими правилами для фамилий; 6) 287/287 тестов зеленые, сборки Win Release (0/0) и Android Release (0/0), dotnet format 0 |
 | **66** | 13.11.2026 | F10.4 | **NAVIGATION-SETTINGS-DISMISS-AND-HYBRID-DATE-INPUT** | Views/SettingsOverlay.cs, Views/SettingsPanel.xaml.cs, AppShell.xaml.cs, Views/AppTabBar.xaml.cs, Views/Controls/DateInputField.cs, Services/SmartInputHelper.cs, Views/FieldsPage.xaml.cs, Views/ProfilePage.xaml.cs, Views/*.xaml.cs, GosTek.Tests/SmartInputHelperTests.cs | 🏆 Реализовано | Фаза 10.4: 1) Устранение залипания шторки настроек при переходе между вкладками: жесткий сброс Dismiss() без анимаций, очистка оверлеев и отсоединение от родителя в OnNavigating/OnNavigated AppShell, OnTabTappedAsync AppTabBar и OnDisappearing всех 7 экранов; 2) Компонент гибридного ввода дат DateInputField (числовой Entry с авто-маской ДД.ММ.ГГГГ + иконка календаря 📅 + нативный системный DatePicker с двусторонней синхронизацией); 3) Сохранение дат в каноническом формате dd.MM.yyyy в DraftStore и ProfileStorage; 280/280 тестов xUnit, Win Release (0/0), Android Release (0/0), dotnet format 0 |
@@ -84,6 +85,24 @@
 ---
 
 ## 2. Этапы комплексного аудита и финализации архитектуры (Этапы 2-8, Фаза 11)
+
+### [Запись #69] 2026-11-13 | Фаза 11.4 | PROFILE-REMOVE-PASSPORT-SCAN-INTEGRATION | Удален функционал заполнения данных по фото паспорта из ProfilePage. Глобальный сканер документов сохранен
+- **Что:** Удален функционал заполнения данных по фото паспорта из ProfilePage. Глобальный сканер документов сохранен.
+- **Архитектура решения:**
+  1. **Очистка разметки `Views/ProfilePage.xaml`:**
+     - Полностью удалена акцентная промо-карточка быстрого заполнения (`Border StyleClass="HoverCard"` с иконкой камеры и текстом «Заполнить по фото паспорта»).
+     - Разметка формы профиля осталась монолитной, чистой и визуально гармоничной.
+  2. **Очистка логики `Views/ProfilePage.xaml.cs`:**
+     - Удален обработчик события тапа `OnPassportScanTapped(object? sender, TappedEventArgs e)`.
+     - Все `using`-директивы проверены, отсутствуют висячие или разорванные ссылки.
+  3. **Сохранность глобального сканера документов и OCR-сервисов:**
+     - Экран сканера документов `Views/ScanPage` на вкладке навигации «Скан» сохранен в полном объеме и продолжает функционировать для документов любого типа.
+     - Сервис `MrzParserService` и его алгоритмы контрольных сумм ICAO 9303, санации гомоглифов и транслитерации сохранены в кодовой базе для возможного повторного использования в будущем.
+- **Тестирование и верификация:**
+  - Все **291/291 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Сборка Windows Release с `/warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Сборка Android Release с `/warnaserror`: **0 предупреждений, 0 ошибок** (109/109 сборок AOT linked).
+  - Проверка стиля `dotnet format GosTek.sln --verify-no-changes`: код **0**.
 
 ### [Запись #68] 2026-11-13 | Фаза 11.2 | MRZ-CRASH-PROTECTION-AND-REGEX-FALLBACKS | Внедрены усиленные Regex-фоллбэки в MrzParserService: защита от мусора 'OF BLR', поиск ФИО в двух зонах и восстановление даты из личного номера
 - **Что:** Я внедрил усиленные Regex-фоллбэки в MrzParserService: защиту от мусора 'OF BLR', поиск ФИО в двух зонах (визуальной и MRZ) и восстановление даты рождения из личного номера гражданина РБ, а также обеспечил полную защиту UI от вылетов при сбоях строковых операций.

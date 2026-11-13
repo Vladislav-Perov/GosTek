@@ -585,12 +585,6 @@ public partial class ProfilePage : ContentPage
         }
     }
 
-    // Кнопка «Заполнить по фото паспорта»
-    private async void OnPassportScanTapped(object? sender, TappedEventArgs e)
-    {
-        await Shell.Current.GoToAsync("//ScanPage?mode=passport");
-    }
-
     // ===== Проверка поля: красная рамка + подпись =====
     // Возвращает true, если ошибки нет (поле пустое или заполнено верно). Сама подсветка — в FieldValidationHelper
     private static bool ApplyValidation(FieldUi f)

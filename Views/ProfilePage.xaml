@@ -86,64 +86,6 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <!-- Быстрое заполнение: акцентная промо-карточка сканера паспорта -->
-                <Border StyleClass="HoverCard"
-                        BackgroundColor="{DynamicResource CardBg}"
-                        Stroke="{DynamicResource BrandGreen}"
-                        StrokeThickness="1.5"
-                        StrokeShape="RoundRectangle 18"
-                        HorizontalOptions="Fill"
-                        Padding="16, 14"
-                        SemanticProperties.Description="Заполнить по фото паспорта">
-                    <Border.Shadow>
-                        <Shadow Brush="Black" Offset="0, 3" Radius="8" Opacity="0.08" />
-                    </Border.Shadow>
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnPassportScanTapped" />
-                    </Border.GestureRecognizers>
-
-                    <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12" VerticalOptions="Center">
-                        <Border Grid.Column="0"
-                                BackgroundColor="{DynamicResource IconBoxBg}"
-                                StrokeThickness="0"
-                                StrokeShape="RoundRectangle 12"
-                                WidthRequest="44"
-                                HeightRequest="44"
-                                VerticalOptions="Center">
-                            <vctrl:IconView Icon="camera"
-                                            IconColor="BrandGreen"
-                                            Size="20"
-                                            HorizontalOptions="Center"
-                                            VerticalOptions="Center" />
-                        </Border>
-
-                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                            <Label Text="Заполнить по фото паспорта"
-                                   FontSize="15"
-                                   FontAttributes="Bold"
-                                   TextColor="{DynamicResource TextPrimary}" />
-                            <Label Text="Быстрое автосчитывание ФИО и данных документа"
-                                   FontSize="12"
-                                   TextColor="{DynamicResource TextSecondary}"
-                                   LineBreakMode="TailTruncation" />
-                        </VerticalStackLayout>
-
-                        <Border Grid.Column="2"
-                                BackgroundColor="{DynamicResource IconBoxBg}"
-                                Stroke="{DynamicResource BrandGreen}"
-                                StrokeThickness="1"
-                                StrokeShape="RoundRectangle 10"
-                                Padding="12, 6"
-                                VerticalOptions="Center">
-                            <Label Text="Сканировать"
-                                   FontSize="12"
-                                   FontAttributes="Bold"
-                                   TextColor="{DynamicResource BrandGreen}"
-                                   VerticalOptions="Center" />
-                        </Border>
-                    </Grid>
-                </Border>
-
                 <!-- Пояснение про безопасное локальное хранилище данных -->
                 <Border BackgroundColor="{DynamicResource CardBg}"
                         Stroke="{DynamicResource CardStroke}"
