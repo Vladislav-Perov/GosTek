@@ -133,15 +133,15 @@ GosTek/
 
 ## 📚 Документация проекта
 
+- [`README.md`](./README.md) — обзор архитектуры, запуск и стек технологий.
 - [`PRIVACY.md`](./PRIVACY.md) — детальная архитектура приватности, защита ПДн и Outbound Gateway.
-- [`RELEASE.md`](./RELEASE.md) — руководство по подготовке и публикации релизов (Windows MSIX, Android AAB/APK).
-- [`MANUAL_CHECKLIST.md`](./MANUAL_CHECKLIST.md) — чек-лист ручной приёмки основных пользовательских сценариев.
-- [`FIXES_LOG.md`](./FIXES_LOG.md) — хронологический журнал архитектурных решений и исправлений.
-- [`RELEASE.md`](./RELEASE.md) — инструкции по сборке, развертыванию воркера и чек-лист перед конкурсом.
-- [`MANUAL_CHECKLIST.md`](./MANUAL_CHECKLIST.md) — пошаговый регламент ручной проверки для экспертов и жюри конкурса.
-- [`STAGE_REPORT.md`](./STAGE_REPORT.md) — детальный отчет по всем этапам разработки и аудита.
-- [`DECISIONS.md`](./DECISIONS.md) — реестр архитектурных решений (D-001 — D-010).
-- [`FIXES_LOG.md`](./FIXES_LOG.md) — журнал внесенных изменений и устраненных замечаний.
+- [`FIXES_LOG.md`](./FIXES_LOG.md) — сквозной хронологический журнал архитектурных решений и исправлений.
+- [`docs/RELEASE.md`](./docs/RELEASE.md) — руководство по подготовке и публикации релизов (Windows MSIX, Android AAB/APK).
+- [`docs/MANUAL_CHECKLIST.md`](./docs/MANUAL_CHECKLIST.md) — пошаговый регламент ручной проверки пользовательских сценариев.
+- [`docs/STAGE_REPORT.md`](./docs/STAGE_REPORT.md) — детальный отчет по этапам разработки и аудита.
+- [`docs/DECISIONS.md`](./docs/DECISIONS.md) — реестр архитектурных решений (D-001 — D-010).
+- [`docs/PROJECT_AUDIT.md`](./docs/PROJECT_AUDIT.md) — комплексный отчёт аудита безопасности и архитектуры.
+- [`docs/PROJECT_OVERVIEW.md`](./docs/PROJECT_OVERVIEW.md) — технический обзор модулей и структуры проекта.
 
 ---
 
