@@ -103,10 +103,11 @@ namespace GosTek
             builder.Services.AddSingleton<IImagePreprocessor, ImagePreprocessor>();
             builder.Services.AddSingleton<IDocumentClassifier, DocumentClassifier>();
 
-            // OCR на Android (см. Services/OcrService.cs). Файл должен лежать
-            // в Resources/Raw с тем же именем — rus.traineddata уже там.
+            // OCR на Android (см. Services/OcrService.cs). Файлы должны лежать
+            // в Resources/Raw с тем же именем — rus.traineddata и eng.traineddata.
             builder.Services.AddTesseractOcr(files => {
                 files.AddFile("rus.traineddata");
+                files.AddFile("eng.traineddata");
             });
 
 #if DEBUG

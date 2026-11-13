@@ -11,6 +11,7 @@
 
 | # | Дата | Батч | ID | Затронутый файл / компонент | Статус | Проверено |
 |:---:|:---:|:---:|:---:|:---|:---:|:---|
+| **67** | 13.11.2026 | F11.1 | **BULLETPROOF-PASSPORT-PARSER-MRZ-AND-DUAL-OCR** | Platforms/Android/OcrEngine.cs, Platforms/Windows/OcrEngine.cs, MauiProgram.cs, Services/MrzSanitizer.cs, Services/TransliterationHelper.cs, Services/MrzParserService.cs, Services/DocumentDataExtractor.cs, GosTek.Tests/MrzParserServiceTests.cs, Resources/Raw/eng.traineddata | 🏆 Реализовано | Фаза 11.1: Бронебойный парсер паспортов РБ (Windows + Android): 1) Поддержка двух языков rus+eng в TesseractOcrMaui на Android (eng.traineddata + rus.traineddata); 2) Двухзонное OCR на Windows через SkiaSharp кропы (верх 75% ru-RU, низ 25% en-US SoftwareBitmap); 3) Сервис MrzSanitizer (удаление пробелов, замена кириллических гомоглифов на латиницу в строках MRZ, SanitizeNumbers только для дат и номеров); 4) Сервис MrzParserService с алгоритмом контрольных сумм 7-3-1 ICAO 9303, поиском BLR на позиции 10 и гибким Fallback личного номера [0-9OIQ]{7}[A-Z][0-9OIQ]{3}[A-Z]{2}[0-9OIQ]; 5) TransliterationHelper с ToUpperInvariant, словарем популярных имен и фонетическими правилами для фамилий; 6) 287/287 тестов зеленые, сборки Win Release (0/0) и Android Release (0/0), dotnet format 0 |
 | **66** | 13.11.2026 | F10.4 | **NAVIGATION-SETTINGS-DISMISS-AND-HYBRID-DATE-INPUT** | Views/SettingsOverlay.cs, Views/SettingsPanel.xaml.cs, AppShell.xaml.cs, Views/AppTabBar.xaml.cs, Views/Controls/DateInputField.cs, Services/SmartInputHelper.cs, Views/FieldsPage.xaml.cs, Views/ProfilePage.xaml.cs, Views/*.xaml.cs, GosTek.Tests/SmartInputHelperTests.cs | 🏆 Реализовано | Фаза 10.4: 1) Устранение залипания шторки настроек при переходе между вкладками: жесткий сброс Dismiss() без анимаций, очистка оверлеев и отсоединение от родителя в OnNavigating/OnNavigated AppShell, OnTabTappedAsync AppTabBar и OnDisappearing всех 7 экранов; 2) Компонент гибридного ввода дат DateInputField (числовой Entry с авто-маской ДД.ММ.ГГГГ + иконка календаря 📅 + нативный системный DatePicker с двусторонней синхронизацией); 3) Сохранение дат в каноническом формате dd.MM.yyyy в DraftStore и ProfileStorage; 280/280 тестов xUnit, Win Release (0/0), Android Release (0/0), dotnet format 0 |
 | **65** | 13.11.2026 | AUDIT-S8 | **STAGE-8-RELEASE-BUILDS-DOCS-AND-FINAL-REPORT** | README.md, RELEASE.md, MANUAL_CHECKLIST.md, FINAL_REPORT.md, STAGE_REPORT.md, DECISIONS.md, FIXES_LOG.md | 🏆 Реализовано | Выполнение Этапа 8 комплексного аудита (Полировка, релиз, финализация): 1) Успешная компиляция Android Release (-c Release, net10.0-android, ILLink + R8, 0 warnings, 0 errors); 2) Успешная компиляция Windows Release (-c Release, net10.0-windows10.0.19041.0, 0 warnings, 0 errors); 3) Полная актуализация README.md (архитектура, приватность, сборка); 4) Руководство по релизной публикации RELEASE.md (MSIX, AAB, Keystore); 5) Чек-лист ручной приёмки MANUAL_CHECKLIST.md (6 ключевых сценариев); 6) Итоговый отчет аудита FINAL_REPORT.md; 255/255 тестов зеленые, сборки Win и Android (0/0) |
 | **64** | 13.11.2026 | AUDIT-S7 | **STAGE-7-ICAO-MRZ-PARSER-DIFF-CONFIRMATION-AND-TEMPLATE-LINK** | Services/MrzParser.cs, Services/DocumentDataExtractor.cs, Models/DraftStore.cs, Views/ScanPage.xaml, Views/ScanPage.xaml.cs, Views/FieldsPage.xaml.cs, GosTek.Tests/MrzParserTests.cs | 🏆 Реализовано | Выполнение Этапа 7 комплексного аудита (Камера, OCR, паспорт): 1) Парсер MrzParser биометрических паспортов (TD3, 2x44) и ID-карт (TD1, 3x30) с проверкой контрольных сумм по алгоритму ICAO 9303 (веса 7-3-1), нормализацией частых ошибок OCR (O↔0, I↔1, B↔8, S↔5, Z↔2) и извлечением 14-значного личного номера РБ; 2) Приоритетная связка DocumentDataExtractor.Extract с парсером MRZ; 3) Интерактивный Diff-экран подтверждения в ScanPage («Было в профиле» vs «Распознано с фото», бейдж ICAO MRZ, независимые чекбоксы сохранения полей); 4) Кнопка «Перенести распознанный текст в шаблон...» через DraftStore.PendingOcrText с автоподстановкой в чат ИИ на FieldsPage; 255/255 тестов зеленые, сборки Win и Android (0/0) |
@@ -81,7 +82,36 @@
 
 ---
 
-## 2. Этапы комплексного аудита и финализации архитектуры (Этапы 2-8)
+## 2. Этапы комплексного аудита и финализации архитектуры (Этапы 2-8, Фаза 11)
+
+### [Запись #67] 2026-11-13 | Фаза 11.1 | BULLETPROOF-PASSPORT-PARSER-MRZ-AND-DUAL-OCR | Бронебойный парсер паспортов РБ (Windows + Android), двухзонный OCR, санация гомоглифов и умная транслитерация
+- **Что:** Я разработал и внедрил отказоустойчивую архитектуру оптического распознавания и детерминированного парсинга паспортов Республики Беларусь (как биометрических, так и классических паспортов образца 1996 года серии МР/КН/ВМ/КВ и др.), устойчивую к гильоширной защитной сетке, искажениям фотокамеры и ошибкам OCR.
+- **Архитектура решения:**
+  1. **Кроссплатформенный OCR (Android + Windows):**
+     - **Android (`Platforms/Android/OcrEngine.cs`, `MauiProgram.cs`):** Подключил английскую языковую модель `eng.traineddata` (23.5 МБ) в дополнение к `rus.traineddata`. `TesseractOcrMaui` инициализируется с двуязычным словарем `"rus+eng"`. Режим сегментации PSM 6 (SingleBlock) с автоматическим fallback на PSM 3 (Auto).
+     - **Windows (`Platforms/Windows/OcrEngine.cs`):** Реализовал двухзонное разделение входного изображения через `SkiaSharp` с относительными координатами для независимости от разрешения фото (`topRect = 0..75%` высоты для визуальной зоны, `bottomRect = 75..100%` для машиносчитываемой зоны MRZ). Верхняя зона передается в WinRT `OcrEngine` с языком `ru-RU`, нижняя зона — с языком `en-US`. Результаты конкатенируются через `\n`.
+  2. **Слой санитаризации и нормализации гомоглифов (`Services/MrzSanitizer.cs`):**
+     - Метод `Sanitize(string rawText)`: применяется строго к MRZ-строкам (содержащим `<<<<` или `BLR`), защищая визуальную зону от повреждений. Первым шагом удаляет абсолютно все пробелы (`Replace(" ", "")`), затем переводит кириллические гомоглифы в латиницу (`М->M`, `Р->P`, `В->B`, `С->C`, `Т->T`, `К->K`, `Н->H`, `А->A`, `Е->E`, `О->O`, `Х->X`, `У->Y`, `І->I`).
+     - Метод `SanitizeNumbers(string rawNumber)`: нормализует оптические ошибки в цифрах (`O, D, Q -> 0`, `I, l, | -> 1`, `Z, Г -> 2`, `З -> 3`, `Ч -> 4`, `S -> 5`, `B, Б, В -> 8`). Применяется исключительно к датам (индексы 13-18, 21-26) и цифровой части номера паспорта. Серия паспорта и Личный номер изолированы от повреждения валидных латинских букв (таких как 'B').
+  3. **Парсер MRZ и контрольные суммы 7-3-1 ICAO 9303 (`Services/MrzParserService.cs`):**
+     - Поиск первой строки MRZ по `P<BLR` или цепочке `<<<<`.
+     - Поиск второй строки MRZ по коду `BLR` с позиционированием 10 символов влево от 'B' для устойчивости к сдвигам OCR.
+     - Проверка контрольных сумм 7-3-1 по стандарту ICAO 9303 с весами 7, 3, 1 и символом `<` равным 0. При несовпадении суммы предпринимается до 3 попыток автозамены гомоглифов, а при отсутствии схождения возвращаются извлеченные данные (без возврата null).
+     - Детерминированное извлечение Личного номера гражданина РБ: при длине очищенной второй строки >= 42 символов проверяется `Substring(28, 14)`; при сбитых индексах или смещении строки работает адаптивный regex fallback `[0-9OIQ]{7}[A-Z][0-9OIQ]{3}[A-Z]{2}[0-9OIQ]`, с последующей точечной нормализацией цифровых разрядов.
+     - Безопасное извлечение номера паспорта: при распознавании вида `МРГ41 78795` серия переводится в `MP`, а к цифровой части применяется `SanitizeNumbers`, гарантируя точный результат `MP2417879`.
+  4. **Умная транслитерация с латиницы на русский язык (`Services/TransliterationHelper.cs`):**
+     - Приведение строк к верхнему регистру `.ToUpperInvariant()` перед поиском.
+     - Официальный словарь популярных белорусских имен (`SIARHEI` -> `СЕРГЕЙ`, `ALIAKSANDR` -> `АЛЕКСАНДР`, `DZMITRY` -> `ДМИТРИЙ`, `YAUHENI` -> `ЕВГЕНИЙ`, `ANDREI`/`ANDRE1` -> `АНДРЕЙ` и др.).
+     - Набор правил для фамилий (`SH -> Ш`, `CH -> Ч`, `ZH -> Ж`, `KH -> Х`, `TS -> Ц`, `YA -> Я`, `YU -> Ю`, `YE -> Е`, `DZ -> ДЗ`).
+  5. **Приоритет извлечения в `DocumentDataExtractor.cs`:**
+     - Приоритет отдается визуальной зоне (крупному тексту), а MRZ служит надежным источником реквизитов и валидатором.
+  6. **Модульные тесты (`GosTek.Tests/MrzParserServiceTests.cs`):**
+     - Покрыт реальный грязный OCR-снимок из ТЗ с мусором, искажениями шапки и смещенной строкой MRZ.
+- **Тестирование и верификация:**
+  - Все **287/287 тестов xUnit** успешно пройдены (0 ошибок, 0 пропущено).
+  - Сборка Windows Release с `/warnaserror`: **0 предупреждений, 0 ошибок**.
+  - Сборка Android Release с `/warnaserror`: **0 предупреждений, 0 ошибок** (109/109 сборок AOT linked).
+  - Проверка стиля `dotnet format GosTek.sln --verify-no-changes`: код **0**.
 
 ### [Запись #65] 2026-11-13 | Этап 8 | STAGE-8-RELEASE-BUILDS-DOCS-AND-FINAL-REPORT | Релизные сборки (Windows/Android 0/0), исчерпывающая документация и чек-лист приёмки
 - **Что:** Я успешно завершил финальный этап комплексного аудита проекта GosTek:

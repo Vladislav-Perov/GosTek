@@ -1,8 +1,8 @@
 /*
  * ==============================================================================
- * НАЗНАЧЕНИЕ: Детерминированное извлечение ФИО и паспортных данных гражданина РБ из OCR-текста
+ * НАЗНАЧЕНИЕ: Детерминированное извлечение ФИО, паспорта и личного номера гражданина РБ из OCR-текста
  * СОДЕРЖИМОЕ: DocumentDataExtractor, ExtractedData
- * ЗАВИСИМОСТИ: System.Text.RegularExpressions, GosTek.Services.MrzParser
+ * ЗАВИСИМОСТИ: System.Text.RegularExpressions, GosTek.Services.MrzParser, GosTek.Services.MrzParserService, GosTek.Services.MrzSanitizer
  * ==============================================================================
  */
 using System.Text.RegularExpressions;
@@ -11,8 +11,7 @@ namespace GosTek.Services;
 
 /// <summary>
 /// Извлечение данных из распознанного OCR-текста документа:
-/// в первую очередь использует парсер машиносчитываемой зоны MRZ (ICAO 9303) биометрических паспортов и ID-карт,
-/// а при отсутствии MRZ — регулярные выражения с нормализацией.
+/// приоритет отдается визуальной зоне (крупному тексту), а MRZ (ICAO 9303) служит надежным источником данных и резервом.
 /// </summary>
 public static class DocumentDataExtractor
 {
@@ -24,9 +23,13 @@ public static class DocumentDataExtractor
         string? Sex = null,
         DateTime? ExpiryDate = null,
         bool IsMrz = false,
-        bool IsValid = true);
+        bool IsValid = true,
+        string? Surname = null,
+        string? GivenName = null,
+        string? SurnameCyrillic = null,
+        string? GivenNameCyrillic = null);
 
-    // Серия паспорта: 2 буквы (кириллица или латиница, OCR может перепутать) + 7 цифр
+    // Серия паспорта: 2 буквы (кириллица или латиница) + пробел? + 7 цифр
     private static readonly Regex PassportRegex =
         new(@"\b([А-ЯA-Z]{2})\s?(\d{7})\b", RegexOptions.Compiled);
 
@@ -39,32 +42,83 @@ public static class DocumentDataExtractor
         if (string.IsNullOrWhiteSpace(rawText))
             return new ExtractedData(null, null);
 
-        // 1. Попытка распарсить через ICAO 9303 MRZ
-        var mrz = MrzParser.Parse(rawText);
-        if (mrz.Format != MrzFormat.None)
+        // 1. Полноценная проверка через MrzParser (чистый TD1 / TD3)
+        var standardMrz = MrzParser.Parse(rawText);
+        if (standardMrz.Format != MrzFormat.None)
         {
             return new ExtractedData(
-                FullName: mrz.FullName,
-                Passport: mrz.DocumentNumber,
-                PersonalNumber: mrz.PersonalNumber,
-                BirthDate: mrz.BirthDate,
-                Sex: mrz.Sex,
-                ExpiryDate: mrz.ExpiryDate,
+                FullName: standardMrz.FullName,
+                Passport: standardMrz.DocumentNumber,
+                PersonalNumber: standardMrz.PersonalNumber,
+                BirthDate: standardMrz.BirthDate,
+                Sex: standardMrz.Sex,
+                ExpiryDate: standardMrz.ExpiryDate,
                 IsMrz: true,
-                IsValid: mrz.DocumentNumberValid && (mrz.BirthDateValid || mrz.BirthDate == null));
+                IsValid: standardMrz.DocumentNumberValid && (standardMrz.BirthDateValid || standardMrz.BirthDate == null),
+                Surname: standardMrz.LastName,
+                GivenName: standardMrz.FirstName
+            );
         }
 
-        // 2. Резервный парсинг визуальной зоны по регулярным выражениям
-        string? passport = null;
+        // 2. Визуальная зона: кириллическое ФИО и номер паспорта
+        string? visualPassport = null;
         var passportMatch = PassportRegex.Match(rawText);
         if (passportMatch.Success)
-            passport = $"{passportMatch.Groups[1].Value} {passportMatch.Groups[2].Value}";
+            visualPassport = $"{passportMatch.Groups[1].Value} {passportMatch.Groups[2].Value}";
 
-        string? fullName = null;
+        string? visualFullName = null;
         var nameMatch = FullNameRegex.Match(rawText);
         if (nameMatch.Success)
-            fullName = $"{nameMatch.Groups[1].Value} {nameMatch.Groups[2].Value} {nameMatch.Groups[3].Value}";
+            visualFullName = $"{nameMatch.Groups[1].Value} {nameMatch.Groups[2].Value} {nameMatch.Groups[3].Value}";
 
-        return new ExtractedData(fullName, passport, IsMrz: false, IsValid: true);
+        // 3. Бронебойный парсинг зашумленного MRZ / гибридного текста
+        var mrzServiceResult = MrzParserService.Parse(rawText);
+
+        bool hasMrzMarkers = rawText.Contains("<<<<") ||
+            (rawText.Contains("BLR") && !string.IsNullOrEmpty(mrzServiceResult.PersonalNumber));
+
+        // Выборка номера паспорта: приоритет визуальной зоне, если найдена; иначе MRZ
+        string? passport = visualPassport;
+        if (string.IsNullOrEmpty(passport) && !string.IsNullOrEmpty(mrzServiceResult.PassportNumber))
+        {
+            passport = mrzServiceResult.PassportNumber;
+        }
+
+        // Выборка ФИО: визуальная зона на кириллице в приоритете; затем транслитерация из зашумленного текста
+        string? fullName = visualFullName;
+        if (string.IsNullOrEmpty(fullName))
+        {
+            if (!string.IsNullOrEmpty(mrzServiceResult.SurnameCyrillic) && !string.IsNullOrEmpty(mrzServiceResult.NameCyrillic))
+            {
+                fullName = $"{mrzServiceResult.SurnameCyrillic} {mrzServiceResult.NameCyrillic}";
+            }
+            else if (!string.IsNullOrEmpty(mrzServiceResult.Surname) && !string.IsNullOrEmpty(mrzServiceResult.Name))
+            {
+                fullName = $"{mrzServiceResult.Surname} {mrzServiceResult.Name}";
+            }
+        }
+
+        string? personalNumber = mrzServiceResult.PersonalNumber;
+        DateTime? birthDate = mrzServiceResult.BirthDate;
+        string? sex = mrzServiceResult.Sex;
+        DateTime? expiryDate = mrzServiceResult.ExpiryDate;
+
+        bool isMrz = hasMrzMarkers;
+        bool isValid = !string.IsNullOrEmpty(passport) || !string.IsNullOrEmpty(personalNumber) || !string.IsNullOrEmpty(fullName);
+
+        return new ExtractedData(
+            FullName: fullName,
+            Passport: passport,
+            PersonalNumber: personalNumber,
+            BirthDate: birthDate,
+            Sex: sex,
+            ExpiryDate: expiryDate,
+            IsMrz: isMrz,
+            IsValid: isValid,
+            Surname: mrzServiceResult.Surname,
+            GivenName: mrzServiceResult.Name,
+            SurnameCyrillic: mrzServiceResult.SurnameCyrillic,
+            GivenNameCyrillic: mrzServiceResult.NameCyrillic
+        );
     }
 }

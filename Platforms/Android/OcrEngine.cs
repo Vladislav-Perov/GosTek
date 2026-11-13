@@ -44,7 +44,6 @@ public static partial class OcrService
             engine.DefaultSegmentationMode = PageSegmentationMode.SingleBlock;
             engine.SetVariable("tessedit_pageseg_mode", "6");
         };
-
         RecognizionResult result = await tesseract.RecognizeTextAsync(bytes);
         cancellationToken.ThrowIfCancellationRequested();
 
