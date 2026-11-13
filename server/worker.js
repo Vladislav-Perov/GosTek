@@ -171,25 +171,28 @@ function resolveCascade(env) {
   }
 
   const list = [];
+  const primaryGeminiModel = env.GEMINI_MODEL || "gemini-2.0-flash";
   if (env.GEMINI_API_KEY) {
-    list.push({ provider: "gemini", model: "gemini-2.5-flash" });
-    list.push({ provider: "gemini", model: "gemini-2.0-flash" });
+    list.push({ provider: "gemini", model: primaryGeminiModel });
+    if (primaryGeminiModel !== "gemini-1.5-flash") {
+      list.push({ provider: "gemini", model: "gemini-1.5-flash" });
+    }
   }
   if (env.DEEPSEEK_API_KEY) {
     list.push({
       provider: "openai_compatible",
       url: "https://api.deepseek.com/v1/chat/completions",
       apiKeyEnv: "DEEPSEEK_API_KEY",
-      model: "deepseek-chat",
+      model: env.DEEPSEEK_MODEL || "deepseek-chat",
     });
   }
   if (env.GROQ_API_KEY) {
-    list.push({ provider: "groq", model: "llama-3.1-8b-instant" });
+    list.push({ provider: "groq", model: env.GROQ_MODEL || "llama-3.1-8b-instant" });
   }
 
   // Если ключи не переданы в env, сохраняем стандартную последовательность
   if (list.length === 0) {
-    list.push({ provider: "gemini", model: "gemini-2.5-flash" });
+    list.push({ provider: "gemini", model: primaryGeminiModel });
     list.push({ provider: "groq", model: "llama-3.1-8b-instant" });
   }
 
