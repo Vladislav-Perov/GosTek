@@ -234,6 +234,120 @@ public partial class FieldsPage : ContentPage
             editor.StyleClass = new[] { "FieldEditor" };
             box.Padding = new Thickness(16, 8);
             input = editor;
+            box.Content = input;
+        }
+        else if (SmartInputHelper.IsDateField(field.Label, field.Placeholder, field.Id))
+        {
+            var entry = new Entry
+            {
+                Placeholder = string.IsNullOrWhiteSpace(field.Placeholder) ? "ДД.ММ.ГГГГ" : field.Placeholder,
+                Text = saved ?? "",
+                Keyboard = Keyboard.Numeric,
+                MaxLength = 10,
+                HorizontalOptions = LayoutOptions.Fill,
+                VerticalOptions = LayoutOptions.Center,
+            };
+            entry.StyleClass = new[] { "FieldEntry" };
+            input = entry;
+
+            // Навешиваем маску даты ДД.ММ.ГГГГ на ввод
+            string prevDate = entry.Text ?? "";
+            bool isFormattingDate = false;
+            entry.TextChanged += (s, e) =>
+            {
+                if (isFormattingDate) return;
+                isFormattingDate = true;
+                try
+                {
+                    string formatted = SmartInputHelper.ApplyDateMask(e.NewTextValue, prevDate);
+                    if (formatted != e.NewTextValue)
+                    {
+                        int cursor = entry.CursorPosition;
+                        entry.Text = formatted;
+                        entry.CursorPosition = Math.Min(cursor + (formatted.Length - (e.NewTextValue?.Length ?? 0)), formatted.Length);
+                    }
+                    prevDate = formatted;
+                }
+                finally
+                {
+                    isFormattingDate = false;
+                }
+            };
+
+            // Системный DatePicker и кнопка вызова календаря
+            var picker = new Microsoft.Maui.Controls.DatePicker
+            {
+                Format = "dd.MM.yyyy",
+                Opacity = 0.011,
+                WidthRequest = 36,
+                HeightRequest = 36,
+                HorizontalOptions = LayoutOptions.Center,
+                VerticalOptions = LayoutOptions.Center,
+            };
+
+            picker.DateSelected += (s, e) =>
+            {
+                string formatted = picker.Date?.ToString("dd.MM.yyyy") ?? "";
+                if (!string.IsNullOrEmpty(formatted) && entry.Text != formatted)
+                    entry.Text = formatted;
+            };
+
+            var calIcon = new Views.Controls.IconView
+            {
+                Icon = "calendar",
+                Size = 19,
+                IconColor = "BrandGreen",
+                HorizontalOptions = LayoutOptions.Center,
+                VerticalOptions = LayoutOptions.Center,
+            };
+
+            var calBtn = new Border
+            {
+                StrokeThickness = 0,
+                BackgroundColor = Colors.Transparent,
+                Padding = new Thickness(6, 4),
+                Content = calIcon,
+                HorizontalOptions = LayoutOptions.Center,
+                VerticalOptions = LayoutOptions.Center,
+            };
+
+            var calTap = new TapGestureRecognizer();
+            calTap.Tapped += (_, _) =>
+            {
+                HapticHelper.Click();
+                if (SmartInputHelper.TryParseDate(entry.Text, out var dt))
+                    picker.Date = dt;
+                else
+                    picker.Date = DateTime.Today;
+
+                Views.Controls.DateInputField.OpenPicker(picker);
+            };
+            calBtn.GestureRecognizers.Add(calTap);
+
+            var calHost = new Grid
+            {
+                HorizontalOptions = LayoutOptions.Center,
+                VerticalOptions = LayoutOptions.Center,
+                Children = { calBtn, picker },
+            };
+
+            var hybridGrid = new Grid
+            {
+                ColumnDefinitions =
+                {
+                    new ColumnDefinition(GridLength.Star),
+                    new ColumnDefinition(GridLength.Auto),
+                },
+                ColumnSpacing = 8,
+                HorizontalOptions = LayoutOptions.Fill,
+                VerticalOptions = LayoutOptions.Center,
+                Children = { entry, calHost },
+            };
+            Grid.SetColumn(entry, 0);
+            Grid.SetColumn(calHost, 1);
+
+            box.Padding = new Thickness(16, 0);
+            box.Content = hybridGrid;
         }
         else
         {
@@ -244,8 +358,8 @@ public partial class FieldsPage : ContentPage
             };
             entry.StyleClass = new[] { "FieldEntry" };
             input = entry;
+            box.Content = input;
         }
-        box.Content = input;
 
         var keyboard = SmartInputHelper.ResolveKeyboard(field.Label, field.Placeholder, field.Id);
         if (input is Entry ent)
@@ -309,7 +423,9 @@ public partial class FieldsPage : ContentPage
                 }
             }
 
-            draft[field.Id] = text ?? "";
+            draft[field.Id] = SmartInputHelper.IsDateField(field.Label, field.Placeholder, field.Id)
+                ? SmartInputHelper.FormatDateForStorage(text)
+                : (text ?? "");
             if (!IsEmpty(ui))
                 FieldValidationHelper.Mark(ui.Box, ui.Error, false);
             QueueRender();
@@ -511,6 +627,7 @@ public partial class FieldsPage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        SettingsOverlay.Dismiss();
 #if WINDOWS
         if (Shell.Current is { } shell)
         {

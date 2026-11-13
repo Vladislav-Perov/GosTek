@@ -23,6 +23,18 @@ namespace GosTek
 #endif
         }
 
+        protected override void OnNavigating(ShellNavigatingEventArgs args)
+        {
+            base.OnNavigating(args);
+            Views.SettingsOverlay.Dismiss();
+        }
+
+        protected override void OnNavigated(ShellNavigatedEventArgs args)
+        {
+            base.OnNavigated(args);
+            Views.SettingsOverlay.Dismiss();
+        }
+
         // Кнопка «Назад» на Android: диалоги, настройки, оверлеи или стандартный шаг назад
         protected override bool OnBackButtonPressed()
         {

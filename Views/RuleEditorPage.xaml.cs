@@ -51,6 +51,7 @@ public partial class RuleEditorPage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        SettingsOverlay.Dismiss();
 #if WINDOWS
         if (Shell.Current is { } shell)
         {

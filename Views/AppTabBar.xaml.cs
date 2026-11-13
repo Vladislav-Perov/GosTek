@@ -246,9 +246,11 @@ public partial class AppTabBar : ContentView
             return;
 
         ResetHover();
+        SettingsOverlay.Dismiss();
 
         await NavigationGuard.NavigateAsync(async () =>
         {
+            SettingsOverlay.Dismiss();
             if (tab.Route is not null)
                 await Shell.Current.GoToAsync(tab.Route);
             else

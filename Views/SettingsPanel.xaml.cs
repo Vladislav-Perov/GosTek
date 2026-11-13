@@ -131,6 +131,34 @@ public partial class SettingsPanel : ContentView
             IsVisible = false;
         } finally {
             _animating = false;
+            if (Parent is Layout parent)
+            {
+                parent.Children.Remove(this);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Немедленный сброс состояния шторки без анимаций (при навигации и смене страниц).
+    /// Снимает визуальные оверлеи и отсоединяет панель от родительского контейнера.
+    /// </summary>
+    public void Dismiss()
+    {
+        this.AbortAnimation("FadeTo");
+        this.AbortAnimation("TranslateTo");
+        Scrim?.AbortAnimation("FadeTo");
+        Panel?.AbortAnimation("TranslateTo");
+
+        _animating = false;
+        IsVisible = false;
+        if (Scrim is not null)
+            Scrim.Opacity = 0;
+        if (Panel is not null)
+            Panel.TranslationX = -_panelWidth;
+
+        if (Parent is Layout parent)
+        {
+            parent.Children.Remove(this);
         }
     }
 

@@ -92,6 +92,12 @@ public partial class MainPage : ContentPage, IQueryAttributable
         await RefreshProfileCardAsync();
     }
 
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        SettingsOverlay.Dismiss();
+    }
+
     // ===== Настройки =====
     private async void OnSettingsTapped(object? sender, TappedEventArgs e)
     {

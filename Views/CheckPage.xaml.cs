@@ -78,6 +78,7 @@ public partial class CheckPage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        SettingsOverlay.Dismiss();
         StopChoosePulse();
     }
 

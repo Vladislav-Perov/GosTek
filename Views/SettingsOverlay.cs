@@ -79,6 +79,16 @@ public static class SettingsOverlay
             await s_panel.CloseAsync();
     }
 
+    /// <summary>
+    /// Принудительно и немедленно закрывает панель настроек и отсоединяет её от визуального дерева.
+    /// Вызывается при навигации и смене страниц для предотвращения залипания оверлея.
+    /// </summary>
+    public static void Dismiss()
+    {
+        if (s_panel is not null)
+            s_panel.Dismiss();
+    }
+
     private static Grid EnsureGrid(Page page)
     {
         if (page is ContentPage { Content: Grid grid })

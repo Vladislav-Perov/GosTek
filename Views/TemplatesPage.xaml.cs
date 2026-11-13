@@ -68,6 +68,7 @@ public partial class TemplatesPage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        SettingsOverlay.Dismiss();
         CatalogSkeleton.StopShimmer();
         StopWatching();
     }

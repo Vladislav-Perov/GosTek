@@ -156,6 +156,7 @@ public partial class ScanPage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        SettingsOverlay.Dismiss();
         _isPageVisible = false;
         ++_visibilityToken;
 
