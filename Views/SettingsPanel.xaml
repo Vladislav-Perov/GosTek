@@ -24,17 +24,17 @@
             </BoxView.GestureRecognizers>
         </BoxView>
 
-        <!-- Выезжающая панель Side Drawer -->
+        <!-- Выезжающая панель Side Drawer (на Windows выезжает справа, чтобы не перекрывать левый Navigation Rail; на Android слева) -->
         <Border x:Name="Panel"
-                HorizontalOptions="Start"
+                HorizontalOptions="{OnPlatform WinUI=End, Android=Start, Default=End}"
                 WidthRequest="360"
                 BackgroundColor="{DynamicResource PageBg}"
                 Stroke="{DynamicResource CardStroke}"
                 StrokeThickness="1"
-                StrokeShape="RoundRectangle 0, 24, 24, 0"
+                StrokeShape="{OnPlatform WinUI='RoundRectangle 24, 0, 0, 24', Android='RoundRectangle 0, 24, 24, 0', Default='RoundRectangle 24, 0, 0, 24'}"
                 Padding="0">
             <Border.Shadow>
-                <Shadow Brush="Black" Offset="6, 0" Radius="24" Opacity="0.3" />
+                <Shadow Brush="Black" Offset="{OnPlatform WinUI='-6, 0', Android='6, 0', Default='-6, 0'}" Radius="24" Opacity="0.3" />
             </Border.Shadow>
 
             <Grid RowDefinitions="Auto, *">

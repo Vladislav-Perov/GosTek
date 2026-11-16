@@ -154,14 +154,14 @@
                            FontAttributes="Bold"
                            LineBreakMode="WordWrap"
                            TextColor="{DynamicResource BrandGreen}"
-                           Margin="4, -8, 4, 0" />
+                           Margin="4, 0, 4, 4" />
 
                     <!-- Заголовок секции полей -->
                     <Label Text="Данные документа"
                            FontSize="15"
                            FontAttributes="Bold"
                            TextColor="{DynamicResource TextSecondary}"
-                           Margin="2, 4, 2, -4" />
+                           Margin="2, 6, 2, 2" />
 
                     <!-- Контейнер для динамических полей шаблона -->
                     <VerticalStackLayout x:Name="FieldsHost" Spacing="14" />

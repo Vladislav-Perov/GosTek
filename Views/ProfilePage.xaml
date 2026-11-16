@@ -112,7 +112,7 @@
                        FontSize="15"
                        FontAttributes="Bold"
                        TextColor="{DynamicResource TextSecondary}"
-                       Margin="2, 4, 2, -6" />
+                       Margin="2, 4, 2, 0" />
 
                 <!-- Поля создаются динамически из кода (ProfilePage.xaml.cs) -->
                 <VerticalStackLayout x:Name="FieldsHost" Spacing="16" HorizontalOptions="Fill" />
