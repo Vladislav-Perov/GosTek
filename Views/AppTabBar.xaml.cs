@@ -31,6 +31,14 @@ public partial class AppTabBar : ContentView
         new("profile",   "profile",   "Профиль",  "//ProfilePage"),
     };
 
+    private static readonly Tab[] WindowsTabList =
+    {
+        new("home",      "home",      "Главная",  "//MainPage"),
+        new("templates", "templates", "Шаблоны",  "//TemplatesPage"),
+        new("check",     "check",     "Проверка", "//CheckPage"),
+        new("profile",   "profile",   "Профиль",  "//ProfilePage"),
+    };
+
     public static readonly BindableProperty ActiveTabProperty = BindableProperty.Create(
         nameof(ActiveTab), typeof(string), typeof(AppTabBar), string.Empty,
         propertyChanged: (bindable, _, _) => ((AppTabBar)bindable).ApplyStates());
@@ -121,9 +129,9 @@ public partial class AppTabBar : ContentView
 
     private void BuildWindowsRailTabs()
     {
-        for (int i = 0; i < TabList.Length; i++)
+        for (int i = 0; i < WindowsTabList.Length; i++)
         {
-            var tab = TabList[i];
+            var tab = WindowsTabList[i];
             var (border, icon, label) = CreateWindowsRailTab(tab);
             WindowsTabsStack.Children.Add(border);
             _tabViews.Add((tab.Key, border, icon, label, true));

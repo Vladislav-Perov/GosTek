@@ -158,6 +158,14 @@ public partial class ScanPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+
+        // На Windows сканер камеры не поддерживается (используется только на Android)
+        if (DeviceInfo.Platform == DevicePlatform.WinUI)
+        {
+            await Shell.Current.GoToAsync("//MainPage");
+            return;
+        }
+
         _isPageVisible = true;
         int token = ++_visibilityToken;
 

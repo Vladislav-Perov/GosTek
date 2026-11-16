@@ -134,8 +134,8 @@
                     </Grid>
                 </Border>
 
-                <!-- Две карточки быстрых действий в ряд: «Проверить» и «Сканировать» -->
-                <Grid ColumnDefinitions="*, *" ColumnSpacing="16" HorizontalOptions="Fill">
+                <!-- Карточки быстрых действий: на Android две в ряд («Проверить» и «Сканировать»), на Windows одна широкая («Проверить») -->
+                <Grid ColumnDefinitions="{OnPlatform Android='*, *', WinUI='*', Default='*'}" ColumnSpacing="16" HorizontalOptions="Fill">
 
                     <!-- Плитка «Проверить» -->
                     <Border x:Name="CheckCard"
@@ -181,9 +181,10 @@
                         </VerticalStackLayout>
                     </Border>
 
-                    <!-- Плитка «Сканировать» -->
+                    <!-- Плитка «Сканировать» (только на мобильных устройствах Android) -->
                     <Border x:Name="ScanCard"
                             Grid.Column="1"
+                            IsVisible="{OnPlatform Android=True, WinUI=False, Default=False}"
                             StyleClass="HoverCard"
                             StrokeShape="RoundRectangle 18"
                             StrokeThickness="1.5"
