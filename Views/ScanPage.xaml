@@ -383,6 +383,31 @@
                                         BackgroundColor="Transparent" />
                             </Border>
 
+                            <!-- Кнопка 1: Создать новый шаблон из этого текста -->
+                            <Border StyleClass="HoverCard"
+                                    Stroke="{DynamicResource BrandGreen}"
+                                    StrokeThickness="1.5"
+                                    StrokeShape="RoundRectangle 12"
+                                    BackgroundColor="{DynamicResource CardBg}"
+                                    Padding="12, 10"
+                                    HorizontalOptions="Fill">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnCreateTemplateFromOcrTapped" />
+                                </Border.GestureRecognizers>
+                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                                    <vctrl:IconView Icon="templates"
+                                                    IconColor="BrandGreen"
+                                                    Size="16"
+                                                    VerticalOptions="Center" />
+                                    <Label Text="Создать ГОСТ-шаблон из этого текста"
+                                           FontSize="13"
+                                           FontAttributes="Bold"
+                                           TextColor="{DynamicResource BrandGreen}"
+                                           VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </Border>
+
+                            <!-- Кнопка 2: Перенести в существующий шаблон -->
                             <Border StyleClass="HoverCard"
                                     Stroke="{DynamicResource CardStroke}"
                                     StrokeThickness="1"
@@ -395,13 +420,12 @@
                                 </Border.GestureRecognizers>
                                 <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
                                     <vctrl:IconView Icon="filetext"
-                                                    IconColor="BrandGreen"
+                                                    IconColor="TextSecondary"
                                                     Size="16"
                                                     VerticalOptions="Center" />
-                                    <Label Text="Перенести текст в шаблон документа..."
+                                    <Label Text="Выбрать существующий шаблон..."
                                            FontSize="13"
-                                           FontAttributes="Bold"
-                                           TextColor="{DynamicResource BrandGreen}"
+                                           TextColor="{DynamicResource TextSecondary}"
                                            VerticalOptions="Center" />
                                 </HorizontalStackLayout>
                             </Border>

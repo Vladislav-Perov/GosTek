@@ -32,36 +32,66 @@ public static partial class OcrService
         cancellationToken.ThrowIfCancellationRequested();
         await photoStream.CopyToAsync(memory, cancellationToken);
 
-        byte[] bytes = memory.ToArray();
+        byte[] rawBytes = memory.ToArray();
 
-        // Предварительная обработка изображения (выравнивание наклона, оттенки серого, бинаризация)
-        bytes = await ImagePreprocessor.Instance.PreprocessForOcrAsync(bytes);
+        // Предобработка: контрастирование и масштабирование для качественного OCR
+        byte[] preprocessedBytes = await ImagePreprocessor.Instance.PreprocessForOcrAsync(rawBytes);
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        // Конфигурация Tesseract: режим PSM 6 (SingleBlock) для четкого распознавания структуры документа
-        tesseract.EngineConfiguration = engine => {
-            engine.DefaultSegmentationMode = PageSegmentationMode.SingleBlock;
-            engine.SetVariable("tessedit_pageseg_mode", "6");
-        };
-        RecognizionResult result = await tesseract.RecognizeTextAsync(bytes);
-        cancellationToken.ThrowIfCancellationRequested();
+        // КРИТИЧЕСКИ ВАЖНО: сохраняем во временный файл на диске, так как в Android C-библиотеке
+        // Leptonica fopenReadFromMemory падает с InvalidImage, а файловый ввод pixReadFromFile работает идеально!
+        string tempDir = FileSystem.CacheDirectory;
+        string tempFile1 = Path.Combine(tempDir, $"ocr_opt_{Guid.NewGuid():N}.png");
+        string tempFile2 = Path.Combine(tempDir, $"ocr_raw_{Guid.NewGuid():N}.png");
 
-        // Fallback на режим PSM 3 (Auto), если единый блок текста вернул пустой результат
-        if (result.NotSuccess() || string.IsNullOrWhiteSpace(result.RecognisedText)) {
+        try
+        {
+            await File.WriteAllBytesAsync(tempFile1, preprocessedBytes, cancellationToken);
+            await File.WriteAllBytesAsync(tempFile2, rawBytes, cancellationToken);
+
+            // Конфигурация Tesseract: режим Auto (PSM 3) с распознаванием пробелов
             tesseract.EngineConfiguration = engine => {
                 engine.DefaultSegmentationMode = PageSegmentationMode.Auto;
                 engine.SetVariable("tessedit_pageseg_mode", "3");
+                engine.SetVariable("preserve_interword_spaces", "1");
             };
-            var retry = await tesseract.RecognizeTextAsync(bytes);
-            if (!retry.NotSuccess() && !string.IsNullOrWhiteSpace(retry.RecognisedText))
-                result = retry;
+
+            // 1. Распознавание через файловый дескриптор оптимизированного кадра
+            RecognizionResult result = await tesseract.RecognizeTextAsync(tempFile1);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // 2. Если результат пустой или мал — пробуем оригинальный файл
+            if (result.NotSuccess() || string.IsNullOrWhiteSpace(result.RecognisedText) || result.RecognisedText.Trim().Length < 5)
+            {
+                var rawRetry = await tesseract.RecognizeTextAsync(tempFile2);
+                if (!rawRetry.NotSuccess() && !string.IsNullOrWhiteSpace(rawRetry.RecognisedText))
+                    result = rawRetry;
+            }
+
+            // 3. Fallback: режим SingleBlock (PSM 6) для плотного документа
+            if (result.NotSuccess() || string.IsNullOrWhiteSpace(result.RecognisedText) || result.RecognisedText.Trim().Length < 5)
+            {
+                tesseract.EngineConfiguration = engine => {
+                    engine.DefaultSegmentationMode = PageSegmentationMode.SingleBlock;
+                    engine.SetVariable("tessedit_pageseg_mode", "6");
+                    engine.SetVariable("preserve_interword_spaces", "1");
+                };
+                var blockRetry = await tesseract.RecognizeTextAsync(tempFile1);
+                if (!blockRetry.NotSuccess() && !string.IsNullOrWhiteSpace(blockRetry.RecognisedText))
+                    result = blockRetry;
+            }
+
+            if (result.NotSuccess() && string.IsNullOrWhiteSpace(result.RecognisedText))
+                throw new InvalidOperationException($"Не удалось распознать текст (статус: {result.Status}).");
+
+            return result.RecognisedText ?? "";
         }
-
-        if (result.NotSuccess())
-            throw new InvalidOperationException($"Не удалось распознать текст (статус: {result.Status}).");
-
-        return result.RecognisedText ?? "";
+        finally
+        {
+            try { if (File.Exists(tempFile1)) File.Delete(tempFile1); } catch { }
+            try { if (File.Exists(tempFile2)) File.Delete(tempFile2); } catch { }
+        }
     }
 
     private static async Task EnsureLoadedAsync(ITesseract tesseract)

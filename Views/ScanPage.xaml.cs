@@ -790,6 +790,57 @@ public partial class ScanPage : ContentPage
             CopyLabel.Text = "Копировать";
     }
 
+    // ===== Создание нового ГОСТ-шаблона из распознанного текста =====
+    private async void OnCreateTemplateFromOcrTapped(object? sender, TappedEventArgs e)
+    {
+        HapticHelper.Click();
+        string rawText = RawTextEditor.Text?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(rawText))
+        {
+            Toast.Show("Текст документа пуст", "alert");
+            return;
+        }
+
+        try
+        {
+            string defaultTitle = ScanTemplateBuilder.DetectDocumentTitle(rawText);
+            string? promptResult = await DisplayPromptAsync(
+                "Создание ГОСТ-шаблона",
+                "Введите название для нового шаблона документа:",
+                initialValue: defaultTitle,
+                accept: "Создать",
+                cancel: "Отмена",
+                maxLength: 60);
+
+            if (string.IsNullOrWhiteSpace(promptResult))
+                return;
+
+            ScanLoading.Show("Создаем ГОСТ-документ...", "Разметка абзацев, отступов и полей по ГОСТ", canCancel: false);
+            var result = await Task.Run(() => ScanTemplateBuilder.BuildAndSaveTemplate(rawText, promptResult));
+            ScanLoading.Hide();
+
+            HapticHelper.Success();
+            Toast.Show($"Шаблон «{result.Title}» успешно создан!", "templates");
+
+            // Ищем созданный шаблон в обновленном каталоге и сразу открываем его
+            var createdTemplate = TemplateCatalog.Items.FirstOrDefault(t =>
+                string.Equals(t.Title, result.Title, StringComparison.OrdinalIgnoreCase));
+            if (createdTemplate != null)
+            {
+                await TemplatesPage.OpenAsync(createdTemplate);
+            }
+            else
+            {
+                await Shell.Current.GoToAsync("//TemplatesPage");
+            }
+        }
+        catch (Exception ex)
+        {
+            ScanLoading.Hide();
+            Toast.Show($"Ошибка создания шаблона: {ex.Message}", "alert");
+        }
+    }
+
     // ===== Перенос распознанного текста в шаблон =====
     private async void OnApplyToTemplateTapped(object? sender, TappedEventArgs e)
     {

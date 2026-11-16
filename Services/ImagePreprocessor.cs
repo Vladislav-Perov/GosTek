@@ -140,11 +140,48 @@ public class ImagePreprocessor : IImagePreprocessor
             return Array.Empty<byte>();
 
         try {
-            // Комплексный конвейер улучшения для OCR: выравнивание наклона -> градация серого -> бинаризация
-            var deskewed = await DeskewAsync(image);
-            var grayscaled = await ToGrayscaleAsync(deskewed);
-            var binarized = await BinarizeAsync(grayscaled);
-            return binarized;
+            return await Task.Run(async () =>
+            {
+                using var original = SKBitmap.Decode(image);
+                if (original == null)
+                    return image;
+
+                // Если изображение слишком маленькое (размытый превью), масштабируем для Tesseract
+                int minDim = Math.Min(original.Width, original.Height);
+                float scale = 1.0f;
+                if (minDim < 1000)
+                {
+                    scale = Math.Min(2.0f, 1200f / minDim);
+                }
+
+                int targetW = (int)(original.Width * scale);
+                int targetH = (int)(original.Height * scale);
+
+                var info = new SKImageInfo(targetW, targetH, SKColorType.Rgba8888, SKAlphaType.Premul);
+                using var processedBitmap = new SKBitmap(info);
+                using var canvas = new SKCanvas(processedBitmap);
+                using var paint = new SKPaint();
+
+                // Повышение контраста (1.2x) и перевод в градации серого без жесткой бинаризации
+                // Это сохраняет мягкие контуры букв при неравномерном освещении и тенях
+                float contrast = 1.25f;
+                float brightness = -15f; // слегка затемняем текст
+                float t = (1.0f - contrast) / 2.0f * 255f + brightness;
+
+                float[] matrix = {
+                    0.299f * contrast, 0.587f * contrast, 0.114f * contrast, 0, t,
+                    0.299f * contrast, 0.587f * contrast, 0.114f * contrast, 0, t,
+                    0.299f * contrast, 0.587f * contrast, 0.114f * contrast, 0, t,
+                    0,                 0,                 0,                 1, 0
+                };
+
+                paint.ColorFilter = SKColorFilter.CreateColorMatrix(matrix);
+                canvas.DrawBitmap(original, new SKRect(0, 0, targetW, targetH), SKSamplingOptions.Default, paint);
+
+                using var skImage = SKImage.FromBitmap(processedBitmap);
+                using var data = skImage.Encode(SKEncodedImageFormat.Png, 100);
+                return data.ToArray();
+            });
         } catch (Exception ex) {
             Debug.WriteLine($"[ImagePreprocessor] Ошибка предобработки: {ex.Message}. Используется оригинал.");
             return image;
