@@ -561,6 +561,21 @@ public partial class ScanPage : ContentPage
             if (!MediaPicker.Default.IsCaptureSupported)
                 throw new InvalidOperationException("Это устройство не поддерживает съёмку фото.");
 
+            // Проверяем и запрашиваем разрешения перед запуском MediaPicker
+            var cameraStatus = await Permissions.CheckStatusAsync<Permissions.Camera>();
+            if (cameraStatus != PermissionStatus.Granted)
+            {
+                cameraStatus = await Permissions.RequestAsync<Permissions.Camera>();
+                if (cameraStatus != PermissionStatus.Granted)
+                    throw new InvalidOperationException("Нет разрешения на использование камеры.");
+            }
+
+            var storageStatus = await Permissions.CheckStatusAsync<Permissions.StorageWrite>();
+            if (storageStatus != PermissionStatus.Granted)
+            {
+                await Permissions.RequestAsync<Permissions.StorageWrite>();
+            }
+
             SetLoading(true, "Открытие камеры...", "Съёмка документа с высоким разрешением");
             var photo = await MediaPicker.Default.CapturePhotoAsync();
             return await OpenAsync(photo);
