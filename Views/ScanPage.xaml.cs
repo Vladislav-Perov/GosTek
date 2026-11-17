@@ -782,6 +782,149 @@ public partial class ScanPage : ContentPage
         }
     }
 
+    // ===== Сброс параметров оформления ГОСТ на значения по умолчанию =====
+    private void OnResetGostOptionsTapped(object? sender, TappedEventArgs e)
+    {
+        HapticHelper.Click();
+        FontPicker.SelectedIndex = 0;       // Times New Roman
+        FontSizePicker.SelectedIndex = 2;   // 14 пт (ГОСТ)
+        LineSpacingPicker.SelectedIndex = 2;// 1.5 (ГОСТ)
+        IndentPicker.SelectedIndex = 2;     // 1.25 см (ГОСТ)
+        AlignPicker.SelectedIndex = 0;      // По ширине (ГОСТ)
+        MarginsPicker.SelectedIndex = 0;    // ГОСТ (30-15-20-20 мм)
+        Toast.Show("Параметры сброшены на ГОСТ", "settings");
+    }
+
+    // ===== Экспорт оцифрованного текста в настраиваемый ГОСТ DOCX =====
+    private async void OnExportGostDocxTapped(object? sender, TappedEventArgs e)
+    {
+        HapticHelper.Click();
+        string text = RawTextEditor.Text?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            Toast.Show("Текст документа пуст", "alert");
+            return;
+        }
+
+        try
+        {
+            var options = BuildGostFormattingOptions();
+
+            string defaultTitle = ScanTemplateBuilder.DetectDocumentTitle(text);
+            string safeTitle = string.Join("_", defaultTitle.Split(Path.GetInvalidFileNameChars()))
+                .Replace(" ", "_");
+            if (string.IsNullOrWhiteSpace(safeTitle))
+                safeTitle = "Документ";
+
+            string fileName = $"{safeTitle}_{DateTime.Now:yyyyMMdd_HHmmss}.docx";
+            string documentsDir = FileSystem.AppDataDirectory;
+            string targetPath = Path.Combine(documentsDir, fileName);
+
+            ScanLoading.Show("Форматирование DOCX...", "Оформление абзацев, отступов и стилей по ГОСТ", canCancel: false);
+            await Task.Run(() => GostDocxExporter.ExportToDocx(targetPath, text, options));
+            ScanLoading.Hide();
+
+            HapticHelper.Success();
+
+            string choice = await DisplayActionSheetAsync(
+                "Документ по ГОСТ сформирован!",
+                "Отмена",
+                null,
+                "📄 Открыть в Word / Офисе",
+                "📤 Поделиться файлом",
+                "📁 Скопировать путь к файлу");
+
+            if (choice == "📄 Открыть в Word / Офисе")
+            {
+                await Launcher.Default.OpenAsync(new OpenFileRequest
+                {
+                    Title = "Открыть документ",
+                    File = new ReadOnlyFile(targetPath)
+                });
+            }
+            else if (choice == "📤 Поделиться файлом")
+            {
+                await Share.Default.RequestAsync(new ShareFileRequest
+                {
+                    Title = "Поделиться документом DOCX",
+                    File = new ShareFile(targetPath)
+                });
+            }
+            else if (choice == "📁 Скопировать путь к файлу")
+            {
+                await Clipboard.Default.SetTextAsync(targetPath);
+                Toast.Show("Путь к файлу скопирован", "copy");
+            }
+        }
+        catch (Exception ex)
+        {
+            ScanLoading.Hide();
+            await Dialogs.AlertAsync("Ошибка экспорта", ex.Message, DialogKind.Danger);
+        }
+    }
+
+    private GostFormattingOptions BuildGostFormattingOptions()
+    {
+        var options = new GostFormattingOptions();
+
+        // 1. Шрифт
+        if (FontPicker?.SelectedItem is string font && !string.IsNullOrWhiteSpace(font))
+            options.FontFamily = font;
+
+        // 2. Размер
+        options.FontSizePt = FontSizePicker?.SelectedIndex switch
+        {
+            0 => 12.0,
+            1 => 13.0,
+            _ => 14.0
+        };
+
+        // 3. Интервал
+        options.LineSpacing = LineSpacingPicker?.SelectedIndex switch
+        {
+            0 => 1.0,
+            1 => 1.15,
+            _ => 1.5
+        };
+
+        // 4. Красная строка
+        options.FirstLineIndentCm = IndentPicker?.SelectedIndex switch
+        {
+            0 => 0.0,
+            1 => 1.0,
+            3 => 1.5,
+            _ => 1.25
+        };
+
+        // 5. Выравнивание
+        options.Alignment = AlignPicker?.SelectedIndex == 1 ? "Left" : "Justify";
+
+        // 6. Поля
+        if (MarginsPicker?.SelectedIndex == 1)
+        {
+            options.MarginLeftMm = 20.0;
+            options.MarginRightMm = 20.0;
+            options.MarginTopMm = 20.0;
+            options.MarginBottomMm = 20.0;
+        }
+        else if (MarginsPicker?.SelectedIndex == 2)
+        {
+            options.MarginLeftMm = 30.0;
+            options.MarginRightMm = 20.0;
+            options.MarginTopMm = 20.0;
+            options.MarginBottomMm = 20.0;
+        }
+        else
+        {
+            options.MarginLeftMm = 30.0;
+            options.MarginRightMm = 15.0;
+            options.MarginTopMm = 20.0;
+            options.MarginBottomMm = 20.0;
+        }
+
+        return options;
+    }
+
     // ===== Копирование текста =====
     private async void OnCopyTapped(object? sender, TappedEventArgs e)
     {
