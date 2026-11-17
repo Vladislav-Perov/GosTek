@@ -169,7 +169,7 @@
                                         VerticalOptions="Center" />
                         <Label x:Name="ViewfinderHintLabel"
                                Grid.Column="1"
-                               Text="Поместите документ целиком в рамку при хорошем освещении."
+                               Text="Нажмите круглую кнопку для съёмки с автофокусом и высоким разрешением."
                                FontSize="12.5"
                                TextColor="{DynamicResource TextSecondary}"
                                LineBreakMode="WordWrap"

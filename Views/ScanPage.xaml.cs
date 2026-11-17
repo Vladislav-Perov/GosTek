@@ -553,25 +553,17 @@ public partial class ScanPage : ContentPage
 
     private void OnRetakeTapped(object? sender, TappedEventArgs e) => ShowResult(false);
 
-    // Затвор: снимок прямо с камеры в рамке; если камеры в рамке нет — системная камера
+    // Затвор: съемка через системную камеру устройства для максимального оптического качества и автофокуса
     private async void OnShutterTapped(object? sender, TappedEventArgs e)
     {
         HapticHelper.Click();
-        if (_previewOn && _camera is { } camera) {
-            await AcquireAndRecognizeAsync("Не удалось сделать снимок", async token => {
-                SetLoading(true, "Снимок кадра...", "Захват фото с камеры");
-                using var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
-                cts.CancelAfter(TimeSpan.FromSeconds(10));
-                return await camera.CaptureImage(cts.Token);
-            }, pausePreview: false);
-            return;
-        }
-
         await AcquireAndRecognizeAsync("Не удалось открыть камеру", async token => {
             if (!MediaPicker.Default.IsCaptureSupported)
                 throw new InvalidOperationException("Это устройство не поддерживает съёмку фото.");
 
-            return await OpenAsync(await MediaPicker.Default.CapturePhotoAsync());
+            SetLoading(true, "Открытие камеры...", "Съёмка документа с высоким разрешением");
+            var photo = await MediaPicker.Default.CapturePhotoAsync();
+            return await OpenAsync(photo);
         }, pausePreview: true);
     }
 
