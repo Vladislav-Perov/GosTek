@@ -16,6 +16,7 @@ namespace GosTek.Services;
 /// </summary>
 public interface ICustomRulesService
 {
+    string? LastSavedRuleId { get; }
     IReadOnlyList<RuleSet> GetAllRules();
     IReadOnlyList<RuleSet> GetCustomRules();
     Task<IReadOnlyList<RuleSet>> LoadRulesAsync();
@@ -40,6 +41,8 @@ public class CustomRulesService : ICustomRulesService
     private readonly List<RuleSet> _customRules = new();
     private readonly SemaphoreSlim _lock = new(1, 1);
     private bool _loaded;
+
+    public string? LastSavedRuleId { get; private set; }
 
     public static ICustomRulesService Instance { get; set; } = new CustomRulesService();
 
@@ -164,6 +167,8 @@ public class CustomRulesService : ICustomRulesService
                 else
                     _customRules.Add(customRule);
             }
+
+            LastSavedRuleId = id;
 
             var dir = Path.GetDirectoryName(_storageFilePath);
             if (!string.IsNullOrWhiteSpace(dir) && !Directory.Exists(dir))

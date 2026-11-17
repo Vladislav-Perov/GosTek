@@ -1,12 +1,13 @@
 /*
  * ==============================================================================
- * НАЗНАЧЕНИЕ: Логика конструктора правил ГОСТ, валидация полей, интерактивный предпросмотр А4 «Было / Стало»
- * СОДЕРЖИМОЕ: RuleEditorPage
+ * НАЗНАЧЕНИЕ: Логика конструктора правил ГОСТ, валидация полей, двухстраничный живой предпросмотр А4 (Live Preview) с масштабированием
+ * СОДЕРЖИМОЕ: RuleEditorPage, RenderSheet1, RenderSheet2, Zoom
  * ЗАВИСИМОСТИ: GosTek.Models.RuleSet, GosTek.Services.CustomRulesService, GosTek.Services.RuFormat
  * ==============================================================================
  */
 using GosTek.Models;
 using GosTek.Services;
+using Microsoft.Maui.Controls.Shapes;
 
 namespace GosTek.Views;
 
@@ -15,7 +16,7 @@ public partial class RuleEditorPage : ContentPage
     private static readonly string[] AvailableFonts = { "Times New Roman", "Arial", "Calibri", "PT Sans" };
     private static readonly double[] AvailableSpacings = { 1.0, 1.15, 1.5, 2.0 };
     private static readonly string[] AvailableCodeFonts = { "Consolas", "Courier New" };
-    private static readonly double[] AvailableCodeSpacings = { 1.0, 1.15, 1.5 };
+    private static readonly double[] AvailableCodeSpacings = { 1.0, 1.15, 1.25, 1.5, 2.0 };
     private static readonly (string Name, string Value)[] Alignments = {
         ("По ширине (Justify)", "Justify"),
         ("По левому краю (Left)", "Left"),
@@ -30,8 +31,11 @@ public partial class RuleEditorPage : ContentPage
 
     public static RuleSet? TargetRule { get; set; }
     public static RuleSet? BaselineRule { get; set; }
+    public static string? LastSavedRuleId { get; set; }
 
     private RuleSet? _editingRule;
+    private bool _isInitializing;
+    private double _previewScale = 1.0;
 
     public RuleEditorPage()
     {
@@ -74,162 +78,281 @@ public partial class RuleEditorPage : ContentPage
         SpacingPicker.ItemsSource = AvailableSpacings.Select(s => s.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)).ToList();
         AlignPicker.ItemsSource = Alignments.Select(a => a.Name).ToList();
 
+        TableFontPicker.ItemsSource = AvailableFonts;
+        TableLineSpacingPicker.ItemsSource = AvailableCodeSpacings.Select(s => s.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)).ToList();
+        TableCaptionAlignPicker.ItemsSource = ItemAlignments.Select(a => a.Name).ToList();
+        TableCaptionLineSpacingPicker.ItemsSource = AvailableCodeSpacings.Select(s => s.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)).ToList();
+
         FigureAlignPicker.ItemsSource = ItemAlignments.Select(a => a.Name).ToList();
         CaptionAlignPicker.ItemsSource = ItemAlignments.Select(a => a.Name).ToList();
         CaptionLineSpacingPicker.ItemsSource = AvailableCodeSpacings.Select(s => s.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)).ToList();
 
         CodeFontPicker.ItemsSource = AvailableCodeFonts;
         CodeLineSpacingPicker.ItemsSource = AvailableCodeSpacings.Select(s => s.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)).ToList();
+
+        HeadingFontPicker.ItemsSource = AvailableFonts;
+        HeadingAlignPicker.ItemsSource = ItemAlignments.Select(a => a.Name).ToList();
+        HeadingLineSpacingPicker.ItemsSource = AvailableCodeSpacings.Select(s => s.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)).ToList();
     }
 
     // =====================================================================
-    //  АККОРДЕОНЫ (СВОРАЧИВАНИЕ / РАЗВОРАЧИВАНИЕ ЭКСПЕРТНЫХ ПАНЕЛЕЙ)
+    //  МАСШТАБИРОВАНИЕ И ЖИВОЙ ПРЕДПРОСМОТР (LIVE PREVIEW)
     // =====================================================================
 
-    private void OnToggleFiguresExpert(object? sender, EventArgs e)
+    private void OnZoomInTapped(object? sender, EventArgs e)
     {
-        FiguresExpertPanel.IsVisible = !FiguresExpertPanel.IsVisible;
-        FiguresChevron.Text = FiguresExpertPanel.IsVisible ? "▲" : "▼";
+        if (_previewScale < 2.0)
+        {
+            _previewScale = Math.Min(2.0, Math.Round(_previewScale + 0.15, 2));
+            UpdateZoomLabel();
+            UpdateLivePreview();
+        }
     }
 
-    private void OnToggleCodeExpert(object? sender, EventArgs e)
+    private void OnZoomOutTapped(object? sender, EventArgs e)
     {
-        CodeExpertPanel.IsVisible = !CodeExpertPanel.IsVisible;
-        CodeChevron.Text = CodeExpertPanel.IsVisible ? "▲" : "▼";
+        if (_previewScale > 0.6)
+        {
+            _previewScale = Math.Max(0.6, Math.Round(_previewScale - 0.15, 2));
+            UpdateZoomLabel();
+            UpdateLivePreview();
+        }
     }
 
-    private void OnToggleHeadingsExpert(object? sender, EventArgs e)
+    private void OnPreviewPinch(object? sender, PinchGestureUpdatedEventArgs e)
     {
-        HeadingsExpertPanel.IsVisible = !HeadingsExpertPanel.IsVisible;
-        HeadingsChevron.Text = HeadingsExpertPanel.IsVisible ? "▲" : "▼";
+        if (e.Status == GestureStatus.Running)
+        {
+            double newScale = Math.Clamp(_previewScale * e.Scale, 0.6, 2.0);
+            if (Math.Abs(newScale - _previewScale) > 0.04)
+            {
+                _previewScale = Math.Round(newScale, 2);
+                UpdateZoomLabel();
+                UpdateLivePreview();
+            }
+        }
+    }
+
+    private void UpdateZoomLabel()
+    {
+        if (ZoomPercentLabel != null)
+            ZoomPercentLabel.Text = $"{Math.Round(_previewScale * 100)}%";
+    }
+
+    private void OnSettingChanged(object? sender, EventArgs e)
+    {
+        if (_isInitializing)
+            return;
+
+        UpdateLivePreview();
+    }
+
+    private void UpdateLivePreview()
+    {
+        try
+        {
+            var currentRule = BuildRuleFromForm();
+            RenderDocumentSheet(DocumentSheetBorder, currentRule);
+
+            AfterBadgeLabel.Text = $"ГОСТ: поля {currentRule.Left.Cm:0.#}/{currentRule.Right.Cm:0.#}/{currentRule.Top.Cm:0.#}/{currentRule.Bottom.Cm:0.#} см, {currentRule.FontName} {currentRule.FontSizePt:0.#}pt, инт. {currentRule.LineSpacing:0.##}";
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[LivePreview] {ex.Message}");
+        }
     }
 
     private void LoadRuleData(RuleSet? rule)
     {
-        var r = rule ?? RuleSets.Universal;
+        _isInitializing = true;
+        try
+        {
+            var r = rule ?? RuleSets.Universal;
 
-        PageTitleLabel.Text = rule is { IsCustom: true }
-            ? "Редактирование правила"
-            : (rule != null ? $"Правило на основе «{rule.Title}»" : "Новое правило ГОСТ");
+            PageTitleLabel.Text = "Настройка профиля ГОСТ";
+            TitleEntry.Text = r.Title;
 
-        TitleEntry.Text = rule is { IsCustom: true } ? rule.Title : (rule != null ? $"{rule.Title} (копия)" : "");
-        CategoryEntry.Text = r.Category ?? "";
-        DescriptionEntry.Text = r.Description ?? "";
+            // Поля страницы
+            LeftMarginEntry.Text = RuFormat.Double(r.Left.Cm);
+            RightMarginEntry.Text = RuFormat.Double(r.Right.Cm);
+            TopMarginEntry.Text = RuFormat.Double(r.Top.Cm);
+            BottomMarginEntry.Text = RuFormat.Double(r.Bottom.Cm);
 
-        // Поля страницы
-        LeftMarginEntry.Text = RuFormat.Double(r.Left.Cm);
-        RightMarginEntry.Text = RuFormat.Double(r.Right.Cm);
-        TopMarginEntry.Text = RuFormat.Double(r.Top.Cm);
-        BottomMarginEntry.Text = RuFormat.Double(r.Bottom.Cm);
+            // Основной текст
+            int fontIdx = Array.FindIndex(AvailableFonts, f => f.Equals(r.FontName, StringComparison.OrdinalIgnoreCase));
+            FontPicker.SelectedIndex = fontIdx >= 0 ? fontIdx : 0;
 
-        // Основной текст
-        int fontIdx = Array.FindIndex(AvailableFonts, f => f.Equals(r.FontName, StringComparison.OrdinalIgnoreCase));
-        FontPicker.SelectedIndex = fontIdx >= 0 ? fontIdx : 0;
+            FontSizeEntry.Text = RuFormat.Double(r.FontSizePt);
 
-        FontSizeEntry.Text = RuFormat.Double(r.FontSizePt);
+            int spIdx = Array.FindIndex(AvailableSpacings, s => Math.Abs(s - r.LineSpacing) < 0.05);
+            SpacingPicker.SelectedIndex = spIdx >= 0 ? spIdx : 2; // Default 1.5
 
-        int spIdx = Array.FindIndex(AvailableSpacings, s => Math.Abs(s - r.LineSpacing) < 0.05);
-        SpacingPicker.SelectedIndex = spIdx >= 0 ? spIdx : 2; // Default 1.5
+            FirstLineIndentEntry.Text = RuFormat.Double(r.FirstLineIndentCm);
 
-        FirstLineIndentEntry.Text = RuFormat.Double(r.FirstLineIndentCm);
+            int alignIdx = Array.FindIndex(Alignments, a => a.Value.Equals(r.Alignment, StringComparison.OrdinalIgnoreCase));
+            AlignPicker.SelectedIndex = alignIdx >= 0 ? alignIdx : 0;
 
-        int alignIdx = Array.FindIndex(Alignments, a => a.Value.Equals(r.Alignment, StringComparison.OrdinalIgnoreCase));
-        AlignPicker.SelectedIndex = alignIdx >= 0 ? alignIdx : 0;
+            RequirePageNumbersSwitch.IsToggled = r.RequirePageNumbers;
 
-        RequirePageNumbersSwitch.IsToggled = r.RequirePageNumbers;
+            // Оформление таблиц
+            FormatTablesSwitch.IsToggled = r.CheckTables;
+            int tableFontIdx = Array.FindIndex(AvailableFonts, f => f.Equals(r.TableFontFamily, StringComparison.OrdinalIgnoreCase));
+            TableFontPicker.SelectedIndex = tableFontIdx >= 0 ? tableFontIdx : 0;
+            TableFontSizeEntry.Text = RuFormat.Double(r.TableFontSizePt);
+            int tableSpIdx = Array.FindIndex(AvailableCodeSpacings, s => Math.Abs(s - r.TableLineSpacing) < 0.05);
+            TableLineSpacingPicker.SelectedIndex = tableSpIdx >= 0 ? tableSpIdx : 0; // Default 1.0
+            TableNoIndentSwitch.IsToggled = r.TableRequireNoIndent;
 
-        // Рисунки и подписи
-        FormatFiguresSwitch.IsToggled = r.FigureRequireNoIndent || r.CaptionRequireNoIndent;
-        int figAlignIdx = Array.FindIndex(ItemAlignments, a => a.Value.Equals(r.FigureAlignment, StringComparison.OrdinalIgnoreCase));
-        FigureAlignPicker.SelectedIndex = figAlignIdx >= 0 ? figAlignIdx : 0;
-        FigureNoIndentSwitch.IsToggled = r.FigureRequireNoIndent;
-        FigureSpacingBeforeEntry.Text = RuFormat.Double(r.FigureSpacingBeforePt);
-        FigureSpacingAfterEntry.Text = RuFormat.Double(r.FigureSpacingAfterPt);
+            // Подпись таблицы
+            int tCapAlignIdx = Array.FindIndex(ItemAlignments, a => a.Value.Equals(r.TableCaptionAlignment, StringComparison.OrdinalIgnoreCase));
+            TableCaptionAlignPicker.SelectedIndex = tCapAlignIdx >= 0 ? tCapAlignIdx : 1; // Default Left (Index 1)
+            TableCaptionSpacingBeforeEntry.Text = RuFormat.Double(r.TableCaptionSpacingBeforePt);
+            TableCaptionSpacingAfterEntry.Text = RuFormat.Double(r.TableCaptionSpacingAfterPt);
+            int tCapSpIdx = Array.FindIndex(AvailableCodeSpacings, s => Math.Abs(s - r.TableCaptionLineSpacing) < 0.05);
+            TableCaptionLineSpacingPicker.SelectedIndex = tCapSpIdx >= 0 ? tCapSpIdx : 0;
+            TableCaptionNoIndentSwitch.IsToggled = r.TableCaptionRequireNoIndent;
 
-        int capAlignIdx = Array.FindIndex(ItemAlignments, a => a.Value.Equals(r.CaptionAlignment, StringComparison.OrdinalIgnoreCase));
-        CaptionAlignPicker.SelectedIndex = capAlignIdx >= 0 ? capAlignIdx : 0;
-        int capSpIdx = Array.FindIndex(AvailableCodeSpacings, s => Math.Abs(s - r.CaptionLineSpacing) < 0.05);
-        CaptionLineSpacingPicker.SelectedIndex = capSpIdx >= 0 ? capSpIdx : 0;
-        CaptionSpacingBeforeEntry.Text = RuFormat.Double(r.CaptionSpacingBeforePt);
-        CaptionSpacingAfterEntry.Text = RuFormat.Double(r.CaptionSpacingAfterPt);
+            // Рисунки и подписи
+            FormatFiguresSwitch.IsToggled = r.FigureRequireNoIndent || r.CaptionRequireNoIndent;
+            int figAlignIdx = Array.FindIndex(ItemAlignments, a => a.Value.Equals(r.FigureAlignment, StringComparison.OrdinalIgnoreCase));
+            FigureAlignPicker.SelectedIndex = figAlignIdx >= 0 ? figAlignIdx : 0;
+            FigureNoIndentSwitch.IsToggled = r.FigureRequireNoIndent;
+            FigureSpacingBeforeEntry.Text = RuFormat.Double(r.FigureSpacingBeforePt);
+            FigureSpacingAfterEntry.Text = RuFormat.Double(r.FigureSpacingAfterPt);
 
-        // Листинги кода
-        FormatCodeSwitch.IsToggled = r.CodeRequireNoIndent;
-        int codeFontIdx = Array.FindIndex(AvailableCodeFonts, f => f.Equals(r.CodeFontFamily, StringComparison.OrdinalIgnoreCase));
-        CodeFontPicker.SelectedIndex = codeFontIdx >= 0 ? codeFontIdx : 0;
-        CodeFontSizeEntry.Text = RuFormat.Double(r.CodeFontSizePt);
-        int codeSpIdx = Array.FindIndex(AvailableCodeSpacings, s => Math.Abs(s - r.CodeLineSpacing) < 0.05);
-        CodeLineSpacingPicker.SelectedIndex = codeSpIdx >= 0 ? codeSpIdx : 0;
-        CodeNoIndentSwitch.IsToggled = r.CodeRequireNoIndent;
+            int capAlignIdx = Array.FindIndex(ItemAlignments, a => a.Value.Equals(r.CaptionAlignment, StringComparison.OrdinalIgnoreCase));
+            CaptionAlignPicker.SelectedIndex = capAlignIdx >= 0 ? capAlignIdx : 0;
+            int capSpIdx = Array.FindIndex(AvailableCodeSpacings, s => Math.Abs(s - r.CaptionLineSpacing) < 0.05);
+            CaptionLineSpacingPicker.SelectedIndex = capSpIdx >= 0 ? capSpIdx : 0;
+            CaptionSpacingBeforeEntry.Text = RuFormat.Double(r.CaptionSpacingBeforePt);
+            CaptionSpacingAfterEntry.Text = RuFormat.Double(r.CaptionSpacingAfterPt);
 
-        // Заголовки
-        FormatHeadingsSwitch.IsToggled = r.HeadingRequireBold || r.HeadingRequireNoIndent || r.HeadingRemoveTrailingDot;
-        HeadingRequireBoldSwitch.IsToggled = r.HeadingRequireBold;
-        HeadingRequireNoIndentSwitch.IsToggled = r.HeadingRequireNoIndent;
-        HeadingRemoveTrailingDotSwitch.IsToggled = r.HeadingRemoveTrailingDot;
+            // Листинги кода
+            FormatCodeSwitch.IsToggled = r.CodeRequireNoIndent;
+            int codeFontIdx = Array.FindIndex(AvailableCodeFonts, f => f.Equals(r.CodeFontFamily, StringComparison.OrdinalIgnoreCase));
+            CodeFontPicker.SelectedIndex = codeFontIdx >= 0 ? codeFontIdx : 0;
+            CodeFontSizeEntry.Text = RuFormat.Double(r.CodeFontSizePt);
+            int codeSpIdx = Array.FindIndex(AvailableCodeSpacings, s => Math.Abs(s - r.CodeLineSpacing) < 0.05);
+            CodeLineSpacingPicker.SelectedIndex = codeSpIdx >= 0 ? codeSpIdx : 0;
+            CodeNoIndentSwitch.IsToggled = r.CodeRequireNoIndent;
 
-        DeleteButton.IsVisible = rule is { IsCustom: true };
+            // Заголовки
+            FormatHeadingsSwitch.IsToggled = r.HeadingRequireBold || r.HeadingRequireNoIndent || r.HeadingRemoveTrailingDot;
+            int hFontIdx = Array.FindIndex(AvailableFonts, f => f.Equals(r.HeadingFontFamily, StringComparison.OrdinalIgnoreCase));
+            HeadingFontPicker.SelectedIndex = hFontIdx >= 0 ? hFontIdx : 0;
+            HeadingFontSizeEntry.Text = RuFormat.Double(r.HeadingFontSizePt);
+            int hAlignIdx = Array.FindIndex(ItemAlignments, a => a.Value.Equals(r.HeadingAlignment, StringComparison.OrdinalIgnoreCase));
+            HeadingAlignPicker.SelectedIndex = hAlignIdx >= 0 ? hAlignIdx : 1; // Default Left (Index 1)
+            int hSpIdx = Array.FindIndex(AvailableCodeSpacings, s => Math.Abs(s - r.HeadingLineSpacing) < 0.05);
+            int defHSpIdx = Array.FindIndex(AvailableCodeSpacings, s => Math.Abs(s - 1.5) < 0.05);
+            HeadingLineSpacingPicker.SelectedIndex = hSpIdx >= 0 ? hSpIdx : (defHSpIdx >= 0 ? defHSpIdx : 0);
+            HeadingSpacingBeforeEntry.Text = RuFormat.Double(r.HeadingSpacingBeforePt);
+            HeadingSpacingAfterEntry.Text = RuFormat.Double(r.HeadingSpacingAfterPt);
+            HeadingRequireBoldSwitch.IsToggled = r.HeadingRequireBold;
+            HeadingRequireNoIndentSwitch.IsToggled = r.HeadingRequireNoIndent;
+            HeadingRemoveTrailingDotSwitch.IsToggled = r.HeadingRemoveTrailingDot;
+
+            UpdateZoomLabel();
+        }
+        finally
+        {
+            _isInitializing = false;
+        }
+
+        UpdateLivePreview();
+    }
+
+    private static string GetSelectedFont(Picker? picker, string[] available, string fallback)
+    {
+        if (picker?.SelectedItem is string s && available.Contains(s, StringComparer.OrdinalIgnoreCase))
+            return s;
+        if (picker?.SelectedIndex is >= 0 and int idx && idx < available.Length)
+            return available[idx];
+        return fallback;
+    }
+
+    private static double GetSelectedSpacing(Picker? picker, double[] available, double fallback)
+    {
+        if (picker?.SelectedItem is string s)
+        {
+            double parsed = RuFormat.ParseDouble(s, -1);
+            if (parsed > 0) return parsed;
+        }
+        if (picker?.SelectedIndex is >= 0 and int idx && idx < available.Length)
+            return available[idx];
+        return fallback;
+    }
+
+    private static string GetSelectedAlignment(Picker? picker, (string Name, string Value)[] alignments, string fallback)
+    {
+        if (picker?.SelectedItem is string s)
+        {
+            var match = alignments.FirstOrDefault(a => a.Name.Equals(s, StringComparison.OrdinalIgnoreCase) || a.Value.Equals(s, StringComparison.OrdinalIgnoreCase));
+            if (match.Value != null) return match.Value;
+        }
+        if (picker?.SelectedIndex is >= 0 and int idx && idx < alignments.Length)
+            return alignments[idx].Value;
+        return fallback;
     }
 
     private RuleSet BuildRuleFromForm()
     {
-        double left = RuFormat.ParseDouble(LeftMarginEntry.Text, 3.0);
-        double right = RuFormat.ParseDouble(RightMarginEntry.Text, 1.0);
-        double top = RuFormat.ParseDouble(TopMarginEntry.Text, 2.0);
-        double bottom = RuFormat.ParseDouble(BottomMarginEntry.Text, 2.0);
+        double left = RuFormat.ParseDouble(LeftMarginEntry?.Text, 3.0);
+        double right = RuFormat.ParseDouble(RightMarginEntry?.Text, 1.0);
+        double top = RuFormat.ParseDouble(TopMarginEntry?.Text, 2.0);
+        double bottom = RuFormat.ParseDouble(BottomMarginEntry?.Text, 2.0);
 
-        string font = FontPicker.SelectedIndex >= 0 && FontPicker.SelectedIndex < AvailableFonts.Length
-            ? AvailableFonts[FontPicker.SelectedIndex]
-            : "Times New Roman";
-
-        double fontSize = RuFormat.ParseDouble(FontSizeEntry.Text, 14.0);
-
-        double spacing = SpacingPicker.SelectedIndex >= 0 && SpacingPicker.SelectedIndex < AvailableSpacings.Length
-            ? AvailableSpacings[SpacingPicker.SelectedIndex]
-            : 1.5;
-
-        double indent = RuFormat.ParseDouble(FirstLineIndentEntry.Text, 1.25);
-
-        string alignment = AlignPicker.SelectedIndex >= 0 && AlignPicker.SelectedIndex < Alignments.Length
-            ? Alignments[AlignPicker.SelectedIndex].Value
-            : "Justify";
+        string font = GetSelectedFont(FontPicker, AvailableFonts, "Times New Roman");
+        double fontSize = RuFormat.ParseDouble(FontSizeEntry?.Text, 14.0);
+        double spacing = GetSelectedSpacing(SpacingPicker, AvailableSpacings, 1.5);
+        double indent = RuFormat.ParseDouble(FirstLineIndentEntry?.Text, 1.25);
+        string alignment = GetSelectedAlignment(AlignPicker, Alignments, "Justify");
 
         string id = _editingRule is { IsCustom: true } ? _editingRule.Id : Guid.NewGuid().ToString("N")[..8];
-        string title = TitleEntry.Text?.Trim() ?? "Пользовательское правило";
-        string? category = string.IsNullOrWhiteSpace(CategoryEntry.Text) ? null : CategoryEntry.Text.Trim();
-        string? description = string.IsNullOrWhiteSpace(DescriptionEntry.Text) ? null : DescriptionEntry.Text.Trim();
+        string title = TitleEntry?.Text?.Trim() ?? "Новое правило";
+        if (string.IsNullOrWhiteSpace(title)) title = "Новое правило";
+        string? category = _editingRule?.Category;
+        string? description = _editingRule?.Description;
 
-        bool figs = FormatFiguresSwitch.IsToggled;
-        string figAlign = FigureAlignPicker.SelectedIndex >= 0 && FigureAlignPicker.SelectedIndex < ItemAlignments.Length
-            ? ItemAlignments[FigureAlignPicker.SelectedIndex].Value
-            : "Center";
-        double figBefore = RuFormat.ParseDouble(FigureSpacingBeforeEntry.Text, 12.0);
-        double figAfter = RuFormat.ParseDouble(FigureSpacingAfterEntry.Text, 12.0);
-        bool figNoIndent = FigureNoIndentSwitch.IsToggled;
+        bool tables = FormatTablesSwitch?.IsToggled ?? true;
+        string tableFont = GetSelectedFont(TableFontPicker, AvailableFonts, "Times New Roman");
+        double tableFontSize = RuFormat.ParseDouble(TableFontSizeEntry?.Text, 12.0);
+        double tableLineSpacing = GetSelectedSpacing(TableLineSpacingPicker, AvailableCodeSpacings, 1.0);
+        bool tableNoIndent = TableNoIndentSwitch?.IsToggled ?? true;
 
-        string capAlign = CaptionAlignPicker.SelectedIndex >= 0 && CaptionAlignPicker.SelectedIndex < ItemAlignments.Length
-            ? ItemAlignments[CaptionAlignPicker.SelectedIndex].Value
-            : "Center";
-        double capBefore = RuFormat.ParseDouble(CaptionSpacingBeforeEntry.Text, 0.0);
-        double capAfter = RuFormat.ParseDouble(CaptionSpacingAfterEntry.Text, 0.0);
-        double capLineSpacing = CaptionLineSpacingPicker.SelectedIndex >= 0 && CaptionLineSpacingPicker.SelectedIndex < AvailableCodeSpacings.Length
-            ? AvailableCodeSpacings[CaptionLineSpacingPicker.SelectedIndex]
-            : 1.0;
+        string tCapAlign = GetSelectedAlignment(TableCaptionAlignPicker, ItemAlignments, "Left");
+        double tCapBefore = RuFormat.ParseDouble(TableCaptionSpacingBeforeEntry?.Text, 6.0);
+        double tCapAfter = RuFormat.ParseDouble(TableCaptionSpacingAfterEntry?.Text, 3.0);
+        double tCapLineSpacing = GetSelectedSpacing(TableCaptionLineSpacingPicker, AvailableCodeSpacings, 1.0);
+        bool tCapNoIndent = TableCaptionNoIndentSwitch?.IsToggled ?? true;
 
-        bool code = FormatCodeSwitch.IsToggled;
-        string codeFont = CodeFontPicker.SelectedIndex >= 0 && CodeFontPicker.SelectedIndex < AvailableCodeFonts.Length
-            ? AvailableCodeFonts[CodeFontPicker.SelectedIndex]
-            : "Consolas";
-        double codeFontSize = RuFormat.ParseDouble(CodeFontSizeEntry.Text, 12.0);
-        double codeLineSpacing = CodeLineSpacingPicker.SelectedIndex >= 0 && CodeLineSpacingPicker.SelectedIndex < AvailableCodeSpacings.Length
-            ? AvailableCodeSpacings[CodeLineSpacingPicker.SelectedIndex]
-            : 1.0;
-        bool codeNoIndent = CodeNoIndentSwitch.IsToggled;
+        bool figs = FormatFiguresSwitch?.IsToggled ?? true;
+        string figAlign = GetSelectedAlignment(FigureAlignPicker, ItemAlignments, "Center");
+        double figBefore = RuFormat.ParseDouble(FigureSpacingBeforeEntry?.Text, 12.0);
+        double figAfter = RuFormat.ParseDouble(FigureSpacingAfterEntry?.Text, 12.0);
+        bool figNoIndent = FigureNoIndentSwitch?.IsToggled ?? true;
 
-        bool heads = FormatHeadingsSwitch.IsToggled;
-        bool headBold = HeadingRequireBoldSwitch.IsToggled;
-        bool headNoIndent = HeadingRequireNoIndentSwitch.IsToggled;
-        bool headDot = HeadingRemoveTrailingDotSwitch.IsToggled;
+        string capAlign = GetSelectedAlignment(CaptionAlignPicker, ItemAlignments, "Center");
+        double capBefore = RuFormat.ParseDouble(CaptionSpacingBeforeEntry?.Text, 0.0);
+        double capAfter = RuFormat.ParseDouble(CaptionSpacingAfterEntry?.Text, 0.0);
+        double capLineSpacing = GetSelectedSpacing(CaptionLineSpacingPicker, AvailableCodeSpacings, 1.0);
+
+        bool code = FormatCodeSwitch?.IsToggled ?? true;
+        string codeFont = GetSelectedFont(CodeFontPicker, AvailableCodeFonts, "Consolas");
+        double codeFontSize = RuFormat.ParseDouble(CodeFontSizeEntry?.Text, 12.0);
+        double codeLineSpacing = GetSelectedSpacing(CodeLineSpacingPicker, AvailableCodeSpacings, 1.0);
+        bool codeNoIndent = CodeNoIndentSwitch?.IsToggled ?? true;
+
+        bool heads = FormatHeadingsSwitch?.IsToggled ?? true;
+        string headFont = GetSelectedFont(HeadingFontPicker, AvailableFonts, "Times New Roman");
+        double headFontSize = RuFormat.ParseDouble(HeadingFontSizeEntry?.Text, 16.0);
+        string headAlign = GetSelectedAlignment(HeadingAlignPicker, ItemAlignments, "Left");
+        double headLineSpacing = GetSelectedSpacing(HeadingLineSpacingPicker, AvailableCodeSpacings, 1.5);
+        double headBefore = RuFormat.ParseDouble(HeadingSpacingBeforeEntry?.Text, 12.0);
+        double headAfter = RuFormat.ParseDouble(HeadingSpacingAfterEntry?.Text, 6.0);
+        bool headBold = HeadingRequireBoldSwitch?.IsToggled ?? true;
+        bool headNoIndent = HeadingRequireNoIndentSwitch?.IsToggled ?? true;
+        bool headDot = HeadingRemoveTrailingDotSwitch?.IsToggled ?? true;
 
         return new RuleSet(
             Id: id,
@@ -241,7 +364,7 @@ public partial class RuleEditorPage : ContentPage
             FontName: font,
             FontSizePt: Math.Max(6.0, fontSize),
             LineSpacing: Math.Max(0.8, spacing),
-            RequirePageNumbers: RequirePageNumbersSwitch.IsToggled,
+            RequirePageNumbers: RequirePageNumbersSwitch?.IsToggled ?? true,
             RequiredSections: _editingRule?.RequiredSections ?? Array.Empty<SectionRule>(),
             SectionsMinParagraphs: _editingRule?.SectionsMinParagraphs ?? 100,
             FirstLineIndentCm: Math.Max(0.0, indent),
@@ -261,11 +384,29 @@ public partial class RuleEditorPage : ContentPage
             CaptionLineSpacing = Math.Max(0.5, capLineSpacing),
             CaptionRequireNoIndent = figs && figNoIndent,
 
+            CheckTables = tables,
+            TableFontFamily = tableFont,
+            TableFontSizePt = Math.Max(6.0, tableFontSize),
+            TableLineSpacing = Math.Max(0.5, tableLineSpacing),
+            TableRequireNoIndent = tables && tableNoIndent,
+
+            TableCaptionAlignment = tCapAlign,
+            TableCaptionSpacingBeforePt = Math.Max(0.0, tCapBefore),
+            TableCaptionSpacingAfterPt = Math.Max(0.0, tCapAfter),
+            TableCaptionLineSpacing = Math.Max(0.5, tCapLineSpacing),
+            TableCaptionRequireNoIndent = tables && tCapNoIndent,
+
             CodeFontFamily = codeFont,
             CodeFontSizePt = Math.Max(6.0, codeFontSize),
             CodeLineSpacing = Math.Max(0.5, codeLineSpacing),
             CodeRequireNoIndent = code && codeNoIndent,
 
+            HeadingFontFamily = headFont,
+            HeadingFontSizePt = Math.Max(6.0, headFontSize),
+            HeadingLineSpacing = Math.Max(0.5, headLineSpacing),
+            HeadingAlignment = headAlign,
+            HeadingSpacingBeforePt = Math.Max(0.0, headBefore),
+            HeadingSpacingAfterPt = Math.Max(0.0, headAfter),
             HeadingRequireBold = heads && headBold,
             HeadingRequireNoIndent = heads && headNoIndent,
             HeadingRemoveTrailingDot = heads && headDot,
@@ -273,67 +414,75 @@ public partial class RuleEditorPage : ContentPage
     }
 
     // =====================================================================
-    //  ПРЕДПРОСМОТР (БЫЛО / СТАЛО)
+    //  ЕДИНЫЙ ВИРТУАЛЬНЫЙ ЛИСТ ДОКУМЕНТА (LIVE PREVIEW)
     // =====================================================================
 
-    private void OnPreviewTapped(object? sender, EventArgs e)
+    /// <summary>
+    /// Имитация первой строки (красной строки) через неразрывные пробелы.
+    /// В MAUI у Label нет FirstLineIndent, поэтому Margin сдвигал весь текст.
+    /// Префикс из \u00A0 сдвигает строго первую строку, а последующие строки переносятся к левому краю.
+    /// </summary>
+    private static string ApplyFirstLineIndent(string text, double indentCm)
     {
-        var currentRule = BuildRuleFromForm();
-        var baseline = BaselineRule ?? RuleSets.Universal;
+        if (indentCm <= 0.05)
+            return text;
 
-        RenderPreviewSheet(BeforeSheet, baseline, BeforeBadgeLabel, "БЫЛО");
-        RenderPreviewSheet(AfterSheet, currentRule, AfterBadgeLabel, "СТАЛО");
-
-        PreviewOverlay.IsVisible = true;
+        int spaceCount = Math.Clamp((int)Math.Round(indentCm * 5.0), 1, 25);
+        return new string('\u00A0', spaceCount) + text;
     }
 
-    private void OnClosePreviewTapped(object? sender, EventArgs e)
+    private void RenderDocumentSheet(Border sheetBorder, RuleSet rule)
     {
-        PreviewOverlay.IsVisible = false;
-    }
-
-    private void RenderPreviewSheet(Border sheetBorder, RuleSet rule, Label badgeLabel, string badgePrefix)
-    {
-        badgeLabel.Text = $"{badgePrefix}: поля {rule.Left.Cm:0.#}/{rule.Right.Cm:0.#}/{rule.Top.Cm:0.#}/{rule.Bottom.Cm:0.#} см, {rule.FontName} {rule.FontSizePt:0.#}pt, инт. {rule.LineSpacing:0.##}";
-
-        double w = 260.0;
-        double h = w * 297.0 / 210.0; // Пропорции листа А4
+        double baseWidth = 580.0;
+        double w = baseWidth * _previewScale;
         sheetBorder.WidthRequest = w;
-        sheetBorder.HeightRequest = h;
+        sheetBorder.ClearValue(VisualElement.HeightRequestProperty);
 
         double cmScale = w / 21.0;
         double ptScale = w / 595.0;
 
-        double padLeft = Math.Max(4, rule.Left.Cm * cmScale);
-        double padRight = Math.Max(4, rule.Right.Cm * cmScale);
-        double padTop = Math.Max(4, rule.Top.Cm * cmScale);
-        double padBottom = Math.Max(4, rule.Bottom.Cm * cmScale);
+        double padLeft = Math.Clamp(rule.Left.Cm * cmScale, 8.0, w / 2 - 10);
+        double padRight = Math.Clamp(rule.Right.Cm * cmScale, 8.0, w / 2 - 10);
+        double padTop = Math.Clamp(rule.Top.Cm * cmScale, 8.0, 120.0);
+        double padBottom = Math.Clamp(rule.Bottom.Cm * cmScale, 8.0, 120.0);
 
         sheetBorder.Padding = new Thickness(padLeft, padTop, padRight, padBottom);
 
-        double bodyFontSize = Math.Clamp(rule.FontSizePt * ptScale, 6.0, 11.0);
-        double titleFontSize = Math.Clamp((rule.FontSizePt + 2) * ptScale, 7.0, 13.0);
-        double indentPx = Math.Max(0, rule.FirstLineIndentCm * cmScale);
+        double bodyFontSize = Math.Clamp(rule.FontSizePt * ptScale, 8.0, 36.0);
 
-        var layout = new Grid {
-            RowDefinitions = new RowDefinitionCollection {
-                new RowDefinition(GridLength.Star),
-                new RowDefinition(GridLength.Auto),
-            },
+        // Параметры заголовков (Headings) из правил
+        double headFontSize = Math.Clamp(rule.HeadingFontSizePt * ptScale, 9.0, 48.0);
+        string headFont = !string.IsNullOrEmpty(rule.HeadingFontFamily) ? rule.HeadingFontFamily : rule.FontName;
+        var headAlign = rule.HeadingAlignment.ToLowerInvariant() switch {
+            "center" => TextAlignment.Center,
+            "right" => TextAlignment.End,
+            _ => TextAlignment.Start,
         };
+        double headBefore = Math.Clamp(rule.HeadingSpacingBeforePt * ptScale, 0.0, 40.0);
+        double headAfter = Math.Clamp(rule.HeadingSpacingAfterPt * ptScale, 0.0, 40.0);
+        double headLineHeight = Math.Clamp(rule.HeadingLineSpacing, 0.8, 2.0);
 
-        var contentStack = new VerticalStackLayout { Spacing = bodyFontSize * 0.4 };
+        var contentStack = new VerticalStackLayout { Spacing = bodyFontSize * 0.5 };
 
-        var titleLabel = new Label {
-            Text = "ОТЧЕТ О ВЫПОЛНЕНИИ РАБОТ",
-            FontSize = titleFontSize,
-            FontAttributes = FontAttributes.Bold,
+        // 1. Заголовок раздела 1 с учетом настроек ГОСТ
+        string h1Text = "1. ВВЕДЕНИЕ И ПОСТАНОВКА ЗАДАЧИ";
+        if (rule.HeadingRemoveTrailingDot && h1Text.EndsWith('.'))
+            h1Text = h1Text.TrimEnd('.');
+        if (!rule.HeadingRequireNoIndent)
+            h1Text = ApplyFirstLineIndent(h1Text, rule.FirstLineIndentCm);
+
+        var h1 = new Label {
+            Text = h1Text,
+            FontSize = headFontSize,
+            FontAttributes = rule.HeadingRequireBold ? FontAttributes.Bold : FontAttributes.None,
             TextColor = Colors.Black,
-            HorizontalTextAlignment = TextAlignment.Center,
-            FontFamily = rule.FontName,
+            HorizontalTextAlignment = headAlign,
+            FontFamily = headFont,
+            LineHeight = headLineHeight,
+            Margin = new Thickness(0, headBefore, 0, headAfter),
             LineBreakMode = LineBreakMode.WordWrap,
         };
-        contentStack.Children.Add(titleLabel);
+        contentStack.Children.Add(h1);
 
         var align = rule.Alignment.ToLowerInvariant() switch {
             "center" => TextAlignment.Center,
@@ -341,47 +490,242 @@ public partial class RuleEditorPage : ContentPage
             _ => TextAlignment.Start,
         };
 
+        // 2. Абзацы основного текста (красная строка только на первой строке)
+        string p1Raw = "Настоящий отчет подготовлен в строгом соответствии с требованиями государственного стандарта. Все параметры страницы и абзацев проверяются программным аудитором GosTek.";
         var p1 = new Label {
-            Text = "Настоящий отчет подготовлен в строгом соответствии с требованиями государственного стандарта. Параметры страницы и абзацев проверяются программным аудитором GosTek.",
+            Text = ApplyFirstLineIndent(p1Raw, rule.FirstLineIndentCm),
             FontSize = bodyFontSize,
             TextColor = Color.FromArgb("#1F2937"),
             HorizontalTextAlignment = align,
             FontFamily = rule.FontName,
             LineHeight = Math.Clamp(rule.LineSpacing, 0.9, 2.0),
-            Margin = new Thickness(indentPx, 0, 0, 0),
+            Margin = new Thickness(0),
             LineBreakMode = LineBreakMode.WordWrap,
         };
         contentStack.Children.Add(p1);
 
+        string p2Raw = "Элементы оформления документа, включая шрифт, кегль, поля страницы и первую строку абзаца, синхронизированы в режиме реального времени. При аудите исключаются нерегламентированные отступы.";
         var p2 = new Label {
-            Text = "Все элементы оформления документа, включая гарнитуру шрифта, кегль, поля страницы и красную строку, приведены к согласованному стандарту ГОСТ.",
+            Text = ApplyFirstLineIndent(p2Raw, rule.FirstLineIndentCm),
             FontSize = bodyFontSize,
             TextColor = Color.FromArgb("#1F2937"),
             HorizontalTextAlignment = align,
             FontFamily = rule.FontName,
             LineHeight = Math.Clamp(rule.LineSpacing, 0.9, 2.0),
-            Margin = new Thickness(indentPx, 0, 0, 0),
+            Margin = new Thickness(0),
             LineBreakMode = LineBreakMode.WordWrap,
         };
         contentStack.Children.Add(p2);
 
-        layout.Children.Add(contentStack);
-        Grid.SetRow(contentStack, 0);
+        // 3. Заголовок раздела 2
+        string h2Text = "2. РЕЗУЛЬТАТЫ И ИЛЛЮСТРАЦИИ";
+        if (rule.HeadingRemoveTrailingDot && h2Text.EndsWith('.'))
+            h2Text = h2Text.TrimEnd('.');
+        if (!rule.HeadingRequireNoIndent)
+            h2Text = ApplyFirstLineIndent(h2Text, rule.FirstLineIndentCm);
 
+        var h2 = new Label {
+            Text = h2Text,
+            FontSize = headFontSize,
+            FontAttributes = rule.HeadingRequireBold ? FontAttributes.Bold : FontAttributes.None,
+            TextColor = Colors.Black,
+            HorizontalTextAlignment = headAlign,
+            FontFamily = headFont,
+            LineHeight = headLineHeight,
+            Margin = new Thickness(0, headBefore, 0, headAfter),
+            LineBreakMode = LineBreakMode.WordWrap,
+        };
+        contentStack.Children.Add(h2);
+
+        // 4. Таблица (настройки берутся динамически из rule)
+        var tableStack = new VerticalStackLayout { Spacing = 4 * _previewScale, Margin = new Thickness(0, 2 * _previewScale, 0, 6 * _previewScale) };
+
+        // Подпись таблицы (Table Caption)
+        double tCapBefore = Math.Clamp(rule.TableCaptionSpacingBeforePt * ptScale, 0.0, 30.0);
+        double tCapAfter = Math.Clamp(rule.TableCaptionSpacingAfterPt * ptScale, 0.0, 30.0);
+        var tCapAlign = rule.TableCaptionAlignment.ToLowerInvariant() switch {
+            "center" => TextAlignment.Center,
+            "right" => TextAlignment.End,
+            _ => TextAlignment.Start,
+        };
+        double tCapIndent = rule.TableCaptionRequireNoIndent ? 0 : Math.Clamp(rule.FirstLineIndentCm * cmScale, 0.0, w / 2);
+
+        var tableCaption = new Label {
+            Text = "Таблица 1 — Параметры аудита оформления",
+            FontSize = Math.Max(8.0, (rule.TableFontSizePt > 0 ? rule.TableFontSizePt : 12.0) * ptScale),
+            FontFamily = !string.IsNullOrEmpty(rule.TableFontFamily) ? rule.TableFontFamily : rule.FontName,
+            TextColor = Color.FromArgb("#374151"),
+            HorizontalTextAlignment = tCapAlign,
+            LineHeight = Math.Clamp(rule.TableCaptionLineSpacing, 0.8, 1.8),
+            Margin = new Thickness(tCapIndent, tCapBefore, 0, tCapAfter),
+            LineBreakMode = LineBreakMode.WordWrap,
+        };
+        tableStack.Children.Add(tableCaption);
+
+        double tableFontSize = Math.Clamp(rule.TableFontSizePt * ptScale, 7.0, 28.0);
+        string tableFontFamily = !string.IsNullOrEmpty(rule.TableFontFamily) ? rule.TableFontFamily : rule.FontName;
+        double tableLineHeight = Math.Clamp(rule.TableLineSpacing, 0.8, 2.0);
+
+        var tableGrid = new Grid {
+            ColumnDefinitions = new ColumnDefinitionCollection {
+                new ColumnDefinition(GridLength.Star),
+                new ColumnDefinition(GridLength.Star),
+                new ColumnDefinition(GridLength.Star),
+            },
+            RowDefinitions = new RowDefinitionCollection {
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto),
+            },
+        };
+
+        void AddCell(string text, int col, int row, bool bold = false)
+        {
+            var cellBorder = new Border {
+                Stroke = Color.FromArgb("#D1D5DB"),
+                StrokeThickness = 1,
+                Padding = new Thickness(6 * _previewScale, 4 * _previewScale),
+                BackgroundColor = bold ? Color.FromArgb("#F3F4F6") : Colors.White,
+                Content = new Label {
+                    Text = text,
+                    FontSize = bold ? Math.Max(7.5, tableFontSize) : tableFontSize,
+                    FontAttributes = bold ? FontAttributes.Bold : FontAttributes.None,
+                    FontFamily = tableFontFamily,
+                    LineHeight = tableLineHeight,
+                    TextColor = Color.FromArgb("#1F2937"),
+                    HorizontalTextAlignment = TextAlignment.Center,
+                    VerticalTextAlignment = TextAlignment.Center,
+                },
+            };
+            tableGrid.Children.Add(cellBorder);
+            Grid.SetColumn(cellBorder, col);
+            Grid.SetRow(cellBorder, row);
+        }
+
+        AddCell("Параметр", 0, 0, bold: true);
+        AddCell("ГОСТ", 1, 0, bold: true);
+        AddCell("Статус", 2, 0, bold: true);
+
+        AddCell("Таблица/Кегль", 0, 1);
+        AddCell($"{rule.TableFontSizePt:0.#} pt / {rule.TableLineSpacing:0.##}", 1, 1);
+        AddCell("Соответствует", 2, 1);
+
+        tableStack.Children.Add(tableGrid);
+        contentStack.Children.Add(tableStack);
+
+        // 5. Имитация рисунка (Figure) с отступами сверху/снизу и выравниванием
+        double figBefore = Math.Clamp(rule.FigureSpacingBeforePt * ptScale, 0.0, 40.0);
+        double figAfter = Math.Clamp(rule.FigureSpacingAfterPt * ptScale, 0.0, 40.0);
+
+        var figAlignOptions = rule.FigureAlignment.ToLowerInvariant() switch {
+            "left" => LayoutOptions.Start,
+            "right" => LayoutOptions.End,
+            _ => LayoutOptions.Center,
+        };
+
+        double figIndent = rule.FigureRequireNoIndent ? 0 : Math.Clamp(rule.FirstLineIndentCm * cmScale, 0.0, w / 2);
+        double figBoxWidth = Math.Clamp(280.0 * _previewScale, 160.0, w - 40);
+        double figBoxHeight = Math.Clamp(65.0 * _previewScale, 40.0, 120.0);
+
+        var figBox = new Border {
+            WidthRequest = figBoxWidth,
+            HeightRequest = figBoxHeight,
+            BackgroundColor = Color.FromArgb("#E5E7EB"),
+            Stroke = Color.FromArgb("#CBD5E1"),
+            StrokeThickness = 1,
+            StrokeShape = new RoundRectangle { CornerRadius = 6 },
+            HorizontalOptions = figAlignOptions,
+            Margin = new Thickness(figIndent, figBefore, 0, figAfter),
+            Content = new HorizontalStackLayout {
+                HorizontalOptions = LayoutOptions.Center,
+                VerticalOptions = LayoutOptions.Center,
+                Spacing = 8,
+                Children = {
+                    new Label { Text = "📐", FontSize = Math.Max(12.0, 16.0 * _previewScale), VerticalOptions = LayoutOptions.Center },
+                    new Label {
+                        Text = "Иллюстрация ГОСТ (Рис. 1)",
+                        FontSize = Math.Max(8.0, 12.0 * ptScale),
+                        TextColor = Color.FromArgb("#4B5563"),
+                        VerticalOptions = LayoutOptions.Center,
+                        FontFamily = rule.FontName,
+                    },
+                },
+            },
+        };
+        contentStack.Children.Add(figBox);
+
+        // 6. Подпись к рисунку (Caption) с отступами сверху/снизу, выравниванием и интервалом
+        double capBefore = Math.Clamp(rule.CaptionSpacingBeforePt * ptScale, 0.0, 40.0);
+        double capAfter = Math.Clamp(rule.CaptionSpacingAfterPt * ptScale, 0.0, 40.0);
+
+        var capAlign = rule.CaptionAlignment.ToLowerInvariant() switch {
+            "left" => TextAlignment.Start,
+            "right" => TextAlignment.End,
+            _ => TextAlignment.Center,
+        };
+
+        double capIndent = rule.CaptionRequireNoIndent ? 0 : Math.Clamp(rule.FirstLineIndentCm * cmScale, 0.0, w / 2);
+
+        var captionLabel = new Label {
+            Text = "Рисунок 1 — Структурная схема модулей и компонентов системы",
+            FontSize = Math.Max(8.0, 12.0 * ptScale),
+            FontFamily = rule.FontName,
+            TextColor = Color.FromArgb("#374151"),
+            HorizontalTextAlignment = capAlign,
+            LineHeight = Math.Clamp(rule.CaptionLineSpacing, 0.9, 1.8),
+            Margin = new Thickness(capIndent, capBefore, 0, capAfter),
+            LineBreakMode = LineBreakMode.WordWrap,
+        };
+        contentStack.Children.Add(captionLabel);
+
+        // 7. Листинг программного кода
+        double codeFontSize = Math.Clamp(rule.CodeFontSizePt * ptScale, 7.5, 26.0);
+        double codeIndent = rule.CodeRequireNoIndent ? 0 : Math.Clamp(rule.FirstLineIndentCm * cmScale, 0.0, w / 2);
+
+        var codeBorder = new Border {
+            BackgroundColor = Color.FromArgb("#F8FAFC"),
+            Stroke = Color.FromArgb("#E2E8F0"),
+            StrokeThickness = 1,
+            StrokeShape = new RoundRectangle { CornerRadius = 6 },
+            Padding = new Thickness(10 * _previewScale, 8 * _previewScale),
+            Margin = new Thickness(codeIndent, 6 * _previewScale, 0, 4 * _previewScale),
+            Content = new Label {
+                Text = "int main() {\n    // Проверка листинга по ГОСТ\n    printf(\"Стандарт оформления применен\\n\");\n    return 0;\n}",
+                FontFamily = rule.CodeFontFamily,
+                FontSize = codeFontSize,
+                LineHeight = Math.Clamp(rule.CodeLineSpacing, 0.9, 1.8),
+                TextColor = Color.FromArgb("#0F172A"),
+            },
+        };
+        contentStack.Children.Add(codeBorder);
+
+        // 8. Заключительный абзац
+        string p3Raw = "Таким образом, структура документа полностью отвечает заданным правилам форматирования и ГОСТ.";
+        var p3 = new Label {
+            Text = ApplyFirstLineIndent(p3Raw, rule.FirstLineIndentCm),
+            FontSize = bodyFontSize,
+            TextColor = Color.FromArgb("#1F2937"),
+            HorizontalTextAlignment = align,
+            FontFamily = rule.FontName,
+            LineHeight = Math.Clamp(rule.LineSpacing, 0.9, 2.0),
+            Margin = new Thickness(0, 4 * _previewScale, 0, 0),
+            LineBreakMode = LineBreakMode.WordWrap,
+        };
+        contentStack.Children.Add(p3);
+
+        // 9. Номер страницы (если включен)
         if (rule.RequirePageNumbers) {
             var pageNum = new Label {
                 Text = "— 1 —",
-                FontSize = Math.Max(5.5, bodyFontSize - 1),
+                FontSize = Math.Max(8.0, bodyFontSize - 2),
                 TextColor = Color.FromArgb("#6B7280"),
                 HorizontalTextAlignment = TextAlignment.Center,
-                VerticalOptions = LayoutOptions.End,
+                Margin = new Thickness(0, 16 * _previewScale, 0, 0),
                 FontFamily = rule.FontName,
             };
-            layout.Children.Add(pageNum);
-            Grid.SetRow(pageNum, 1);
+            contentStack.Children.Add(pageNum);
         }
 
-        sheetBorder.Content = layout;
+        sheetBorder.Content = contentStack;
     }
 
     // =====================================================================
@@ -400,6 +744,7 @@ public partial class RuleEditorPage : ContentPage
             var rule = BuildRuleFromForm();
             bool success = await CustomRulesService.Instance.SaveRuleAsync(rule);
             if (success) {
+                LastSavedRuleId = CustomRulesService.Instance.LastSavedRuleId ?? rule.Id;
                 await Dialogs.AlertAsync("Правило сохранено", $"Правило «{rule.Title}» успешно сохранено.", DialogKind.Success);
                 await Shell.Current.GoToAsync("..");
             } else {
@@ -407,33 +752,6 @@ public partial class RuleEditorPage : ContentPage
             }
         } catch (Exception ex) {
             await Dialogs.AlertAsync("Ошибка сохранения", ex.Message, DialogKind.Danger);
-        }
-    }
-
-    private async void OnDeleteTapped(object? sender, EventArgs e)
-    {
-        if (_editingRule == null || !_editingRule.IsCustom)
-            return;
-
-        bool confirm = await Dialogs.ConfirmAsync(
-            "Удаление правила",
-            $"Вы действительно хотите удалить правило «{_editingRule.Title}»?",
-            "Удалить",
-            DialogKind.Delete,
-            "Отмена",
-            danger: true);
-
-        if (!confirm)
-            return;
-
-        try {
-            bool deleted = await CustomRulesService.Instance.DeleteRuleAsync(_editingRule.Id);
-            if (deleted) {
-                await Dialogs.AlertAsync("Правило удалено", "Правило успешно удалено из хранилища.", DialogKind.Success);
-                await Shell.Current.GoToAsync("..");
-            }
-        } catch (Exception ex) {
-            await Dialogs.AlertAsync("Ошибка удаления", ex.Message, DialogKind.Danger);
         }
     }
 

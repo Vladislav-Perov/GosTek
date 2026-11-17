@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!--
  ==============================================================================
- НАЗНАЧЕНИЕ: Профессиональный интерфейс аудита оформления документов по ГОСТ
- СОДЕРЖИМОЕ: ContentPage, Dropzone, Summary Card, ChipBar, Accordions, AppTabBar, IconView
- ЗАВИСИМОСТИ: GosTek.Views.CheckPage, GosTek.Controls.ChipBar, GosTek.Views.AppTabBar, GosTek.Views.Controls.IconView
+ НАЗНАЧЕНИЕ: Премиальный интерфейс аудита оформления документов по ГОСТ
+ СОДЕРЖИМОЕ: Единый скролл, карточка файла, карточка стандарта, крупные карточки замечаний
+ ЗАВИСИМОСТИ: GosTek.Views.CheckPage, GosTek.Controls.ChipBar, GosTek.Views.Controls.IconView, GosTek.Models.CheckIssue
  ==============================================================================
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:views="clr-namespace:GosTek.Views"
+             xmlns:models="clr-namespace:GosTek.Models"
              xmlns:controls="clr-namespace:GosTek.Controls"
              xmlns:vctrl="clr-namespace:GosTek.Views.Controls"
              x:Class="GosTek.Views.CheckPage"
+             x:Name="Root"
              Title="Проверка"
              BackgroundColor="{DynamicResource PageBg}"
              Shell.NavBarIsVisible="False">
@@ -20,13 +22,13 @@
 
         <!-- ==================== ОСНОВНОЙ КОНТЕНТ СО СКРОЛЛОМ ==================== -->
         <ScrollView Grid.Row="0"
-                    VerticalScrollBarVisibility="Never">
+                    VerticalScrollBarVisibility="Default">
             <VerticalStackLayout MaximumWidthRequest="950"
                                  HorizontalOptions="Fill"
                                  Padding="{OnPlatform Android='20, 16, 20, 80', WinUI='20, 20, 20, 24'}"
                                  Spacing="16">
 
-                <!-- ШАПКА -->
+                <!-- Шапка страницы -->
                 <VerticalStackLayout Spacing="2" VerticalOptions="Center">
                     <Label Text="Проверка"
                            FontSize="26"
@@ -37,63 +39,125 @@
                            TextColor="{DynamicResource TextSecondary}" />
                 </VerticalStackLayout>
 
-                <!-- 1. Зона выбора файла (Dropzone) с пунктирной рамкой (когда файл ещё не выбран) -->
+                <!-- Карточка стандарта оформления -->
+                <Border BackgroundColor="{DynamicResource CardBg}"
+                        Stroke="{DynamicResource CardStroke}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 18"
+                        Padding="16, 14">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="10" VerticalOptions="Center">
+                            <Border Grid.Column="0"
+                                    BackgroundColor="{DynamicResource IconBoxBg}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 10"
+                                    WidthRequest="36"
+                                    HeightRequest="36"
+                                    VerticalOptions="Center">
+                                <vctrl:IconView Icon="ruler"
+                                                IconColor="BrandGreen"
+                                                Size="18"
+                                                HorizontalOptions="Center"
+                                                VerticalOptions="Center" />
+                            </Border>
+
+                            <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                                <Label Text="Стандарт оформления"
+                                       FontSize="14.5"
+                                       FontAttributes="Bold"
+                                       TextColor="{DynamicResource TextPrimary}" />
+                                <Label Text="Активный профиль ГОСТ"
+                                       FontSize="12"
+                                       TextColor="{DynamicResource TextSecondary}" />
+                            </VerticalStackLayout>
+
+                            <Border Grid.Column="2"
+                                    StyleClass="HoverCard"
+                                    StrokeThickness="1"
+                                    Stroke="{DynamicResource CardStroke}"
+                                    BackgroundColor="{DynamicResource CardHoverBg}"
+                                    StrokeShape="RoundRectangle 10"
+                                    Padding="10, 6"
+                                    VerticalOptions="Center">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnEditCurrentRuleTapped" />
+                                </Border.GestureRecognizers>
+                                <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                                    <vctrl:IconView Icon="pen"
+                                                    IconColor="BrandGreen"
+                                                    Size="13"
+                                                    VerticalOptions="Center" />
+                                    <Label x:Name="EditCurrentRuleLabel"
+                                           Text="Настроить"
+                                           FontSize="12"
+                                           FontAttributes="Bold"
+                                           TextColor="{DynamicResource BrandGreen}"
+                                           VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </Border>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 2" />
+
+                        <controls:ChipBar x:Name="RuleChips"
+                                          ChipsPadding="0, 2, 0, 2" />
+
+                        <Label x:Name="RuleNote"
+                               IsVisible="False"
+                               FontSize="12"
+                               LineBreakMode="WordWrap"
+                               TextColor="{DynamicResource TextSecondary}"
+                               Margin="2, 0" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Зона выбора файла (Dropzone) (когда файл не выбран) -->
                 <Border x:Name="DropzoneBorder"
                         StyleClass="HoverCard"
                         BackgroundColor="{DynamicResource CardBg}"
                         Stroke="{DynamicResource CardStroke}"
-                        StrokeDashArray="4,4"
-                        StrokeThickness="1.8"
-                        StrokeShape="RoundRectangle 20"
+                        StrokeDashArray="5,5"
+                        StrokeThickness="1.5"
+                        StrokeShape="RoundRectangle 18"
                         Padding="24, 28"
                         HorizontalOptions="Fill">
-                    <Border.Shadow>
-                        <Shadow Brush="Black" Offset="0,2" Radius="8" Opacity="0.06" />
-                    </Border.Shadow>
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnPickTapped" />
                         <DropGestureRecognizer Drop="OnDropFile" />
                     </Border.GestureRecognizers>
-
-                    <VerticalStackLayout Spacing="10" HorizontalOptions="Center" VerticalOptions="Center">
+                    <VerticalStackLayout Spacing="8" HorizontalOptions="Center" VerticalOptions="Center">
                         <Border BackgroundColor="{DynamicResource IconBoxBg}"
                                 StrokeThickness="0"
-                                StrokeShape="RoundRectangle 16"
-                                WidthRequest="54"
-                                HeightRequest="54"
+                                StrokeShape="RoundRectangle 14"
+                                WidthRequest="48"
+                                HeightRequest="48"
                                 HorizontalOptions="Center">
                             <vctrl:IconView Icon="file"
                                             IconColor="BrandGreen"
-                                            Size="26"
+                                            Size="24"
                                             HorizontalOptions="Center"
                                             VerticalOptions="Center" />
                         </Border>
-
                         <Label Text="Перетащите файл .docx или нажмите для выбора"
-                               FontSize="15.5"
+                               FontSize="14.5"
                                FontAttributes="Bold"
                                HorizontalTextAlignment="Center"
                                TextColor="{DynamicResource TextPrimary}" />
-
-                        <Label Text="Формат Microsoft Word (.docx) • Локальный аудит по ГОСТ"
-                               FontSize="12.5"
+                        <Label Text="Поддерживается формат Microsoft Word (.docx)"
+                               FontSize="12"
                                HorizontalTextAlignment="Center"
                                TextColor="{DynamicResource TextSecondary}" />
                     </VerticalStackLayout>
                 </Border>
 
-                <!-- 2. Карточка выбранного документа (активна после выбора файла) -->
+                <!-- Карточка выбранного документа (активна после выбора файла) -->
                 <Border x:Name="FileSelectedCard"
-                        IsVisible="False"
+                        IsVisible="{Binding Source={x:Reference ResultPanel}, Path=IsVisible}"
                         BackgroundColor="{DynamicResource CardBg}"
                         Stroke="{DynamicResource CardStroke}"
                         StrokeThickness="1"
                         StrokeShape="RoundRectangle 18"
                         Padding="16, 14">
-                    <Border.Shadow>
-                        <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.06" />
-                    </Border.Shadow>
-
                     <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12" VerticalOptions="Center">
                         <Border Grid.Column="0"
                                 BackgroundColor="{DynamicResource IconBoxBg}"
@@ -112,12 +176,12 @@
                         <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                             <Label x:Name="FileNameLabel"
                                    Text="Документ не выбран"
-                                   FontSize="15"
+                                   FontSize="14.5"
                                    FontAttributes="Bold"
                                    LineBreakMode="MiddleTruncation"
                                    TextColor="{DynamicResource TextPrimary}" />
                             <Label x:Name="FileInfoLabel"
-                                   Text="Поддерживается формат Word (.docx)"
+                                   Text="Подойдёт файл Word (.docx)"
                                    FontSize="12"
                                    LineBreakMode="TailTruncation"
                                    TextColor="{DynamicResource TextSecondary}" />
@@ -127,150 +191,24 @@
                                 StyleClass="HoverCard"
                                 StrokeThickness="1"
                                 Stroke="{DynamicResource CardStroke}"
-                                BackgroundColor="{DynamicResource CardBg}"
-                                StrokeShape="RoundRectangle 12"
-                                Padding="14, 8"
+                                BackgroundColor="{DynamicResource CardHoverBg}"
+                                StrokeShape="RoundRectangle 10"
+                                Padding="12, 6"
                                 VerticalOptions="Center">
                             <Border.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnPickTapped" />
                             </Border.GestureRecognizers>
                             <Label x:Name="PickLabel"
                                    Text="Заменить"
-                                   FontSize="13"
+                                   FontSize="12"
                                    FontAttributes="Bold"
-                                   TextColor="{DynamicResource TextPrimary}" />
+                                   TextColor="{DynamicResource TextPrimary}"
+                                   VerticalOptions="Center" />
                         </Border>
                     </Grid>
                 </Border>
 
-                <!-- 3. Правила проверки (чипы создаются из кода) -->
-                <VerticalStackLayout Spacing="8">
-                    <Grid ColumnDefinitions="*, Auto" VerticalOptions="Center">
-                        <Label Text="Правила оформления"
-                               FontSize="14"
-                               FontAttributes="Bold"
-                               TextColor="{DynamicResource TextSecondary}"
-                               VerticalOptions="Center" />
-
-                        <HorizontalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
-                            <HorizontalStackLayout.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnEditCurrentRuleTapped" />
-                            </HorizontalStackLayout.GestureRecognizers>
-                            <vctrl:IconView Icon="pen"
-                                            IconColor="BrandGreen"
-                                            Size="14"
-                                            VerticalOptions="Center" />
-                            <Label x:Name="EditCurrentRuleLabel"
-                                   Text="Настроить"
-                                   FontSize="12.5"
-                                   FontAttributes="Bold"
-                                   TextColor="{DynamicResource BrandGreen}"
-                                   VerticalOptions="Center" />
-                        </HorizontalStackLayout>
-                    </Grid>
-
-                    <controls:ChipBar x:Name="RuleChips" ChipsPadding="8, 6, 8, 8" Margin="0, 2, 0, 2" />
-
-                    <Label x:Name="RuleNote"
-                           IsVisible="False"
-                           FontSize="12"
-                           LineBreakMode="WordWrap"
-                           TextColor="{DynamicResource TextSecondary}"
-                           Margin="2, 0" />
-                </VerticalStackLayout>
-
-                <!-- 4. Конструктор правил ГОСТ / Мои правила -->
-                <Border BackgroundColor="{DynamicResource CardBg}"
-                        Stroke="{DynamicResource CardStroke}"
-                        StrokeThickness="1"
-                        StrokeShape="RoundRectangle 18"
-                        Padding="16, 14">
-                    <Border.Shadow>
-                        <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.06" />
-                    </Border.Shadow>
-
-                    <VerticalStackLayout Spacing="12">
-                        <Grid ColumnDefinitions="Auto, *" ColumnSpacing="10" VerticalOptions="Center">
-                            <Border BackgroundColor="{DynamicResource IconBoxBg}"
-                                    StrokeThickness="0"
-                                    StrokeShape="RoundRectangle 10"
-                                    WidthRequest="36"
-                                    HeightRequest="36"
-                                    VerticalOptions="Center">
-                                <vctrl:IconView Icon="ruler"
-                                                IconColor="BrandGreen"
-                                                Size="18"
-                                                HorizontalOptions="Center"
-                                                VerticalOptions="Center" />
-                            </Border>
-
-                            <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
-                                <Label Text="Пользовательские правила"
-                                       FontSize="15"
-                                       FontAttributes="Bold"
-                                       TextColor="{DynamicResource TextPrimary}" />
-                                <Label Text="Настраивайте поля, шрифт и интервалы с визуальным сравнением"
-                                       FontSize="12"
-                                       TextColor="{DynamicResource TextSecondary}" />
-                            </VerticalStackLayout>
-                        </Grid>
-
-                        <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
-                            <!-- Кнопка Создать с нуля -->
-                            <Border Grid.Column="0"
-                                    StyleClass="HoverCard"
-                                    StrokeThickness="1"
-                                    Stroke="{DynamicResource CardStroke}"
-                                    BackgroundColor="{DynamicResource CardBg}"
-                                    StrokeShape="RoundRectangle 12"
-                                    Padding="10, 9">
-                                <Border.GestureRecognizers>
-                                    <TapGestureRecognizer Tapped="OnCreateNewRuleTapped" />
-                                </Border.GestureRecognizers>
-                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
-                                    <vctrl:IconView Icon="plus"
-                                                    IconColor="TextPrimary"
-                                                    Size="14"
-                                                    VerticalOptions="Center" />
-                                    <Label Text="С нуля"
-                                           FontSize="13"
-                                           FontAttributes="Bold"
-                                           TextColor="{DynamicResource TextPrimary}"
-                                           VerticalOptions="Center" />
-                                </HorizontalStackLayout>
-                            </Border>
-
-                            <!-- Кнопка Создать на основе -->
-                            <Border Grid.Column="1"
-                                    StyleClass="HoverCard"
-                                    StrokeThickness="1"
-                                    Stroke="{DynamicResource CardStroke}"
-                                    BackgroundColor="{DynamicResource CardBg}"
-                                    StrokeShape="RoundRectangle 12"
-                                    Padding="10, 9">
-                                <Border.GestureRecognizers>
-                                    <TapGestureRecognizer Tapped="OnCreateBasedOnRuleTapped" />
-                                </Border.GestureRecognizers>
-                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
-                                    <vctrl:IconView Icon="copy"
-                                                    IconColor="TextPrimary"
-                                                    Size="14"
-                                                    VerticalOptions="Center" />
-                                    <Label Text="На основе…"
-                                           FontSize="13"
-                                           FontAttributes="Bold"
-                                           TextColor="{DynamicResource TextPrimary}"
-                                           VerticalOptions="Center" />
-                                </HorizontalStackLayout>
-                            </Border>
-                        </Grid>
-
-                        <!-- Список сохраненных пользовательских правил -->
-                        <VerticalStackLayout x:Name="CustomRulesHost" Spacing="8" />
-                    </VerticalStackLayout>
-                </Border>
-
-                <!-- 5. Состояние: файл пока не выбран -->
+                <!-- Состояние: файл пока не выбран -->
                 <Border x:Name="EmptyPanel"
                         BackgroundColor="{DynamicResource CardBg}"
                         Stroke="{DynamicResource CardStroke}"
@@ -306,7 +244,7 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <!-- 6. Результат проверки -->
+                <!-- Результат проверки: список замечаний со скроллом -->
                 <VerticalStackLayout x:Name="ResultPanel" IsVisible="False" Spacing="14">
                     <Label x:Name="StatusLabel"
                            IsVisible="False"
@@ -315,50 +253,223 @@
                            LineBreakMode="WordWrap"
                            TextColor="{DynamicResource BrandGreen}" />
 
-                    <!-- Карточка итогов (Summary Card) профессионального инспектора -->
-                    <Border x:Name="SummaryBox"
-                            StrokeThickness="1.5"
-                            Stroke="{DynamicResource CardStroke}"
-                            StrokeShape="RoundRectangle 18"
-                            Padding="18, 16">
-                        <Border.Shadow>
-                            <Shadow Brush="Black" Offset="0,2" Radius="8" Opacity="0.08" />
-                        </Border.Shadow>
-
-                        <Grid ColumnDefinitions="Auto, *" ColumnSpacing="14" VerticalOptions="Center">
-                            <Border x:Name="SummaryIconBox"
-                                    BackgroundColor="{DynamicResource IconBoxBg}"
+                    <!-- Заголовок замечаний со счётчиком и кнопкой «Принять все» -->
+                    <!-- Весь заголовок со счётчиком виден ТОЛЬКО если HasIssues == true -->
+                    <Grid IsVisible="{Binding HasIssues}"
+                          ColumnDefinitions="*, Auto"
+                          VerticalOptions="Center">
+                        <HorizontalStackLayout Grid.Column="0" Spacing="8" VerticalOptions="Center">
+                            <Label Text="Замечания к оформлению"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{DynamicResource TextPrimary}"
+                                   VerticalOptions="Center" />
+                            <Border BackgroundColor="{DynamicResource IconBoxBg}"
                                     StrokeThickness="0"
-                                    StrokeShape="RoundRectangle 14"
-                                    WidthRequest="48"
-                                    HeightRequest="48"
+                                    StrokeShape="RoundRectangle 8"
+                                    Padding="8, 2"
                                     VerticalOptions="Center">
-                                <vctrl:IconView x:Name="SummaryIconCtrl"
-                                                Icon="shield"
+                                <Label Text="{Binding Issues.Count}"
+                                       FontSize="12.5"
+                                       FontAttributes="Bold"
+                                       TextColor="{DynamicResource BrandGreen}"
+                                       VerticalOptions="Center" />
+                            </Border>
+                        </HorizontalStackLayout>
+
+                        <!-- Кнопка «Принять все», видна только если HasFixableIssues == true -->
+                        <Border Grid.Column="1"
+                                IsVisible="{Binding HasFixableIssues}"
+                                StyleClass="HoverGreen"
+                                StrokeThickness="0"
+                                BackgroundColor="{DynamicResource BrandGreen}"
+                                StrokeShape="RoundRectangle 10"
+                                Padding="14, 7"
+                                VerticalOptions="Center">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding AcceptAllCommand}" />
+                            </Border.GestureRecognizers>
+                            <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                                <vctrl:IconView Icon="sparkles"
+                                                IconColor="White"
+                                                Size="14"
+                                                VerticalOptions="Center" />
+                                <Label Text="Принять все"
+                                       FontSize="12.5"
+                                       FontAttributes="Bold"
+                                       TextColor="#FFFFFF"
+                                       VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </Border>
+                    </Grid>
+
+                    <!-- Список замечаний (крупные карточки) -->
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Issues}"
+                                         Spacing="10">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="models:CheckIssue">
+                                <Border BackgroundColor="{DynamicResource CardBg}"
+                                        Stroke="{DynamicResource CardStroke}"
+                                        StrokeThickness="1"
+                                        StrokeShape="RoundRectangle 16"
+                                        Padding="16, 14">
+                                    <VerticalStackLayout Spacing="8">
+
+                                        <!-- а) Title (коротко, без цифр) -->
+                                        <Label Text="{Binding Title}"
+                                               FontSize="15"
+                                               FontAttributes="Bold"
+                                               TextColor="{DynamicResource TextPrimary}" />
+
+                                        <!-- б) Where -->
+                                        <Label Text="{Binding Where}"
+                                               FontSize="12"
+                                               TextColor="{DynamicResource TextSecondary}" />
+
+                                        <!-- в) Sample курсивом, одна строка с обрезкой, только если не пусто -->
+                                        <Label Text="{Binding Sample}"
+                                               FontSize="12"
+                                               FontAttributes="Italic"
+                                               TextColor="{DynamicResource TextSecondary}"
+                                               LineBreakMode="TailTruncation"
+                                               MaxLines="1"
+                                               IsVisible="{Binding HasSample}" />
+
+                                        <!-- г) блок «ЧТО МЕНЯЕТСЯ» (виден только при HasDiff): две строки друг под другом. «Сейчас: {Actual}» и «Будет: {Expected}», с пробелами после двоеточий. Никаких FlexLayout с обрезанием пробелов -->
+                                        <Border IsVisible="{Binding HasDiff}"
+                                                BackgroundColor="{DynamicResource CardHoverBg}"
+                                                Stroke="{DynamicResource CardStroke}"
+                                                StrokeThickness="1"
+                                                StrokeShape="RoundRectangle 10"
+                                                Padding="12, 8">
+                                            <VerticalStackLayout Spacing="3">
+                                                <Label>
+                                                    <Label.FormattedText>
+                                                        <FormattedString>
+                                                            <Span Text="Сейчас: "
+                                                                  FontSize="12"
+                                                                  FontAttributes="Bold"
+                                                                  TextColor="{DynamicResource TextSecondary}" />
+                                                            <Span Text="{Binding Actual}"
+                                                                  FontSize="12"
+                                                                  TextColor="{DynamicResource TextSecondary}" />
+                                                        </FormattedString>
+                                                    </Label.FormattedText>
+                                                </Label>
+                                                <Label>
+                                                    <Label.FormattedText>
+                                                        <FormattedString>
+                                                            <Span Text="Будет: "
+                                                                  FontSize="12"
+                                                                  FontAttributes="Bold"
+                                                                  TextColor="{DynamicResource BrandGreen}" />
+                                                            <Span Text="{Binding Expected}"
+                                                                  FontSize="12"
+                                                                  FontAttributes="Bold"
+                                                                  TextColor="{DynamicResource TextPrimary}" />
+                                                        </FormattedString>
+                                                    </Label.FormattedText>
+                                                </Label>
+                                            </VerticalStackLayout>
+                                        </Border>
+
+                                        <!-- д) внизу справа «Отклонить» и «Принять». Для CanFix == false вместо «Принять» тег «Вручную» -->
+                                        <Grid ColumnDefinitions="*, Auto" Margin="0, 4, 0, 0">
+                                            <HorizontalStackLayout Grid.Column="1"
+                                                                   Spacing="8"
+                                                                   HorizontalOptions="End"
+                                                                   VerticalOptions="Center">
+                                                <!-- Кнопка «Отклонить» -->
+                                                <Border StyleClass="HoverCard"
+                                                        StrokeThickness="1"
+                                                        Stroke="{DynamicResource CardStroke}"
+                                                        BackgroundColor="Transparent"
+                                                        StrokeShape="RoundRectangle 8"
+                                                        Padding="14, 6"
+                                                        VerticalOptions="Center">
+                                                    <Border.GestureRecognizers>
+                                                        <TapGestureRecognizer Command="{Binding Source={x:Reference Root}, Path=RejectFixCommand}"
+                                                                              CommandParameter="{Binding .}" />
+                                                    </Border.GestureRecognizers>
+                                                    <Label Text="Отклонить"
+                                                           FontSize="12"
+                                                           FontAttributes="Bold"
+                                                           TextColor="{DynamicResource TextSecondary}"
+                                                           VerticalOptions="Center" />
+                                                </Border>
+
+                                                <!-- Тег «Вручную» (вместо «Принять» когда CanFix == false) -->
+                                                <Border IsVisible="{Binding CannotFix}"
+                                                        StrokeThickness="0"
+                                                        BackgroundColor="{DynamicResource CardHoverBg}"
+                                                        StrokeShape="RoundRectangle 8"
+                                                        Padding="12, 6"
+                                                        VerticalOptions="Center">
+                                                    <Label Text="Вручную"
+                                                           FontSize="12"
+                                                           FontAttributes="Bold"
+                                                           TextColor="{DynamicResource TextSecondary}"
+                                                           VerticalOptions="Center" />
+                                                </Border>
+
+                                                <!-- Кнопка «Принять» (когда CanFix == true) -->
+                                                <Border IsVisible="{Binding CanFix}"
+                                                        StyleClass="HoverGreen"
+                                                        StrokeThickness="0"
+                                                        BackgroundColor="{DynamicResource BrandGreen}"
+                                                        StrokeShape="RoundRectangle 8"
+                                                        Padding="16, 6"
+                                                        VerticalOptions="Center">
+                                                    <Border.GestureRecognizers>
+                                                        <TapGestureRecognizer Command="{Binding Source={x:Reference Root}, Path=AcceptFixCommand}"
+                                                                              CommandParameter="{Binding .}" />
+                                                    </Border.GestureRecognizers>
+                                                    <Label Text="Принять"
+                                                           FontSize="12"
+                                                           FontAttributes="Bold"
+                                                           TextColor="#FFFFFF"
+                                                           VerticalOptions="Center" />
+                                                </Border>
+                                            </HorizontalStackLayout>
+                                        </Grid>
+
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+
+                    <!-- Карточка Успеха (когда замечаний нет или все исправлены) -->
+                    <Border IsVisible="{Binding NoIssues}"
+                            BackgroundColor="{DynamicResource CardBg}"
+                            Stroke="{DynamicResource CardStroke}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="18, 16">
+                        <Grid ColumnDefinitions="Auto, *" ColumnSpacing="14" VerticalOptions="Center">
+                            <Border BackgroundColor="{DynamicResource IconBoxBg}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 12"
+                                    WidthRequest="44"
+                                    HeightRequest="44"
+                                    VerticalOptions="Center">
+                                <vctrl:IconView Icon="shield"
                                                 IconColor="BrandGreen"
-                                                Size="24"
+                                                Size="22"
                                                 HorizontalOptions="Center"
                                                 VerticalOptions="Center" />
                             </Border>
-
-                            <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
-                                <Label x:Name="SummaryTitle"
-                                       Text="Результаты проверки"
-                                       FontSize="16.5"
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                <Label Text="Все замечания устранены!"
+                                       FontSize="15.5"
                                        FontAttributes="Bold"
                                        TextColor="{DynamicResource TextPrimary}" />
-                                <Label x:Name="SummarySubtitle"
-                                       Text=""
+                                <Label Text="Документ полностью соответствует выбранному стандарту ГОСТ."
                                        FontSize="12.5"
-                                       TextColor="{DynamicResource TextSecondary}"
-                                       LineBreakMode="WordWrap" />
-                                <Label x:Name="SummaryLabel" IsVisible="False" />
+                                       TextColor="{DynamicResource TextSecondary}" />
                             </VerticalStackLayout>
                         </Grid>
                     </Border>
-
-                    <!-- Замечания (группируются в аккордеоны по важности) -->
-                    <VerticalStackLayout x:Name="IssuesHost" Spacing="10" />
                 </VerticalStackLayout>
 
                 <ActivityIndicator x:Name="Loader"
@@ -380,46 +491,42 @@
                             Grid.Column="0"
                             Grid.ColumnSpan="2"
                             StyleClass="HoverGreen"
-                            StrokeShape="RoundRectangle 16"
+                            StrokeShape="RoundRectangle 14"
                             StrokeThickness="0"
-                            Padding="8, 15"
+                            Padding="12, 14"
                             Background="{DynamicResource BrandGreenGradient}">
-                        <Border.Shadow>
-                            <Shadow Brush="Black" Offset="0, 4" Radius="10" Opacity="0.18" />
-                        </Border.Shadow>
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnPrimaryTapped" />
                         </Border.GestureRecognizers>
                         <Label x:Name="PrimaryLabel"
                                Text="Выбрать документ"
-                               FontSize="15.5"
+                               FontSize="15"
                                FontAttributes="Bold"
                                LineBreakMode="TailTruncation"
                                TextColor="#FFFFFF"
-                               HorizontalOptions="Center" />
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
                     </Border>
 
                     <Border x:Name="SaveButton"
                             Grid.Column="1"
                             IsVisible="False"
                             StyleClass="HoverCard"
-                            StrokeShape="RoundRectangle 16"
+                            StrokeShape="RoundRectangle 14"
                             StrokeThickness="1"
                             Stroke="{DynamicResource CardStroke}"
                             BackgroundColor="{DynamicResource CardBg}"
-                            Padding="8, 15">
-                        <Border.Shadow>
-                            <Shadow Brush="Black" Offset="0, 2" Radius="6" Opacity="0.06" />
-                        </Border.Shadow>
+                            Padding="12, 14">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnSaveCopyTapped" />
                         </Border.GestureRecognizers>
                         <Label Text="Сохранить копию"
-                               FontSize="15"
+                               FontSize="14.5"
                                FontAttributes="Bold"
                                LineBreakMode="TailTruncation"
                                TextColor="{DynamicResource TextPrimary}"
-                               HorizontalOptions="Center" />
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
                     </Border>
                 </Grid>
 

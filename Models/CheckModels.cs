@@ -24,11 +24,43 @@ public enum IssueKind
 }
 
 /// <summary>
-/// Одно замечание к документу.
-/// Title — что не так («Левое поле 2 см, по правилам нужно 3 см»), Where — где («Весь документ»),
-/// CanFix — можно ли исправить автоматически (иначе на экране бейдж «Вручную»).
+/// Конкретный проблемный элемент документа (абзац, ячейка, заголовок, раздел).
+/// Index — порядковый номер элемента в едином обходе документа;
+/// Text — первые 60 символов с «…» при усечении;
+/// Actual и Expected — реальные значения этого элемента.
 /// </summary>
-public sealed record CheckIssue(IssueKind Kind, IssueSeverity Severity, string Title, string Where, bool CanFix);
+public sealed record IssueItem(int Index, string Text, string? Actual, string? Expected);
+
+/// <summary>
+/// Одно замечание к документу.
+/// Title — что не так («Левое поле», «Размер шрифта»), Where — где («Затронуто абзацев: 12 из 40»),
+/// CanFix — можно ли исправить автоматически (иначе на экране бейдж «Вручную»),
+/// Actual — фактическое значение («2 см», «Arial»), Expected — ожидаемое по ГОСТ («3 см», «Times New Roman»),
+/// Page — номер страницы (null, если без рендера не определить), Sample — первые 60 символов первого проблемного абзаца,
+/// AffectedCount — число затронутых абзацев/элементов, Items — список конкретных адресуемых проблемных элементов.
+/// </summary>
+public sealed record CheckIssue(
+    IssueKind Kind,
+    IssueSeverity Severity,
+    string Title,
+    string Where,
+    bool CanFix,
+    string? Actual = null,
+    string? Expected = null,
+    int? Page = null,
+    string? Sample = null,
+    int? AffectedCount = null,
+    IReadOnlyList<IssueItem>? Items = null)
+{
+    /// <summary>Показывать ли блок сравнения «Сейчас -> Будет» в карточке замечания.</summary>
+    public bool HasDiff => !string.IsNullOrWhiteSpace(Actual) || !string.IsNullOrWhiteSpace(Expected);
+
+    /// <summary>Требует ручной правки автором (нельзя применить автоматически).</summary>
+    public bool CannotFix => !CanFix;
+
+    /// <summary>Есть ли фрагмент текста проблемного абзаца для отображения курсивом.</summary>
+    public bool HasSample => !string.IsNullOrWhiteSpace(Sample);
+}
 
 /// <summary>Требование к полю страницы. Exact = true: ровно столько; false: не меньше.</summary>
 public sealed record MarginRule(double Cm, bool Exact);
@@ -68,6 +100,9 @@ public sealed record RuleSet(
     /// <summary>Допуск при сравнении межстрочного интервала (в «строках»).</summary>
     public double SpacingTolerance { get; init; } = 0.05;
 
+    /// <summary>Встроенное (неудаляемое) стандартное правило GOST.</summary>
+    public bool IsBuiltIn { get; set; } = false;
+
     // --- Настройки рисунков (Figures) ---
     public string FigureAlignment { get; set; } = "Center";
     public double FigureSpacingBeforePt { get; set; } = 12.0;
@@ -81,6 +116,20 @@ public sealed record RuleSet(
     public double CaptionLineSpacing { get; set; } = 1.0;
     public bool CaptionRequireNoIndent { get; set; } = true;
 
+    // --- Настройки таблиц (Tables) ---
+    public bool CheckTables { get; set; } = true;
+    public string TableFontFamily { get; set; } = "Times New Roman";
+    public double TableFontSizePt { get; set; } = 12.0;
+    public double TableLineSpacing { get; set; } = 1.0;
+    public bool TableRequireNoIndent { get; set; } = true;
+
+    // --- Настройки подписей к таблицам (Table Captions) ---
+    public string TableCaptionAlignment { get; set; } = "Left";
+    public double TableCaptionSpacingBeforePt { get; set; } = 6.0;
+    public double TableCaptionSpacingAfterPt { get; set; } = 3.0;
+    public double TableCaptionLineSpacing { get; set; } = 1.0;
+    public bool TableCaptionRequireNoIndent { get; set; } = true;
+
     // --- Настройки листингов кода (Code Snippets) ---
     public string CodeFontFamily { get; set; } = "Consolas";
     public double CodeFontSizePt { get; set; } = 12.0;
@@ -88,6 +137,12 @@ public sealed record RuleSet(
     public bool CodeRequireNoIndent { get; set; } = true;
 
     // --- Настройки заголовков (Headings) ---
+    public string HeadingFontFamily { get; set; } = "Times New Roman";
+    public double HeadingFontSizePt { get; set; } = 16.0;
+    public double HeadingLineSpacing { get; set; } = 1.5;
+    public string HeadingAlignment { get; set; } = "Left";
+    public double HeadingSpacingBeforePt { get; set; } = 12.0;
+    public double HeadingSpacingAfterPt { get; set; } = 6.0;
     public bool HeadingRequireBold { get; set; } = true;
     public bool HeadingRequireNoIndent { get; set; } = true;
     public bool HeadingRemoveTrailingDot { get; set; } = true;
@@ -126,11 +181,29 @@ public sealed record RuleSet(
         CaptionLineSpacing = CaptionLineSpacing,
         CaptionRequireNoIndent = CaptionRequireNoIndent,
 
+        CheckTables = CheckTables,
+        TableFontFamily = TableFontFamily,
+        TableFontSizePt = TableFontSizePt,
+        TableLineSpacing = TableLineSpacing,
+        TableRequireNoIndent = TableRequireNoIndent,
+
+        TableCaptionAlignment = TableCaptionAlignment,
+        TableCaptionSpacingBeforePt = TableCaptionSpacingBeforePt,
+        TableCaptionSpacingAfterPt = TableCaptionSpacingAfterPt,
+        TableCaptionLineSpacing = TableCaptionLineSpacing,
+        TableCaptionRequireNoIndent = TableCaptionRequireNoIndent,
+
         CodeFontFamily = CodeFontFamily,
         CodeFontSizePt = CodeFontSizePt,
         CodeLineSpacing = CodeLineSpacing,
         CodeRequireNoIndent = CodeRequireNoIndent,
 
+        HeadingFontFamily = HeadingFontFamily,
+        HeadingFontSizePt = HeadingFontSizePt,
+        HeadingLineSpacing = HeadingLineSpacing,
+        HeadingAlignment = HeadingAlignment,
+        HeadingSpacingBeforePt = HeadingSpacingBeforePt,
+        HeadingSpacingAfterPt = HeadingSpacingAfterPt,
         HeadingRequireBold = HeadingRequireBold,
         HeadingRequireNoIndent = HeadingRequireNoIndent,
         HeadingRemoveTrailingDot = HeadingRemoveTrailingDot,
@@ -167,11 +240,29 @@ public sealed record RuleSet(
         CaptionLineSpacing = dto.CaptionLineSpacing,
         CaptionRequireNoIndent = dto.CaptionRequireNoIndent,
 
+        CheckTables = dto.CheckTables,
+        TableFontFamily = dto.TableFontFamily,
+        TableFontSizePt = dto.TableFontSizePt,
+        TableLineSpacing = dto.TableLineSpacing,
+        TableRequireNoIndent = dto.TableRequireNoIndent,
+
+        TableCaptionAlignment = dto.TableCaptionAlignment,
+        TableCaptionSpacingBeforePt = dto.TableCaptionSpacingBeforePt,
+        TableCaptionSpacingAfterPt = dto.TableCaptionSpacingAfterPt,
+        TableCaptionLineSpacing = dto.TableCaptionLineSpacing,
+        TableCaptionRequireNoIndent = dto.TableCaptionRequireNoIndent,
+
         CodeFontFamily = dto.CodeFontFamily,
         CodeFontSizePt = dto.CodeFontSizePt,
         CodeLineSpacing = dto.CodeLineSpacing,
         CodeRequireNoIndent = dto.CodeRequireNoIndent,
 
+        HeadingFontFamily = dto.HeadingFontFamily,
+        HeadingFontSizePt = dto.HeadingFontSizePt,
+        HeadingLineSpacing = dto.HeadingLineSpacing,
+        HeadingAlignment = dto.HeadingAlignment,
+        HeadingSpacingBeforePt = dto.HeadingSpacingBeforePt,
+        HeadingSpacingAfterPt = dto.HeadingSpacingAfterPt,
         HeadingRequireBold = dto.HeadingRequireBold,
         HeadingRequireNoIndent = dto.HeadingRequireNoIndent,
         HeadingRemoveTrailingDot = dto.HeadingRemoveTrailingDot,
@@ -214,6 +305,20 @@ public sealed class CustomRuleDto
     public double CaptionLineSpacing { get; set; } = 1.0;
     public bool CaptionRequireNoIndent { get; set; } = true;
 
+    // --- Настройки таблиц (Tables) ---
+    public bool CheckTables { get; set; } = true;
+    public string TableFontFamily { get; set; } = "Times New Roman";
+    public double TableFontSizePt { get; set; } = 12.0;
+    public double TableLineSpacing { get; set; } = 1.0;
+    public bool TableRequireNoIndent { get; set; } = true;
+
+    // --- Настройки подписей к таблицам (Table Captions) ---
+    public string TableCaptionAlignment { get; set; } = "Left";
+    public double TableCaptionSpacingBeforePt { get; set; } = 6.0;
+    public double TableCaptionSpacingAfterPt { get; set; } = 3.0;
+    public double TableCaptionLineSpacing { get; set; } = 1.0;
+    public bool TableCaptionRequireNoIndent { get; set; } = true;
+
     // --- Настройки листингов кода (Code Snippets) ---
     public string CodeFontFamily { get; set; } = "Consolas";
     public double CodeFontSizePt { get; set; } = 12.0;
@@ -221,6 +326,12 @@ public sealed class CustomRuleDto
     public bool CodeRequireNoIndent { get; set; } = true;
 
     // --- Настройки заголовков (Headings) ---
+    public string HeadingFontFamily { get; set; } = "Times New Roman";
+    public double HeadingFontSizePt { get; set; } = 16.0;
+    public double HeadingLineSpacing { get; set; } = 1.5;
+    public string HeadingAlignment { get; set; } = "Left";
+    public double HeadingSpacingBeforePt { get; set; } = 12.0;
+    public double HeadingSpacingAfterPt { get; set; } = 6.0;
     public bool HeadingRequireBold { get; set; } = true;
     public bool HeadingRequireNoIndent { get; set; } = true;
     public bool HeadingRemoveTrailingDot { get; set; } = true;

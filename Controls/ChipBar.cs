@@ -138,6 +138,19 @@ public sealed class ChipBar : ContentView
             return;
         }
 
+        // Проверка: если новый список строк полностью совпадает с текущим отображаемым,
+        // пропускаем вызов Children.Clear() и пересоздание кнопок, предотвращая WinUI access violation (0xc0000005)
+        if (_chips.Count == titles.Count && titles.SequenceEqual(_chips.Select(c => c.Text.Text)))
+        {
+            int newSelected = selected >= 0 && selected < titles.Count ? selected : 0;
+            if (newSelected != _selected)
+            {
+                _selected = newSelected;
+                UpdateChips();
+            }
+            return;
+        }
+
         try
         {
             _host.Children.Clear();
