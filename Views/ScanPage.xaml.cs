@@ -822,105 +822,143 @@ public partial class ScanPage : ContentPage
         double rightPadding = Math.Max(10, options.MarginRightMm * 0.7);
         A4PreviewSheet.Padding = new Thickness(leftPadding, 20, rightPadding, 20);
 
-        var lines = text
-            .Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)
-            .Select(l => l.Trim())
-            .ToList();
+        // Универсальный структурный парсер
+        var blocks = UniversalDocumentParser.Parse(text);
 
-        // Склейка разорванных строк
-        var paragraphs = NormalizeScanLinesForPreview(lines);
+        // Буфер для накопления последовательных строк шапки (адресата)
+        VerticalStackLayout? headerContainer = null;
 
-        for (int i = 0; i < paragraphs.Count; i++)
+        foreach (var block in blocks)
         {
-            var pText = paragraphs[i];
-            if (string.IsNullOrWhiteSpace(pText))
+            if (block.Type == DocumentBlockType.HeaderRight)
             {
-                A4DocumentContent.Children.Add(new BoxView { HeightRequest = 6, Color = Colors.Transparent });
+                if (headerContainer == null)
+                {
+                    headerContainer = new VerticalStackLayout
+                    {
+                        HorizontalOptions = LayoutOptions.End,
+                        Spacing = 2,
+                        Margin = new Thickness(0, 0, 0, 8),
+                        WidthRequest = 185 // половина листа для адресата
+                    };
+                    A4DocumentContent.Children.Add(headerContainer);
+                }
+
+                headerContainer.Children.Add(new Label
+                {
+                    Text = block.Text,
+                    FontFamily = options.FontFamily,
+                    FontSize = Math.Max(10.5, options.FontSizePt - 2.5),
+                    TextColor = Color.FromArgb("#0F172A"),
+                    HorizontalTextAlignment = TextAlignment.Start,
+                    LineBreakMode = LineBreakMode.WordWrap
+                });
+                continue;
+            }
+            else
+            {
+                headerContainer = null;
+            }
+
+            if (block.Type == DocumentBlockType.EmptyLine)
+            {
+                A4DocumentContent.Children.Add(new BoxView { HeightRequest = 4, Color = Colors.Transparent });
                 continue;
             }
 
-            // Заголовок документа
-            bool isHeading = (pText.Length <= 45 && pText.Equals(pText.ToUpperInvariant(), StringComparison.Ordinal) && !pText.Contains('.')) ||
-                             pText.Equals("ПРИКАЗ", StringComparison.OrdinalIgnoreCase) ||
-                             pText.Equals("АКТ", StringComparison.OrdinalIgnoreCase) ||
-                             pText.Equals("ЗАЯВЛЕНИЕ", StringComparison.OrdinalIgnoreCase) ||
-                             pText.Equals("ДОГОВОР", StringComparison.OrdinalIgnoreCase);
-
-            var label = new Label
+            if (block.Type == DocumentBlockType.Title)
             {
-                Text = pText,
+                A4DocumentContent.Children.Add(new Label
+                {
+                    Text = block.Text,
+                    FontFamily = options.FontFamily,
+                    FontSize = options.FontSizePt + 1.5,
+                    FontAttributes = FontAttributes.Bold,
+                    TextColor = Color.FromArgb("#0F172A"),
+                    HorizontalTextAlignment = TextAlignment.Center,
+                    Margin = new Thickness(0, 6, 0, 8),
+                    LineBreakMode = LineBreakMode.WordWrap
+                });
+                continue;
+            }
+
+            if (block.Type == DocumentBlockType.SignatureRow)
+            {
+                var sigGrid = new Grid
+                {
+                    ColumnDefinitions = new ColumnDefinitionCollection
+                    {
+                        new ColumnDefinition(GridLength.Star),
+                        new ColumnDefinition(new GridLength(80)),
+                        new ColumnDefinition(GridLength.Star)
+                    },
+                    Margin = new Thickness(0, 10, 0, 4)
+                };
+
+                sigGrid.Children.Add(new Label
+                {
+                    Text = block.Col1 ?? block.Text,
+                    FontFamily = options.FontFamily,
+                    FontSize = Math.Max(10.5, options.FontSizePt - 2.0),
+                    TextColor = Color.FromArgb("#0F172A"),
+                    HorizontalTextAlignment = TextAlignment.Start
+                });
+
+                sigGrid.Children.Add(new Label
+                {
+                    Text = block.Col2 ?? "__________",
+                    FontFamily = options.FontFamily,
+                    FontSize = Math.Max(10.5, options.FontSizePt - 2.0),
+                    TextColor = Color.FromArgb("#64748B"),
+                    HorizontalTextAlignment = TextAlignment.Center
+                });
+                Grid.SetColumn((BindableObject)sigGrid.Children[1], 1);
+
+                if (!string.IsNullOrEmpty(block.Col3))
+                {
+                    sigGrid.Children.Add(new Label
+                    {
+                        Text = block.Col3,
+                        FontFamily = options.FontFamily,
+                        FontSize = Math.Max(10.5, options.FontSizePt - 2.0),
+                        TextColor = Color.FromArgb("#0F172A"),
+                        HorizontalTextAlignment = TextAlignment.End
+                    });
+                    Grid.SetColumn((BindableObject)sigGrid.Children[2], 2);
+                }
+
+                A4DocumentContent.Children.Add(sigGrid);
+                continue;
+            }
+
+            // Основной абзац или список
+            var pLabel = new Label
+            {
+                Text = block.Text,
                 FontFamily = options.FontFamily,
-                FontSize = isHeading ? options.FontSizePt + 1 : options.FontSizePt - 1,
-                FontAttributes = isHeading ? FontAttributes.Bold : FontAttributes.None,
+                FontSize = options.FontSizePt - 1.0,
                 TextColor = Color.FromArgb("#0F172A"),
                 LineBreakMode = LineBreakMode.WordWrap,
                 LineHeight = Math.Max(1.0, options.LineSpacing * 0.85)
             };
 
-            if (isHeading)
+            if (block.Type == DocumentBlockType.ListItem)
             {
-                label.HorizontalTextAlignment = TextAlignment.Center;
-                label.Margin = new Thickness(0, 6, 0, 6);
+                pLabel.HorizontalTextAlignment = TextAlignment.Start;
+                pLabel.Margin = new Thickness(20, 0, 0, 3);
             }
             else
             {
-                label.HorizontalTextAlignment = options.Alignment.Equals("Left", StringComparison.OrdinalIgnoreCase)
+                pLabel.HorizontalTextAlignment = options.Alignment.Equals("Left", StringComparison.OrdinalIgnoreCase)
                     ? TextAlignment.Start
                     : TextAlignment.Justify;
 
-                // Визуальный отступ красной строки
                 double indentPixels = options.FirstLineIndentCm * 16.0;
-                label.Margin = new Thickness(indentPixels, 0, 0, 3);
+                pLabel.Margin = new Thickness(indentPixels, 0, 0, 3);
             }
 
-            A4DocumentContent.Children.Add(label);
+            A4DocumentContent.Children.Add(pLabel);
         }
-    }
-
-    private static List<string> NormalizeScanLinesForPreview(List<string> lines)
-    {
-        var result = new List<string>();
-        string current = string.Empty;
-
-        foreach (var line in lines)
-        {
-            if (string.IsNullOrWhiteSpace(line))
-            {
-                if (!string.IsNullOrEmpty(current)) { result.Add(current); current = string.Empty; }
-                result.Add(string.Empty);
-                continue;
-            }
-
-            if (line.Length <= 45 && line.Equals(line.ToUpperInvariant(), StringComparison.Ordinal) && !line.Contains('.'))
-            {
-                if (!string.IsNullOrEmpty(current)) { result.Add(current); current = string.Empty; }
-                result.Add(line);
-                continue;
-            }
-
-            if (string.IsNullOrEmpty(current))
-            {
-                current = line;
-            }
-            else
-            {
-                char last = current[^1];
-                if (last != '.' && last != ':' && last != '!' && last != '?' && last != ';')
-                {
-                    current += " " + line;
-                }
-                else
-                {
-                    result.Add(current);
-                    current = line;
-                }
-            }
-        }
-
-        if (!string.IsNullOrEmpty(current))
-            result.Add(current);
-
-        return result;
     }
 
     // ===== Сброс параметров оформления ГОСТ на значения по умолчанию =====

@@ -3,10 +3,9 @@
  * НАЗНАЧЕНИЕ: Сервис экспорта оцифрованного скана в профессиональный Word-документ (.docx)
  *             с соблюдением структуры ГОСТ и пользовательских настроек форматирования.
  * СОДЕРЖИМОЕ: GostDocxExporter
- * ЗАВИСИМОСТИ: DocumentFormat.OpenXml, GosTek.Models.GostFormattingOptions
+ * ЗАВИСИМОСТИ: DocumentFormat.OpenXml, GosTek.Models.GostFormattingOptions, UniversalDocumentParser
  * ==============================================================================
  */
-using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -17,14 +16,6 @@ namespace GosTek.Services;
 
 public static class GostDocxExporter
 {
-    private static readonly Regex SignatureKeywordRegex = new(
-        @"^(руководитель|директор|генеральный\s+директор|начальник|главный\s+бухгалтер|декан|заведующий|составил|подпись|исполнитель|секретарь|председатель)\b",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-    private static readonly Regex NumberedListRegex = new(
-        @"^(\d{1,2}[\.\)]|[a-zA-Zа-яА-Я][\.\)]|[\-–—•])\s+(.+)$",
-        RegexOptions.Compiled);
-
     /// <summary>
     /// Создает форматированный документ Word по ГОСТ на основе входного текста и настроек.
     /// </summary>
@@ -37,7 +28,7 @@ public static class GostDocxExporter
         mainPart.Document = new Document();
         var body = mainPart.Document.AppendChild(new Body());
 
-        // Конвертация полей страницы из мм в двадцатые доли пункта (dxa): 1 мм ≈ 56.7 dxa
+        // Конвертация полей страницы из мм в dxa: 1 мм ≈ 56.7 dxa
         var sectionProps = new SectionProperties();
         var pageMargin = new PageMargin
         {
@@ -51,158 +42,86 @@ public static class GostDocxExporter
         sectionProps.AppendChild(pageMargin);
         body.AppendChild(sectionProps);
 
-        // Разбивка на строки и нормализация абзацев
-        var lines = (text ?? string.Empty)
-            .Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)
-            .Select(l => l.Trim())
-            .ToList();
+        // Универсальный структурный парсер документа (Зоны 1-4)
+        var blocks = UniversalDocumentParser.Parse(text ?? string.Empty);
 
-        // Сборка разорванных строк скана в логические абзацы
-        var normalizedParagraphs = NormalizeScanParagraphs(lines);
-
-        bool isFirstHeaderBlock = true;
-
-        for (int i = 0; i < normalizedParagraphs.Count; i++)
+        foreach (var block in blocks)
         {
-            var pText = normalizedParagraphs[i];
-
-            if (string.IsNullOrWhiteSpace(pText))
+            switch (block.Type)
             {
-                // Пустая строка
-                AddParagraph(body, string.Empty, options, JustificationValues.Left, isFirstLineIndent: false);
-                continue;
-            }
+                case DocumentBlockType.HeaderRight:
+                    // Шапка документа: правая половина страницы (отступ слева 8.5 см = 4820 dxa)
+                    // Внутри выравнивание по левому краю по ГОСТ
+                    AddHeaderRightParagraph(body, block.Text, options);
+                    break;
 
-            // 1. Проверка на шапку документа (адресат вверху страницы)
-            if (isFirstHeaderBlock && i < 4 && IsHeaderBlock(pText))
-            {
-                AddParagraph(body, pText, options, JustificationValues.Right, isFirstLineIndent: false);
-                continue;
-            }
-            else
-            {
-                isFirstHeaderBlock = false;
-            }
+                case DocumentBlockType.Title:
+                    // Заголовок (Заявление, Приказ...): по центру, жирный, без красной строки
+                    AddParagraph(body, block.Text, options, JustificationValues.Center, isBold: true, isFirstLineIndent: false);
+                    break;
 
-            // 2. Проверка на заголовок документа (ПРИКАЗ, АКТ, ДОГОВОР, ЗАЯВЛЕНИЕ...)
-            if (options.AutoDetectTitle && IsDocumentHeading(pText))
-            {
-                AddParagraph(body, pText, options, JustificationValues.Center, isBold: true, isFirstLineIndent: false);
-                continue;
+                case DocumentBlockType.ListItem:
+                    // Элемент списка: отступ 1.25 см + висячая строка
+                    AddListParagraph(body, block.Text, options);
+                    break;
+
+                case DocumentBlockType.SignatureRow:
+                    // Подвал с подписями: невидимая таблица на 2-3 колонки
+                    AddSignatureTable(body, block, options);
+                    break;
+
+                case DocumentBlockType.EmptyLine:
+                    AddParagraph(body, string.Empty, options, JustificationValues.Left, isFirstLineIndent: false);
+                    break;
+
+                case DocumentBlockType.Paragraph:
+                default:
+                    // Основной текст: выравнивание по ширине, красная строка 1.25 см
+                    var alignVal = options.Alignment.Equals("Left", StringComparison.OrdinalIgnoreCase)
+                        ? JustificationValues.Left
+                        : JustificationValues.Both;
+                    AddParagraph(body, block.Text, options, alignVal, isFirstLineIndent: true);
+                    break;
             }
-
-            // 3. Проверка на блок подписи внизу
-            if (options.AutoDetectSignatures && i >= normalizedParagraphs.Count - 5 && IsSignatureBlock(pText))
-            {
-                AddSignatureBlock(body, pText, options);
-                continue;
-            }
-
-            // 4. Проверка на элемент списка
-            if (options.AutoFormatLists && NumberedListRegex.IsMatch(pText))
-            {
-                AddListParagraph(body, pText, options);
-                continue;
-            }
-
-            // 5. Стандартный абзац ГОСТ
-            var alignVal = options.Alignment.Equals("Left", StringComparison.OrdinalIgnoreCase)
-                ? JustificationValues.Left
-                : JustificationValues.Both;
-
-            AddParagraph(body, pText, options, alignVal, isFirstLineIndent: true);
         }
 
         mainPart.Document.Save();
     }
 
-    private static List<string> NormalizeScanParagraphs(List<string> lines)
+    private static void AddHeaderRightParagraph(Body body, string text, GostFormattingOptions options)
     {
-        var result = new List<string>();
-        string currentParagraph = string.Empty;
+        var p = body.AppendChild(new Paragraph());
+        var pPr = p.AppendChild(new ParagraphProperties());
+        
+        // Выравнивание по левому краю внутри правой половины листа
+        pPr.AppendChild(new Justification { Val = JustificationValues.Left });
 
-        foreach (var line in lines)
+        // Отступ слева от середины листа (8.5 см = 4820 dxa по ГОСТ)
+        pPr.AppendChild(new Indentation { Left = "4820" });
+
+        // Одинарный или компактный интервал для шапки
+        int lineDxa = (int)Math.Round(240 * Math.Min(options.LineSpacing, 1.15));
+        pPr.AppendChild(new SpacingBetweenLines
         {
-            if (string.IsNullOrWhiteSpace(line))
-            {
-                if (!string.IsNullOrEmpty(currentParagraph))
-                {
-                    result.Add(currentParagraph);
-                    currentParagraph = string.Empty;
-                }
-                result.Add(string.Empty);
-                continue;
-            }
+            Line = lineDxa.ToString(),
+            LineRule = LineSpacingRuleValues.Auto,
+            After = "40" // небольшой отступ между строками адресата
+        });
 
-            // Если строка выглядит как явный новый заголовок, пункт списка или подпись
-            if (IsDocumentHeading(line) || NumberedListRegex.IsMatch(line) || IsSignatureBlock(line))
-            {
-                if (!string.IsNullOrEmpty(currentParagraph))
-                {
-                    result.Add(currentParagraph);
-                    currentParagraph = string.Empty;
-                }
-                result.Add(line);
-                continue;
-            }
-
-            if (string.IsNullOrEmpty(currentParagraph))
-            {
-                currentParagraph = line;
-            }
-            else
-            {
-                // Если предыдущая строка не заканчивается точкой, двоеточием, восклицательным или вопросительным знаком,
-                // скорее всего это разорванная строка одного абзаца
-                char lastChar = currentParagraph[^1];
-                if (lastChar != '.' && lastChar != ':' && lastChar != '!' && lastChar != '?' && lastChar != ';')
-                {
-                    currentParagraph += " " + line;
-                }
-                else
-                {
-                    result.Add(currentParagraph);
-                    currentParagraph = line;
-                }
-            }
-        }
-
-        if (!string.IsNullOrEmpty(currentParagraph))
+        var run = p.AppendChild(new Run());
+        var rPr = run.AppendChild(new RunProperties());
+        rPr.AppendChild(new RunFonts
         {
-            result.Add(currentParagraph);
-        }
+            Ascii = options.FontFamily,
+            HighAnsi = options.FontFamily,
+            ComplexScript = options.FontFamily
+        });
 
-        return result;
-    }
+        // Размер шрифта: можно на 1 пт меньше основного по ГОСТ (например 12-13 пт)
+        int fontSizeHalfPts = (int)Math.Round((options.FontSizePt - 1.0) * 2.0);
+        rPr.AppendChild(new FontSize { Val = fontSizeHalfPts.ToString() });
 
-    private static bool IsHeaderBlock(string text)
-    {
-        return text.StartsWith("Кому:", StringComparison.OrdinalIgnoreCase) ||
-               text.StartsWith("В ", StringComparison.OrdinalIgnoreCase) ||
-               text.StartsWith("Утверждаю", StringComparison.OrdinalIgnoreCase) ||
-               text.Contains("генеральному", StringComparison.OrdinalIgnoreCase) ||
-               text.Contains("директору", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static bool IsDocumentHeading(string text)
-    {
-        if (text.Length > 80)
-            return false;
-
-        string upper = text.ToUpperInvariant();
-        if (upper == "ПРИКАЗ" || upper == "АКТ" || upper == "ЗАЯВЛЕНИЕ" || upper == "ДОГОВОР" ||
-            upper == "СЛУЖЕБНАЯ ЗАПИСКА" || upper == "ПРОТОКОЛ" || upper == "ПОСТАНОВЛЕНИЕ" ||
-            upper == "РАСПОРЯЖЕНИЕ" || upper == "СОГЛАШЕНИЕ" || upper == "СПРАВКА")
-        {
-            return true;
-        }
-
-        return text.Length <= 45 && text.Equals(upper, StringComparison.Ordinal) && !text.Contains('.');
-    }
-
-    private static bool IsSignatureBlock(string text)
-    {
-        return SignatureKeywordRegex.IsMatch(text);
+        run.AppendChild(new Text(text) { Space = SpaceProcessingModeValues.Preserve });
     }
 
     private static void AddParagraph(
@@ -226,7 +145,7 @@ public static class GostDocxExporter
             After = "0"
         });
 
-        // Абзацный отступ (красная строка): 1 см = 567 dxa (1.25 см = 709 dxa)
+        // Абзацный отступ (красная строка): 1.25 см = 709 dxa
         if (isFirstLineIndent && options.FirstLineIndentCm > 0 && !string.IsNullOrWhiteSpace(text))
         {
             int indentDxa = (int)Math.Round(options.FirstLineIndentCm * 567.0);
@@ -242,7 +161,6 @@ public static class GostDocxExporter
             ComplexScript = options.FontFamily
         });
 
-        // Размер шрифта: в полупунктах (pt * 2)
         int fontSizeHalfPts = (int)Math.Round(options.FontSizePt * 2.0);
         rPr.AppendChild(new FontSize { Val = fontSizeHalfPts.ToString() });
 
@@ -288,9 +206,12 @@ public static class GostDocxExporter
         run.AppendChild(new Text(text) { Space = SpaceProcessingModeValues.Preserve });
     }
 
-    private static void AddSignatureBlock(Body body, string text, GostFormattingOptions options)
+    private static void AddSignatureTable(Body body, AnalyzedBlock block, GostFormattingOptions options)
     {
-        // Для подписи создаем невидимую таблицу на 2 ячейки: слева должность, справа подпись и расшифровка
+        // Невидимая таблица подписей (без рамок) на 3 колонки:
+        // Колонка 1: Дата / Должность (выравнивание влево)
+        // Колонка 2: Место подписи (по центру)
+        // Колонка 3: Расшифровка (вправо)
         var table = body.AppendChild(new Table());
         var tblPr = table.AppendChild(new TableProperties());
         tblPr.AppendChild(new TableBorders(
@@ -302,30 +223,39 @@ public static class GostDocxExporter
             new InsideVerticalBorder { Val = BorderValues.None }
         ));
 
+        // Растягивание таблицы на 100% ширины
+        tblPr.AppendChild(new TableWidth { Type = TableWidthUnitValues.Pct, Width = "5000" });
+
         var row = table.AppendChild(new TableRow());
 
-        // Левая ячейка: должность
-        var cellLeft = row.AppendChild(new TableCell());
-        var pLeft = cellLeft.AppendChild(new Paragraph());
-        var pPrLeft = pLeft.AppendChild(new ParagraphProperties());
-        pPrLeft.AppendChild(new Justification { Val = JustificationValues.Left });
+        string col1 = block.Col1 ?? block.Text;
+        string col2 = block.Col2 ?? "__________";
+        string col3 = block.Col3 ?? string.Empty;
 
-        var runLeft = pLeft.AppendChild(new Run());
-        var rPrLeft = runLeft.AppendChild(new RunProperties());
-        rPrLeft.AppendChild(new RunFonts { Ascii = options.FontFamily, HighAnsi = options.FontFamily });
-        rPrLeft.AppendChild(new FontSize { Val = ((int)Math.Round(options.FontSizePt * 2.0)).ToString() });
-        runLeft.AppendChild(new Text(text) { Space = SpaceProcessingModeValues.Preserve });
+        // Ячейка 1: Левая
+        AddTableCell(row, col1, JustificationValues.Left, options);
 
-        // Правая ячейка: инициалы/подпись
-        var cellRight = row.AppendChild(new TableCell());
-        var pRight = cellRight.AppendChild(new Paragraph());
-        var pPrRight = pRight.AppendChild(new ParagraphProperties());
-        pPrRight.AppendChild(new Justification { Val = JustificationValues.Right });
+        // Ячейка 2: Центр (Подпись)
+        AddTableCell(row, col2, JustificationValues.Center, options);
 
-        var runRight = pRight.AppendChild(new Run());
-        var rPrRight = runRight.AppendChild(new RunProperties());
-        rPrRight.AppendChild(new RunFonts { Ascii = options.FontFamily, HighAnsi = options.FontFamily });
-        rPrRight.AppendChild(new FontSize { Val = ((int)Math.Round(options.FontSizePt * 2.0)).ToString() });
-        runRight.AppendChild(new Text("___________ / ___________") { Space = SpaceProcessingModeValues.Preserve });
+        // Ячейка 3: Правая (Расшифровка)
+        if (!string.IsNullOrEmpty(col3))
+        {
+            AddTableCell(row, col3, JustificationValues.Right, options);
+        }
+    }
+
+    private static void AddTableCell(TableRow row, string text, JustificationValues align, GostFormattingOptions options)
+    {
+        var cell = row.AppendChild(new TableCell());
+        var p = cell.AppendChild(new Paragraph());
+        var pPr = p.AppendChild(new ParagraphProperties());
+        pPr.AppendChild(new Justification { Val = align });
+
+        var run = p.AppendChild(new Run());
+        var rPr = run.AppendChild(new RunProperties());
+        rPr.AppendChild(new RunFonts { Ascii = options.FontFamily, HighAnsi = options.FontFamily });
+        rPr.AppendChild(new FontSize { Val = ((int)Math.Round(options.FontSizePt * 2.0)).ToString() });
+        run.AppendChild(new Text(text) { Space = SpaceProcessingModeValues.Preserve });
     }
 }
