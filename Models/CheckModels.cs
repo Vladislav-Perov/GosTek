@@ -8,7 +8,7 @@
 namespace GosTek.Models;
 
 /// <summary>Насколько замечание важное: красная точка («Важное») или жёлтая («Желательно»).</summary>
-public enum IssueSeverity { Important, Warning }
+public enum IssueSeverity { Important, Warning, Moderate = Warning }
 
 /// <summary>
 /// Что именно проверено. По типу замечания экран «Проверка» понимает, что исправилось,
@@ -16,15 +16,11 @@ public enum IssueSeverity { Important, Warning }
 /// </summary>
 public enum IssueKind
 {
-    MarginLeft,
-    MarginRight,
-    MarginTop,
-    MarginBottom,
-    FontName,
-    FontSize,
-    LineSpacing,
-    PageNumbers,
-    MissingSection,
+    MarginLeft, MarginRight, MarginTop, MarginBottom,
+    FontName, FontSize, LineSpacing, PageNumbers, MissingSection,
+    Alignment, FirstLineIndent,
+    SpacingBeforeAfter, WidowControl, TableFormatting, FigureFormatting,
+    CodeSnippetFormatting, HeadingFormatting
 }
 
 /// <summary>
@@ -71,6 +67,30 @@ public sealed record RuleSet(
 
     /// <summary>Допуск при сравнении межстрочного интервала (в «строках»).</summary>
     public double SpacingTolerance { get; init; } = 0.05;
+
+    // --- Настройки рисунков (Figures) ---
+    public string FigureAlignment { get; set; } = "Center";
+    public double FigureSpacingBeforePt { get; set; } = 12.0;
+    public double FigureSpacingAfterPt { get; set; } = 12.0;
+    public bool FigureRequireNoIndent { get; set; } = true;
+
+    // --- Настройки подписей к рисункам (Captions) ---
+    public string CaptionAlignment { get; set; } = "Center";
+    public double CaptionSpacingBeforePt { get; set; } = 0.0;
+    public double CaptionSpacingAfterPt { get; set; } = 0.0;
+    public double CaptionLineSpacing { get; set; } = 1.0;
+    public bool CaptionRequireNoIndent { get; set; } = true;
+
+    // --- Настройки листингов кода (Code Snippets) ---
+    public string CodeFontFamily { get; set; } = "Consolas";
+    public double CodeFontSizePt { get; set; } = 12.0;
+    public double CodeLineSpacing { get; set; } = 1.0;
+    public bool CodeRequireNoIndent { get; set; } = true;
+
+    // --- Настройки заголовков (Headings) ---
+    public bool HeadingRequireBold { get; set; } = true;
+    public bool HeadingRequireNoIndent { get; set; } = true;
+    public bool HeadingRemoveTrailingDot { get; set; } = true;
 
     /// <summary>Преобразование модели в сериализуемый DTO для локального хранения.</summary>
     public CustomRuleDto ToDto() => new()

@@ -61,6 +61,14 @@ public static class DocumentChecker
         CheckFontName(ctx, rules, issues);
         CheckFontSize(ctx, rules, issues);
         CheckSpacing(ctx, rules, issues);
+        CheckAlignment(ctx, rules, issues);
+        CheckIndent(ctx, rules, issues);
+        CheckSpacingBeforeAfter(ctx, rules, issues);
+        CheckWidowControl(ctx, rules, issues);
+        CheckTableFormatting(ctx, rules, issues);
+        CheckFigureFormatting(ctx, rules, issues);
+        CheckCodeSnippets(ctx, rules, issues);
+        CheckHeadings(ctx, rules, issues);
         CheckPageNumbers(ctx, rules, issues);
         CheckSections(ctx, rules, issues);
         return issues;
@@ -263,6 +271,245 @@ public static class DocumentChecker
     private static string NormalizeTitle(string text)
         => Regex.Replace(text.Replace('ё', 'е').Replace('Ё', 'Е'), @"\s+", " ").Trim();
 
+    // ----- Выравнивание -----
+    private static void CheckAlignment(Context ctx, RuleSet rules, List<CheckIssue> issues)
+    {
+        // Если в правилах указано выравнивание по ширине (Justify)
+        if (string.IsNullOrWhiteSpace(rules.Alignment) || !rules.Alignment.Contains("Justify", StringComparison.OrdinalIgnoreCase)) 
+            return;
+
+        var badParagraphs = new HashSet<Paragraph>();
+        int total = 0;
+
+        foreach (var p in ctx.BodyParagraphs()) {
+            if (!ctx.HasText(p)) continue;
+            total++;
+            var jc = p.ParagraphProperties?.Justification?.Val?.Value;
+            if (jc != JustificationValues.Both) {
+                badParagraphs.Add(p);
+            }
+        }
+
+        if (badParagraphs.Count == 0) return;
+        issues.Add(new CheckIssue(IssueKind.Alignment, IssueSeverity.Important,
+            "Текст не выровнен по ширине",
+            $"Основной текст: {badParagraphs.Count} из {total} {RuFormat.Plural(total, "абзаца", "абзацев", "абзацев")}",
+            CanFix: true));
+    }
+
+    // ----- Абзацный отступ (Красная строка) -----
+    private static void CheckIndent(Context ctx, RuleSet rules, List<CheckIssue> issues)
+    {
+        var badParagraphs = new HashSet<Paragraph>();
+        double targetTwips = rules.FirstLineIndentCm * TwipsPerCm;
+        double toleranceTwips = 0.1 * TwipsPerCm; // Допуск 1 мм
+        int total = 0;
+
+        foreach (var p in ctx.BodyParagraphs()) {
+            if (!ctx.HasText(p)) continue;
+            total++;
+            double actualTwips = 0;
+            var ind = p.ParagraphProperties?.Indentation;
+            if (ind?.FirstLine?.Value != null && double.TryParse(ind.FirstLine.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var fl)) {
+                actualTwips = fl;
+            }
+
+            if (Math.Abs(actualTwips - targetTwips) > toleranceTwips) {
+                badParagraphs.Add(p);
+            }
+        }
+
+        if (badParagraphs.Count == 0) return;
+        issues.Add(new CheckIssue(IssueKind.FirstLineIndent, IssueSeverity.Important,
+            $"Абзацный отступ не {RuFormat.Number(rules.FirstLineIndentCm)} см",
+            $"Основной текст: {badParagraphs.Count} из {total} {RuFormat.Plural(total, "абзаца", "абзацев", "абзацев")}",
+            CanFix: true));
+    }
+
+    // ----- Интервалы До и После абзаца -----
+    private static void CheckSpacingBeforeAfter(Context ctx, RuleSet rules, List<CheckIssue> issues)
+    {
+        var bad = new HashSet<Paragraph>();
+        int total = 0;
+        foreach(var p in ctx.BodyParagraphs()) {
+            if (!ctx.HasText(p)) continue;
+            total++;
+            var spacing = p.ParagraphProperties?.SpacingBetweenLines;
+            if (spacing != null && ((spacing.Before != null && spacing.Before.Value != "0") || (spacing.After != null && spacing.After.Value != "0"))) {
+                bad.Add(p);
+            }
+        }
+        if (bad.Count > 0) issues.Add(new CheckIssue(IssueKind.SpacingBeforeAfter, IssueSeverity.Warning, 
+            "Лишние отступы до/после абзаца", $"Основной текст: {bad.Count} из {total} {RuFormat.Plural(total, "абзаца", "абзацев", "абзацев")}", true));
+    }
+
+    // ----- Запрет висячих строк -----
+    private static void CheckWidowControl(Context ctx, RuleSet rules, List<CheckIssue> issues)
+    {
+        var bad = new HashSet<Paragraph>();
+        int total = 0;
+        foreach(var p in ctx.BodyParagraphs()) {
+            if (!ctx.HasText(p)) continue;
+            total++;
+            // В Word по умолчанию включено. Ошибка только если явно отключено (Val == false)
+            if (p.ParagraphProperties?.WidowControl?.Val?.Value == false) {
+                bad.Add(p);
+            }
+        }
+        if (bad.Count > 0) issues.Add(new CheckIssue(IssueKind.WidowControl, IssueSeverity.Warning, 
+            "Отключен запрет висячих строк", $"Основной текст: {bad.Count} из {total} {RuFormat.Plural(total, "абзаца", "абзацев", "абзацев")}", true));
+    }
+
+    // ----- Форматирование таблиц -----
+    private static void CheckTableFormatting(Context ctx, RuleSet rules, List<CheckIssue> issues)
+    {
+        var tables = ctx.Body.Descendants<Table>().ToList();
+        if (tables.Count == 0) return;
+        
+        int badCells = 0;
+        foreach(var table in tables) {
+            foreach(var p in table.Descendants<Paragraph>()) {
+                if (!p.Ancestors<TableCell>().Any() || !ctx.HasText(p)) continue;
+                
+                bool needsFix = false;
+                // Проверка шрифта (12pt = 24 в полупунктах)
+                var run = p.Descendants<Run>().FirstOrDefault();
+                if (run != null && ctx.SizeOf(run, ctx.ParagraphStyleId(p)) != 12.0) needsFix = true;
+                
+                // Проверка одинарного интервала (240 dxa)
+                var spacing = p.ParagraphProperties?.SpacingBetweenLines;
+                if (spacing == null || spacing.Line?.Value != "240") needsFix = true;
+                
+                // Проверка красной строки (не должно быть)
+                var indent = p.ParagraphProperties?.Indentation?.FirstLine?.Value;
+                if (indent != null && indent != "0") needsFix = true;
+                
+                if (needsFix) badCells++;
+            }
+        }
+        if (badCells > 0) issues.Add(new CheckIssue(IssueKind.TableFormatting, IssueSeverity.Important, 
+            "Форматирование таблиц не по ГОСТ", "Нужен кегль 12pt, интервал 1.0 и без красной строки", true));
+    }
+
+    // ----- Форматирование рисунков и подписей (Динамическое) -----
+    private static void CheckFigureFormatting(Context ctx, RuleSet rules, List<CheckIssue> issues)
+    {
+        var bad = new HashSet<Paragraph>();
+        int total = 0;
+        
+        string figSpacingBeforeStr = Math.Round(rules.FigureSpacingBeforePt * 20).ToString(CultureInfo.InvariantCulture);
+        string figSpacingAfterStr = Math.Round(rules.FigureSpacingAfterPt * 20).ToString(CultureInfo.InvariantCulture);
+        string capSpacingBeforeStr = Math.Round(rules.CaptionSpacingBeforePt * 20).ToString(CultureInfo.InvariantCulture);
+        string capSpacingAfterStr = Math.Round(rules.CaptionSpacingAfterPt * 20).ToString(CultureInfo.InvariantCulture);
+        string capLineSpacingStr = Math.Round(rules.CaptionLineSpacing * 240).ToString(CultureInfo.InvariantCulture);
+
+        foreach (var p in ctx.AllParagraphs()) {
+            bool isFigure = p.Descendants<Drawing>().Any();
+            string text = p.InnerText.Trim();
+            bool isCaption = text.StartsWith("Рисунок", StringComparison.OrdinalIgnoreCase) || text.StartsWith("Рис.", StringComparison.OrdinalIgnoreCase);
+
+            if (!isFigure && !isCaption) continue;
+            total++;
+            bool needsFix = false;
+
+            var jc = p.ParagraphProperties?.Justification?.Val?.Value;
+            var indent = p.ParagraphProperties?.Indentation?.FirstLine?.Value;
+            var spacing = p.ParagraphProperties?.SpacingBetweenLines;
+
+            if (isFigure) {
+                if (rules.FigureAlignment == "Center" && jc != JustificationValues.Center) needsFix = true;
+                if (rules.FigureRequireNoIndent && indent != null && indent != "0") needsFix = true;
+                if (spacing?.Before?.Value != figSpacingBeforeStr || spacing?.After?.Value != figSpacingAfterStr) needsFix = true;
+            } 
+            else if (isCaption) {
+                if (rules.CaptionAlignment == "Center" && jc != JustificationValues.Center) needsFix = true;
+                if (rules.CaptionRequireNoIndent && indent != null && indent != "0") needsFix = true;
+                if (spacing?.Line?.Value != capLineSpacingStr) needsFix = true;
+                if (rules.CaptionSpacingBeforePt > 0 && spacing?.Before?.Value != capSpacingBeforeStr) needsFix = true;
+                if (rules.CaptionSpacingAfterPt > 0 && spacing?.After?.Value != capSpacingAfterStr) needsFix = true;
+            }
+
+            if (needsFix) bad.Add(p);
+        }
+
+        if (bad.Count > 0) issues.Add(new CheckIssue(IssueKind.FigureFormatting, IssueSeverity.Important,
+            "Нарушено форматирование рисунков или подписей", "Не соответствуют заданным отступам, выравниванию или красной строке", true));
+    }
+
+    // ----- Листинги кода (Динамическое) -----
+    private static void CheckCodeSnippets(Context ctx, RuleSet rules, List<CheckIssue> issues)
+    {
+        var bad = new HashSet<Paragraph>();
+        int total = 0;
+        string codeLineSpacingStr = Math.Round(rules.CodeLineSpacing * 240).ToString(CultureInfo.InvariantCulture);
+
+        foreach (var p in ctx.AllParagraphs()) {
+            if (!ctx.HasText(p)) continue;
+            
+            string? styleId = ctx.ParagraphStyleId(p);
+            bool isCodeStyle = styleId != null && (styleId.Contains("Code", StringComparison.OrdinalIgnoreCase) || styleId.Contains("Листинг", StringComparison.OrdinalIgnoreCase));
+            
+            var run = p.Descendants<Run>().FirstOrDefault(r => r.Elements<Text>().Any(t => !string.IsNullOrWhiteSpace(t.Text)));
+            bool isMonospace = run != null && (ctx.FontOf(run, styleId).Contains("Consolas") || ctx.FontOf(run, styleId).Contains("Courier"));
+            
+            if (!isCodeStyle && !isMonospace) continue;
+            
+            total++;
+            bool needsFix = false;
+
+            if (run != null && Math.Abs(ctx.SizeOf(run, styleId) - rules.CodeFontSizePt) > 0.01) needsFix = true;
+            if (run != null && ctx.FontOf(run, styleId) != rules.CodeFontFamily && !ctx.FontOf(run, styleId).Contains(rules.CodeFontFamily)) needsFix = true;
+            
+            var indent = p.ParagraphProperties?.Indentation?.FirstLine?.Value;
+            if (rules.CodeRequireNoIndent && indent != null && indent != "0") needsFix = true;
+            
+            var spacing = p.ParagraphProperties?.SpacingBetweenLines;
+            if (spacing?.Line?.Value != codeLineSpacingStr) needsFix = true;
+
+            if (needsFix) bad.Add(p);
+        }
+
+        if (bad.Count > 0) issues.Add(new CheckIssue(IssueKind.CodeSnippetFormatting, IssueSeverity.Important,
+            "Неверное оформление листинга кода", $"Нужен шрифт {rules.CodeFontFamily} {rules.CodeFontSizePt}pt, интервал {rules.CodeLineSpacing} и правильные отступы", true));
+    }
+
+    // ----- Заголовки (Динамическое) -----
+    private static void CheckHeadings(Context ctx, RuleSet rules, List<CheckIssue> issues)
+    {
+        var bad = new HashSet<Paragraph>();
+        int total = 0;
+        
+        foreach (var p in ctx.AllParagraphs()) {
+            if (!ctx.HasText(p)) continue;
+            
+            int? outlineLvl = p.ParagraphProperties?.OutlineLevel?.Val?.Value;
+            string? styleId = ctx.ParagraphStyleId(p);
+            bool isHeading = (outlineLvl != null && outlineLvl < 9) || 
+                             (styleId != null && (styleId.Contains("Heading", StringComparison.OrdinalIgnoreCase) || styleId.Contains("Заголовок", StringComparison.OrdinalIgnoreCase)));
+            
+            if (!isHeading) continue;
+            total++;
+            bool needsFix = false;
+
+            var indent = p.ParagraphProperties?.Indentation?.FirstLine?.Value;
+            if (rules.HeadingRequireNoIndent && indent != null && indent != "0") needsFix = true;
+            
+            if (rules.HeadingRequireBold) {
+                var run = p.Descendants<Run>().FirstOrDefault(r => r.Elements<Text>().Any(t => !string.IsNullOrWhiteSpace(t.Text)));
+                bool isBold = run?.RunProperties?.Bold != null && (run.RunProperties.Bold.Val == null || run.RunProperties.Bold.Val.Value);
+                if (run != null && !isBold) needsFix = true;
+            }
+
+            string text = p.InnerText.TrimEnd();
+            if (rules.HeadingRemoveTrailingDot && text.EndsWith(".")) needsFix = true;
+
+            if (needsFix) bad.Add(p);
+        }
+
+        if (bad.Count > 0) issues.Add(new CheckIssue(IssueKind.HeadingFormatting, IssueSeverity.Important,
+            "Ошибка в оформлении заголовка", "Не соответствуют заданным правилам (шрифт, отступы или точка в конце)", true));
+    }
+
     // =====================================================================
     //  ИСПРАВЛЕНИЕ
     // =====================================================================
@@ -293,6 +540,14 @@ public static class DocumentChecker
             if (Want(IssueKind.FontName))     changes += FixFontName(ctx, rules);
             if (Want(IssueKind.FontSize))     changes += FixFontSize(ctx, rules);
             if (Want(IssueKind.LineSpacing))  changes += FixSpacing(ctx, rules);
+            if (Want(IssueKind.Alignment))    changes += FixAlignment(ctx, rules);
+            if (Want(IssueKind.FirstLineIndent)) changes += FixIndent(ctx, rules);
+            if (Want(IssueKind.SpacingBeforeAfter)) changes += FixSpacingBeforeAfter(ctx, rules);
+            if (Want(IssueKind.WidowControl)) changes += FixWidowControl(ctx, rules);
+            if (Want(IssueKind.TableFormatting)) changes += FixTableFormatting(ctx, rules);
+            if (Want(IssueKind.FigureFormatting)) changes += FixFigureFormatting(ctx, rules);
+            if (Want(IssueKind.CodeSnippetFormatting)) changes += FixCodeSnippets(ctx, rules);
+            if (Want(IssueKind.HeadingFormatting)) changes += FixHeadings(ctx, rules);
             if (Want(IssueKind.PageNumbers))  changes += FixPageNumbers(ctx, rules);
 
             if (changes > 0) {
@@ -389,6 +644,229 @@ public static class DocumentChecker
             count++;
         }
 
+        return count;
+    }
+
+    // ----- Исправление: Выравнивание -----
+    private static int FixAlignment(Context ctx, RuleSet rules)
+    {
+        if (string.IsNullOrWhiteSpace(rules.Alignment) || !rules.Alignment.Contains("Justify", StringComparison.OrdinalIgnoreCase)) 
+            return 0;
+
+        int count = 0;
+        foreach (var p in ctx.BodyParagraphs().ToList()) {
+            if (!ctx.HasText(p)) continue;
+            var props = p.ParagraphProperties ??= new ParagraphProperties();
+            if (props.Justification?.Val?.Value != JustificationValues.Both) {
+                props.Justification = new Justification { Val = JustificationValues.Both };
+                count++;
+            }
+        }
+        return count;
+    }
+
+    // ----- Исправление: Абзацный отступ -----
+    private static int FixIndent(Context ctx, RuleSet rules)
+    {
+        int count = 0;
+        double targetTwips = rules.FirstLineIndentCm * TwipsPerCm;
+        string targetStr = Math.Round(targetTwips).ToString(CultureInfo.InvariantCulture);
+
+        foreach (var p in ctx.BodyParagraphs().ToList()) {
+            if (!ctx.HasText(p)) continue;
+            var props = p.ParagraphProperties ??= new ParagraphProperties();
+            var ind = props.Indentation ??= new Indentation();
+
+            double actualTwips = 0;
+            if (ind.FirstLine?.Value != null && double.TryParse(ind.FirstLine.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var fl)) {
+                actualTwips = fl;
+            }
+
+            if (Math.Abs(actualTwips - targetTwips) > (0.1 * TwipsPerCm)) {
+                ind.FirstLine = targetStr;
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private static int FixSpacingBeforeAfter(Context ctx, RuleSet rules)
+    {
+        int c = 0;
+        foreach(var p in ctx.BodyParagraphs().ToList()) {
+            var spacing = p.ParagraphProperties?.SpacingBetweenLines;
+            if (spacing != null && ((spacing.Before != null && spacing.Before.Value != "0") || (spacing.After != null && spacing.After.Value != "0"))) {
+                spacing.Before = "0";
+                spacing.After = "0";
+                c++;
+            }
+        }
+        return c;
+    }
+
+    private static int FixWidowControl(Context ctx, RuleSet rules)
+    {
+        int c = 0;
+        foreach(var p in ctx.BodyParagraphs().ToList()) {
+            var props = p.ParagraphProperties ??= new ParagraphProperties();
+            var wc = props.WidowControl;
+            if (wc != null && wc.Val?.Value == false) {
+                wc.Val = true;
+                c++;
+            }
+        }
+        return c;
+    }
+
+    private static int FixTableFormatting(Context ctx, RuleSet rules)
+    {
+        var tables = ctx.Body.Descendants<Table>().ToList();
+        if (tables.Count == 0) return 0;
+        int c = 0;
+        
+        foreach(var table in tables) {
+            foreach(var p in table.Descendants<Paragraph>().ToList()) {
+                if (!p.Ancestors<TableCell>().Any() || !ctx.HasText(p)) continue;
+                
+                var props = p.ParagraphProperties ??= new ParagraphProperties();
+                
+                var spacing = props.SpacingBetweenLines ??= new SpacingBetweenLines();
+                spacing.Line = "240";
+                spacing.LineRule = LineSpacingRuleValues.Auto;
+                spacing.Before = "0";
+                spacing.After = "0";
+                
+                var ind = props.Indentation ??= new Indentation();
+                ind.FirstLine = "0";
+                
+                foreach(var run in p.Descendants<Run>()) {
+                    var rPr = run.RunProperties ??= new RunProperties();
+                    rPr.FontSize = new FontSize { Val = "24" };
+                    rPr.FontSizeComplexScript = new FontSizeComplexScript { Val = "24" };
+                }
+                c++;
+            }
+        }
+        return c;
+    }
+
+    private static int FixFigureFormatting(Context ctx, RuleSet rules)
+    {
+        int count = 0;
+        
+        string figSpacingBeforeStr = Math.Round(rules.FigureSpacingBeforePt * 20).ToString(CultureInfo.InvariantCulture);
+        string figSpacingAfterStr = Math.Round(rules.FigureSpacingAfterPt * 20).ToString(CultureInfo.InvariantCulture);
+        string capSpacingBeforeStr = Math.Round(rules.CaptionSpacingBeforePt * 20).ToString(CultureInfo.InvariantCulture);
+        string capSpacingAfterStr = Math.Round(rules.CaptionSpacingAfterPt * 20).ToString(CultureInfo.InvariantCulture);
+        string capLineSpacingStr = Math.Round(rules.CaptionLineSpacing * 240).ToString(CultureInfo.InvariantCulture);
+
+        foreach (var p in ctx.AllParagraphs().ToList()) {
+            bool isFigure = p.Descendants<Drawing>().Any();
+            string text = p.InnerText.Trim();
+            bool isCaption = text.StartsWith("Рисунок", StringComparison.OrdinalIgnoreCase) || text.StartsWith("Рис.", StringComparison.OrdinalIgnoreCase);
+
+            if (!isFigure && !isCaption) continue;
+
+            var props = p.ParagraphProperties ??= new ParagraphProperties();
+            var ind = props.Indentation ??= new Indentation();
+            var spacing = props.SpacingBetweenLines ??= new SpacingBetweenLines();
+
+            if (isFigure) {
+                if (rules.FigureAlignment == "Center") props.Justification = new Justification { Val = JustificationValues.Center };
+                if (rules.FigureRequireNoIndent) ind.FirstLine = "0";
+                spacing.Before = figSpacingBeforeStr;
+                spacing.After = figSpacingAfterStr;
+            } 
+            else if (isCaption) {
+                if (rules.CaptionAlignment == "Center") props.Justification = new Justification { Val = JustificationValues.Center };
+                if (rules.CaptionRequireNoIndent) ind.FirstLine = "0";
+                spacing.Line = capLineSpacingStr;
+                spacing.LineRule = LineSpacingRuleValues.Auto;
+                spacing.Before = capSpacingBeforeStr;
+                spacing.After = capSpacingAfterStr;
+            }
+            count++;
+        }
+        return count;
+    }
+
+    // ----- Исправление: Листинги кода -----
+    private static int FixCodeSnippets(Context ctx, RuleSet rules)
+    {
+        int count = 0;
+        string codeLineSpacingStr = Math.Round(rules.CodeLineSpacing * 240).ToString(CultureInfo.InvariantCulture);
+        string halfPointsStr = Math.Round(rules.CodeFontSizePt * 2).ToString(CultureInfo.InvariantCulture);
+
+        foreach (var p in ctx.AllParagraphs().ToList()) {
+            if (!ctx.HasText(p)) continue;
+            string? styleId = ctx.ParagraphStyleId(p);
+            bool isCodeStyle = styleId != null && (styleId.Contains("Code", StringComparison.OrdinalIgnoreCase) || styleId.Contains("Листинг", StringComparison.OrdinalIgnoreCase));
+            
+            var firstRun = p.Descendants<Run>().FirstOrDefault(r => r.Elements<Text>().Any(t => !string.IsNullOrWhiteSpace(t.Text)));
+            bool isMonospace = firstRun != null && (ctx.FontOf(firstRun, styleId).Contains("Consolas") || ctx.FontOf(firstRun, styleId).Contains("Courier"));
+            
+            if (!isCodeStyle && !isMonospace) continue;
+
+            var props = p.ParagraphProperties ??= new ParagraphProperties();
+            var ind = props.Indentation ??= new Indentation();
+            if (rules.CodeRequireNoIndent) ind.FirstLine = "0";
+
+            var spacing = props.SpacingBetweenLines ??= new SpacingBetweenLines();
+            spacing.Line = codeLineSpacingStr;
+            spacing.LineRule = LineSpacingRuleValues.Auto;
+
+            foreach (var run in p.Descendants<Run>()) {
+                var rPr = run.RunProperties ??= new RunProperties();
+                rPr.RunFonts = new RunFonts { Ascii = rules.CodeFontFamily, HighAnsi = rules.CodeFontFamily, ComplexScript = rules.CodeFontFamily };
+                rPr.FontSize = new FontSize { Val = halfPointsStr }; 
+                rPr.FontSizeComplexScript = new FontSizeComplexScript { Val = halfPointsStr };
+            }
+            count++;
+        }
+        return count;
+    }
+
+    // ----- Исправление: Заголовки -----
+    private static int FixHeadings(Context ctx, RuleSet rules)
+    {
+        int count = 0;
+        foreach (var p in ctx.AllParagraphs().ToList()) {
+            if (!ctx.HasText(p)) continue;
+            int? outlineLvl = p.ParagraphProperties?.OutlineLevel?.Val?.Value;
+            string? styleId = ctx.ParagraphStyleId(p);
+            bool isHeading = (outlineLvl != null && outlineLvl < 9) || 
+                             (styleId != null && (styleId.Contains("Heading", StringComparison.OrdinalIgnoreCase) || styleId.Contains("Заголовок", StringComparison.OrdinalIgnoreCase)));
+            
+            if (!isHeading) continue;
+
+            var props = p.ParagraphProperties ??= new ParagraphProperties();
+            var ind = props.Indentation ??= new Indentation();
+            if (rules.HeadingRequireNoIndent) ind.FirstLine = "0";
+
+            if (rules.HeadingRequireBold) {
+                foreach (var run in p.Descendants<Run>()) {
+                    var rPr = run.RunProperties ??= new RunProperties();
+                    rPr.Bold = new Bold { Val = true };
+                    rPr.BoldComplexScript = new BoldComplexScript { Val = true };
+                }
+            }
+
+            if (rules.HeadingRemoveTrailingDot) {
+                var texts = p.Descendants<Text>().ToList();
+                for (int i = texts.Count - 1; i >= 0; i--) {
+                    var t = texts[i];
+                    if (string.IsNullOrWhiteSpace(t.Text)) continue;
+                    
+                    if (t.Text.TrimEnd().EndsWith(".")) {
+                        int dotIndex = t.Text.LastIndexOf('.');
+                        t.Text = t.Text.Remove(dotIndex, 1);
+                        count++;
+                    }
+                    break;
+                }
+            }
+            count++;
+        }
         return count;
     }
 
