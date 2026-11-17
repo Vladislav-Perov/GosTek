@@ -334,8 +334,76 @@
                         </Border>
                     </VerticalStackLayout>
 
-                    <!-- Блок всего распознанного текста -->
-                    <Border BackgroundColor="{DynamicResource CardBg}"
+                    <!-- Переключатель режима: [Предпросмотр А4] / [Редактирование] -->
+                    <Border BackgroundColor="{DynamicResource IconBoxBg}"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 14"
+                            Padding="4"
+                            HorizontalOptions="Fill">
+                        <Grid ColumnDefinitions="*, *">
+                            <Border x:Name="TabPreviewBtn"
+                                    Grid.Column="0"
+                                    BackgroundColor="{DynamicResource CardBg}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 11"
+                                    Padding="10, 8">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnTabPreviewTapped" />
+                                </Border.GestureRecognizers>
+                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="6">
+                                    <vctrl:IconView Icon="eye" IconColor="BrandGreen" Size="16" VerticalOptions="Center" />
+                                    <Label x:Name="TabPreviewLabel"
+                                           Text="Предпросмотр А4"
+                                           FontSize="13"
+                                           FontAttributes="Bold"
+                                           TextColor="{DynamicResource BrandGreen}"
+                                           VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </Border>
+
+                            <Border x:Name="TabEditBtn"
+                                    Grid.Column="1"
+                                    BackgroundColor="Transparent"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 11"
+                                    Padding="10, 8">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnTabEditTapped" />
+                                </Border.GestureRecognizers>
+                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="6">
+                                    <vctrl:IconView Icon="edit" IconColor="TextSecondary" Size="16" VerticalOptions="Center" />
+                                    <Label x:Name="TabEditLabel"
+                                           Text="Редактировать текст"
+                                           FontSize="13"
+                                           FontAttributes="None"
+                                           TextColor="{DynamicResource TextSecondary}"
+                                           VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- КОНТЕЙНЕР 1: Интерактивный лист А4 предпросмотра ГОСТ -->
+                    <Border x:Name="A4PreviewSheet"
+                            BackgroundColor="#FFFFFF"
+                            Stroke="#E2E8F0"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 8"
+                            Padding="22, 26"
+                            HorizontalOptions="Fill">
+                        <Border.Shadow>
+                            <Shadow Brush="#000000" Offset="0, 4" Radius="10" Opacity="0.10" />
+                        </Border.Shadow>
+
+                        <VerticalStackLayout x:Name="A4DocumentContent" Spacing="8">
+                            <!-- Абзацы документа генерируются динамически по правилам ГОСТ -->
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- КОНТЕЙНЕР 2: Редактируемое поле с распознанным текстом -->
+                    <Border x:Name="TextEditorContainer"
+                            IsVisible="False"
+                            BackgroundColor="{DynamicResource CardBg}"
                             Stroke="{DynamicResource CardStroke}"
                             StrokeThickness="1"
                             StrokeShape="RoundRectangle 18"
@@ -347,11 +415,11 @@
                         <VerticalStackLayout Spacing="10">
                             <Grid ColumnDefinitions="*, Auto" VerticalOptions="Center">
                                 <VerticalStackLayout Spacing="1">
-                                    <Label Text="Текст документа"
+                                    <Label Text="Редактирование текста"
                                            FontSize="15"
                                            FontAttributes="Bold"
                                            TextColor="{DynamicResource TextPrimary}" />
-                                    <Label Text="Можно отредактировать опечатки перед экспортом"
+                                    <Label Text="Исправьте опечатки перед формированием документа"
                                            FontSize="11.5"
                                            TextColor="{DynamicResource TextSecondary}" />
                                 </VerticalStackLayout>
@@ -375,7 +443,6 @@
                                 </HorizontalStackLayout>
                             </Grid>
 
-                            <!-- Редактируемое поле с распознанным текстом -->
                             <Border BackgroundColor="{DynamicResource PageBg}"
                                     Stroke="{DynamicResource CardStroke}"
                                     StrokeThickness="1"
@@ -386,9 +453,23 @@
                                         AutoSize="TextChanges"
                                         FontSize="13.5"
                                         TextColor="{DynamicResource TextPrimary}"
-                                        BackgroundColor="Transparent" />
+                                        BackgroundColor="Transparent"
+                                        TextChanged="OnRawTextChanged" />
                             </Border>
+                        </VerticalStackLayout>
+                    </Border>
 
+                    <!-- Блок настройки параметров оформления ГОСТ -->
+                    <Border BackgroundColor="{DynamicResource CardBg}"
+                            Stroke="{DynamicResource CardStroke}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 18"
+                            Padding="16, 14">
+                        <Border.Shadow>
+                            <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.06" />
+                        </Border.Shadow>
+
+                        <VerticalStackLayout Spacing="10">
                             <!-- Секция настройки параметров ГОСТ (сворачиваемая) -->
                             <Border BackgroundColor="{DynamicResource IconBoxBg}"
                                     StrokeThickness="0"
@@ -417,7 +498,7 @@
                                         <VerticalStackLayout Spacing="4">
                                             <Label Text="Шрифт:" FontSize="11" TextColor="{DynamicResource TextSecondary}" />
                                             <Border BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="6, 2">
-                                                <Picker x:Name="FontPicker" FontSize="12" TextColor="{DynamicResource TextPrimary}">
+                                                <Picker x:Name="FontPicker" FontSize="12" TextColor="{DynamicResource TextPrimary}" SelectedIndexChanged="OnFormattingOptionChanged">
                                                     <Picker.ItemsSource>
                                                         <x:Array Type="{x:Type x:String}">
                                                             <x:String>Times New Roman</x:String>
@@ -433,7 +514,7 @@
                                         <VerticalStackLayout Grid.Column="1" Spacing="4">
                                             <Label Text="Размер шрифта:" FontSize="11" TextColor="{DynamicResource TextSecondary}" />
                                             <Border BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="6, 2">
-                                                <Picker x:Name="FontSizePicker" FontSize="12" TextColor="{DynamicResource TextPrimary}">
+                                                <Picker x:Name="FontSizePicker" FontSize="12" TextColor="{DynamicResource TextPrimary}" SelectedIndexChanged="OnFormattingOptionChanged">
                                                     <Picker.ItemsSource>
                                                         <x:Array Type="{x:Type x:String}">
                                                             <x:String>12 пт</x:String>
@@ -452,7 +533,7 @@
                                         <VerticalStackLayout Spacing="4">
                                             <Label Text="Межстрочный интервал:" FontSize="11" TextColor="{DynamicResource TextSecondary}" />
                                             <Border BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="6, 2">
-                                                <Picker x:Name="LineSpacingPicker" FontSize="12" TextColor="{DynamicResource TextPrimary}">
+                                                <Picker x:Name="LineSpacingPicker" FontSize="12" TextColor="{DynamicResource TextPrimary}" SelectedIndexChanged="OnFormattingOptionChanged">
                                                     <Picker.ItemsSource>
                                                         <x:Array Type="{x:Type x:String}">
                                                             <x:String>1.0 (Одинарный)</x:String>
@@ -468,7 +549,7 @@
                                         <VerticalStackLayout Grid.Column="1" Spacing="4">
                                             <Label Text="Отступ (красная строка):" FontSize="11" TextColor="{DynamicResource TextSecondary}" />
                                             <Border BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="6, 2">
-                                                <Picker x:Name="IndentPicker" FontSize="12" TextColor="{DynamicResource TextPrimary}">
+                                                <Picker x:Name="IndentPicker" FontSize="12" TextColor="{DynamicResource TextPrimary}" SelectedIndexChanged="OnFormattingOptionChanged">
                                                     <Picker.ItemsSource>
                                                         <x:Array Type="{x:Type x:String}">
                                                             <x:String>Без отступа (0 см)</x:String>
@@ -488,7 +569,7 @@
                                         <VerticalStackLayout Spacing="4">
                                             <Label Text="Выравнивание:" FontSize="11" TextColor="{DynamicResource TextSecondary}" />
                                             <Border BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="6, 2">
-                                                <Picker x:Name="AlignPicker" FontSize="12" TextColor="{DynamicResource TextPrimary}">
+                                                <Picker x:Name="AlignPicker" FontSize="12" TextColor="{DynamicResource TextPrimary}" SelectedIndexChanged="OnFormattingOptionChanged">
                                                     <Picker.ItemsSource>
                                                         <x:Array Type="{x:Type x:String}">
                                                             <x:String>По ширине (ГОСТ)</x:String>
@@ -503,7 +584,7 @@
                                         <VerticalStackLayout Grid.Column="1" Spacing="4">
                                             <Label Text="Поля документа:" FontSize="11" TextColor="{DynamicResource TextSecondary}" />
                                             <Border BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="6, 2">
-                                                <Picker x:Name="MarginsPicker" FontSize="12" TextColor="{DynamicResource TextPrimary}">
+                                                <Picker x:Name="MarginsPicker" FontSize="12" TextColor="{DynamicResource TextPrimary}" SelectedIndexChanged="OnFormattingOptionChanged">
                                                     <Picker.ItemsSource>
                                                         <x:Array Type="{x:Type x:String}">
                                                             <x:String>ГОСТ (30-15-20-20 мм)</x:String>

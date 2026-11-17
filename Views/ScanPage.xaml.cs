@@ -687,44 +687,6 @@ public partial class ScanPage : ContentPage
 
             ApplyResult(text);
             ShowResult(true);
-
-            // Интеллектуальное автоопределение типа документа (только для обычного скана, не для паспорта)
-            bool isPassport = string.Equals(_mode, "passport", StringComparison.OrdinalIgnoreCase);
-            if (!isPassport)
-            {
-                var classification = DocumentClassifier.Instance.Classify(text);
-                if (classification.IsDetected) {
-                    string detectedCategory = !string.IsNullOrWhiteSpace(classification.Category)
-                        ? classification.Category
-                        : classification.DocumentType;
-
-                    bool apply = await Dialogs.ConfirmAsync(
-                        "Определение документа",
-                        $"Я определил, что это {detectedCategory}. Применить этот шаблон?",
-                        accept: "Да",
-                        kind: DialogKind.Info,
-                        cancel: "Выбрать другой"
-                    );
-
-                    if (apply) {
-                        TemplateCatalog.Refresh();
-                        var matching = TemplateCatalog.Items.FirstOrDefault(t =>
-                            string.Equals(t.Category, detectedCategory, StringComparison.OrdinalIgnoreCase) ||
-                            t.Category.Contains(detectedCategory, StringComparison.OrdinalIgnoreCase) ||
-                            detectedCategory.Contains(t.Category, StringComparison.OrdinalIgnoreCase) ||
-                            t.Title.Contains(classification.DocumentType, StringComparison.OrdinalIgnoreCase) ||
-                            classification.DocumentType.Contains(t.Title, StringComparison.OrdinalIgnoreCase));
-
-                        if (matching != null) {
-                            await Shell.Current.GoToAsync($"FieldsPage?id={matching.Id}");
-                        } else {
-                            await Shell.Current.GoToAsync("//TemplatesPage");
-                        }
-                    } else {
-                        await Shell.Current.GoToAsync("//TemplatesPage");
-                    }
-                }
-            }
         } catch (OperationCanceledException) {
             // Распознавание прервано пользователем
             return;
@@ -780,6 +742,185 @@ public partial class ScanPage : ContentPage
                 MrzStatusBadge.IsVisible = false;
             }
         }
+
+        // Обновляем визуальный предпросмотр А4 по ГОСТ
+        UpdateA4Preview();
+    }
+
+    // ===== Переключение табов: Предпросмотр А4 / Редактирование =====
+    private void OnTabPreviewTapped(object? sender, TappedEventArgs e)
+    {
+        HapticHelper.Click();
+        A4PreviewSheet.IsVisible = true;
+        TextEditorContainer.IsVisible = false;
+
+        TabPreviewBtn.BackgroundColor = (Color)Application.Current!.Resources["CardBg"];
+        TabPreviewLabel.FontAttributes = FontAttributes.Bold;
+        TabPreviewLabel.TextColor = (Color)Application.Current!.Resources["BrandGreen"];
+
+        TabEditBtn.BackgroundColor = Colors.Transparent;
+        TabEditLabel.FontAttributes = FontAttributes.None;
+        TabEditLabel.TextColor = (Color)Application.Current!.Resources["TextSecondary"];
+
+        UpdateA4Preview();
+    }
+
+    private void OnTabEditTapped(object? sender, TappedEventArgs e)
+    {
+        HapticHelper.Click();
+        A4PreviewSheet.IsVisible = false;
+        TextEditorContainer.IsVisible = true;
+
+        TabEditBtn.BackgroundColor = (Color)Application.Current!.Resources["CardBg"];
+        TabEditLabel.FontAttributes = FontAttributes.Bold;
+        TabEditLabel.TextColor = (Color)Application.Current!.Resources["BrandGreen"];
+
+        TabPreviewBtn.BackgroundColor = Colors.Transparent;
+        TabPreviewLabel.FontAttributes = FontAttributes.None;
+        TabPreviewLabel.TextColor = (Color)Application.Current!.Resources["TextSecondary"];
+    }
+
+    private void OnRawTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (A4PreviewSheet.IsVisible)
+        {
+            UpdateA4Preview();
+        }
+    }
+
+    private void OnFormattingOptionChanged(object? sender, EventArgs e)
+    {
+        UpdateA4Preview();
+    }
+
+    // Динамическая генерация визуального листа А4 по ГОСТ
+    private void UpdateA4Preview()
+    {
+        if (A4DocumentContent == null || RawTextEditor == null)
+            return;
+
+        A4DocumentContent.Children.Clear();
+
+        string text = RawTextEditor.Text?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            A4DocumentContent.Children.Add(new Label
+            {
+                Text = "Документ пуст",
+                TextColor = Color.FromArgb("#94A3B8"),
+                FontSize = 13,
+                HorizontalTextAlignment = TextAlignment.Center,
+                Margin = new Thickness(0, 40)
+            });
+            return;
+        }
+
+        var options = BuildGostFormattingOptions();
+
+        // Настройка визуальных полей листа А4
+        double leftPadding = Math.Max(12, options.MarginLeftMm * 0.7);
+        double rightPadding = Math.Max(10, options.MarginRightMm * 0.7);
+        A4PreviewSheet.Padding = new Thickness(leftPadding, 20, rightPadding, 20);
+
+        var lines = text
+            .Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)
+            .Select(l => l.Trim())
+            .ToList();
+
+        // Склейка разорванных строк
+        var paragraphs = NormalizeScanLinesForPreview(lines);
+
+        for (int i = 0; i < paragraphs.Count; i++)
+        {
+            var pText = paragraphs[i];
+            if (string.IsNullOrWhiteSpace(pText))
+            {
+                A4DocumentContent.Children.Add(new BoxView { HeightRequest = 6, Color = Colors.Transparent });
+                continue;
+            }
+
+            // Заголовок документа
+            bool isHeading = (pText.Length <= 45 && pText.Equals(pText.ToUpperInvariant(), StringComparison.Ordinal) && !pText.Contains('.')) ||
+                             pText.Equals("ПРИКАЗ", StringComparison.OrdinalIgnoreCase) ||
+                             pText.Equals("АКТ", StringComparison.OrdinalIgnoreCase) ||
+                             pText.Equals("ЗАЯВЛЕНИЕ", StringComparison.OrdinalIgnoreCase) ||
+                             pText.Equals("ДОГОВОР", StringComparison.OrdinalIgnoreCase);
+
+            var label = new Label
+            {
+                Text = pText,
+                FontFamily = options.FontFamily,
+                FontSize = isHeading ? options.FontSizePt + 1 : options.FontSizePt - 1,
+                FontAttributes = isHeading ? FontAttributes.Bold : FontAttributes.None,
+                TextColor = Color.FromArgb("#0F172A"),
+                LineBreakMode = LineBreakMode.WordWrap,
+                LineHeight = Math.Max(1.0, options.LineSpacing * 0.85)
+            };
+
+            if (isHeading)
+            {
+                label.HorizontalTextAlignment = TextAlignment.Center;
+                label.Margin = new Thickness(0, 6, 0, 6);
+            }
+            else
+            {
+                label.HorizontalTextAlignment = options.Alignment.Equals("Left", StringComparison.OrdinalIgnoreCase)
+                    ? TextAlignment.Start
+                    : TextAlignment.Justify;
+
+                // Визуальный отступ красной строки
+                double indentPixels = options.FirstLineIndentCm * 16.0;
+                label.Margin = new Thickness(indentPixels, 0, 0, 3);
+            }
+
+            A4DocumentContent.Children.Add(label);
+        }
+    }
+
+    private static List<string> NormalizeScanLinesForPreview(List<string> lines)
+    {
+        var result = new List<string>();
+        string current = string.Empty;
+
+        foreach (var line in lines)
+        {
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                if (!string.IsNullOrEmpty(current)) { result.Add(current); current = string.Empty; }
+                result.Add(string.Empty);
+                continue;
+            }
+
+            if (line.Length <= 45 && line.Equals(line.ToUpperInvariant(), StringComparison.Ordinal) && !line.Contains('.'))
+            {
+                if (!string.IsNullOrEmpty(current)) { result.Add(current); current = string.Empty; }
+                result.Add(line);
+                continue;
+            }
+
+            if (string.IsNullOrEmpty(current))
+            {
+                current = line;
+            }
+            else
+            {
+                char last = current[^1];
+                if (last != '.' && last != ':' && last != '!' && last != '?' && last != ';')
+                {
+                    current += " " + line;
+                }
+                else
+                {
+                    result.Add(current);
+                    current = line;
+                }
+            }
+        }
+
+        if (!string.IsNullOrEmpty(current))
+            result.Add(current);
+
+        return result;
     }
 
     // ===== Сброс параметров оформления ГОСТ на значения по умолчанию =====
