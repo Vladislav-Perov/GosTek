@@ -60,212 +60,331 @@
 
             <!-- ==================== ФОРМА РЕДАКТИРОВАНИЯ ==================== -->
             <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
-                <VerticalStackLayout MaximumWidthRequest="700"
-                                     HorizontalOptions="Fill"
-                                     Padding="20,4,20,24"
-                                     Spacing="16">
+                <VerticalStackLayout MaximumWidthRequest="700" HorizontalOptions="Fill" Padding="20,4,20,24" Spacing="16">
 
-                    <!-- Секция: Основное -->
-                    <Border BackgroundColor="{DynamicResource CardBg}"
-                            Stroke="{DynamicResource CardStroke}"
-                            StrokeThickness="1"
-                            StrokeShape="RoundRectangle 16"
-                            Padding="16">
+                    <!-- ==================== СЕКЦИЯ 1: ОСНОВНАЯ ИНФОРМАЦИЯ ==================== -->
+                    <Border BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="16">
                         <VerticalStackLayout Spacing="12">
-                            <Label Text="Основная информация"
-                                   FontSize="16"
-                                   FontAttributes="Bold"
-                                   TextColor="{DynamicResource TextPrimary}" />
+                            <Label Text="Основная информация" FontSize="16" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
 
                             <VerticalStackLayout Spacing="4">
                                 <Label Text="Название правила *" StyleClass="FieldLabel" />
                                 <Border StyleClass="FieldBox">
-                                    <Entry x:Name="TitleEntry"
-                                           StyleClass="FieldEntry"
-                                           Placeholder="например, Внутренний регламент отчетов" />
+                                    <Entry x:Name="TitleEntry" StyleClass="FieldEntry" Placeholder="например, Регламент отчетов кафедры" />
                                 </Border>
                             </VerticalStackLayout>
 
                             <VerticalStackLayout Spacing="4">
                                 <Label Text="Категория документов" StyleClass="FieldLabel" />
                                 <Border StyleClass="FieldBox">
-                                    <Entry x:Name="CategoryEntry"
-                                           StyleClass="FieldEntry"
-                                           Placeholder="например, Заявление, Договор, Отчет" />
+                                    <Entry x:Name="CategoryEntry" StyleClass="FieldEntry" Placeholder="например, Заявление, Договор, Отчет" />
                                 </Border>
-                                <Label Text="Используется для автоподбора правила по префиксу имени файла (например, Договор_Аренда.docx)."
-                                       FontSize="12"
-                                       TextColor="{DynamicResource TextSecondary}" />
+                                <Label Text="Используется для автоподбора правила по префиксу имени файла." FontSize="12" TextColor="{DynamicResource TextSecondary}" />
                             </VerticalStackLayout>
 
                             <VerticalStackLayout Spacing="4">
                                 <Label Text="Краткое описание" StyleClass="FieldLabel" />
                                 <Border StyleClass="FieldBox">
-                                    <Entry x:Name="DescriptionEntry"
-                                           StyleClass="FieldEntry"
-                                           Placeholder="дополнительные комментарии или стандарт" />
+                                    <Entry x:Name="DescriptionEntry" StyleClass="FieldEntry" Placeholder="дополнительные комментарии или стандарт" />
                                 </Border>
                             </VerticalStackLayout>
                         </VerticalStackLayout>
                     </Border>
 
-                    <!-- Секция: Поля страницы -->
-                    <Border BackgroundColor="{DynamicResource CardBg}"
-                            Stroke="{DynamicResource CardStroke}"
-                            StrokeThickness="1"
-                            StrokeShape="RoundRectangle 16"
-                            Padding="16">
+                    <!-- ==================== СЕКЦИЯ 2: ПОЛЯ СТРАНИЦЫ ==================== -->
+                    <Border BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="16">
                         <VerticalStackLayout Spacing="12">
-                            <Label Text="Поля страницы (см)"
-                                   FontSize="16"
-                                   FontAttributes="Bold"
-                                   TextColor="{DynamicResource TextPrimary}" />
+                            <Label Text="Поля страницы (см)" FontSize="16" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
 
                             <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto" ColumnSpacing="12" RowSpacing="10">
                                 <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="4">
                                     <Label Text="Левое поле, см" StyleClass="FieldLabel" />
                                     <Border StyleClass="FieldBox">
-                                        <Entry x:Name="LeftMarginEntry"
-                                               StyleClass="FieldEntry"
-                                               Keyboard="Numeric"
-                                               Text="3.0" />
+                                        <Entry x:Name="LeftMarginEntry" StyleClass="FieldEntry" Keyboard="Numeric" Text="3.0" />
                                     </Border>
                                 </VerticalStackLayout>
 
                                 <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="4">
                                     <Label Text="Правое поле, см" StyleClass="FieldLabel" />
                                     <Border StyleClass="FieldBox">
-                                        <Entry x:Name="RightMarginEntry"
-                                               StyleClass="FieldEntry"
-                                               Keyboard="Numeric"
-                                               Text="1.0" />
+                                        <Entry x:Name="RightMarginEntry" StyleClass="FieldEntry" Keyboard="Numeric" Text="1.0" />
                                     </Border>
                                 </VerticalStackLayout>
 
                                 <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="4">
                                     <Label Text="Верхнее поле, см" StyleClass="FieldLabel" />
                                     <Border StyleClass="FieldBox">
-                                        <Entry x:Name="TopMarginEntry"
-                                               StyleClass="FieldEntry"
-                                               Keyboard="Numeric"
-                                               Text="2.0" />
+                                        <Entry x:Name="TopMarginEntry" StyleClass="FieldEntry" Keyboard="Numeric" Text="2.0" />
                                     </Border>
                                 </VerticalStackLayout>
 
                                 <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="4">
                                     <Label Text="Нижнее поле, см" StyleClass="FieldLabel" />
                                     <Border StyleClass="FieldBox">
-                                        <Entry x:Name="BottomMarginEntry"
-                                               StyleClass="FieldEntry"
-                                               Keyboard="Numeric"
-                                               Text="2.0" />
+                                        <Entry x:Name="BottomMarginEntry" StyleClass="FieldEntry" Keyboard="Numeric" Text="2.0" />
                                     </Border>
                                 </VerticalStackLayout>
                             </Grid>
                         </VerticalStackLayout>
                     </Border>
 
-                    <!-- Секция: Шрифт и размер -->
-                    <Border BackgroundColor="{DynamicResource CardBg}"
-                            Stroke="{DynamicResource CardStroke}"
-                            StrokeThickness="1"
-                            StrokeShape="RoundRectangle 16"
-                            Padding="16">
+                    <!-- ==================== СЕКЦИЯ 3: ТЕКСТ И АБЗАЦЫ ==================== -->
+                    <Border BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="16">
                         <VerticalStackLayout Spacing="12">
-                            <Label Text="Шрифт и размер"
-                                   FontSize="16"
-                                   FontAttributes="Bold"
-                                   TextColor="{DynamicResource TextPrimary}" />
+                            <Label Text="Шрифт и форматирование текста" FontSize="16" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
 
-                            <Grid ColumnDefinitions="*, *" ColumnSpacing="12">
-                                <VerticalStackLayout Grid.Column="0" Spacing="4">
+                            <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto, Auto" ColumnSpacing="12" RowSpacing="10">
+                                <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="4">
                                     <Label Text="Гарнитура шрифта" StyleClass="FieldLabel" />
                                     <Border StyleClass="FieldBox">
-                                        <Picker x:Name="FontPicker"
-                                                HeightRequest="50"
-                                                TextColor="{DynamicResource TextPrimary}" />
-                                    </Border>
-                                </VerticalStackLayout>
-
-                                <VerticalStackLayout Grid.Column="1" Spacing="4">
-                                    <Label Text="Размер кегля, pt" StyleClass="FieldLabel" />
-                                    <Border StyleClass="FieldBox">
-                                        <Entry x:Name="FontSizeEntry"
-                                               StyleClass="FieldEntry"
-                                               Keyboard="Numeric"
-                                               Text="14" />
-                                    </Border>
-                                </VerticalStackLayout>
-                            </Grid>
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- Секция: Абзац, интервал и выравнивание -->
-                    <Border BackgroundColor="{DynamicResource CardBg}"
-                            Stroke="{DynamicResource CardStroke}"
-                            StrokeThickness="1"
-                            StrokeShape="RoundRectangle 16"
-                            Padding="16">
-                        <VerticalStackLayout Spacing="12">
-                            <Label Text="Абзац и форматирование"
-                                   FontSize="16"
-                                   FontAttributes="Bold"
-                                   TextColor="{DynamicResource TextPrimary}" />
-
-                            <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto" ColumnSpacing="12" RowSpacing="10">
-                                <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="4">
-                                    <Label Text="Межстрочный интервал" StyleClass="FieldLabel" />
-                                    <Border StyleClass="FieldBox">
-                                        <Picker x:Name="SpacingPicker"
-                                                HeightRequest="50"
-                                                TextColor="{DynamicResource TextPrimary}" />
+                                        <Picker x:Name="FontPicker" HeightRequest="50" TextColor="{DynamicResource TextPrimary}" />
                                     </Border>
                                 </VerticalStackLayout>
 
                                 <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="4">
-                                    <Label Text="Красная строка, см" StyleClass="FieldLabel" />
+                                    <Label Text="Кегль (размер), pt" StyleClass="FieldLabel" />
                                     <Border StyleClass="FieldBox">
-                                        <Entry x:Name="FirstLineIndentEntry"
-                                               StyleClass="FieldEntry"
-                                               Keyboard="Numeric"
-                                               Text="1.25" />
+                                        <Entry x:Name="FontSizeEntry" StyleClass="FieldEntry" Keyboard="Numeric" Text="14" />
                                     </Border>
                                 </VerticalStackLayout>
 
-                                <VerticalStackLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="4">
-                                    <Label Text="Выравнивание текста" StyleClass="FieldLabel" />
+                                <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="4">
+                                    <Label Text="Межстрочный интервал" StyleClass="FieldLabel" />
                                     <Border StyleClass="FieldBox">
-                                        <Picker x:Name="AlignPicker"
-                                                HeightRequest="50"
-                                                TextColor="{DynamicResource TextPrimary}" />
+                                        <Picker x:Name="SpacingPicker" HeightRequest="50" TextColor="{DynamicResource TextPrimary}" />
                                     </Border>
                                 </VerticalStackLayout>
+
+                                <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="4">
+                                    <Label Text="Красная строка, см" StyleClass="FieldLabel" />
+                                    <Border StyleClass="FieldBox">
+                                        <Entry x:Name="FirstLineIndentEntry" StyleClass="FieldEntry" Keyboard="Numeric" Text="1.25" />
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Spacing="4">
+                                    <Label Text="Выравнивание основного текста" StyleClass="FieldLabel" />
+                                    <Border StyleClass="FieldBox">
+                                        <Picker x:Name="AlignPicker" HeightRequest="50" TextColor="{DynamicResource TextPrimary}" />
+                                    </Border>
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0,4" />
+
+                            <Grid ColumnDefinitions="*, Auto">
+                                <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                                    <Label Text="Нумерация страниц" FontSize="14" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
+                                    <Label Text="Требовать наличие номеров страниц в колонтитулах" FontSize="12" TextColor="{DynamicResource TextSecondary}" />
+                                </VerticalStackLayout>
+                                <Switch x:Name="RequirePageNumbersSwitch" Grid.Column="1" IsToggled="True" VerticalOptions="Center" />
                             </Grid>
                         </VerticalStackLayout>
                     </Border>
 
-                    <!-- Секция: Страницы -->
-                    <Border BackgroundColor="{DynamicResource CardBg}"
-                            Stroke="{DynamicResource CardStroke}"
-                            StrokeThickness="1"
-                            StrokeShape="RoundRectangle 16"
-                            Padding="16">
-                        <Grid ColumnDefinitions="*, Auto">
-                            <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
-                                <Label Text="Нумерация страниц"
-                                       FontSize="15"
-                                       FontAttributes="Bold"
-                                       TextColor="{DynamicResource TextPrimary}" />
-                                <Label Text="Требовать наличие номеров страниц в колонтитулах документа"
-                                       FontSize="12"
-                                       TextColor="{DynamicResource TextSecondary}" />
-                            </VerticalStackLayout>
+                    <!-- ==================== АККОРДЕОН 1: РИСУНКИ И ПОДПИСИ ==================== -->
+                    <Border BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="16">
+                        <VerticalStackLayout Spacing="12">
+                            <!-- Шапка аккордеона -->
+                            <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="10">
+                                <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                                    <Label Text="Рисунки и подписи" FontSize="15" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
+                                    <Label Text="По центру, отбивка 12pt, интервал 1.0" FontSize="12" TextColor="{DynamicResource TextSecondary}" />
+                                </VerticalStackLayout>
+                                
+                                <Switch x:Name="FormatFiguresSwitch" Grid.Column="1" IsToggled="True" VerticalOptions="Center" />
 
-                            <Switch x:Name="RequirePageNumbersSwitch"
-                                    Grid.Column="1"
-                                    IsToggled="True"
-                                    VerticalOptions="Center" />
-                        </Grid>
+                                <Border Grid.Column="2"
+                                        StyleClass="HoverCard"
+                                        StrokeThickness="1"
+                                        StrokeShape="RoundRectangle 10"
+                                        Padding="10,6"
+                                        VerticalOptions="Center">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnToggleFiguresExpert" />
+                                    </Border.GestureRecognizers>
+                                    <Label x:Name="FiguresChevron" Text="▼" FontSize="13" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                            </Grid>
+
+                            <!-- Экспертная панель: скрыта по умолчанию -->
+                            <VerticalStackLayout x:Name="FiguresExpertPanel" IsVisible="False" Spacing="12" Margin="0,6,0,0">
+                                <BoxView HeightRequest="1" Color="{DynamicResource Divider}" />
+
+                                <Label Text="Тонкая настройка рисунков:" FontSize="13" FontAttributes="Bold" TextColor="{DynamicResource BrandGreen}" />
+
+                                <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto" ColumnSpacing="12" RowSpacing="10">
+                                    <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="4">
+                                        <Label Text="Выравнивание рисунка" StyleClass="FieldLabel" />
+                                        <Border StyleClass="FieldBox">
+                                            <Picker x:Name="FigureAlignPicker" HeightRequest="50" TextColor="{DynamicResource TextPrimary}" />
+                                        </Border>
+                                    </VerticalStackLayout>
+
+                                    <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*, Auto">
+                                        <Label Grid.Column="0" Text="Без красной строки" StyleClass="FieldLabel" VerticalOptions="Center" />
+                                        <Switch x:Name="FigureNoIndentSwitch" Grid.Column="1" IsToggled="True" VerticalOptions="Center" />
+                                    </Grid>
+
+                                    <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="4">
+                                        <Label Text="Отбивка сверху, pt" StyleClass="FieldLabel" />
+                                        <Border StyleClass="FieldBox">
+                                            <Entry x:Name="FigureSpacingBeforeEntry" StyleClass="FieldEntry" Keyboard="Numeric" Text="12.0" />
+                                        </Border>
+                                    </VerticalStackLayout>
+
+                                    <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="4">
+                                        <Label Text="Отбивка снизу, pt" StyleClass="FieldLabel" />
+                                        <Border StyleClass="FieldBox">
+                                            <Entry x:Name="FigureSpacingAfterEntry" StyleClass="FieldEntry" Keyboard="Numeric" Text="12.0" />
+                                        </Border>
+                                    </VerticalStackLayout>
+                                </Grid>
+
+                                <Label Text="Тонкая настройка подписей («Рисунок X»):" FontSize="13" FontAttributes="Bold" TextColor="{DynamicResource BrandGreen}" Margin="0,4,0,0" />
+
+                                <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto" ColumnSpacing="12" RowSpacing="10">
+                                    <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="4">
+                                        <Label Text="Выравнивание подписи" StyleClass="FieldLabel" />
+                                        <Border StyleClass="FieldBox">
+                                            <Picker x:Name="CaptionAlignPicker" HeightRequest="50" TextColor="{DynamicResource TextPrimary}" />
+                                        </Border>
+                                    </VerticalStackLayout>
+
+                                    <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="4">
+                                        <Label Text="Межстрочный интервал" StyleClass="FieldLabel" />
+                                        <Border StyleClass="FieldBox">
+                                            <Picker x:Name="CaptionLineSpacingPicker" HeightRequest="50" TextColor="{DynamicResource TextPrimary}" />
+                                        </Border>
+                                    </VerticalStackLayout>
+
+                                    <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="4">
+                                        <Label Text="Отбивка сверху, pt" StyleClass="FieldLabel" />
+                                        <Border StyleClass="FieldBox">
+                                            <Entry x:Name="CaptionSpacingBeforeEntry" StyleClass="FieldEntry" Keyboard="Numeric" Text="0.0" />
+                                        </Border>
+                                    </VerticalStackLayout>
+
+                                    <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="4">
+                                        <Label Text="Отбивка снизу, pt" StyleClass="FieldLabel" />
+                                        <Border StyleClass="FieldBox">
+                                            <Entry x:Name="CaptionSpacingAfterEntry" StyleClass="FieldEntry" Keyboard="Numeric" Text="0.0" />
+                                        </Border>
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- ==================== АККОРДЕОН 2: ЛИСТИНГИ КОДА ==================== -->
+                    <Border BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="16">
+                        <VerticalStackLayout Spacing="12">
+                            <!-- Шапка аккордеона -->
+                            <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="10">
+                                <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                                    <Label Text="Листинги кода" FontSize="15" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
+                                    <Label Text="Consolas 12pt, интервал 1.0, без красной строки" FontSize="12" TextColor="{DynamicResource TextSecondary}" />
+                                </VerticalStackLayout>
+
+                                <Switch x:Name="FormatCodeSwitch" Grid.Column="1" IsToggled="True" VerticalOptions="Center" />
+
+                                <Border Grid.Column="2"
+                                        StyleClass="HoverCard"
+                                        StrokeThickness="1"
+                                        StrokeShape="RoundRectangle 10"
+                                        Padding="10,6"
+                                        VerticalOptions="Center">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnToggleCodeExpert" />
+                                    </Border.GestureRecognizers>
+                                    <Label x:Name="CodeChevron" Text="▼" FontSize="13" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                            </Grid>
+
+                            <!-- Экспертная панель: скрыта по умолчанию -->
+                            <VerticalStackLayout x:Name="CodeExpertPanel" IsVisible="False" Spacing="12" Margin="0,6,0,0">
+                                <BoxView HeightRequest="1" Color="{DynamicResource Divider}" />
+
+                                <Label Text="Тонкая настройка листингов кода:" FontSize="13" FontAttributes="Bold" TextColor="{DynamicResource BrandGreen}" />
+
+                                <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto" ColumnSpacing="12" RowSpacing="10">
+                                    <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="4">
+                                        <Label Text="Моноширинный шрифт" StyleClass="FieldLabel" />
+                                        <Border StyleClass="FieldBox">
+                                            <Picker x:Name="CodeFontPicker" HeightRequest="50" TextColor="{DynamicResource TextPrimary}" />
+                                        </Border>
+                                    </VerticalStackLayout>
+
+                                    <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="4">
+                                        <Label Text="Размер кегля, pt" StyleClass="FieldLabel" />
+                                        <Border StyleClass="FieldBox">
+                                            <Entry x:Name="CodeFontSizeEntry" StyleClass="FieldEntry" Keyboard="Numeric" Text="12.0" />
+                                        </Border>
+                                    </VerticalStackLayout>
+
+                                    <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="4">
+                                        <Label Text="Межстрочный интервал" StyleClass="FieldLabel" />
+                                        <Border StyleClass="FieldBox">
+                                            <Picker x:Name="CodeLineSpacingPicker" HeightRequest="50" TextColor="{DynamicResource TextPrimary}" />
+                                        </Border>
+                                    </VerticalStackLayout>
+
+                                    <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*, Auto">
+                                        <Label Grid.Column="0" Text="Без красной строки" StyleClass="FieldLabel" VerticalOptions="Center" />
+                                        <Switch x:Name="CodeNoIndentSwitch" Grid.Column="1" IsToggled="True" VerticalOptions="Center" />
+                                    </Grid>
+                                </Grid>
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- ==================== АККОРДЕОН 3: ЗАГОЛОВКИ ==================== -->
+                    <Border BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="16">
+                        <VerticalStackLayout Spacing="12">
+                            <!-- Шапка аккордеона -->
+                            <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="10">
+                                <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                                    <Label Text="Оформление заголовков" FontSize="15" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
+                                    <Label Text="Жирный шрифт, без отступа, удаление точки в конце" FontSize="12" TextColor="{DynamicResource TextSecondary}" />
+                                </VerticalStackLayout>
+
+                                <Switch x:Name="FormatHeadingsSwitch" Grid.Column="1" IsToggled="True" VerticalOptions="Center" />
+
+                                <Border Grid.Column="2"
+                                        StyleClass="HoverCard"
+                                        StrokeThickness="1"
+                                        StrokeShape="RoundRectangle 10"
+                                        Padding="10,6"
+                                        VerticalOptions="Center">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnToggleHeadingsExpert" />
+                                    </Border.GestureRecognizers>
+                                    <Label x:Name="HeadingsChevron" Text="▼" FontSize="13" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                            </Grid>
+
+                            <!-- Экспертная панель: скрыта по умолчанию -->
+                            <VerticalStackLayout x:Name="HeadingsExpertPanel" IsVisible="False" Spacing="10" Margin="0,6,0,0">
+                                <BoxView HeightRequest="1" Color="{DynamicResource Divider}" />
+
+                                <Label Text="Правила проверки заголовков по ГОСТ:" FontSize="13" FontAttributes="Bold" TextColor="{DynamicResource BrandGreen}" />
+
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <Label Grid.Column="0" Text="Требовать полужирный шрифт (Bold)" StyleClass="FieldLabel" VerticalOptions="Center" />
+                                    <Switch x:Name="HeadingRequireBoldSwitch" Grid.Column="1" IsToggled="True" VerticalOptions="Center" />
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <Label Grid.Column="0" Text="Без абзацного отступа (по левому краю / центру)" StyleClass="FieldLabel" VerticalOptions="Center" />
+                                    <Switch x:Name="HeadingRequireNoIndentSwitch" Grid.Column="1" IsToggled="True" VerticalOptions="Center" />
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <Label Grid.Column="0" Text="Удалять точку в конце заголовка" StyleClass="FieldLabel" VerticalOptions="Center" />
+                                    <Switch x:Name="HeadingRemoveTrailingDotSwitch" Grid.Column="1" IsToggled="True" VerticalOptions="Center" />
+                                </Grid>
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
                     </Border>
 
                 </VerticalStackLayout>

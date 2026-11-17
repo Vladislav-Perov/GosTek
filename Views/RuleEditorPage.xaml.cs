@@ -14,10 +14,17 @@ public partial class RuleEditorPage : ContentPage
 {
     private static readonly string[] AvailableFonts = { "Times New Roman", "Arial", "Calibri", "PT Sans" };
     private static readonly double[] AvailableSpacings = { 1.0, 1.15, 1.5, 2.0 };
+    private static readonly string[] AvailableCodeFonts = { "Consolas", "Courier New" };
+    private static readonly double[] AvailableCodeSpacings = { 1.0, 1.15, 1.5 };
     private static readonly (string Name, string Value)[] Alignments = {
         ("По ширине (Justify)", "Justify"),
         ("По левому краю (Left)", "Left"),
         ("По центру (Center)", "Center"),
+        ("По правому краю (Right)", "Right"),
+    };
+    private static readonly (string Name, string Value)[] ItemAlignments = {
+        ("По центру (Center)", "Center"),
+        ("По левому краю (Left)", "Left"),
         ("По правому краю (Right)", "Right"),
     };
 
@@ -66,6 +73,35 @@ public partial class RuleEditorPage : ContentPage
         FontPicker.ItemsSource = AvailableFonts;
         SpacingPicker.ItemsSource = AvailableSpacings.Select(s => s.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)).ToList();
         AlignPicker.ItemsSource = Alignments.Select(a => a.Name).ToList();
+
+        FigureAlignPicker.ItemsSource = ItemAlignments.Select(a => a.Name).ToList();
+        CaptionAlignPicker.ItemsSource = ItemAlignments.Select(a => a.Name).ToList();
+        CaptionLineSpacingPicker.ItemsSource = AvailableCodeSpacings.Select(s => s.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)).ToList();
+
+        CodeFontPicker.ItemsSource = AvailableCodeFonts;
+        CodeLineSpacingPicker.ItemsSource = AvailableCodeSpacings.Select(s => s.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)).ToList();
+    }
+
+    // =====================================================================
+    //  АККОРДЕОНЫ (СВОРАЧИВАНИЕ / РАЗВОРАЧИВАНИЕ ЭКСПЕРТНЫХ ПАНЕЛЕЙ)
+    // =====================================================================
+
+    private void OnToggleFiguresExpert(object? sender, EventArgs e)
+    {
+        FiguresExpertPanel.IsVisible = !FiguresExpertPanel.IsVisible;
+        FiguresChevron.Text = FiguresExpertPanel.IsVisible ? "▲" : "▼";
+    }
+
+    private void OnToggleCodeExpert(object? sender, EventArgs e)
+    {
+        CodeExpertPanel.IsVisible = !CodeExpertPanel.IsVisible;
+        CodeChevron.Text = CodeExpertPanel.IsVisible ? "▲" : "▼";
+    }
+
+    private void OnToggleHeadingsExpert(object? sender, EventArgs e)
+    {
+        HeadingsExpertPanel.IsVisible = !HeadingsExpertPanel.IsVisible;
+        HeadingsChevron.Text = HeadingsExpertPanel.IsVisible ? "▲" : "▼";
     }
 
     private void LoadRuleData(RuleSet? rule)
@@ -80,18 +116,20 @@ public partial class RuleEditorPage : ContentPage
         CategoryEntry.Text = r.Category ?? "";
         DescriptionEntry.Text = r.Description ?? "";
 
+        // Поля страницы
         LeftMarginEntry.Text = RuFormat.Double(r.Left.Cm);
         RightMarginEntry.Text = RuFormat.Double(r.Right.Cm);
         TopMarginEntry.Text = RuFormat.Double(r.Top.Cm);
         BottomMarginEntry.Text = RuFormat.Double(r.Bottom.Cm);
 
+        // Основной текст
         int fontIdx = Array.FindIndex(AvailableFonts, f => f.Equals(r.FontName, StringComparison.OrdinalIgnoreCase));
         FontPicker.SelectedIndex = fontIdx >= 0 ? fontIdx : 0;
 
         FontSizeEntry.Text = RuFormat.Double(r.FontSizePt);
 
-        int spacingIdx = Array.FindIndex(AvailableSpacings, s => Math.Abs(s - r.LineSpacing) < 0.05);
-        SpacingPicker.SelectedIndex = spacingIdx >= 0 ? spacingIdx : 2; // по умолчанию 1.5
+        int spIdx = Array.FindIndex(AvailableSpacings, s => Math.Abs(s - r.LineSpacing) < 0.05);
+        SpacingPicker.SelectedIndex = spIdx >= 0 ? spIdx : 2; // Default 1.5
 
         FirstLineIndentEntry.Text = RuFormat.Double(r.FirstLineIndentCm);
 
@@ -99,6 +137,36 @@ public partial class RuleEditorPage : ContentPage
         AlignPicker.SelectedIndex = alignIdx >= 0 ? alignIdx : 0;
 
         RequirePageNumbersSwitch.IsToggled = r.RequirePageNumbers;
+
+        // Рисунки и подписи
+        FormatFiguresSwitch.IsToggled = r.FigureRequireNoIndent || r.CaptionRequireNoIndent;
+        int figAlignIdx = Array.FindIndex(ItemAlignments, a => a.Value.Equals(r.FigureAlignment, StringComparison.OrdinalIgnoreCase));
+        FigureAlignPicker.SelectedIndex = figAlignIdx >= 0 ? figAlignIdx : 0;
+        FigureNoIndentSwitch.IsToggled = r.FigureRequireNoIndent;
+        FigureSpacingBeforeEntry.Text = RuFormat.Double(r.FigureSpacingBeforePt);
+        FigureSpacingAfterEntry.Text = RuFormat.Double(r.FigureSpacingAfterPt);
+
+        int capAlignIdx = Array.FindIndex(ItemAlignments, a => a.Value.Equals(r.CaptionAlignment, StringComparison.OrdinalIgnoreCase));
+        CaptionAlignPicker.SelectedIndex = capAlignIdx >= 0 ? capAlignIdx : 0;
+        int capSpIdx = Array.FindIndex(AvailableCodeSpacings, s => Math.Abs(s - r.CaptionLineSpacing) < 0.05);
+        CaptionLineSpacingPicker.SelectedIndex = capSpIdx >= 0 ? capSpIdx : 0;
+        CaptionSpacingBeforeEntry.Text = RuFormat.Double(r.CaptionSpacingBeforePt);
+        CaptionSpacingAfterEntry.Text = RuFormat.Double(r.CaptionSpacingAfterPt);
+
+        // Листинги кода
+        FormatCodeSwitch.IsToggled = r.CodeRequireNoIndent;
+        int codeFontIdx = Array.FindIndex(AvailableCodeFonts, f => f.Equals(r.CodeFontFamily, StringComparison.OrdinalIgnoreCase));
+        CodeFontPicker.SelectedIndex = codeFontIdx >= 0 ? codeFontIdx : 0;
+        CodeFontSizeEntry.Text = RuFormat.Double(r.CodeFontSizePt);
+        int codeSpIdx = Array.FindIndex(AvailableCodeSpacings, s => Math.Abs(s - r.CodeLineSpacing) < 0.05);
+        CodeLineSpacingPicker.SelectedIndex = codeSpIdx >= 0 ? codeSpIdx : 0;
+        CodeNoIndentSwitch.IsToggled = r.CodeRequireNoIndent;
+
+        // Заголовки
+        FormatHeadingsSwitch.IsToggled = r.HeadingRequireBold || r.HeadingRequireNoIndent || r.HeadingRemoveTrailingDot;
+        HeadingRequireBoldSwitch.IsToggled = r.HeadingRequireBold;
+        HeadingRequireNoIndentSwitch.IsToggled = r.HeadingRequireNoIndent;
+        HeadingRemoveTrailingDotSwitch.IsToggled = r.HeadingRemoveTrailingDot;
 
         DeleteButton.IsVisible = rule is { IsCustom: true };
     }
@@ -131,6 +199,38 @@ public partial class RuleEditorPage : ContentPage
         string? category = string.IsNullOrWhiteSpace(CategoryEntry.Text) ? null : CategoryEntry.Text.Trim();
         string? description = string.IsNullOrWhiteSpace(DescriptionEntry.Text) ? null : DescriptionEntry.Text.Trim();
 
+        bool figs = FormatFiguresSwitch.IsToggled;
+        string figAlign = FigureAlignPicker.SelectedIndex >= 0 && FigureAlignPicker.SelectedIndex < ItemAlignments.Length
+            ? ItemAlignments[FigureAlignPicker.SelectedIndex].Value
+            : "Center";
+        double figBefore = RuFormat.ParseDouble(FigureSpacingBeforeEntry.Text, 12.0);
+        double figAfter = RuFormat.ParseDouble(FigureSpacingAfterEntry.Text, 12.0);
+        bool figNoIndent = FigureNoIndentSwitch.IsToggled;
+
+        string capAlign = CaptionAlignPicker.SelectedIndex >= 0 && CaptionAlignPicker.SelectedIndex < ItemAlignments.Length
+            ? ItemAlignments[CaptionAlignPicker.SelectedIndex].Value
+            : "Center";
+        double capBefore = RuFormat.ParseDouble(CaptionSpacingBeforeEntry.Text, 0.0);
+        double capAfter = RuFormat.ParseDouble(CaptionSpacingAfterEntry.Text, 0.0);
+        double capLineSpacing = CaptionLineSpacingPicker.SelectedIndex >= 0 && CaptionLineSpacingPicker.SelectedIndex < AvailableCodeSpacings.Length
+            ? AvailableCodeSpacings[CaptionLineSpacingPicker.SelectedIndex]
+            : 1.0;
+
+        bool code = FormatCodeSwitch.IsToggled;
+        string codeFont = CodeFontPicker.SelectedIndex >= 0 && CodeFontPicker.SelectedIndex < AvailableCodeFonts.Length
+            ? AvailableCodeFonts[CodeFontPicker.SelectedIndex]
+            : "Consolas";
+        double codeFontSize = RuFormat.ParseDouble(CodeFontSizeEntry.Text, 12.0);
+        double codeLineSpacing = CodeLineSpacingPicker.SelectedIndex >= 0 && CodeLineSpacingPicker.SelectedIndex < AvailableCodeSpacings.Length
+            ? AvailableCodeSpacings[CodeLineSpacingPicker.SelectedIndex]
+            : 1.0;
+        bool codeNoIndent = CodeNoIndentSwitch.IsToggled;
+
+        bool heads = FormatHeadingsSwitch.IsToggled;
+        bool headBold = HeadingRequireBoldSwitch.IsToggled;
+        bool headNoIndent = HeadingRequireNoIndentSwitch.IsToggled;
+        bool headDot = HeadingRemoveTrailingDotSwitch.IsToggled;
+
         return new RuleSet(
             Id: id,
             Title: title,
@@ -148,7 +248,28 @@ public partial class RuleEditorPage : ContentPage
             Alignment: alignment,
             Category: category,
             IsCustom: true,
-            Description: description);
+            Description: description)
+        {
+            FigureAlignment = figAlign,
+            FigureSpacingBeforePt = Math.Max(0.0, figBefore),
+            FigureSpacingAfterPt = Math.Max(0.0, figAfter),
+            FigureRequireNoIndent = figs && figNoIndent,
+
+            CaptionAlignment = capAlign,
+            CaptionSpacingBeforePt = Math.Max(0.0, capBefore),
+            CaptionSpacingAfterPt = Math.Max(0.0, capAfter),
+            CaptionLineSpacing = Math.Max(0.5, capLineSpacing),
+            CaptionRequireNoIndent = figs && figNoIndent,
+
+            CodeFontFamily = codeFont,
+            CodeFontSizePt = Math.Max(6.0, codeFontSize),
+            CodeLineSpacing = Math.Max(0.5, codeLineSpacing),
+            CodeRequireNoIndent = code && codeNoIndent,
+
+            HeadingRequireBold = heads && headBold,
+            HeadingRequireNoIndent = heads && headNoIndent,
+            HeadingRemoveTrailingDot = heads && headDot,
+        };
     }
 
     // =====================================================================

@@ -114,6 +114,26 @@ public sealed record RuleSet(
         FirstLineIndentCm = FirstLineIndentCm,
         Alignment = Alignment,
         SectionsMinParagraphs = SectionsMinParagraphs,
+
+        FigureAlignment = FigureAlignment,
+        FigureSpacingBeforePt = FigureSpacingBeforePt,
+        FigureSpacingAfterPt = FigureSpacingAfterPt,
+        FigureRequireNoIndent = FigureRequireNoIndent,
+
+        CaptionAlignment = CaptionAlignment,
+        CaptionSpacingBeforePt = CaptionSpacingBeforePt,
+        CaptionSpacingAfterPt = CaptionSpacingAfterPt,
+        CaptionLineSpacing = CaptionLineSpacing,
+        CaptionRequireNoIndent = CaptionRequireNoIndent,
+
+        CodeFontFamily = CodeFontFamily,
+        CodeFontSizePt = CodeFontSizePt,
+        CodeLineSpacing = CodeLineSpacing,
+        CodeRequireNoIndent = CodeRequireNoIndent,
+
+        HeadingRequireBold = HeadingRequireBold,
+        HeadingRequireNoIndent = HeadingRequireNoIndent,
+        HeadingRemoveTrailingDot = HeadingRemoveTrailingDot,
     };
 
     /// <summary>Создание экземпляра RuleSet из DTO.</summary>
@@ -134,7 +154,28 @@ public sealed record RuleSet(
         Alignment: dto.Alignment,
         Category: dto.Category,
         IsCustom: true,
-        Description: dto.Description);
+        Description: dto.Description)
+    {
+        FigureAlignment = dto.FigureAlignment,
+        FigureSpacingBeforePt = dto.FigureSpacingBeforePt,
+        FigureSpacingAfterPt = dto.FigureSpacingAfterPt,
+        FigureRequireNoIndent = dto.FigureRequireNoIndent,
+
+        CaptionAlignment = dto.CaptionAlignment,
+        CaptionSpacingBeforePt = dto.CaptionSpacingBeforePt,
+        CaptionSpacingAfterPt = dto.CaptionSpacingAfterPt,
+        CaptionLineSpacing = dto.CaptionLineSpacing,
+        CaptionRequireNoIndent = dto.CaptionRequireNoIndent,
+
+        CodeFontFamily = dto.CodeFontFamily,
+        CodeFontSizePt = dto.CodeFontSizePt,
+        CodeLineSpacing = dto.CodeLineSpacing,
+        CodeRequireNoIndent = dto.CodeRequireNoIndent,
+
+        HeadingRequireBold = dto.HeadingRequireBold,
+        HeadingRequireNoIndent = dto.HeadingRequireNoIndent,
+        HeadingRemoveTrailingDot = dto.HeadingRemoveTrailingDot,
+    };
 }
 
 /// <summary>DTO для сериализации правил оформления в формат JSON.</summary>
@@ -159,6 +200,30 @@ public sealed class CustomRuleDto
     public double FirstLineIndentCm { get; set; } = 1.25;
     public string Alignment { get; set; } = "Justify";
     public int SectionsMinParagraphs { get; set; } = 100;
+
+    // --- Настройки рисунков (Figures) ---
+    public string FigureAlignment { get; set; } = "Center";
+    public double FigureSpacingBeforePt { get; set; } = 12.0;
+    public double FigureSpacingAfterPt { get; set; } = 12.0;
+    public bool FigureRequireNoIndent { get; set; } = true;
+
+    // --- Настройки подписей к рисункам (Captions) ---
+    public string CaptionAlignment { get; set; } = "Center";
+    public double CaptionSpacingBeforePt { get; set; } = 0.0;
+    public double CaptionSpacingAfterPt { get; set; } = 0.0;
+    public double CaptionLineSpacing { get; set; } = 1.0;
+    public bool CaptionRequireNoIndent { get; set; } = true;
+
+    // --- Настройки листингов кода (Code Snippets) ---
+    public string CodeFontFamily { get; set; } = "Consolas";
+    public double CodeFontSizePt { get; set; } = 12.0;
+    public double CodeLineSpacing { get; set; } = 1.0;
+    public bool CodeRequireNoIndent { get; set; } = true;
+
+    // --- Настройки заголовков (Headings) ---
+    public bool HeadingRequireBold { get; set; } = true;
+    public bool HeadingRequireNoIndent { get; set; } = true;
+    public bool HeadingRemoveTrailingDot { get; set; } = true;
 }
 
 /// <summary>Кнопка-чип на экране «Проверка»: подпись и набор правил, который она включает.</summary>
