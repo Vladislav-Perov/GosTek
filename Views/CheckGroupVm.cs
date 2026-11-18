@@ -85,9 +85,18 @@ public sealed class CheckGroupVm : INotifyPropertyChanged, IDisposable
     public Action<CheckItemVm>? OnRejectItem { get; set; }
     public Func<CheckItemVm, Task>? OnAcceptItem { get; set; }
 
-    public CheckGroupVm(CheckIssue issue)
+    public CheckGroupVm(
+        CheckIssue issue,
+        Action<CheckGroupVm>? onRejectGroup = null,
+        Func<CheckGroupVm, Task>? onAcceptGroup = null,
+        Action<CheckItemVm>? onRejectItem = null,
+        Func<CheckItemVm, Task>? onAcceptItem = null)
     {
         _issue = issue ?? throw new ArgumentNullException(nameof(issue));
+        OnRejectGroup = onRejectGroup;
+        OnAcceptGroup = onAcceptGroup;
+        OnRejectItem = onRejectItem;
+        OnAcceptItem = onAcceptItem;
         Items = new BatchObservableCollection<CheckItemVm>();
         LoadMoreCommand = new Command(() =>
         {
@@ -158,10 +167,17 @@ public sealed class CheckGroupVm : INotifyPropertyChanged, IDisposable
 
     public void LoadMore(int count = PageSize)
     {
-        if (!MainThread.IsMainThread)
+        try
         {
-            MainThread.BeginInvokeOnMainThread(() => LoadMore(count));
-            return;
+            if (Application.Current is not null && !MainThread.IsMainThread)
+            {
+                MainThread.BeginInvokeOnMainThread(() => LoadMore(count));
+                return;
+            }
+        }
+        catch
+        {
+            // Fallback: в тестовом окружении без DispatcherQueue продолжаем синхронно
         }
 
         try
@@ -192,10 +208,17 @@ public sealed class CheckGroupVm : INotifyPropertyChanged, IDisposable
 
     public void UpdateIssue(CheckIssue newIssue)
     {
-        if (!MainThread.IsMainThread)
+        try
         {
-            MainThread.BeginInvokeOnMainThread(() => UpdateIssue(newIssue));
-            return;
+            if (Application.Current is not null && !MainThread.IsMainThread)
+            {
+                MainThread.BeginInvokeOnMainThread(() => UpdateIssue(newIssue));
+                return;
+            }
+        }
+        catch
+        {
+            // Fallback: в тестовом окружении без DispatcherQueue продолжаем синхронно
         }
 
         try
@@ -384,17 +407,28 @@ public sealed class CheckItemVm : INotifyPropertyChanged, IDisposable
 
     public ICommand RejectItemCommand { get; }
     public ICommand AcceptItemCommand { get; }
+    public Action<CheckItemVm>? OnRejectItem { get; set; }
+    public Func<CheckItemVm, Task>? OnAcceptItem { get; set; }
 
-    public CheckItemVm(IssueItem item, CheckGroupVm parent)
+    public CheckItemVm(
+        IssueItem item,
+        CheckGroupVm? parent = null,
+        Action<CheckItemVm>? onRejectItem = null,
+        Func<CheckItemVm, Task>? onAcceptItem = null)
     {
         Item = item ?? throw new ArgumentNullException(nameof(item));
-        Parent = parent ?? throw new ArgumentNullException(nameof(parent));
+        Parent = parent;
+        OnRejectItem = onRejectItem;
+        OnAcceptItem = onAcceptItem;
 
         RejectItemCommand = new Command(() =>
         {
             try
             {
-                Parent?.OnRejectItem?.Invoke(this);
+                if (OnRejectItem != null)
+                    OnRejectItem(this);
+                else
+                    Parent?.OnRejectItem?.Invoke(this);
             }
             catch (Exception ex)
             {
@@ -406,7 +440,9 @@ public sealed class CheckItemVm : INotifyPropertyChanged, IDisposable
         {
             try
             {
-                if (Parent?.OnAcceptItem != null)
+                if (OnAcceptItem != null)
+                    await OnAcceptItem(this);
+                else if (Parent?.OnAcceptItem != null)
                     await Parent.OnAcceptItem(this);
             }
             catch (Exception ex)

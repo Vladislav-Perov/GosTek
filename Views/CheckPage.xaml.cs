@@ -373,6 +373,16 @@ public partial class CheckPage : ContentPage
     //  ИСПРАВЛЕНИЯ И КОМАНДЫ КАРТОЧЕК
     // =====================================================================
 
+    private CheckGroupVm CreateGroupVm(CheckIssue issue)
+    {
+        return new CheckGroupVm(
+            issue,
+            onRejectGroup: g => RejectGroup(g),
+            onAcceptGroup: g => AcceptGroupAsync(g),
+            onRejectItem: item => RejectItem(item),
+            onAcceptItem: item => AcceptItemAsync(item));
+    }
+
     private void AttachGroupCommands(CheckGroupVm group)
     {
         group.OnRejectGroup = g => RejectGroup(g);
@@ -652,8 +662,7 @@ public partial class CheckPage : ContentPage
             else
             {
                 // Новая группа замечаний
-                var newGroup = new CheckGroupVm(issue);
-                AttachGroupCommands(newGroup);
+                var newGroup = CreateGroupVm(issue);
                 IssueGroups.Insert(i, newGroup);
                 existingByKind[issue.Kind] = newGroup;
             }

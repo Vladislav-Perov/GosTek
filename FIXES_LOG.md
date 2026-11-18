@@ -11,7 +11,7 @@
 
 | # | Дата | Батч | ID | Затронутый файл / компонент | Статус | Проверено |
 |:---:|:---:|:---:|:---:|:---|:---:|:---|
-| **75** | 18.11.2026 | F15 | **COMPILED-BINDINGS-XC0025-AND-ANDROID15-SAFE-AREA** | Views/CheckGroupVm.cs, Views/CheckPage.*, Views/*.xaml, GosTek.csproj, GosTek.Tests/CheckFilterTests.cs | 🏆 Реализовано | Фаза 15: Устранение первопричины XC0025 через скомпилированные привязки и системные SafeAreaEdges для Android 15: 1) Перенос команд карточек замечаний (ToggleExpand, RejectGroup, AcceptGroup, RejectItem, AcceptItem) непосредственно в CheckGroupVm и CheckItemVm со связыванием через делегаты страницы и удалением Source={x:Reference Root}; 2) Управление видимостью FileSelectedCard через code-behind UpdateUi(); 3) Полное удаление XC0025 из NoWarn в GosTek.csproj; 4) Внедрение SafeAreaEdges="{OnPlatform Android=Container, Default=None}" на всех 7 экранах и оверлеях вместо жестких 24/80 dp; 5) 5 новых юнит-тестов (всего 354/354); Win Release (0/0), Android Release (0/0 с ILLink+R8), dotnet format 0 |
+| **75** | 18.11.2026 | F15 | **COMPILED-BINDINGS-XC0025-AND-ANDROID15-SAFE-AREA** | Views/CheckGroupVm.cs, Views/CheckPage.*, Views/*.xaml, GosTek.csproj, GosTek.Tests/CheckFilterTests.cs | 🏆 Реализовано | Фаза 15: Устранение первопричины XC0025 через скомпилированные привязки и системные SafeAreaEdges для Android 15: 1) Перенос команд карточек замечаний (ToggleExpand, RejectGroup, AcceptGroup, RejectItem, AcceptItem) непосредственно в CheckGroupVm и CheckItemVm со связыванием через фабричный конструктор и делегаты; 2) Управление видимостью FileSelectedCard через code-behind UpdateUi(); 3) Полное удаление XC0025 из NoWarn в GosTek.csproj; 4) Внедрение SafeAreaEdges="{OnPlatform Android=Container, Default=None}" на всех 7 экранах и оверлеях; 5) 6 новых юнит-тестов включая сквозной сценарий жизненного цикла (всего 355/355); Win Release (0/0), Android Release (0/0 с ILLink+R8), dotnet format 0 |
 | **73** | 18.11.2026 | F14 | **ANDROID-LAYOUT-AUDIT-AND-RULE-EDITOR-OVERHAUL** | Views/RuleEditorPage.*, Views/CheckPage.*, Views/SettingsPanel.*, Views/FieldsPage.*, Views/* | 🏆 Реализовано | Фаза 14: Комплексный аудит и исправление верстки Android без изменений Windows: 1) В RuleEditorPage устранен дефект зависания вложенного скролла и искажения листа А4 (внедрен селектор режимов [Параметры | Лист А4], RowDefinitions="*", адаптация ширины листа DocumentSheetBorder под экран screenW-56); 2) В CheckPage устранен перехват скролла (DropGestureRecognizer перенесен в Windows-only, Orientation=Vertical); 3) В SettingsPanel ширина адаптирована под экраны 360 dp (Margin справа 48 dp, MaximumWidthRequest=360); 4) В FieldsPage высота ИИ-шторки ограничена 75% экрана для клавиатуры; 5) Учтены safe area статус-бара (24 dp) и TabBar/жестов (24-80 dp); 6) Touch targets увеличены до 44+ dp; 349/349 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
 | **71** | 13.11.2026 | F12 | **GLOBAL-CODE-CLEANUP-AND-HUMAN-COMMENTS** | Services/*, Views/*, README.md | 🏆 Реализовано | Фаза 12: Глобальная чистка проекта, реструктуризация файлов и добавление человечных комментариев: 1) Перенос сервисов (FileSaveService, SettingsService, TemplateEngine, ThemeService) в каталог Services/; 2) Добавление понятных комментариев («Что делает», «С чем взаимодействует», «Зачем нужно») к ключевым сервисам (MrzParserService, MrzSanitizer, DocumentDataExtractor, SmartInputHelper, TransliterationHelper, ScanPage); 3) Обновление README.md (актуализация до 291 теста, структуры и инструкций); 291/291 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
 | **70** | 13.11.2026 | F11.5 | **WINDOWS-CAMERA-ZERO-SIZE-NPE-GUARD** | Views/ScanPage.xaml.cs | 🏆 Реализовано | Фаза 11.5: Устранен краш CommunityToolkit.Maui.Camera на Windows из-за преждевременной инициализации с нулевыми размерами: 1) Защитная задержка 100 мс перед обращением к визуальному дереву WinUI 3; 2) Ожидание ненулевых размеров контейнера видоискателя и страницы; 3) Инициализация CameraView со скрытой видимостью (IsVisible=false) и явными WidthRequest/HeightRequest; 4) Проверка фактических размеров перед StartCameraPreview; 291/291 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
@@ -96,34 +96,38 @@
   1. **Устранение первопричины предупреждения XamlC XC0025 без подавления в NoWarn:**
      - Выявлена причина XC0025: использование связываний вида `{Binding Source={x:Reference Root}, Path=...}` внутри `DataTemplate` с явно объявленным скомпилированным контекстом `x:DataType="views:CheckGroupVm"` / `x:DataType="views:CheckItemVm"`. В MAUI 10 XamlC трактует такое связывание как некомпилируемое и откатывается на рантайм-рефлексию, выдавая `XamlC warning XC0025`.
      - Решение: команды управления аккордеоном и резолюцией замечаний (`ToggleExpandCommand`, `RejectGroupCommand`, `AcceptGroupCommand`, `RejectItemCommand`, `AcceptItemCommand`) перенесены непосредственно в модели представления `CheckGroupVm` и `CheckItemVm`.
-     - Связь с бизнес-логикой `CheckPage` реализована через типизированные делегаты действий (`OnRejectGroup`, `OnAcceptGroup`, `OnRejectItem`, `OnAcceptItem`), прикрепляемые методом `AttachGroupCommands`.
+     - Связь с бизнес-логикой `CheckPage` реализована через фабричный конструктор `CreateGroupVm` и типизированные делегаты действий (`OnRejectGroup`, `OnAcceptGroup`, `OnRejectItem`, `OnAcceptItem`), гарантируя, что ни одна группа и ни один элемент (включая порции `LoadMore` и обновления `UpdateIssue`) не могут остаться без привязанных команд.
      - Видимость плашки выбранного файла `FileSelectedCard.IsVisible = hasFile` перенесена в метод `UpdateUi()` в code-behind, удалив некомпилируемую связь `Source={x:Reference ResultPanel}`.
      - Все связывания в `CheckPage.xaml` переведены на прямое скомпилированное связывание `{Binding CommandName}`.
      - Подавление `XC0025` полностью удалено из `<NoWarn>` в `GosTek.csproj`.
-  2. **Юнит-тесты на перенесённые команды:**
-     - В `GosTek.Tests/CheckFilterTests.cs` добавлено 5 новых модульных тестов:
+  2. **Юнит-тесты на перенесённые команды и жизненный цикл (355 тестов):**
+     - В `GosTek.Tests/CheckFilterTests.cs` добавлено 6 новых модульных тестов:
        - `ToggleExpandCommand_TogglesIsExpandedAndTriggersHaptic`
        - `RejectGroupCommand_ExecutesCallbackWithGroup`
        - `AcceptGroupCommand_ExecutesCallbackWithGroup`
        - `RejectItemCommand_ExecutesCallbackWithItem`
        - `AcceptItemCommand_ExecutesCallbackWithItem`
-     - Общее число тестов проекта выросло с 349 до 354.
+       - `CheckGroupVm_TypicalLifecycleScenario_InitialItemsAndLoadMoreAndUpdatesHaveWiredDelegates` — сквозная проверка привязки команд при создании группы, подгрузке 30+ элементов и обновлении на месте.
+     - Общее число тестов проекта выросло с 349 до 355.
   3. **Поддержка системных отступов Android 15 Edge-to-Edge (SafeAreaEdges):**
      - В Android 15 (`targetSdkVersion 35`) режим Edge-to-Edge является принудительным на уровне операционной системы. По умолчанию `ContentPage` в .NET 10 MAUI имеет `SafeAreaEdges="None"`, рисуя контент под системными панелями (Status Bar, Display Cutout, Navigation Bar/Gesture Inset).
      - Для предотвращения наложения контента и исключения хрупких «магических чисел» (`24 dp` сверху и `80 dp` снизу) на всех страницах и модальных оверлеях внедрено свойство `SafeAreaEdges="{OnPlatform Android=Container, Default=None}"`:
        - `MainPage.xaml`, `TemplatesPage.xaml`, `ProfilePage.xaml`, `ScanPage.xaml`, `CheckPage.xaml`, `FieldsPage.xaml`, `RuleEditorPage.xaml`.
        - Модальная шторка `SettingsPanel.xaml` (Border `Panel`).
        - Нижняя навигационная панель `AppTabBar.xaml` (Border `AndroidBottomBar`).
-     - Внутренние отступы `Padding` на мобильных страницах стандартизированы (`20, 20, 20, 24` или `16, 16, 16, 16`), опираясь на автоматические системные инсеты платформы.
-     - На платформе Windows (`WinUI`) все отступы и разметка остались 100% интактными (`Default=None`).
-  4. **Анализ XC0009 в SettingsPanel.xaml (коммит 1aff716):**
+     - Внутренние отступы `Padding` на мобильных страницах стандартизированы, опираясь на автоматические системные инсеты платформы.
+     - На платформе Windows (`WinUI`) проведен полный аудит всех 9 файлов: размеры, отступы и разметка остались на 100% идентичными `backup/before-cleanup-42bad40`.
+  4. **Анализ XC0009 и прозрачности ввода в SettingsPanel.xaml:**
      - На коммите `1aff716` в `Views/SettingsPanel.xaml` на строке 35 на элементе `<Border x:Name="Panel">` присутствовал атрибут `CascadeInputTransparent="False"`.
      - В .NET MAUI свойство `CascadeInputTransparent` определено в классе `Layout` (базовом для `Grid`, `StackLayout` и др.), но отсутствует у `Border` (являющегося наследником `ContentView`).
      - Из-за этого XamlC выдавал ошибку компиляции `XC0009: Property CascadeInputTransparent not found on type Border`.
-     - В коммите `HEAD` этот некорректный атрибут был удален с `Border`, что восстановило компиляцию без малейшего влияния на WinUI 3 (где `Border` по умолчанию не делает дочерние элементы прозрачными для ввода).
+     - Удаление этого атрибута с `Border` не меняет поведения кликов: `Border` по умолчанию непрозрачен для ввода (`InputTransparent="False"`), фон шторки непрозрачен (`PageBg`), а затемнение `Scrim` находится на `ZIndex="1"` под панелью (`ZIndex="100"`), перехватывая тапы строго за пределами выезжающей шторки.
+  5. **Аудит навигации Shell и инсетов TabBar на Android:**
+     - Подтверждено: `AppShell` на Android использует нативный `BottomNavigationView` как отдельную нижнюю строку под контентом, а не оверлей поверх страниц.
+     - Инсеты разделены без дублирования: нативный TabBar берёт на себя нижний системный отступ навигации/жестов, а `ContentPage` через `SafeAreaEdges="Container"` компенсирует верхний статус-бар и вырез камеры.
 
 - **Верификация:**
-  - `dotnet test GosTek.Tests/GosTek.Tests.csproj`: 354 из 354 тестов пройдены успешно (0 сбоев).
+  - `dotnet test GosTek.Tests/GosTek.Tests.csproj`: 355 из 355 тестов пройдены успешно (0 сбоев).
   - `dotnet build GosTek.csproj -c Release -f net10.0-windows10.0.19041.0 -warnaserror`: 0 предупреждений, 0 ошибок (без XC0025 в NoWarn).
   - `dotnet build GosTek.csproj -c Release -f net10.0-android -warnaserror`: 0 предупреждений, 0 ошибок (без XC0025 в NoWarn, с полной AOT/ILLink и R8 оптимизацией).
   - `dotnet format GosTek.sln --verify-no-changes`: 0 изменений (код строго соответствует `.editorconfig`).
