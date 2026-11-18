@@ -28,5 +28,9 @@ public static class DraftStore
     }
 
     /// <summary>Забыть все введённые значения (кнопка «Удалить все данные»).</summary>
-    public static void Clear() => Data.Clear();
+    public static void Clear()
+    {
+        Data.Clear();
+        PendingOcrText = null;
+    }
 }

@@ -20,7 +20,7 @@ jobs:
         with:
           dotnet-version: '10.0.x'
       - name: Test AI Worker
-        run: node --test server/worker.test.mjs
+        run: node --test server/worker.test.mjs server/text/worker.test.mjs
       - name: Restore MAUI workloads
         run: dotnet workload restore GosTek.csproj
       - name: Test Windows
