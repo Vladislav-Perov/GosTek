@@ -75,6 +75,7 @@ public partial class FieldsPage : ContentPage
     private bool _isChatMaximized;
     private double _originalChatHeight = 540;
     private bool _isProgrammaticFilling;
+    private bool _insertingScannedText;
 
     private int _statusVersion;
     private int _layoutVersion;
@@ -712,36 +713,51 @@ public partial class FieldsPage : ContentPage
 #endif
         StartBuildPulse();
 
-        if (DraftStore.PendingOcrText is { Length: > 0 } ocrText)
-        {
-            DraftStore.PendingOcrText = null;
+        if (!_insertingScannedText && DraftStore.PendingOcrText is { Length: > 0 } ocrText)
             _ = InsertScannedTextAsync(ocrText);
-        }
     }
 
     private async Task InsertScannedTextAsync(string text)
     {
-        var fields = _fields.Where(field => field.Input is Editor).ToArray();
-        if (fields.Length == 0)
+        _insertingScannedText = true;
+        try
         {
-            await Dialogs.AlertAsync("В шаблоне нет текстового поля", "Распознанный текст можно скопировать в сканере.");
-            return;
+            var fields = _fields.Where(field => field.Input is Editor).ToArray();
+            if (fields.Length == 0)
+            {
+                await Dialogs.AlertAsync("В шаблоне нет многострочного поля",
+                    "Распознанный текст готов к вставке в другой шаблон.");
+                return;
+            }
+
+            var choices = fields.Select((field, index) => $"{index + 1}. {GetDisplayLabel(field.Field.Label)}").ToArray();
+            var selected = await DisplayActionSheetAsync("Куда вставить текст скана?", "Отмена", null, choices);
+            var index = Array.IndexOf(choices, selected);
+            if (index < 0 || !IsCurrentTransfer())
+                return;
+
+            var target = fields[index];
+            if (!_fields.Contains(target))
+                return;
+
+            if (!string.IsNullOrWhiteSpace(target.Input.Text) &&
+                !await Dialogs.ConfirmAsync("Заменить введённый текст?",
+                    "Распознанный текст заменит текущее значение поля.", "Заменить"))
+                return;
+
+            if (!IsCurrentTransfer() || !_fields.Contains(target))
+                return;
+
+            target.Input.Text = text;
+            DraftStore.PendingOcrText = null;
+        }
+        finally
+        {
+            _insertingScannedText = false;
         }
 
-        var choices = fields.Select((field, index) => $"{index + 1}. {GetDisplayLabel(field.Field.Label)}").ToArray();
-        var selected = await DisplayActionSheetAsync("Куда вставить текст скана?", "Отмена", null, choices);
-        var index = Array.IndexOf(choices, selected);
-        if (index < 0)
-            return;
-
-        var target = fields[index];
-        if (!string.IsNullOrWhiteSpace(target.Input.Text) &&
-            !await Dialogs.ConfirmAsync("Заменить введённый текст?",
-                "Распознанный текст заменит текущее значение поля.", "Заменить"))
-            return;
-
-        if (_fields.Contains(target))
-            target.Input.Text = text;
+        bool IsCurrentTransfer() => ReferenceEquals(Shell.Current?.CurrentPage, this)
+            && ReferenceEquals(DraftStore.PendingOcrText, text);
     }
 
     protected override void OnDisappearing()

@@ -245,7 +245,7 @@ public static class Dialogs
         // Нажатие на саму карточку не должно закрывать окно
         card.GestureRecognizers.Add(new TapGestureRecognizer());
 
-        overlay = new Grid { ZIndex = 1000, InputTransparent = false };
+        overlay = new Grid { ZIndex = SettingsOverlay.OverlayZIndex + 1, InputTransparent = false };
         overlay.Add(scrim);
         overlay.Add(card);
 

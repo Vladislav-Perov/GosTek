@@ -205,15 +205,26 @@ public partial class TemplatesPage : ContentPage
         var results = queryable.ToList();
 
         BindableLayout.SetItemsSource(ResultsList, results);
-        EmptyLabel.IsVisible = results.Count == 0;
         EmptyCard.IsVisible = results.Count == 0;
-        if (TemplateCatalog.Items.Length == 0)
+        if (EmptyCard.IsVisible)
         {
-            EmptyLabel.Text = $"В папке шаблонов нет файлов .docx:\n{SettingsService.TemplatesFolder}\n\nИзменить папку можно в настройках.";
-        }
-        else if (results.Count == 0 && _isFavoriteFilter)
-        {
-            EmptyLabel.Text = "У вас пока нет избранных шаблонов.\nНажмите на звёздочку в карточке шаблона, чтобы добавить его сюда.";
+            if (TemplateCatalog.Items.Length == 0)
+            {
+                EmptyLabel.Text = "В папке шаблонов нет файлов .docx";
+                EmptyHint.Text = DeviceInfo.Platform == DevicePlatform.WinUI
+                    ? $"{SettingsService.TemplatesFolder}\nИзменить папку можно в настройках."
+                    : "Новый шаблон можно создать из распознанного текста на вкладке «Скан».";
+            }
+            else if (_isFavoriteFilter && !TemplateCatalog.Items.Any(t => favIds.Contains(t.Id)))
+            {
+                EmptyLabel.Text = "У вас пока нет избранных шаблонов";
+                EmptyHint.Text = "Нажмите на звёздочку в карточке шаблона, чтобы добавить его сюда.";
+            }
+            else
+            {
+                EmptyLabel.Text = "Ничего не найдено";
+                EmptyHint.Text = "Попробуйте изменить поисковый запрос или выбрать другую категорию.";
+            }
         }
 
         // «Недавние» — только когда нет поиска, не включён фильтр избранного и выбрано «Все»

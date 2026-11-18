@@ -155,14 +155,13 @@
                         </Border>
 
                         <Label x:Name="EmptyLabel"
-                               Text="Ничего не найдено"
                                FontSize="16"
                                FontAttributes="Bold"
                                HorizontalTextAlignment="Center"
                                LineBreakMode="WordWrap"
                                TextColor="{DynamicResource TextPrimary}" />
 
-                        <Label Text="Попробуйте изменить поисковый запрос или выбрать другую категорию"
+                        <Label x:Name="EmptyHint"
                                FontSize="13"
                                HorizontalTextAlignment="Center"
                                LineBreakMode="WordWrap"

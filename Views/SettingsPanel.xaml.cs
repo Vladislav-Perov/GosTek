@@ -45,10 +45,21 @@ public partial class SettingsPanel : ContentView
     {
         InitializeComponent();
 
+        Panel.HorizontalOptions = IsWindows ? LayoutOptions.End : LayoutOptions.Start;
+        Panel.SafeAreaEdges = new SafeAreaEdges(DeviceInfo.Platform == DevicePlatform.Android
+            ? SafeAreaRegions.Container
+            : SafeAreaRegions.None);
+        Panel.StrokeShape = new RoundRectangle
+        {
+            CornerRadius = IsWindows ? new CornerRadius(24, 0, 0, 24) : new CornerRadius(0, 24, 24, 0),
+        };
+        PanelShadow.Offset = new Point(IsWindows ? -6 : 6, 0);
+
         // Папку выбираем только на ПК; на Android она фиксированная
         FolderBlock.IsVisible = IsWindows;
         AndroidFolderBlock.IsVisible = !IsWindows;
         OpenTemplatesButton.IsVisible = IsWindows;   // на Android папка во внутренней памяти приложения
+        PickTemplatesButton.IsVisible = IsWindows;
 
         BuildSegment(NameHost,
             new[] { "Название шаблона", "Название + дата" },
@@ -87,8 +98,6 @@ public partial class SettingsPanel : ContentView
             if (IsVisible && !_animating)
                 UpdateWidth();
         };
-
-        SyncAll();
     }
 
     private void OnLoaded(object? sender, EventArgs e)
@@ -97,7 +106,6 @@ public partial class SettingsPanel : ContentView
         SettingsService.Changed += SyncAll;
         ThemeService.Changed -= SyncAll;
         ThemeService.Changed += SyncAll;
-        SyncAll();
     }
 
     private void OnUnloaded(object? sender, EventArgs e)
@@ -261,8 +269,11 @@ public partial class SettingsPanel : ContentView
         foreach (var sync in _syncs)
             sync();
 
-        FolderPathLabel.Text = SettingsService.SaveFolder;
-        ResetFolderButton.IsVisible = !SettingsService.IsDefaultFolder;
+        if (IsWindows)
+        {
+            FolderPathLabel.Text = SettingsService.SaveFolder;
+            ResetFolderButton.IsVisible = !SettingsService.IsDefaultFolder;
+        }
         TemplatesPathLabel.Text = SettingsService.TemplatesFolder;
         ResetTemplatesButton.IsVisible = !SettingsService.IsDefaultTemplatesFolder;
         AiConsentSwitch.IsToggled = SettingsService.TextGenerationConsentAccepted;

@@ -1199,7 +1199,14 @@ public partial class ScanPage : ContentPage
     private async void OnApplyToTemplateTapped(object? sender, TappedEventArgs e)
     {
         HapticHelper.Click();
-        DraftStore.PendingOcrText = RawTextEditor.Text;
+        var text = RawTextEditor.Text;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            Toast.Show("Текст документа пуст", "alert");
+            return;
+        }
+
+        DraftStore.PendingOcrText = text;
         Toast.Show("Текст готов для вставки в шаблон", "filetext");
         await Shell.Current.GoToAsync("//TemplatesPage");
     }

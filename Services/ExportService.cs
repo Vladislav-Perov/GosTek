@@ -80,12 +80,10 @@ public static class ExportService
                 new DialogButton("Поделиться"),
                 new DialogButton("Закрыть"));
             action = choice switch { 0 => AfterSaveAction.Open, 1 => AfterSaveAction.Share, _ => AfterSaveAction.Nothing };
-            if (action == AfterSaveAction.Nothing) return;
         }
         switch (action) {
             case AfterSaveAction.Open: await OpenFileAsync(result.FilePath); break;
             case AfterSaveAction.Share: await ShareFileAsync(result.FilePath); break;
-            default: await Dialogs.AlertAsync("Сохранено", result.Location, DialogKind.Success); break;
         }
     }
 }
