@@ -20,7 +20,7 @@
         <!-- ==================== КОНТЕНТ ==================== -->
         <ScrollView Grid.Row="0"
                     VerticalScrollBarVisibility="Never">
-            <VerticalStackLayout Padding="{OnPlatform Android='20, 16, 20, 80', WinUI='20, 20, 20, 24'}"
+            <VerticalStackLayout Padding="{OnPlatform Android='20, 24, 20, 80', WinUI='20, 20, 20, 24'}"
                                  Spacing="16"
                                  MaximumWidthRequest="950"
                                  HorizontalOptions="Fill">

@@ -21,7 +21,7 @@
 
         <!-- ==================== ШАПКА С ИНДИКАТОРОМ ШАГА ==================== -->
         <Grid Grid.Row="0"
-              Padding="20, 14, 20, 10"
+              Padding="{OnPlatform Android='20, 24, 20, 10', WinUI='20, 14, 20, 10'}"
               ColumnDefinitions="Auto, *"
               ColumnSpacing="14"
               VerticalOptions="Center"

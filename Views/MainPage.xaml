@@ -26,7 +26,7 @@
             <VerticalStackLayout Spacing="16"
                                  MaximumWidthRequest="950"
                                  HorizontalOptions="Fill"
-                                 Padding="{OnPlatform Android='20, 16, 20, 80', WinUI='20, 20, 20, 24'}">
+                                 Padding="{OnPlatform Android='20, 24, 20, 80', WinUI='20, 20, 20, 24'}">
 
                 <!-- ==================== ШАПКА ==================== -->
                 <Grid IsVisible="{OnPlatform Android=True, WinUI=False, Default=False}"

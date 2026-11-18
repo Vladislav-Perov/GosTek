@@ -11,6 +11,7 @@
              xmlns:views="clr-namespace:GosTek.Views"
              xmlns:vctrl="clr-namespace:GosTek.Views.Controls"
              x:Class="GosTek.Views.RuleEditorPage"
+              x:DataType="views:RuleEditorPage"
              Title="Конструктор правил ГОСТ"
              BackgroundColor="{DynamicResource PageBg}"
              Shell.NavBarIsVisible="False"
@@ -22,53 +23,109 @@
         <Grid RowDefinitions="Auto, *, Auto">
 
             <!-- ==================== ШАПКА ==================== -->
-            <Grid Grid.Row="0"
-                  Padding="20, 15, 20, 10"
-                  ColumnDefinitions="Auto, *"
-                  ColumnSpacing="14">
+            <VerticalStackLayout Grid.Row="0" Spacing="0">
+                <Grid Padding="{OnPlatform Android='20, 24, 20, 8', WinUI='20, 15, 20, 10'}"
+                      ColumnDefinitions="Auto, *"
+                      ColumnSpacing="14">
 
-                <Border Grid.Column="0"
-                        StyleClass="HoverCard"
+                    <Border Grid.Column="0"
+                            StyleClass="HoverCard"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="14,6"
+                            VerticalOptions="Center">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnBackTapped" />
+                        </Border.GestureRecognizers>
+                        <Path Data="M8,1 L2,8 L8,15"
+                              Stroke="{DynamicResource TextPrimary}"
+                              StrokeThickness="2.5"
+                              StrokeLineCap="Round"
+                              StrokeLineJoin="Round"
+                              Aspect="Uniform"
+                              WidthRequest="10"
+                              HeightRequest="16"
+                              HorizontalOptions="Center"
+                              VerticalOptions="Center" />
+                    </Border>
+
+                    <Label x:Name="PageTitleLabel"
+                           Grid.Column="1"
+                           Text="Настройка профиля ГОСТ"
+                           FontSize="22"
+                           FontAttributes="Bold"
+                           LineBreakMode="TailTruncation"
+                           VerticalOptions="Center"
+                           TextColor="{DynamicResource TextPrimary}" />
+                </Grid>
+
+                <!-- Переключатель вкладок только для мобильных устройств (Android) -->
+                <Border x:Name="AndroidModeSwitcher"
+                        IsVisible="{OnPlatform Android=True, Default=False, WinUI=False}"
+                        BackgroundColor="{DynamicResource CardBg}"
+                        Stroke="{DynamicResource CardStroke}"
                         StrokeThickness="1"
-                        StrokeShape="RoundRectangle 16"
-                        Padding="14,6"
-                        VerticalOptions="Center">
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnBackTapped" />
-                    </Border.GestureRecognizers>
-                    <Path Data="M8,1 L2,8 L8,15"
-                          Stroke="{DynamicResource TextPrimary}"
-                          StrokeThickness="2.5"
-                          StrokeLineCap="Round"
-                          StrokeLineJoin="Round"
-                          Aspect="Uniform"
-                          WidthRequest="10"
-                          HeightRequest="16"
-                          HorizontalOptions="Center"
-                          VerticalOptions="Center" />
-                </Border>
+                        StrokeShape="RoundRectangle 14"
+                        Padding="4"
+                        Margin="16, 0, 16, 8"
+                        HorizontalOptions="Fill">
+                    <Grid ColumnDefinitions="*, *" ColumnSpacing="6">
+                        <Border x:Name="TabSettingsBtn"
+                                Grid.Column="0"
+                                BackgroundColor="{DynamicResource BrandGreen}"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 10"
+                                Padding="10, 8">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnTabSettingsTapped" />
+                            </Border.GestureRecognizers>
+                            <HorizontalStackLayout HorizontalOptions="Center" Spacing="6" VerticalOptions="Center">
+                                <vctrl:IconView x:Name="TabSettingsIcon" Icon="settings" IconColor="White" Size="15" VerticalOptions="Center" />
+                                <Label x:Name="TabSettingsLabel"
+                                       Text="Параметры"
+                                       FontSize="13"
+                                       FontAttributes="Bold"
+                                       TextColor="#FFFFFF"
+                                       VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </Border>
 
-                <Label x:Name="PageTitleLabel"
-                       Grid.Column="1"
-                       Text="Настройка профиля ГОСТ"
-                       FontSize="22"
-                       FontAttributes="Bold"
-                       LineBreakMode="TailTruncation"
-                       VerticalOptions="Center"
-                       TextColor="{DynamicResource TextPrimary}" />
-            </Grid>
+                        <Border x:Name="TabPreviewBtn"
+                                Grid.Column="1"
+                                BackgroundColor="Transparent"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 10"
+                                Padding="10, 8">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnTabPreviewTapped" />
+                            </Border.GestureRecognizers>
+                            <HorizontalStackLayout HorizontalOptions="Center" Spacing="6" VerticalOptions="Center">
+                                <vctrl:IconView x:Name="TabPreviewIcon" Icon="eye" IconColor="TextSecondary" Size="15" VerticalOptions="Center" />
+                                <Label x:Name="TabPreviewLabel"
+                                       Text="Лист А4"
+                                       FontSize="13"
+                                       FontAttributes="Bold"
+                                       TextColor="{DynamicResource TextSecondary}"
+                                       VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </Border>
+                    </Grid>
+                </Border>
+            </VerticalStackLayout>
 
             <!-- ==================== ОБЛАСТЬ РЕДАКТИРОВАНИЯ И ЖИВОГО ПРЕДПРОСМОТРА ==================== -->
             <Grid Grid.Row="1"
                   ColumnDefinitions="{OnPlatform WinUI='55*, 45*', Default='*'}"
-                  RowDefinitions="{OnPlatform WinUI='*', Default='*, Auto'}"
+                  RowDefinitions="*"
                   ColumnSpacing="16"
                   Padding="16, 4, 16, 12">
 
                 <!-- ЛЕВАЯ КОЛОНКА (55%): НАСТРОЙКИ СО СКРОЛЛОМ -->
-                <ScrollView Grid.Column="0"
+                <ScrollView x:Name="SettingsScrollView"
+                            Grid.Column="0"
                             Grid.Row="0"
-                            VerticalScrollBarVisibility="Never">
+                            VerticalScrollBarVisibility="Never"
+                            IsVisible="{OnPlatform WinUI=True, Default={Binding IsSettingsVisible}}">
                     <VerticalStackLayout MaximumWidthRequest="720"
                                          HorizontalOptions="Fill"
                                          Padding="4, 0, 4, 20"
@@ -700,8 +757,10 @@
                 </ScrollView>
 
                 <!-- ПРАВАЯ КОЛОНКА (45%): ЕДИНЫЙ ЖИВОЙ ПРЕДПРОСМОТР А4 С ЗУМОМ -->
-                <Border Grid.Column="{OnPlatform WinUI=1, Default=0}"
-                        Grid.Row="{OnPlatform WinUI=0, Default=1}"
+                <Border x:Name="PreviewPanelBorder"
+                        Grid.Column="{OnPlatform WinUI=1, Default=0}"
+                        Grid.Row="0"
+                        IsVisible="{OnPlatform WinUI=True, Default={Binding IsPreviewVisible}}"
                         BackgroundColor="{DynamicResource CardBg}"
                         Stroke="{DynamicResource CardStroke}"
                         StrokeThickness="1"
@@ -798,11 +857,11 @@
                                    TextColor="{DynamicResource BrandGreen}" />
                         </Border>
 
-                        <!-- 3. Двунаправленный скролл для листа предпросмотра -->
+                        <!-- 3. Двунаправленный скролл для листа предпросмотра (Orientation Both для Windows, Vertical для мобильных) -->
                         <ScrollView Grid.Row="2"
                                     VerticalScrollBarVisibility="Default"
-                                    HorizontalScrollBarVisibility="Default"
-                                    Orientation="Both">
+                                    HorizontalScrollBarVisibility="{OnPlatform WinUI=Default, Default=Never}"
+                                    Orientation="{OnPlatform WinUI=Both, Default=Vertical}">
                             <VerticalStackLayout HorizontalOptions="Center" Padding="8, 6, 8, 24">
                                 <VerticalStackLayout.GestureRecognizers>
                                     <PinchGestureRecognizer PinchUpdated="OnPreviewPinch" />
@@ -834,7 +893,7 @@
                 <Grid x:Name="ActionBarGrid"
                       ColumnDefinitions="Auto, *"
                       ColumnSpacing="12"
-                      Padding="20, 12, 20, 16"
+                      Padding="{OnPlatform Android='20, 12, 20, 24', WinUI='20, 12, 20, 16'}"
                       MaximumWidthRequest="720">
 
                     <!-- Кнопка Удалить (видна только для пользовательских правил) -->

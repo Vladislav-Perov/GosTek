@@ -996,7 +996,9 @@ public partial class FieldsPage : ContentPage
         HapticHelper.Click();
         AiAutoApplySwitch.IsToggled = SettingsService.AiAutoApplyMode;
 
-        _originalChatHeight = DeviceInfo.Platform == DevicePlatform.Android ? 520 : 560;
+        _originalChatHeight = DeviceInfo.Platform == DevicePlatform.Android
+            ? Math.Min(520, Math.Max(360, (this.Height > 0 ? this.Height : 700) * 0.75))
+            : 560;
         ApplyChatCompactLayout();
 
         if (ChatMessagesStack.Children.Count == 0)

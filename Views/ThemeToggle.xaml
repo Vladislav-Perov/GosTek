@@ -14,7 +14,7 @@
     <Border StyleClass="HoverCard"
             StrokeThickness="1"
             StrokeShape="RoundRectangle 16"
-            Padding="10,5">
+            Padding="{OnPlatform Android='10, 8', WinUI='10, 5', Default='10, 5'}">
         <Border.GestureRecognizers>
             <TapGestureRecognizer Tapped="OnTapped" />
         </Border.GestureRecognizers>

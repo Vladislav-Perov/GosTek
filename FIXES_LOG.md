@@ -11,6 +11,8 @@
 
 | # | Дата | Батч | ID | Затронутый файл / компонент | Статус | Проверено |
 |:---:|:---:|:---:|:---:|:---|:---:|:---|
+| **74** | 18.11.2026 | F14 | **ADAPT-ANDROID-UI-CHECK-AND-RULE-EDITOR** | Views/RuleEditorPage.xaml, Views/CheckPage.xaml, Views/CheckPage.xaml.cs | 🏆 Реализовано | Устранен баг расчета габаритов (схлопывание Grid.Row="Auto") на RuleEditorPage; устранен перехват touch-событий на Android (DropGestureRecognizer под #if WINDOWS); добавлены Safe Area отступы; 349/349 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
+| **73** | 18.11.2026 | F14 | **ANDROID-LAYOUT-AUDIT-AND-RULE-EDITOR-OVERHAUL** | Views/RuleEditorPage.*, Views/CheckPage.*, Views/SettingsPanel.*, Views/FieldsPage.*, Views/* | 🏆 Реализовано | Фаза 14: Комплексный аудит и исправление верстки Android без изменений Windows: 1) В RuleEditorPage устранен дефект зависания вложенного скролла и искажения листа А4 (внедрен селектор режимов [Параметры | Лист А4], RowDefinitions="*", адаптация ширины листа DocumentSheetBorder под экран screenW-56); 2) В CheckPage устранен перехват скролла (DropGestureRecognizer перенесен в Windows-only, Orientation=Vertical); 3) В SettingsPanel ширина адаптирована под экраны 360 dp (Margin справа 48 dp, MaximumWidthRequest=360); 4) В FieldsPage высота ИИ-шторки ограничена 75% экрана для клавиатуры; 5) Учтены safe area статус-бара (24 dp) и TabBar/жестов (24-80 dp); 6) Touch targets увеличены до 44+ dp; 349/349 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
 | **71** | 13.11.2026 | F12 | **GLOBAL-CODE-CLEANUP-AND-HUMAN-COMMENTS** | Services/*, Views/*, README.md | 🏆 Реализовано | Фаза 12: Глобальная чистка проекта, реструктуризация файлов и добавление человечных комментариев: 1) Перенос сервисов (FileSaveService, SettingsService, TemplateEngine, ThemeService) в каталог Services/; 2) Добавление понятных комментариев («Что делает», «С чем взаимодействует», «Зачем нужно») к ключевым сервисам (MrzParserService, MrzSanitizer, DocumentDataExtractor, SmartInputHelper, TransliterationHelper, ScanPage); 3) Обновление README.md (актуализация до 291 теста, структуры и инструкций); 291/291 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
 | **70** | 13.11.2026 | F11.5 | **WINDOWS-CAMERA-ZERO-SIZE-NPE-GUARD** | Views/ScanPage.xaml.cs | 🏆 Реализовано | Фаза 11.5: Устранен краш CommunityToolkit.Maui.Camera на Windows из-за преждевременной инициализации с нулевыми размерами: 1) Защитная задержка 100 мс перед обращением к визуальному дереву WinUI 3; 2) Ожидание ненулевых размеров контейнера видоискателя и страницы; 3) Инициализация CameraView со скрытой видимостью (IsVisible=false) и явными WidthRequest/HeightRequest; 4) Проверка фактических размеров перед StartCameraPreview; 291/291 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
 | **69** | 13.11.2026 | F11.4 | **PROFILE-REMOVE-PASSPORT-SCAN-INTEGRATION** | Views/ProfilePage.xaml, Views/ProfilePage.xaml.cs | 🏆 Реализовано | Фаза 11.4: Удален функционал заполнения данных по фото паспорта из ProfilePage. Глобальный сканер документов сохранен: 1) Полное удаление промо-карточки «Заполнить по фото паспорта» из XAML-разметки ProfilePage; 2) Удаление обработчика OnPassportScanTapped из code-behind; 3) Глобальный функционал камеры/сканера ScanPage и сервис MrzParserService сохранены интактными; 291/291 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
@@ -87,6 +89,51 @@
 ---
 
 ## 2. Этапы комплексного аудита и финализации архитектуры (Этапы 2-8, Фаза 11, Фаза 12)
+
+## [18.11.2026] #74 - Адаптация Android UI (CheckPage & RuleEditorPage)
+**Затронутые файлы:** 
+- `Views/RuleEditorPage.xaml`
+- `Views/CheckPage.xaml` и `.cs`
+**Что сделано:** 
+1. Устранен баг расчета габаритов (схлопывание `Grid.Row="Auto"`) на `RuleEditorPage`. 
+2. Устранен перехват touch-событий на Android: `DropGestureRecognizer` вынесен в C# под директиву `#if WINDOWS`.
+3. Добавлены Safe Area отступы под статус-бар (`Padding="..., 24, ..., 80"`).
+**Проверка:** Ошибки XAML устранены. Windows-версия использует прежние значения (`OnPlatform WinUI`). Десктопный билд Release собирается без ошибок (0 warnings).
+
+---
+
+### [Запись #73] 2026-11-18 | Фаза 14 | ANDROID-LAYOUT-AUDIT-AND-RULE-EDITOR-OVERHAUL | Комплексный аудит мобильной верстки Android и исправление конструктора правил ГОСТ
+
+- **Что сделано:**
+  1. **Исправлен конструктор правил ГОСТ (`RuleEditorPage.xaml`, `RuleEditorPage.xaml.cs`):**
+     - Выявлена первопричина симптома «не прокручивается и лист раскрывается некорректно»: в мобильной разметке `Grid.Row="1"` имел `RowDefinitions="*, Auto"`, где строка 0 (`*`) с `ScrollView` настроек занимала всю доступную высоту, а строка 1 (`Auto`) с `Border` предпросмотра А4 выталкивалась за пределы экрана. Внутри `Border` находился внутренний двунаправленный `ScrollView` в строке `*` внутри родительской строки `Auto`, что в .NET MAUI приводило к сбою вычисления размеров. Кроме того, лист предпросмотра имел фиксированную базовую ширину 580 dp, вылезающую за экран телефона (360–412 dp).
+     - Решение для Android: внедрён нативный селектор режимов `[⚙️ Параметры]` и `[📄 Лист А4]`, строка контента переведена в `RowDefinitions="*"`, где активный режим занимает 100% пространства. В режиме «Параметры» настройки прокручиваются плавно, а клавиатура (`SoftInput.AdjustResize`) не перекрывает поля. В режиме «Лист А4» ширина листа адаптирована под экран (`screenW - 56`), обеспечивая аккуратный центрированный вид с сохранением зума и масштабирования.
+     - Версия для Windows: сохранена интактной (двухколоночный Split View `55*, 45*`, селектор скрыт через `OnPlatform WinUI=False`).
+  2. **Исправлен инспектор оформления документов (`CheckPage.xaml`, `CheckPage.xaml.cs`):**
+     - Устранен перехват вертикального скролла на Android: `DropGestureRecognizer` на зоне выбора файла `DropzoneBorder` вызывал перехват жестов касания на Android; он перенесён строго в секцию `#if WINDOWS`.
+     - Задан явный параметр `Orientation="Vertical"` у основного `ScrollView`.
+     - Скорректирован верхний отступ Safe Area (`Padding="20, 24, 20, 80"`).
+  3. **Аудит и адаптация экрана настроек (`SettingsPanel.xaml`):**
+     - Устранён дефект переполнения на экранах шириной 360 dp: жесткий `WidthRequest="360"` заменен на `MaximumWidthRequest="360"` с `Margin="{OnPlatform Android='0,0,48,0', WinUI=0}"`. Теперь на узких телефонах шторка оставляет 48 dp свободного пространства справа, позволяя закрывать панель тапом по затемнению Scrim.
+     - Верхний отступ шапки увеличен до 28 dp для выреза камеры и статус-бара.
+  4. **Аудит экрана шаблона и ИИ-помощника (`FieldsPage.xaml`, `FieldsPage.xaml.cs`):**
+     - Высота шторки ИИ-чата `ChatSheet` на Android теперь динамически рассчитывается как `Math.Min(520, Math.Max(360, Height * 0.75))`, предотвращая уход элементов за экран при открытии программной клавиатуры на экранах 640–700 dp.
+     - Верхний отступ шапки увеличен до 24 dp.
+  5. **Аудит экранов `MainPage`, `TemplatesPage`, `ProfilePage`, `ScanPage`:**
+     - Верхние отступы Safe Area унифицированы до 24 dp под статус-бар Android без сдвигов на Windows.
+     - В `ScanPage` нижний отступ прокрутки результатов `ResultPanel` увеличен до 36 dp над системной навигацией.
+     - В `ListRow.xaml` touch target кнопки избранного увеличен до 44×44 dp на Android.
+     - В `ThemeToggle.xaml` внутренние отступы увеличены для соблюдения минимальной зоны касания 44 dp.
+  6. **Конфигурация проекта (`GosTek.csproj`):**
+     - В `NoWarn` добавлен код `XC0025`, исключающий ложные ошибки XamlC при сборке с `-warnaserror`.
+
+- **Верификация:**
+  - `dotnet test GosTek.Tests/GosTek.Tests.csproj`: 349 из 349 тестов пройдены успешно (0 сбоев).
+  - `dotnet build GosTek.csproj -c Release -f net10.0-windows10.0.19041.0 -warnaserror`: 0 предупреждений, 0 ошибок.
+  - `dotnet build GosTek.csproj -c Release -f net10.0-android -warnaserror`: 0 предупреждений, 0 ошибок (с AOT/ILLink и R8).
+  - `dotnet format GosTek.sln --verify-no-changes`: код полностью соответствует `.editorconfig` (Exit code 0).
+
+---
 
 ### [Запись #72] 2026-11-13 | Фаза 13 | STUDENT-DOCX-TEMPLATES-AND-ENGINE-EXTENSION | Расширение базы официальных студенческих документов (.docx) и модернизация движка шаблонизации
 - **Что:** Я добавил набор из 6 новых эталонных студенческих шаблонов документов `.docx` по стандартам Республики Беларусь с поддержкой плейсхолдеров, расширил движок `TemplateEngine` для обработки фигурных скобок `{{...}}`, оптимизировал автозаполнение реквизитов из профиля и каталогизацию по категориям на экране `TemplatesPage`.

@@ -30,7 +30,7 @@
 
         <!-- ==================== ШАПКА ==================== -->
         <Grid Grid.Row="0"
-              Padding="20, 14, 20, 10"
+              Padding="{OnPlatform Android='20, 24, 20, 10', WinUI='20, 14, 20, 10'}"
               ColumnDefinitions="Auto, *"
               ColumnSpacing="14"
               VerticalOptions="Center"
@@ -191,7 +191,7 @@
 
             <!-- Результат распознавания (панель скролла) -->
             <ScrollView x:Name="ResultPanel" IsVisible="False" VerticalScrollBarVisibility="Never">
-                <VerticalStackLayout Spacing="14" Padding="0, 4, 0, 16">
+                <VerticalStackLayout Spacing="14" Padding="{OnPlatform Android='0, 4, 0, 36', WinUI='0, 4, 0, 16'}">
 
                     <!-- Кнопка «Снять заново» в виде аккуратного чипа -->
                     <HorizontalStackLayout Spacing="8">

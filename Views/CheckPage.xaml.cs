@@ -122,6 +122,12 @@ public partial class CheckPage : ContentPage
         RuleChips.SetItems(chipTitles);
         RuleChips.SelectionChanged += OnRuleChanged;
 
+#if WINDOWS
+        var drop = new DropGestureRecognizer();
+        drop.Drop += OnDropFile;
+        DropzoneBorder.GestureRecognizers.Add(drop);
+#endif
+
         UpdateUi();
     }
 

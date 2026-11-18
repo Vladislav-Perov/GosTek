@@ -38,9 +38,38 @@ public partial class RuleEditorPage : ContentPage
     private bool _isInitializing;
     private double _previewScale = 1.0;
 
+    private bool _isSettingsVisible = true;
+    public bool IsSettingsVisible
+    {
+        get => _isSettingsVisible;
+        set
+        {
+            if (_isSettingsVisible != value)
+            {
+                _isSettingsVisible = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    private bool _isPreviewVisible;
+    public bool IsPreviewVisible
+    {
+        get => _isPreviewVisible;
+        set
+        {
+            if (_isPreviewVisible != value)
+            {
+                _isPreviewVisible = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
     public RuleEditorPage()
     {
         InitializeComponent();
+        BindingContext = this;
         InitPickers();
     }
 
@@ -58,6 +87,10 @@ public partial class RuleEditorPage : ContentPage
 #endif
         _editingRule = TargetRule;
         LoadRuleData(_editingRule);
+        if (DeviceInfo.Platform == DevicePlatform.Android)
+        {
+            SwitchEditorTab(showPreview: false);
+        }
     }
 
     protected override void OnDisappearing()
@@ -458,6 +491,11 @@ public partial class RuleEditorPage : ContentPage
     private void RenderDocumentSheet(Border sheetBorder, RuleSet rule)
     {
         double baseWidth = 580.0;
+#if ANDROID
+        double screenW = Application.Current?.Windows.FirstOrDefault()?.Page?.Width ?? 360.0;
+        if (screenW <= 0) screenW = 360.0;
+        baseWidth = Math.Clamp(screenW - 56.0, 280.0, 420.0);
+#endif
         double w = baseWidth * _previewScale;
         sheetBorder.WidthRequest = w;
         sheetBorder.ClearValue(VisualElement.HeightRequestProperty);
@@ -843,5 +881,51 @@ public partial class RuleEditorPage : ContentPage
     private async void OnBackTapped(object? sender, EventArgs e)
     {
         await Shell.Current.GoToAsync("..");
+    }
+
+    private void OnTabSettingsTapped(object? sender, EventArgs e)
+    {
+        SwitchEditorTab(showPreview: false);
+    }
+
+    private void OnTabPreviewTapped(object? sender, EventArgs e)
+    {
+        SwitchEditorTab(showPreview: true);
+    }
+
+    private void SwitchEditorTab(bool showPreview)
+    {
+        if (DeviceInfo.Platform != DevicePlatform.Android)
+            return;
+
+        HapticHelper.Click();
+
+        IsSettingsVisible = !showPreview;
+        IsPreviewVisible = showPreview;
+        SettingsScrollView.IsVisible = !showPreview;
+        PreviewPanelBorder.IsVisible = showPreview;
+
+        if (showPreview)
+        {
+            TabPreviewBtn.SetDynamicResource(VisualElement.BackgroundColorProperty, "BrandGreen");
+            TabPreviewLabel.TextColor = Colors.White;
+            TabPreviewIcon.IconColor = "White";
+
+            TabSettingsBtn.BackgroundColor = Colors.Transparent;
+            TabSettingsLabel.SetDynamicResource(Label.TextColorProperty, "TextSecondary");
+            TabSettingsIcon.IconColor = "TextSecondary";
+
+            UpdateLivePreview();
+        }
+        else
+        {
+            TabSettingsBtn.SetDynamicResource(VisualElement.BackgroundColorProperty, "BrandGreen");
+            TabSettingsLabel.TextColor = Colors.White;
+            TabSettingsIcon.IconColor = "White";
+
+            TabPreviewBtn.BackgroundColor = Colors.Transparent;
+            TabPreviewLabel.SetDynamicResource(Label.TextColorProperty, "TextSecondary");
+            TabPreviewIcon.IconColor = "TextSecondary";
+        }
     }
 }

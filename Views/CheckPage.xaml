@@ -23,10 +23,11 @@
 
         <!-- ==================== ОСНОВНОЙ КОНТЕНТ СО СКРОЛЛОМ ==================== -->
         <ScrollView Grid.Row="0"
+                    Orientation="Vertical"
                     VerticalScrollBarVisibility="Default">
             <VerticalStackLayout MaximumWidthRequest="950"
                                  HorizontalOptions="Fill"
-                                 Padding="{OnPlatform Android='20, 16, 20, 80', WinUI='20, 20, 20, 24'}"
+                                 Padding="{OnPlatform Android='20, 24, 20, 80', WinUI='20, 20, 20, 24'}"
                                  Spacing="16">
 
                 <!-- Шапка страницы -->
@@ -124,7 +125,6 @@
                         HorizontalOptions="Fill">
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnPickTapped" />
-                        <DropGestureRecognizer Drop="OnDropFile" />
                     </Border.GestureRecognizers>
                     <VerticalStackLayout Spacing="8" HorizontalOptions="Center" VerticalOptions="Center">
                         <Border BackgroundColor="{DynamicResource IconBoxBg}"
