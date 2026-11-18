@@ -410,12 +410,45 @@ public partial class FieldsPage : ContentPage
         var ui = new FieldUi(field, input, box, error, stack, profileTag);
         if (field.TextGeneration is not null)
         {
-            var generateButton = new Button
+            var sparkIcon = new IconView
+            {
+                Icon = "sparkles",
+                IconColor = "BrandGreen",
+                Size = 14,
+                VerticalOptions = LayoutOptions.Center
+            };
+            var sparkLabel = new Label
             {
                 Text = "Сгенерировать текст",
-                HorizontalOptions = LayoutOptions.Start,
+                FontSize = 12.5,
+                FontAttributes = FontAttributes.Bold,
+                TextColor = (Color)Application.Current!.Resources["BrandGreen"],
+                VerticalOptions = LayoutOptions.Center
             };
-            generateButton.Clicked += (_, _) => OpenChat(ui);
+            sparkLabel.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
+
+            var generateButton = new Border
+            {
+                StyleClass = new[] { "HoverCard" },
+                BackgroundColor = (Color)Application.Current!.Resources["IconBoxBg"],
+                Stroke = (Color)Application.Current!.Resources["CardStroke"],
+                StrokeThickness = 1,
+                StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(10) },
+                Padding = new Thickness(12, 7),
+                HorizontalOptions = LayoutOptions.Start,
+                Content = new HorizontalStackLayout
+                {
+                    Spacing = 6,
+                    Children = { sparkIcon, sparkLabel }
+                }
+            };
+            generateButton.SetDynamicResource(VisualElement.BackgroundColorProperty, "IconBoxBg");
+            generateButton.SetDynamicResource(Border.StrokeProperty, "CardStroke");
+
+            var tap = new TapGestureRecognizer();
+            tap.Tapped += (_, _) => OpenChat(ui);
+            generateButton.GestureRecognizers.Add(tap);
+
             stack.Children.Insert(1, generateButton);
         }
 

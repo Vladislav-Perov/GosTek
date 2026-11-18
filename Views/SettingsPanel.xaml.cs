@@ -183,7 +183,7 @@ public partial class SettingsPanel : ContentView
 
     private void OnCloseTapped(object? sender, TappedEventArgs e) => _ = CloseAsync();
 
-    // ПК: треть окна в пределах 340–440 px. Телефон: 85% ширины (не больше 420)
+    // ПК: треть окна в пределах 360–440 px. Телефон: 88% ширины (не больше 380)
     private void UpdateWidth()
     {
         double total = Parent is VisualElement { Width: > 0 } parent
@@ -191,8 +191,8 @@ public partial class SettingsPanel : ContentView
             : DeviceDisplay.Current.MainDisplayInfo.Width / DeviceDisplay.Current.MainDisplayInfo.Density;
 
         double width = IsWindows
-            ? Math.Clamp(total / 3, 340, 440)
-            : Math.Min(total * 0.85, 420);
+            ? Math.Clamp(total / 3, 360, 440)
+            : Math.Min(total * 0.88, 380);
 
         _panelWidth = Math.Min(width, total * 0.95);
         Panel.WidthRequest = _panelWidth;
