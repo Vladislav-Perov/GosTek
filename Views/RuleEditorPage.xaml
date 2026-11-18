@@ -15,6 +15,7 @@
              Title="Конструктор правил ГОСТ"
              BackgroundColor="{DynamicResource PageBg}"
              Shell.NavBarIsVisible="False"
+             SafeAreaEdges="{OnPlatform Android=Container, Default=None}"
              Shell.FlyoutBehavior="Disabled"
              Shell.TabBarIsVisible="False">
 
@@ -24,7 +25,7 @@
 
             <!-- ==================== ШАПКА ==================== -->
             <VerticalStackLayout Grid.Row="0" Spacing="0">
-                <Grid Padding="{OnPlatform Android='20, 24, 20, 8', WinUI='20, 15, 20, 10'}"
+                <Grid Padding="20, 15, 20, 10"
                       ColumnDefinitions="Auto, *"
                       ColumnSpacing="14">
 

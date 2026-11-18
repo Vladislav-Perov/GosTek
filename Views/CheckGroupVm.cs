@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Microsoft.Maui.Controls;
 using GosTek.Models;
+using GosTek.Services;
 
 namespace GosTek.Views;
 
@@ -75,6 +76,14 @@ public sealed class CheckGroupVm : INotifyPropertyChanged, IDisposable
     public CheckIssue Issue => _issue;
     public BatchObservableCollection<CheckItemVm> Items { get; }
     public ICommand LoadMoreCommand { get; }
+    public ICommand ToggleExpandCommand { get; }
+    public ICommand RejectGroupCommand { get; }
+    public ICommand AcceptGroupCommand { get; }
+
+    public Action<CheckGroupVm>? OnRejectGroup { get; set; }
+    public Func<CheckGroupVm, Task>? OnAcceptGroup { get; set; }
+    public Action<CheckItemVm>? OnRejectItem { get; set; }
+    public Func<CheckItemVm, Task>? OnAcceptItem { get; set; }
 
     public CheckGroupVm(CheckIssue issue)
     {
@@ -89,6 +98,44 @@ public sealed class CheckGroupVm : INotifyPropertyChanged, IDisposable
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[CheckGroupVm.LoadMoreCommand] Error: {ex.Message}");
+            }
+        });
+
+        ToggleExpandCommand = new Command(() =>
+        {
+            try
+            {
+                HapticHelper.Click();
+                IsExpanded = !IsExpanded;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[CheckGroupVm.ToggleExpandCommand] Error: {ex.Message}");
+            }
+        });
+
+        RejectGroupCommand = new Command(() =>
+        {
+            try
+            {
+                OnRejectGroup?.Invoke(this);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[CheckGroupVm.RejectGroupCommand] Error: {ex.Message}");
+            }
+        });
+
+        AcceptGroupCommand = new Command(async () =>
+        {
+            try
+            {
+                if (OnAcceptGroup != null)
+                    await OnAcceptGroup(this);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[CheckGroupVm.AcceptGroupCommand] Error: {ex.Message}");
             }
         });
 
@@ -335,10 +382,38 @@ public sealed class CheckItemVm : INotifyPropertyChanged, IDisposable
     public IssueItem Item { get; }
     public CheckGroupVm? Parent { get; private set; }
 
+    public ICommand RejectItemCommand { get; }
+    public ICommand AcceptItemCommand { get; }
+
     public CheckItemVm(IssueItem item, CheckGroupVm parent)
     {
         Item = item ?? throw new ArgumentNullException(nameof(item));
         Parent = parent ?? throw new ArgumentNullException(nameof(parent));
+
+        RejectItemCommand = new Command(() =>
+        {
+            try
+            {
+                Parent?.OnRejectItem?.Invoke(this);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[CheckItemVm.RejectItemCommand] Error: {ex.Message}");
+            }
+        });
+
+        AcceptItemCommand = new Command(async () =>
+        {
+            try
+            {
+                if (Parent?.OnAcceptItem != null)
+                    await Parent.OnAcceptItem(this);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[CheckItemVm.AcceptItemCommand] Error: {ex.Message}");
+            }
+        });
     }
 
     public void Dispose()

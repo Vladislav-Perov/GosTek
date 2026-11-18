@@ -154,6 +154,7 @@
 
         <!-- На Android: Нижний горизонтальный таббар -->
         <Border x:Name="AndroidBottomBar"
+                SafeAreaEdges="{OnPlatform Android=Container, Default=None}"
                 IsVisible="{OnPlatform Android=True, WinUI=False, Default=False}"
                 HorizontalOptions="Fill"
                 VerticalOptions="End"

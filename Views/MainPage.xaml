@@ -13,7 +13,8 @@
              xmlns:vctrl="clr-namespace:GosTek.Views.Controls"
              x:Class="GosTek.Views.MainPage"
              Title="Главная"
-             Shell.NavBarIsVisible="False">
+             Shell.NavBarIsVisible="False"
+             SafeAreaEdges="{OnPlatform Android=Container, Default=None}">
 
     <!-- Радиальный фон дизайн-системы для избавления от плоского вида -->
     <Grid RowDefinitions="*"
