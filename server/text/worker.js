@@ -35,7 +35,7 @@ export default {
       const response = await fetch(groqUrl, {
         method: "POST",
         headers: { Authorization: "Bearer " + env.GROQ_API_KEY, "Content-Type": "application/json" },
-        redirect: "error",
+        redirect: "manual",
         signal,
         body: JSON.stringify({
           model: "openai/gpt-oss-20b",

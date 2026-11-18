@@ -61,3 +61,13 @@ test("reports unconfigured, rate-limited and unavailable providers", async t => 
   t.mock.method(globalThis, "fetch", async () => new Response(null, { status: 503 }));
   assert.equal((await worker.fetch(request(body), env)).status, 503);
 });
+
+test("uses Workers-compatible manual redirects and rejects an upstream redirect", async t => {
+  const upstream = t.mock.method(globalThis, "fetch", async (_url, options) => {
+    assert.equal(options.redirect, "manual");
+    return Response.redirect("https://example.com/redirect", 302);
+  });
+  const response = await worker.fetch(request({ message: "Draft an explanation", kind: "explanation" }), env);
+  assert.equal(response.status, 503);
+  assert.equal(upstream.mock.callCount(), 1);
+});
