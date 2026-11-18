@@ -6,6 +6,7 @@
  * ==============================================================================
  */
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Windows.Input;
 using GosTek.Helpers;
 using GosTek.Models;
@@ -54,6 +55,7 @@ public partial class CheckPage : ContentPage
     public bool HasFixableIssues => IssueGroups.Any(i => i.CanFix);
 
     public ICommand ToggleExpandCommand { get; }
+    public ICommand LoadMoreCommand { get; }
     public ICommand AcceptItemCommand { get; }
     public ICommand RejectItemCommand { get; }
     public ICommand AcceptGroupCommand { get; }
@@ -70,6 +72,12 @@ public partial class CheckPage : ContentPage
         BindingContext = this;
 
         ToggleExpandCommand = new Command<CheckGroupVm>(ToggleExpand);
+        LoadMoreCommand = new Command<CheckGroupVm>(group =>
+        {
+            if (_busy || group == null) return;
+            HapticHelper.Click();
+            group.LoadMore(CheckGroupVm.PageSize);
+        });
         AcceptItemCommand = new Command<CheckItemVm>(async item => await AcceptItemAsync(item));
         RejectItemCommand = new Command<CheckItemVm>(RejectItem);
         AcceptGroupCommand = new Command<CheckGroupVm>(async group => await AcceptGroupAsync(group));
@@ -99,6 +107,7 @@ public partial class CheckPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        WireCardsContainer();
         await RefreshRulesAsync();
         if (_workPath is null)
             StartChoosePulse();
@@ -208,8 +217,15 @@ public partial class CheckPage : ContentPage
             }
 
             var rules = (matchIdx >= 0) ? _allRules[matchIdx] : CurrentRules;
+            var swCheck = Stopwatch.StartNew();
             var issues = await Task.Run(() => DocumentChecker.Check(work, rules));
+            swCheck.Stop();
+            System.Diagnostics.Debug.WriteLine($"[PERF] Check (PickAsync): {swCheck.ElapsedMilliseconds} ms, found {issues.Count} issues");
+
+            var swInfo = Stopwatch.StartNew();
             var info = await Task.Run(() => DocumentChecker.ReadInfo(work));
+            swInfo.Stop();
+            System.Diagnostics.Debug.WriteLine($"[PERF] ReadInfo (PickAsync): {swInfo.ElapsedMilliseconds} ms, pages: {info.Pages}, paragraphs: {info.Paragraphs}");
 
             _workPath = work;
             _sourceName = picked.FileName;
@@ -218,9 +234,7 @@ public partial class CheckPage : ContentPage
             _rawIssues = issues;
             _rejectedIssues.Clear();
 
-            IssueGroups.Clear();
-            foreach (var issue in issues)
-                IssueGroups.Add(new CheckGroupVm(issue));
+            UpdateIssueGroupsInPlace(issues);
 
             var category = CustomRulesService.Instance.ExtractCategoryFromFileName(picked.FileName);
             if (!string.IsNullOrWhiteSpace(category) && matchedRule.Id != RuleSets.MasterRuleId) {
@@ -267,14 +281,16 @@ public partial class CheckPage : ContentPage
         try {
             var path = _workPath;
             var rules = CurrentRules;
+            var swCheck = Stopwatch.StartNew();
             var raw = await Task.Run(() => DocumentChecker.Check(path, rules));
+            swCheck.Stop();
+            System.Diagnostics.Debug.WriteLine($"[PERF] Check (OnRuleChanged): {swCheck.ElapsedMilliseconds} ms, found {raw.Count} issues");
+
             _rejectedIssues.Clear();
             _rawIssues = raw;
             _status = null;
 
-            IssueGroups.Clear();
-            foreach (var issue in raw)
-                IssueGroups.Add(new CheckGroupVm(issue));
+            UpdateIssueGroupsInPlace(raw);
         } catch (Exception ex) {
             System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
             await Dialogs.AlertAsync("Не удалось проверить файл", ex.Message, DialogKind.Danger);
@@ -299,6 +315,7 @@ public partial class CheckPage : ContentPage
 
     private async void OnEditCurrentRuleTapped(object? sender, EventArgs e)
     {
+        if (_busy) return;
         var curr = CurrentRules;
         RuleEditorPage.TargetRule = curr;
         RuleEditorPage.BaselineRule = RuleSets.MasterRule;
@@ -311,7 +328,7 @@ public partial class CheckPage : ContentPage
 
     private void ToggleExpand(CheckGroupVm? group)
     {
-        if (group == null)
+        if (_busy || group == null)
             return;
 
         HapticHelper.Click();
@@ -320,7 +337,7 @@ public partial class CheckPage : ContentPage
 
     private void RejectItem(CheckItemVm? item)
     {
-        if (item == null)
+        if (_busy || item == null)
             return;
 
         HapticHelper.Click();
@@ -332,7 +349,7 @@ public partial class CheckPage : ContentPage
 
     private void RejectGroup(CheckGroupVm? group)
     {
-        if (group == null)
+        if (_busy || group == null)
             return;
 
         HapticHelper.Click();
@@ -373,7 +390,11 @@ public partial class CheckPage : ContentPage
             var indices = new HashSet<int> { item.Index };
             var samples = new Dictionary<int, string> { [item.Index] = item.Text };
 
+            var swFix = Stopwatch.StartNew();
             int changed = await Task.Run(() => DocumentChecker.FixItems(path, rules, kind, indices, samples));
+            swFix.Stop();
+            System.Diagnostics.Debug.WriteLine($"[PERF] FixItems ({kind}, {indices.Count} items): {swFix.ElapsedMilliseconds} ms, changed: {changed}");
+
             if (changed > 0)
             {
                 HapticHelper.Success();
@@ -411,6 +432,7 @@ public partial class CheckPage : ContentPage
             var rules = CurrentRules;
             var issue = group.Issue;
             int changed;
+            var swFix = Stopwatch.StartNew();
 
             if (issue.Items != null && issue.Items.Count > 0)
             {
@@ -422,6 +444,8 @@ public partial class CheckPage : ContentPage
             {
                 changed = await Task.Run(() => DocumentChecker.Fix(path, rules, new[] { issue.Kind }));
             }
+            swFix.Stop();
+            System.Diagnostics.Debug.WriteLine($"[PERF] Fix/FixItems ({issue.Kind}): {swFix.ElapsedMilliseconds} ms, changed: {changed}");
 
             if (changed > 0)
             {
@@ -458,7 +482,10 @@ public partial class CheckPage : ContentPage
             var rules = CurrentRules;
             var kinds = fixable.Select(t => t.Issue.Kind).Distinct().ToList();
 
+            var swFix = Stopwatch.StartNew();
             int changes = await Task.Run(() => DocumentChecker.Fix(path, rules, kinds));
+            swFix.Stop();
+            System.Diagnostics.Debug.WriteLine($"[PERF] Fix ({string.Join(", ", kinds)}): {swFix.ElapsedMilliseconds} ms, changed: {changes}");
 
             if (changes > 0)
             {
@@ -490,10 +517,14 @@ public partial class CheckPage : ContentPage
 
         var path = _workPath;
         var rules = CurrentRules;
+        var swCheck = Stopwatch.StartNew();
         var raw = await Task.Run(() => DocumentChecker.Check(path, rules));
-        var info = await Task.Run(() => DocumentChecker.ReadInfo(path));
+        swCheck.Stop();
+        System.Diagnostics.Debug.WriteLine($"[PERF] Check (RecheckAsync): {swCheck.ElapsedMilliseconds} ms, found {raw.Count} issues");
+
         _rawIssues = raw;
-        _info = info;
+        // В RecheckAsync не вызываем ReadInfo (сохраняем размер и число страниц прежними)
+        System.Diagnostics.Debug.WriteLine("[PERF] ReadInfo skipped in RecheckAsync (preserved size & pages)");
 
         ApplyRejectionFilter();
     }
@@ -501,16 +532,53 @@ public partial class CheckPage : ContentPage
     private void ApplyRejectionFilter()
     {
         var filtered = CheckIssueFilter.FilterIssues(_rawIssues, _rejectedIssues);
-        var expandedKinds = IssueGroups.Where(g => g.IsExpanded).Select(g => g.Issue.Kind).ToHashSet();
+        UpdateIssueGroupsInPlace(filtered);
+    }
 
-        IssueGroups.Clear();
-        foreach (var issue in filtered)
+    private void UpdateIssueGroupsInPlace(IReadOnlyList<CheckIssue> newIssues)
+    {
+        var sw = Stopwatch.StartNew();
+
+        // 1. Удаляем группы, которых больше нет в замечаниях
+        var newKindSet = new HashSet<IssueKind>(newIssues.Select(i => i.Kind));
+        for (int i = IssueGroups.Count - 1; i >= 0; i--)
         {
-            var vm = new CheckGroupVm(issue);
-            if (expandedKinds.Contains(issue.Kind))
-                vm.IsExpanded = true;
-            IssueGroups.Add(vm);
+            if (!newKindSet.Contains(IssueGroups[i].Issue.Kind))
+            {
+                IssueGroups.RemoveAt(i);
+            }
         }
+
+        // 2. Обновляем оставшиеся и добавляем новые, соблюдая порядок
+        var existingByKind = IssueGroups.ToDictionary(g => g.Issue.Kind);
+
+        for (int i = 0; i < newIssues.Count; i++)
+        {
+            var issue = newIssues[i];
+            if (existingByKind.TryGetValue(issue.Kind, out var existingGroup))
+            {
+                // Обновляем на месте — свойство IsExpanded сохраняется
+                existingGroup.UpdateIssue(issue);
+
+                int currentIndex = IssueGroups.IndexOf(existingGroup);
+                if (currentIndex != i)
+                {
+                    IssueGroups.Move(currentIndex, i);
+                }
+            }
+            else
+            {
+                // Новая группа замечаний
+                var newGroup = new CheckGroupVm(issue);
+                IssueGroups.Insert(i, newGroup);
+                existingByKind[issue.Kind] = newGroup;
+            }
+        }
+
+        sw.Stop();
+        System.Diagnostics.Debug.WriteLine($"[PERF] Update IssueGroups in-place: {sw.ElapsedMilliseconds} ms, count: {IssueGroups.Count}");
+
+        WireCardsContainer();
     }
 
     private async void OnPrimaryTapped(object? sender, TappedEventArgs e)
@@ -568,6 +636,20 @@ public partial class CheckPage : ContentPage
         _busy = busy;
         Loader.IsVisible = busy;
         Loader.IsRunning = busy;
+
+        ActionBar.IsEnabled = !busy;
+        PrimaryButton.IsEnabled = !busy;
+        PrimaryButton.Opacity = busy ? 0.6 : 1.0;
+        SaveButton.IsEnabled = !busy;
+        SaveButton.Opacity = busy ? 0.6 : 1.0;
+
+        ResultPanel.IsEnabled = !busy;
+        ResultPanel.Opacity = busy ? 0.65 : 1.0;
+
+        DropzoneBorder.IsEnabled = !busy;
+        FileSelectedCard.IsEnabled = !busy;
+        RuleChips.IsEnabled = !busy;
+        EditCurrentRuleLabel.IsEnabled = !busy;
     }
 
     private void UpdateUi()
@@ -630,6 +712,7 @@ public partial class CheckPage : ContentPage
 
     private async void OnDropFile(object? sender, DropEventArgs e)
     {
+        if (_busy) return;
         try
         {
             var text = await e.Data.GetTextAsync();
@@ -662,8 +745,15 @@ public partial class CheckPage : ContentPage
             }
 
             var rules = (matchIdx >= 0) ? _allRules[matchIdx] : CurrentRules;
+            var swCheck = Stopwatch.StartNew();
             var issues = await Task.Run(() => DocumentChecker.Check(work, rules));
+            swCheck.Stop();
+            System.Diagnostics.Debug.WriteLine($"[PERF] Check (LoadFromPath): {swCheck.ElapsedMilliseconds} ms, found {issues.Count} issues");
+
+            var swInfo = Stopwatch.StartNew();
             var info = await Task.Run(() => DocumentChecker.ReadInfo(work));
+            swInfo.Stop();
+            System.Diagnostics.Debug.WriteLine($"[PERF] ReadInfo (LoadFromPath): {swInfo.ElapsedMilliseconds} ms, pages: {info.Pages}, paragraphs: {info.Paragraphs}");
 
             _workPath = work;
             _sourceName = fileName;
@@ -672,9 +762,7 @@ public partial class CheckPage : ContentPage
             _rawIssues = issues;
             _rejectedIssues.Clear();
 
-            IssueGroups.Clear();
-            foreach (var issue in issues)
-                IssueGroups.Add(new CheckGroupVm(issue));
+            UpdateIssueGroupsInPlace(issues);
 
             var category = CustomRulesService.Instance.ExtractCategoryFromFileName(fileName);
             if (!string.IsNullOrWhiteSpace(category) && matchedRule.Id != RuleSets.MasterRuleId) {
@@ -705,5 +793,86 @@ public partial class CheckPage : ContentPage
             parts.Add(RuFormat.Count(_info.Paragraphs, "абзац", "абзаца", "абзацев"));
 
         return string.Join(" • ", parts);
+    }
+
+    private void WireCardsContainer()
+    {
+        if (!MainThread.IsMainThread)
+        {
+            MainThread.BeginInvokeOnMainThread(WireCardsContainer);
+            return;
+        }
+
+        if (ResultPanel == null) return;
+
+        foreach (var child in ResultPanel.Children)
+        {
+            if (child is VerticalStackLayout vsl && BindableLayout.GetItemsSource(vsl) == IssueGroups)
+            {
+                vsl.ChildAdded -= OnCardViewAdded;
+                vsl.ChildAdded += OnCardViewAdded;
+
+                foreach (var card in vsl.Children)
+                {
+                    if (card is Element elem)
+                        WireCardView(elem);
+                }
+                break;
+            }
+        }
+    }
+
+    private void OnCardViewAdded(object? sender, ElementEventArgs e)
+    {
+        WireCardView(e.Element);
+    }
+
+    private void WireCardView(Element element)
+    {
+        FindAndWireMoreLabel(element);
+    }
+
+    private void FindAndWireMoreLabel(Element parent)
+    {
+        if (parent is Label lbl)
+        {
+            if (lbl.FontAttributes == FontAttributes.Italic &&
+                (lbl.HorizontalOptions.Alignment == LayoutAlignment.Center || lbl.HorizontalOptions == LayoutOptions.Center))
+            {
+                if (lbl.GestureRecognizers.Count == 0)
+                {
+                    var tap = new TapGestureRecognizer();
+                    tap.Tapped += (s, e) =>
+                    {
+                        if (_busy) return;
+                        if (lbl.BindingContext is CheckGroupVm group)
+                        {
+                            HapticHelper.Click();
+                            group.LoadMore(CheckGroupVm.PageSize);
+                        }
+                    };
+                    lbl.GestureRecognizers.Add(tap);
+                    lbl.TextDecorations = TextDecorations.Underline;
+                    lbl.TextColor = Color.FromArgb("#16A34A");
+                }
+            }
+        }
+
+        if (parent is Border border && border.Content != null)
+        {
+            FindAndWireMoreLabel(border.Content);
+        }
+        else if (parent is Layout layout)
+        {
+            foreach (var child in layout.Children)
+            {
+                if (child is Element elemChild)
+                    FindAndWireMoreLabel(elemChild);
+            }
+        }
+        else if (parent is ContentView cv && cv.Content != null)
+        {
+            FindAndWireMoreLabel(cv.Content);
+        }
     }
 }

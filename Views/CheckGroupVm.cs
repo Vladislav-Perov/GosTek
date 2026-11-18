@@ -8,6 +8,8 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows.Input;
+using Microsoft.Maui.Controls;
 using GosTek.Models;
 
 namespace GosTek.Views;
@@ -18,33 +20,107 @@ namespace GosTek.Views;
 /// </summary>
 public sealed class CheckGroupVm : INotifyPropertyChanged
 {
+    public const int PageSize = 30;
+
+    private readonly List<IssueItem> _allItems = new();
+    private int _displayedCount = PageSize;
     private bool _isExpanded;
+    private CheckIssue _issue;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public CheckIssue Issue { get; }
+    public CheckIssue Issue => _issue;
     public ObservableCollection<CheckItemVm> Items { get; }
-    public string? MoreText { get; }
+    public ICommand LoadMoreCommand { get; }
 
     public CheckGroupVm(CheckIssue issue)
     {
-        Issue = issue ?? throw new ArgumentNullException(nameof(issue));
+        _issue = issue ?? throw new ArgumentNullException(nameof(issue));
         Items = new ObservableCollection<CheckItemVm>();
+        LoadMoreCommand = new Command(() => LoadMore(PageSize));
 
         if (issue.Items != null)
         {
-            foreach (var item in issue.Items.Take(200))
+            _allItems.AddRange(issue.Items);
+            int take = Math.Min(PageSize, _allItems.Count);
+            for (int i = 0; i < take; i++)
+            {
+                Items.Add(new CheckItemVm(_allItems[i], this));
+            }
+            _displayedCount = Items.Count;
+        }
+    }
+
+    public void LoadMore(int count = PageSize)
+    {
+        if (count <= 0) count = PageSize;
+        int current = Items.Count;
+        int toTake = Math.Min(count, _allItems.Count - current);
+        if (toTake <= 0) return;
+
+        for (int i = 0; i < toTake; i++)
+        {
+            Items.Add(new CheckItemVm(_allItems[current + i], this));
+        }
+
+        _displayedCount = Items.Count;
+        OnPropertyChanged(nameof(HasItems));
+        OnPropertyChanged(nameof(HasMore));
+        OnPropertyChanged(nameof(HasMoreText));
+        OnPropertyChanged(nameof(MoreText));
+    }
+
+    public void UpdateIssue(CheckIssue newIssue)
+    {
+        _issue = newIssue ?? throw new ArgumentNullException(nameof(newIssue));
+        _allItems.Clear();
+        if (newIssue.Items != null)
+        {
+            _allItems.AddRange(newIssue.Items);
+        }
+
+        // Сохраняем объём показанных строк (не меньше 30, но не больше доступных)
+        int targetCount = Math.Min(Math.Max(PageSize, Items.Count), _allItems.Count);
+
+        for (int i = 0; i < targetCount; i++)
+        {
+            var item = _allItems[i];
+            if (i < Items.Count)
+            {
+                if (Items[i].Item.Index != item.Index ||
+                    Items[i].Item.Text != item.Text ||
+                    Items[i].Item.Actual != item.Actual ||
+                    Items[i].Item.Expected != item.Expected)
+                {
+                    Items[i] = new CheckItemVm(item, this);
+                }
+            }
+            else
             {
                 Items.Add(new CheckItemVm(item, this));
             }
-
-            int totalAffected = issue.AffectedCount ?? issue.Items.Count;
-            if (totalAffected > Items.Count)
-            {
-                int remaining = totalAffected - Items.Count;
-                MoreText = $"…ещё {remaining}";
-            }
         }
+
+        while (Items.Count > targetCount)
+        {
+            Items.RemoveAt(Items.Count - 1);
+        }
+
+        _displayedCount = Items.Count;
+
+        OnPropertyChanged(nameof(Issue));
+        OnPropertyChanged(nameof(Title));
+        OnPropertyChanged(nameof(WhereText));
+        OnPropertyChanged(nameof(DiffText));
+        OnPropertyChanged(nameof(HasDiff));
+        OnPropertyChanged(nameof(CanFix));
+        OnPropertyChanged(nameof(CannotFix));
+        OnPropertyChanged(nameof(FixAllHint));
+        OnPropertyChanged(nameof(HasItems));
+        OnPropertyChanged(nameof(HasMore));
+        OnPropertyChanged(nameof(HasMoreText));
+        OnPropertyChanged(nameof(MoreText));
+        OnPropertyChanged(nameof(ExpandButtonText));
     }
 
     public bool IsExpanded
@@ -62,7 +138,19 @@ public sealed class CheckGroupVm : INotifyPropertyChanged
     }
 
     public bool HasItems => Items.Count > 0;
-    public bool HasMoreText => !string.IsNullOrEmpty(MoreText);
+    public bool HasMore => _allItems.Count > Items.Count;
+    public bool HasMoreText => HasMore;
+
+    public string? MoreText
+    {
+        get
+        {
+            int remaining = _allItems.Count - Items.Count;
+            if (remaining <= 0) return null;
+            if (remaining >= PageSize) return $"Показать ещё {PageSize}";
+            return $"Показать ещё {remaining}";
+        }
+    }
 
     public string Title => Issue.Title;
 
@@ -121,7 +209,7 @@ public sealed class CheckGroupVm : INotifyPropertyChanged
         get
         {
             if (!CanFix) return string.Empty;
-            int count = Issue.AffectedCount ?? (Items.Count > 0 ? Items.Count : 1);
+            int count = Issue.AffectedCount ?? (_allItems.Count > 0 ? _allItems.Count : (Items.Count > 0 ? Items.Count : 1));
             if (count <= 0) count = 1;
             return $"Принять: исправит все {count}";
         }

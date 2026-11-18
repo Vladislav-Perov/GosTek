@@ -10,53 +10,67 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vctrl="clr-namespace:GosTek.Views.Controls"
              x:Class="GosTek.Views.SettingsPanel"
+             InputTransparent="False"
+             CascadeInputTransparent="False"
              IsVisible="False">
 
     <!-- Затемнение подложки и выезжающая боковая панель -->
-    <Grid>
+    <Grid InputTransparent="False"
+          CascadeInputTransparent="False">
 
         <!-- Затемняющий экран с перехватом клика для закрытия (Black с динамическим Opacity для корректного рендера на Android) -->
         <BoxView x:Name="Scrim"
+                 ZIndex="1"
                  Color="Black"
-                 Opacity="0">
+                 Opacity="0"
+                 InputTransparent="False">
             <BoxView.GestureRecognizers>
                 <TapGestureRecognizer Tapped="OnScrimTapped" />
             </BoxView.GestureRecognizers>
         </BoxView>
 
-        <!-- Выезжающая панель Side Drawer (на Windows выезжает справа, чтобы не перекрывать левый Navigation Rail; на Android слева) -->
+        <!-- Выезжающая панель Side Drawer слева -->
         <Border x:Name="Panel"
-                HorizontalOptions="{OnPlatform WinUI=End, Android=Start, Default=End}"
+                ZIndex="100"
+                InputTransparent="False"
+                CascadeInputTransparent="False"
+                HorizontalOptions="Start"
                 WidthRequest="360"
                 BackgroundColor="{DynamicResource PageBg}"
                 Stroke="{DynamicResource CardStroke}"
                 StrokeThickness="1"
-                StrokeShape="{OnPlatform WinUI='RoundRectangle 24, 0, 0, 24', Android='RoundRectangle 0, 24, 24, 0', Default='RoundRectangle 24, 0, 0, 24'}"
+                StrokeShape="RoundRectangle 0, 24, 24, 0"
                 Padding="0">
             <Border.Shadow>
-                <Shadow Brush="Black" Offset="{OnPlatform WinUI='-6, 0', Android='6, 0', Default='-6, 0'}" Radius="24" Opacity="0.3" />
+                <Shadow Brush="Black" Offset="6, 0" Radius="24" Opacity="0.3" />
             </Border.Shadow>
 
-            <Grid RowDefinitions="Auto, *">
+            <Grid RowDefinitions="Auto, *"
+                  InputTransparent="False"
+                  CascadeInputTransparent="False">
 
                 <!-- ===== ШАПКА ПАНЕЛИ НАСТРОЕК ===== -->
                 <Grid Grid.Row="0"
                       ColumnDefinitions="Auto, *, Auto"
                       ColumnSpacing="12"
                       Padding="20, 18, 16, 12"
-                      BackgroundColor="{DynamicResource PageBg}">
+                      BackgroundColor="{DynamicResource PageBg}"
+                      InputTransparent="False"
+                      CascadeInputTransparent="False">
 
                     <Border BackgroundColor="{DynamicResource IconBoxBg}"
                             StrokeThickness="0"
                             StrokeShape="RoundRectangle 10"
                             WidthRequest="36"
                             HeightRequest="36"
+                            InputTransparent="True"
                             VerticalOptions="Center">
                         <vctrl:IconView Icon="sliders"
                                         IconColor="BrandGreen"
                                         Size="18"
                                         HorizontalOptions="Center"
-                                        VerticalOptions="Center" />
+                                        VerticalOptions="Center"
+                                        InputTransparent="True" />
                     </Border>
 
                     <Label Grid.Column="1"
@@ -64,6 +78,7 @@
                            FontSize="20"
                            FontAttributes="Bold"
                            TextColor="{DynamicResource TextPrimary}"
+                           InputTransparent="True"
                            VerticalOptions="Center" />
 
                     <Border Grid.Column="2"
@@ -75,6 +90,7 @@
                             WidthRequest="36"
                             HeightRequest="36"
                             Padding="0"
+                            InputTransparent="False"
                             VerticalOptions="Center">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnCloseTapped" />
@@ -84,13 +100,20 @@
                                FontAttributes="Bold"
                                TextColor="{DynamicResource TextPrimary}"
                                HorizontalOptions="Center"
-                               VerticalOptions="Center" />
+                               VerticalOptions="Center"
+                               InputTransparent="True" />
                     </Border>
                 </Grid>
 
                 <!-- ===== ПРОКРУЧИВАЕМЫЙ СПИСОК РАЗДЕЛОВ ===== -->
-                <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
-                    <VerticalStackLayout Padding="20, 6, 20, 24" Spacing="20">
+                <ScrollView Grid.Row="1"
+                            VerticalScrollBarVisibility="Never"
+                            InputTransparent="False"
+                            CascadeInputTransparent="False">
+                    <VerticalStackLayout Padding="20, 6, 20, 24"
+                                         Spacing="20"
+                                         InputTransparent="False"
+                                         CascadeInputTransparent="False">
 
                         <!-- ===== РАЗДЕЛ: ШАБЛОНЫ ===== -->
                         <VerticalStackLayout Spacing="8">
@@ -143,19 +166,22 @@
                                             Stroke="{DynamicResource CardStroke}"
                                             BackgroundColor="{DynamicResource CardBg}"
                                             StrokeShape="RoundRectangle 12"
-                                            Padding="12, 9">
+                                            Padding="12, 9"
+                                            InputTransparent="False">
                                         <Border.GestureRecognizers>
                                             <TapGestureRecognizer Tapped="OnOpenTemplatesTapped" />
                                         </Border.GestureRecognizers>
-                                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="8" InputTransparent="True">
                                             <vctrl:IconView Icon="folder"
                                                             IconColor="TextPrimary"
                                                             Size="14"
+                                                            InputTransparent="True"
                                                             VerticalOptions="Center" />
                                             <Label Text="Открыть в проводнике"
                                                    FontSize="13"
                                                    FontAttributes="Bold"
                                                    TextColor="{DynamicResource TextPrimary}"
+                                                   InputTransparent="True"
                                                    VerticalOptions="Center" />
                                         </HorizontalStackLayout>
                                     </Border>
@@ -167,7 +193,8 @@
                                                 Stroke="{DynamicResource CardStroke}"
                                                 BackgroundColor="{DynamicResource CardBg}"
                                                 StrokeShape="RoundRectangle 12"
-                                                Padding="12, 9">
+                                                Padding="12, 9"
+                                                InputTransparent="False">
                                             <Border.GestureRecognizers>
                                                 <TapGestureRecognizer Tapped="OnPickTemplatesTapped" />
                                             </Border.GestureRecognizers>
@@ -175,7 +202,8 @@
                                                    FontSize="13"
                                                    FontAttributes="Bold"
                                                    TextColor="{DynamicResource TextPrimary}"
-                                                   HorizontalOptions="Center" />
+                                                   HorizontalOptions="Center"
+                                                   InputTransparent="True" />
                                         </Border>
 
                                         <Border x:Name="ResetTemplatesButton"
@@ -185,14 +213,16 @@
                                                 Stroke="{DynamicResource CardStroke}"
                                                 BackgroundColor="{DynamicResource CardBg}"
                                                 StrokeShape="RoundRectangle 12"
-                                                Padding="12, 9">
+                                                Padding="12, 9"
+                                                InputTransparent="False">
                                             <Border.GestureRecognizers>
                                                 <TapGestureRecognizer Tapped="OnResetTemplatesTapped" />
                                             </Border.GestureRecognizers>
                                             <Label Text="Сброс"
                                                    FontSize="13"
                                                    TextColor="{DynamicResource TextSecondary}"
-                                                   HorizontalOptions="Center" />
+                                                   HorizontalOptions="Center"
+                                                   InputTransparent="True" />
                                         </Border>
                                     </Grid>
 
@@ -258,7 +288,8 @@
                                                     Stroke="{DynamicResource CardStroke}"
                                                     BackgroundColor="{DynamicResource CardBg}"
                                                     StrokeShape="RoundRectangle 12"
-                                                    Padding="12, 9">
+                                                    Padding="12, 9"
+                                                    InputTransparent="False">
                                                 <Border.GestureRecognizers>
                                                     <TapGestureRecognizer Tapped="OnPickFolderTapped" />
                                                 </Border.GestureRecognizers>
@@ -266,7 +297,8 @@
                                                        FontSize="13"
                                                        FontAttributes="Bold"
                                                        TextColor="{DynamicResource TextPrimary}"
-                                                       HorizontalOptions="Center" />
+                                                       HorizontalOptions="Center"
+                                                       InputTransparent="True" />
                                             </Border>
 
                                             <Border x:Name="ResetFolderButton"
@@ -276,14 +308,16 @@
                                                     Stroke="{DynamicResource CardStroke}"
                                                     BackgroundColor="{DynamicResource CardBg}"
                                                     StrokeShape="RoundRectangle 12"
-                                                    Padding="12, 9">
+                                                    Padding="12, 9"
+                                                    InputTransparent="False">
                                                 <Border.GestureRecognizers>
                                                     <TapGestureRecognizer Tapped="OnResetFolderTapped" />
                                                 </Border.GestureRecognizers>
                                                 <Label Text="Сброс"
                                                        FontSize="13"
                                                        TextColor="{DynamicResource TextSecondary}"
-                                                       HorizontalOptions="Center" />
+                                                       HorizontalOptions="Center"
+                                                       InputTransparent="True" />
                                             </Border>
                                         </Grid>
                                     </VerticalStackLayout>
@@ -400,7 +434,7 @@
                                     <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 2" />
 
                                     <Grid ColumnDefinitions="*, Auto" Margin="0, 2" VerticalOptions="Center">
-                                        <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                                        <VerticalStackLayout Spacing="2" VerticalOptions="Center" InputTransparent="True">
                                             <Label Text="Разрешить облачный ИИ"
                                                    FontSize="13"
                                                    FontAttributes="Bold"
@@ -413,13 +447,14 @@
                                                 x:Name="AiConsentSwitch"
                                                 Toggled="OnAiConsentToggled"
                                                 OnColor="{DynamicResource BrandGreen}"
+                                                InputTransparent="False"
                                                 VerticalOptions="Center" />
                                     </Grid>
 
                                     <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 2" />
 
                                     <Grid ColumnDefinitions="*, Auto" Margin="0, 2" VerticalOptions="Center">
-                                        <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                                        <VerticalStackLayout Spacing="2" VerticalOptions="Center" InputTransparent="True">
                                             <Label Text="Мягкое маскирование имён"
                                                    FontSize="13"
                                                    FontAttributes="Bold"
@@ -432,6 +467,7 @@
                                                 x:Name="AiMaskSilentSwitch"
                                                 Toggled="OnAiMaskSilentToggled"
                                                 OnColor="{DynamicResource BrandGreen}"
+                                                InputTransparent="False"
                                                 VerticalOptions="Center" />
                                     </Grid>
 
@@ -442,7 +478,8 @@
                                             Stroke="{DynamicResource CardStroke}"
                                             BackgroundColor="{DynamicResource CardBg}"
                                             StrokeShape="RoundRectangle 12"
-                                            Padding="12, 10">
+                                            Padding="12, 10"
+                                            InputTransparent="False">
                                         <Border.GestureRecognizers>
                                             <TapGestureRecognizer Tapped="OnClearTempTapped" />
                                         </Border.GestureRecognizers>
@@ -450,7 +487,8 @@
                                                FontSize="13"
                                                FontAttributes="Bold"
                                                TextColor="{DynamicResource TextPrimary}"
-                                               HorizontalOptions="Center" />
+                                               HorizontalOptions="Center"
+                                               InputTransparent="True" />
                                     </Border>
 
                                     <Border StyleClass="HoverCard"
@@ -458,20 +496,23 @@
                                             Stroke="#33EF4444"
                                             BackgroundColor="{DynamicResource CardBg}"
                                             StrokeShape="RoundRectangle 12"
-                                            Padding="12, 10">
+                                            Padding="12, 10"
+                                            InputTransparent="False">
                                         <Border.GestureRecognizers>
                                             <TapGestureRecognizer Tapped="OnDeleteProfileTapped" />
                                         </Border.GestureRecognizers>
-                                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="8" InputTransparent="True">
                                             <vctrl:IconView Icon="trash"
                                                             IconColor="#EF4444"
                                                             Size="14"
-                                                            VerticalOptions="Center" />
+                                                            VerticalOptions="Center"
+                                                            InputTransparent="True" />
                                             <Label Text="Удалить профиль"
                                                    FontSize="13"
                                                    FontAttributes="Bold"
                                                    TextColor="#EF4444"
-                                                   VerticalOptions="Center" />
+                                                   VerticalOptions="Center"
+                                                   InputTransparent="True" />
                                         </HorizontalStackLayout>
                                     </Border>
 
@@ -480,20 +521,23 @@
                                             Stroke="#66EF4444"
                                             BackgroundColor="#15EF4444"
                                             StrokeShape="RoundRectangle 12"
-                                            Padding="12, 10">
+                                            Padding="12, 10"
+                                            InputTransparent="False">
                                         <Border.GestureRecognizers>
                                             <TapGestureRecognizer Tapped="OnDeleteAllTapped" />
                                         </Border.GestureRecognizers>
-                                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="8" InputTransparent="True">
                                             <vctrl:IconView Icon="alerttriangle"
                                                             IconColor="#EF4444"
                                                             Size="14"
-                                                            VerticalOptions="Center" />
+                                                            VerticalOptions="Center"
+                                                            InputTransparent="True" />
                                             <Label Text="Сбросить все данные приложения"
                                                    FontSize="13"
                                                    FontAttributes="Bold"
                                                    TextColor="#EF4444"
-                                                   VerticalOptions="Center" />
+                                                   VerticalOptions="Center"
+                                                   InputTransparent="True" />
                                         </HorizontalStackLayout>
                                     </Border>
                                 </VerticalStackLayout>
@@ -544,20 +588,23 @@
                                             Stroke="{DynamicResource CardStroke}"
                                             BackgroundColor="{DynamicResource CardBg}"
                                             StrokeShape="RoundRectangle 12"
-                                            Padding="12, 10">
+                                            Padding="12, 10"
+                                            InputTransparent="False">
                                         <Border.GestureRecognizers>
                                             <TapGestureRecognizer Tapped="OnHelpTapped" />
                                         </Border.GestureRecognizers>
-                                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="8" InputTransparent="True">
                                             <vctrl:IconView Icon="info"
                                                             IconColor="TextPrimary"
                                                             Size="14"
-                                                            VerticalOptions="Center" />
+                                                            VerticalOptions="Center"
+                                                            InputTransparent="True" />
                                             <Label Text="Как пользоваться"
                                                    FontSize="13"
                                                    FontAttributes="Bold"
                                                    TextColor="{DynamicResource TextPrimary}"
-                                                   VerticalOptions="Center" />
+                                                   VerticalOptions="Center"
+                                                   InputTransparent="True" />
                                         </HorizontalStackLayout>
                                     </Border>
                                 </VerticalStackLayout>

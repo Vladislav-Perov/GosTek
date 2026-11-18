@@ -926,4 +926,254 @@ public class DocumentCheckerTests
             if (File.Exists(tempFile)) File.Delete(tempFile);
         }
     }
+
+    private static string CreateConvergenceTestDocument()
+    {
+        return CreateDocWithSection((body, secProps) => {
+            // 1. Заголовок
+            var h = body.AppendChild(new Paragraph());
+            var hPr = h.AppendChild(new ParagraphProperties());
+            hPr.AppendChild(new ParagraphStyleId { Val = "Heading1" });
+            hPr.AppendChild(new OutlineLevel { Val = 0 });
+            var hr = h.AppendChild(new Run(new Text("1. Введение.")));
+            var hrPr = hr.AppendChild(new RunProperties());
+            hrPr.AppendChild(new FontSize { Val = "24" }); // 12 pt вместо 16 pt
+
+            // 2. Обычный абзац 1
+            var p1 = body.AppendChild(new Paragraph());
+            var pPr1 = p1.AppendChild(new ParagraphProperties());
+            pPr1.AppendChild(new Justification { Val = JustificationValues.Left });
+            pPr1.AppendChild(new Indentation { FirstLine = "0" });
+            pPr1.AppendChild(new SpacingBetweenLines { Line = "480", LineRule = LineSpacingRuleValues.Auto, Before = "240", After = "240" });
+            var r1 = p1.AppendChild(new Run(new Text("Текст первого обычного абзаца для проверки оформления по ГОСТ.")));
+            var rPr1 = r1.AppendChild(new RunProperties());
+            rPr1.AppendChild(new RunFonts { Ascii = "Arial" });
+            rPr1.AppendChild(new FontSize { Val = "32" }); // 16 pt вместо 14 pt
+
+            // 3. Подпись таблицы
+            var cap = body.AppendChild(new Paragraph());
+            var capPr = cap.AppendChild(new ParagraphProperties());
+            capPr.AppendChild(new Justification { Val = JustificationValues.Center }); // Центр вместо Left
+            capPr.AppendChild(new Indentation { FirstLine = "709" }); // 1.25 см вместо 0
+            capPr.AppendChild(new SpacingBetweenLines { Line = "360", LineRule = LineSpacingRuleValues.Auto, Before = "0", After = "0" });
+            var rCap = cap.AppendChild(new Run(new Text("Таблица 1 — Исходные данные")));
+            var rPrCap = rCap.AppendChild(new RunProperties());
+            rPrCap.AppendChild(new RunFonts { Ascii = "Times New Roman" });
+
+            // 4. Таблица с ячейкой
+            var table = body.AppendChild(new Table());
+            var tr = table.AppendChild(new TableRow());
+            var tc = tr.AppendChild(new TableCell());
+            var cellP = tc.AppendChild(new Paragraph());
+            var cellPpr = cellP.AppendChild(new ParagraphProperties());
+            cellPpr.AppendChild(new Indentation { FirstLine = "709" });
+            cellPpr.AppendChild(new SpacingBetweenLines { Line = "360", LineRule = LineSpacingRuleValues.Auto });
+            var rCell = cellP.AppendChild(new Run(new Text("Содержимое ячейки таблицы")));
+            var rPrCell = rCell.AppendChild(new RunProperties());
+            rPrCell.AppendChild(new FontSize { Val = "32" }); // 16 pt вместо 12 pt
+            rPrCell.AppendChild(new RunFonts { Ascii = "Arial" });
+
+            // 5. Обычный абзац 2
+            var p2 = body.AppendChild(new Paragraph());
+            var pPr2 = p2.AppendChild(new ParagraphProperties());
+            pPr2.AppendChild(new Justification { Val = JustificationValues.Left });
+            pPr2.AppendChild(new Indentation { FirstLine = "0" });
+            var r2 = p2.AppendChild(new Run(new Text("Текст второго обычного абзаца после таблицы с данными.")));
+            var rPr2 = r2.AppendChild(new RunProperties());
+            rPr2.AppendChild(new RunFonts { Ascii = "Arial" });
+            rPr2.AppendChild(new FontSize { Val = "32" });
+
+            // 6. Подпись рисунка
+            var figCap = body.AppendChild(new Paragraph());
+            var figCapPr = figCap.AppendChild(new ParagraphProperties());
+            figCapPr.AppendChild(new Justification { Val = JustificationValues.Left }); // Left вместо Center
+            figCapPr.AppendChild(new Indentation { FirstLine = "709" });
+            var rFigCap = figCap.AppendChild(new Run(new Text("Рисунок 1 — Структурная схема")));
+            var rPrFigCap = rFigCap.AppendChild(new RunProperties());
+            rPrFigCap.AppendChild(new RunFonts { Ascii = "Times New Roman" });
+
+            // 7. Листинг кода
+            var codeP = body.AppendChild(new Paragraph());
+            var codePpr = codeP.AppendChild(new ParagraphProperties());
+            codePpr.AppendChild(new ParagraphStyleId { Val = "Code" });
+            codePpr.AppendChild(new Indentation { FirstLine = "709" });
+            var rCode = codeP.AppendChild(new Run(new Text("console.log(\"Hello world\");")));
+            var rPrCode = rCode.AppendChild(new RunProperties());
+            rPrCode.AppendChild(new RunFonts { Ascii = "Arial" }); // Arial вместо Consolas
+            rPrCode.AppendChild(new FontSize { Val = "32" }); // 16 pt вместо 12 pt
+        });
+    }
+
+    [Fact]
+    public void Convergence_CheckAndFix_AllCanFixIssuesResolvedAndSecondFixReturnsZero()
+    {
+        var tempFile = CreateConvergenceTestDocument();
+        try {
+            var rules = RuleSets.Universal with { RequirePageNumbers = false };
+            var issuesBefore = DocumentChecker.Check(tempFile, rules);
+
+            var canFixKinds = issuesBefore.Where(i => i.CanFix).Select(i => i.Kind).Distinct().ToList();
+            Assert.NotEmpty(canFixKinds);
+
+            int firstFixChanges = DocumentChecker.Fix(tempFile, rules, canFixKinds);
+            Assert.True(firstFixChanges > 0, $"Ожидались изменения при первом Fix, получено: {firstFixChanges}");
+
+            var issuesAfter = DocumentChecker.Check(tempFile, rules);
+            var remainingFixable = issuesAfter.Where(i => i.CanFix).ToList();
+            Assert.True(remainingFixable.Count == 0,
+                $"Все замечания с CanFix должны быть устранены. Остались: {string.Join(", ", remainingFixable.Select(i => $"{i.Kind}: {i.Title}"))}");
+
+            int secondFixChanges = DocumentChecker.Fix(tempFile, rules, canFixKinds);
+            Assert.Equal(0, secondFixChanges);
+        } finally {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void Convergence_CheckAndFixItems_AllCanFixIssuesResolvedAndSecondFixReturnsZero()
+    {
+        var tempFile = CreateConvergenceTestDocument();
+        try {
+            var rules = RuleSets.Universal with { RequirePageNumbers = false };
+            var issuesBefore = DocumentChecker.Check(tempFile, rules);
+
+            var canFixIssues = issuesBefore.Where(i => i.CanFix).ToList();
+            Assert.NotEmpty(canFixIssues);
+
+            foreach (var issue in canFixIssues) {
+                if (issue.Items != null && issue.Items.Count > 0) {
+                    var indices = issue.Items.Select(it => it.Index).ToHashSet();
+                    DocumentChecker.FixItems(tempFile, rules, issue.Kind, indices);
+                }
+            }
+
+            var issuesAfter = DocumentChecker.Check(tempFile, rules);
+            var remainingFixable = issuesAfter.Where(i => i.CanFix).ToList();
+            Assert.True(remainingFixable.Count == 0,
+                $"После FixItems все замечания с CanFix должны быть устранены. Остались: {string.Join(", ", remainingFixable.Select(i => $"{i.Kind}: {i.Title}"))}");
+        } finally {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void Fix_TableCaptionRemainsLeftAligned_WhileBodyParagraphBecomesJustified()
+    {
+        var tempFile = CreateDocWithSection((body, secProps) => {
+            // Подпись таблицы: влево
+            var cap = body.AppendChild(new Paragraph());
+            var capPr = cap.AppendChild(new ParagraphProperties());
+            capPr.AppendChild(new Justification { Val = JustificationValues.Left });
+            cap.AppendChild(new Run(new Text("Таблица 1 — Данные эксперимента")));
+
+            // Обычный абзац: влево
+            var p = body.AppendChild(new Paragraph());
+            var pPr = p.AppendChild(new ParagraphProperties());
+            pPr.AppendChild(new Justification { Val = JustificationValues.Left });
+            p.AppendChild(new Run(new Text("Обычный текст документа, который должен стать по ширине.")));
+        });
+
+        try {
+            var rules = RuleSets.Universal with { 
+                Alignment = "Justify", 
+                TableCaptionAlignment = "Left" 
+            };
+            
+            DocumentChecker.Fix(tempFile, rules, new[] { IssueKind.Alignment, IssueKind.TableFormatting });
+
+            using var doc = WordprocessingDocument.Open(tempFile, false);
+            var paras = doc.MainDocumentPart!.Document.Body!.Descendants<Paragraph>().ToList();
+
+            var capJust = paras[0].ParagraphProperties?.Justification?.Val?.Value;
+            var bodyJust = paras[1].ParagraphProperties?.Justification?.Val?.Value;
+
+            Assert.Equal(JustificationValues.Left, capJust);
+            Assert.Equal(JustificationValues.Both, bodyJust);
+        } finally {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void Check_SpecialParagraphs_DoNotConflictWithBodyRules()
+    {
+        var tempFile = CreateDocWithSection((body, secProps) => {
+            // 1 обычный абзац (не по стандарту: влево, без красной строки)
+            var p = body.AppendChild(new Paragraph());
+            var pPr = p.AppendChild(new ParagraphProperties());
+            pPr.AppendChild(new Justification { Val = JustificationValues.Left });
+            p.AppendChild(new Run(new Text("Обычный абзац текста документа для проверки общего форматирования по правилам ГОСТ.")));
+
+            // 1 таблица с подписью
+            var capTable = body.AppendChild(new Paragraph());
+            var capTablePr = capTable.AppendChild(new ParagraphProperties());
+            capTablePr.AppendChild(new Justification { Val = JustificationValues.Left });
+            capTable.AppendChild(new Run(new Text("Таблица 1 — Результаты эксперимента")));
+
+            var table = body.AppendChild(new Table());
+            var row = table.AppendChild(new TableRow());
+            var cell1 = row.AppendChild(new TableCell());
+            cell1.AppendChild(new Paragraph(new Run(new Text("Параметр"))));
+            var cell2 = row.AppendChild(new TableCell());
+            cell2.AppendChild(new Paragraph(new Run(new Text("Значение"))));
+
+            // 1 рисунок с подписью
+            var figP = body.AppendChild(new Paragraph());
+            var figPr = figP.AppendChild(new ParagraphProperties());
+            figPr.AppendChild(new Justification { Val = JustificationValues.Left });
+            var figR = figP.AppendChild(new Run());
+            figR.AppendChild(new Drawing());
+
+            var capFig = body.AppendChild(new Paragraph());
+            var capFigPr = capFig.AppendChild(new ParagraphProperties());
+            capFigPr.AppendChild(new Justification { Val = JustificationValues.Left });
+            capFig.AppendChild(new Run(new Text("Рисунок 1 — Структурная схема")));
+        });
+
+        try {
+            var rules = RuleSets.Universal with {
+                Alignment = "Justify",
+                FirstLineIndentCm = 1.25,
+                TableCaptionAlignment = "Left",
+                FigureAlignment = "Center"
+            };
+
+            // Запуск Check: находим замечания
+            var issuesBefore = DocumentChecker.Check(tempFile, rules);
+            var fixableKinds = issuesBefore.Where(i => i.CanFix).Select(i => i.Kind).Distinct().ToList();
+
+            // Запуск Fix по всем найденным замечаниям
+            if (fixableKinds.Count > 0) {
+                DocumentChecker.Fix(tempFile, rules, fixableKinds);
+            }
+
+            // Запуск Check повторно
+            var issuesAfter = DocumentChecker.Check(tempFile, rules);
+            var remainingFixable = issuesAfter.Where(i => i.CanFix).ToList();
+
+            // Assert: ровно 0 исправимых замечаний
+            Assert.True(remainingFixable.Count == 0,
+                $"После Fix все исправимые замечания должны быть устранены. Остались: {string.Join(", ", remainingFixable.Select(i => $"{i.Kind}: {i.Title}"))}");
+
+            // Проверяем структуру документа
+            using var doc = WordprocessingDocument.Open(tempFile, false);
+            var allParas = doc.MainDocumentPart!.Document.Body!.Descendants<Paragraph>().ToList();
+
+            var ordinaryP = allParas.First(p => p.InnerText.StartsWith("Обычный абзац"));
+            var tableCapP = allParas.First(p => p.InnerText.StartsWith("Таблица 1"));
+
+            // Обычный абзац — выровнен по ширине с красной строкой
+            Assert.Equal(JustificationValues.Both, ordinaryP.ParagraphProperties?.Justification?.Val?.Value);
+            var firstLine = ordinaryP.ParagraphProperties?.Indentation?.FirstLine?.Value;
+            Assert.NotNull(firstLine);
+            int indentVal = int.Parse(firstLine);
+            Assert.InRange(indentVal, 700, 720); // 1.25 см = 708/709 твипов
+
+            // Подпись таблицы — осталась выровненной по левому краю (согласно TableCaptionAlignment = "Left")
+            Assert.Equal(JustificationValues.Left, tableCapP.ParagraphProperties?.Justification?.Val?.Value);
+        } finally {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
 }

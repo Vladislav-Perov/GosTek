@@ -142,11 +142,56 @@ public static class DocumentChecker
         return list;
     }
 
+    private static bool IsInTable(Paragraph p) =>
+        p.Ancestors<TableCell>().Any() || p.Ancestors<Table>().Any();
+
+    private static bool IsTableCaption(Paragraph p)
+    {
+        if (IsInTable(p)) return false;
+        string text = (p.InnerText ?? "").Trim();
+        if (string.IsNullOrEmpty(text)) return false;
+        return text.StartsWith("Таблица", StringComparison.OrdinalIgnoreCase) ||
+               text.StartsWith("Табл.", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsTableCaption(Context ctx, Paragraph p) => IsTableCaption(p);
+
+    private static bool IsHeadingParagraph(Paragraph p)
+    {
+        int? outlineLvl = p.ParagraphProperties?.OutlineLevel?.Val?.Value;
+        string? styleId = p.ParagraphProperties?.ParagraphStyleId?.Val?.Value;
+        return (outlineLvl != null && outlineLvl < 9) ||
+               (styleId != null && (styleId.Contains("Heading", StringComparison.OrdinalIgnoreCase) ||
+                                   styleId.Contains("Заголовок", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private static bool IsHeadingParagraph(Context ctx, Paragraph p) => IsHeadingParagraph(p);
+
+    private static bool IsSpecialParagraph(Paragraph p)
+    {
+        if (IsInTable(p))
+            return true;
+        if (IsTableCaption(p))
+            return true;
+        if (IsFigureParagraph(p))
+            return true;
+        if (IsFigureCaption(p))
+            return true;
+        if (IsHeadingParagraph(p))
+            return true;
+        if (IsCodeSnippetParagraph(p))
+            return true;
+        return false;
+    }
+
+    private static bool IsSpecialParagraph(Context ctx, Paragraph p) => IsSpecialParagraph(p);
+
     private static List<(int Index, Paragraph Paragraph, string StyleId)> GetBodyParagraphEntries(Context ctx)
     {
         var list = new List<(int Index, Paragraph Paragraph, string StyleId)>();
         int idx = 0;
         foreach (var p in ctx.BodyParagraphs()) {
+            if (IsSpecialParagraph(p)) continue;
             list.Add((idx++, p, ctx.ParagraphStyleId(p) ?? ""));
         }
         return list;
@@ -157,6 +202,7 @@ public static class DocumentChecker
         var list = new List<(int Index, Paragraph Paragraph)>();
         int idx = 0;
         foreach (var p in ctx.BodyParagraphs()) {
+            if (IsSpecialParagraph(p)) continue;
             if (ctx.HasText(p)) {
                 list.Add((idx++, p));
             }
@@ -180,19 +226,12 @@ public static class DocumentChecker
         return list;
     }
 
-    private static bool IsTableCaption(Context ctx, Paragraph p)
-    {
-        if (p.Ancestors<TableCell>().Any() || !ctx.HasText(p)) return false;
-        string text = p.InnerText.Trim();
-        return text.StartsWith("Таблица", StringComparison.OrdinalIgnoreCase) || text.StartsWith("Табл.", StringComparison.OrdinalIgnoreCase);
-    }
-
     private static List<(int Index, Paragraph Paragraph)> GetTableCaptionEntries(Context ctx)
     {
         var list = new List<(int Index, Paragraph Paragraph)>();
         int capIdx = TableCaptionIndexBase;
         foreach (var p in ctx.AllParagraphs()) {
-            if (IsTableCaption(ctx, p)) {
+            if (IsTableCaption(p)) {
                 list.Add((capIdx++, p));
             }
         }
@@ -223,7 +262,7 @@ public static class DocumentChecker
         return list;
     }
 
-    private static bool IsCodeSnippetParagraph(Paragraph p, RuleSet rules)
+    private static bool IsCodeSnippetParagraph(Paragraph p, RuleSet? rules = null)
     {
         string? styleId = p.ParagraphProperties?.ParagraphStyleId?.Val?.Value;
         bool isCodeStyle = !string.IsNullOrEmpty(styleId) &&
@@ -258,22 +297,13 @@ public static class DocumentChecker
         return list;
     }
 
-    private static bool IsHeadingParagraph(Context ctx, Paragraph p)
-    {
-        int? outlineLvl = p.ParagraphProperties?.OutlineLevel?.Val?.Value;
-        string? styleId = p.ParagraphProperties?.ParagraphStyleId?.Val?.Value;
-        bool isHeading = (outlineLvl != null && outlineLvl < 9) || 
-                         (styleId != null && (styleId.Contains("Heading", StringComparison.OrdinalIgnoreCase) || styleId.Contains("Заголовок", StringComparison.OrdinalIgnoreCase)));
-        return isHeading;
-    }
-
     private static List<(int Index, Paragraph Paragraph)> GetHeadingEntries(Context ctx)
     {
         var list = new List<(int Index, Paragraph Paragraph)>();
         int idx = 0;
         foreach (var p in ctx.AllParagraphs()) {
             if (!ctx.HasText(p)) continue;
-            if (IsHeadingParagraph(ctx, p)) {
+            if (IsHeadingParagraph(p)) {
                 list.Add((idx++, p));
             }
         }
@@ -346,6 +376,9 @@ public static class DocumentChecker
 
         foreach (var entry in allEntries) {
             var p = entry.Paragraph;
+            if (IsCodeSnippetParagraph(p, rules))
+                continue;
+
             var styleId = entry.StyleId;
             bool pBad = false;
             string? worstFontInP = null;
@@ -1184,6 +1217,9 @@ public static class DocumentChecker
             if (!indices.Contains(entry.Index))
                 continue;
 
+            if (IsCodeSnippetParagraph(entry.Paragraph, rules))
+                continue;
+
             if (expectedTexts != null && expectedTexts.TryGetValue(entry.Index, out var expText) && !MatchesText(entry.Paragraph.InnerText, expText))
                 continue;
 
@@ -1716,22 +1752,28 @@ public static class DocumentChecker
     {
         int count = 0;
 
-        foreach (var p in ctx.AllParagraphs().ToList()) {
-            var styleId = ctx.ParagraphStyleId(p);
+        foreach (var entry in GetAllParagraphEntries(ctx)) {
+            var p = entry.Paragraph;
+            if (IsCodeSnippetParagraph(p, rules))
+                continue;
+
+            var styleId = entry.StyleId;
+            bool modified = false;
             foreach (var run in ctx.TextRuns(p).ToList()) {
                 if (SameFont(ctx.FontOf(run, styleId), rules.FontName))
                     continue;
 
-                // Новый RunFonts целиком: так пропадают атрибуты темы (asciiTheme и др.), которые перебивают имя шрифта
                 var props = run.RunProperties ??= new RunProperties();
-                props.RunFonts = new RunFonts {
-                    Ascii = rules.FontName,
-                    HighAnsi = rules.FontName,
-                    EastAsia = rules.FontName,
-                    ComplexScript = rules.FontName,
-                };
-                count++;
+                var rf = props.RunFonts ??= new RunFonts();
+                rf.Ascii = rules.FontName;
+                rf.HighAnsi = rules.FontName;
+                rf.EastAsia = rules.FontName;
+                rf.ComplexScript = rules.FontName;
+                modified = true;
             }
+
+            if (modified)
+                count++;
         }
 
         return count;
@@ -1742,8 +1784,10 @@ public static class DocumentChecker
         int count = 0;
         var halfPoints = HalfPoints(rules.FontSizePt);
 
-        foreach (var p in ctx.BodyParagraphs().ToList()) {
-            var styleId = ctx.ParagraphStyleId(p);
+        foreach (var entry in GetBodyParagraphEntries(ctx)) {
+            var p = entry.Paragraph;
+            var styleId = entry.StyleId;
+            bool modified = false;
             foreach (var run in ctx.TextRuns(p).ToList()) {
                 if (Math.Abs(ctx.SizeOf(run, styleId) - rules.FontSizePt) < 0.01)
                     continue;
@@ -1751,8 +1795,11 @@ public static class DocumentChecker
                 var props = run.RunProperties ??= new RunProperties();
                 props.FontSize = new FontSize { Val = halfPoints };
                 props.FontSizeComplexScript = new FontSizeComplexScript { Val = halfPoints };
-                count++;
+                modified = true;
             }
+
+            if (modified)
+                count++;
         }
 
         return count;
@@ -1763,8 +1810,9 @@ public static class DocumentChecker
         int count = 0;
         var line = ((int)Math.Round(rules.LineSpacing * 240)).ToString(CultureInfo.InvariantCulture);
 
-        foreach (var p in ctx.BodyParagraphs().ToList()) {
-            if (!ctx.HasText(p) || SpacingOk(ctx.SpacingOf(p), rules))
+        foreach (var entry in GetTextBodyParagraphEntries(ctx)) {
+            var p = entry.Paragraph;
+            if (SpacingOk(ctx.SpacingOf(p), rules))
                 continue;
 
             // Отступы до и после абзаца (Before/After) остаются как были
@@ -1785,8 +1833,8 @@ public static class DocumentChecker
             return 0;
 
         int count = 0;
-        foreach (var p in ctx.BodyParagraphs().ToList()) {
-            if (!ctx.HasText(p)) continue;
+        foreach (var entry in GetTextBodyParagraphEntries(ctx)) {
+            var p = entry.Paragraph;
             var props = p.ParagraphProperties ??= new ParagraphProperties();
             if (props.Justification?.Val?.Value != JustificationValues.Both) {
                 props.Justification = new Justification { Val = JustificationValues.Both };
@@ -1803,8 +1851,8 @@ public static class DocumentChecker
         double targetTwips = rules.FirstLineIndentCm * TwipsPerCm;
         string targetStr = Math.Round(targetTwips).ToString(CultureInfo.InvariantCulture);
 
-        foreach (var p in ctx.BodyParagraphs().ToList()) {
-            if (!ctx.HasText(p)) continue;
+        foreach (var entry in GetTextBodyParagraphEntries(ctx)) {
+            var p = entry.Paragraph;
             var props = p.ParagraphProperties ??= new ParagraphProperties();
             var ind = props.Indentation ??= new Indentation();
 
@@ -1824,7 +1872,8 @@ public static class DocumentChecker
     private static int FixSpacingBeforeAfter(Context ctx, RuleSet rules)
     {
         int c = 0;
-        foreach(var p in ctx.BodyParagraphs().ToList()) {
+        foreach (var entry in GetTextBodyParagraphEntries(ctx)) {
+            var p = entry.Paragraph;
             var spacing = p.ParagraphProperties?.SpacingBetweenLines;
             if (spacing != null && ((spacing.Before != null && spacing.Before.Value != "0") || (spacing.After != null && spacing.After.Value != "0"))) {
                 spacing.Before = "0";
@@ -1838,7 +1887,8 @@ public static class DocumentChecker
     private static int FixWidowControl(Context ctx, RuleSet rules)
     {
         int c = 0;
-        foreach(var p in ctx.BodyParagraphs().ToList()) {
+        foreach (var entry in GetTextBodyParagraphEntries(ctx)) {
+            var p = entry.Paragraph;
             var props = p.ParagraphProperties ??= new ParagraphProperties();
             var wc = props.WidowControl;
             if (wc != null && wc.Val?.Value == false) {
@@ -1852,40 +1902,54 @@ public static class DocumentChecker
     private static int FixTableFormatting(Context ctx, RuleSet rules)
     {
         if (!rules.CheckTables) return 0;
-        var tables = ctx.Body.Descendants<Table>().ToList();
-        if (tables.Count == 0) return 0;
         int c = 0;
         
         string tableLineSpacingStr = Math.Round(rules.TableLineSpacing * 240).ToString(CultureInfo.InvariantCulture);
         string fontSizeHalfPtStr = Math.Round(rules.TableFontSizePt * 2).ToString(CultureInfo.InvariantCulture);
 
-        foreach(var table in tables) {
-            foreach(var p in table.Descendants<Paragraph>().ToList()) {
-                if (!p.Ancestors<TableCell>().Any() || !ctx.HasText(p)) continue;
-                
-                var props = p.ParagraphProperties ??= new ParagraphProperties();
-                
-                var spacing = props.SpacingBetweenLines ??= new SpacingBetweenLines();
-                spacing.Line = tableLineSpacingStr;
-                spacing.LineRule = LineSpacingRuleValues.Auto;
-                spacing.Before = "0";
-                spacing.After = "0";
-                
-                if (rules.TableRequireNoIndent) {
-                    var ind = props.Indentation ??= new Indentation();
-                    ind.FirstLine = "0";
-                }
-                
-                foreach(var run in p.Descendants<Run>()) {
-                    var rPr = run.RunProperties ??= new RunProperties();
-                    rPr.FontSize = new FontSize { Val = fontSizeHalfPtStr };
-                    rPr.FontSizeComplexScript = new FontSizeComplexScript { Val = fontSizeHalfPtStr };
-                    if (!string.IsNullOrEmpty(rules.TableFontFamily)) {
-                        rPr.RunFonts = new RunFonts { Ascii = rules.TableFontFamily, HighAnsi = rules.TableFontFamily, ComplexScript = rules.TableFontFamily };
-                    }
-                }
-                c++;
+        foreach (var entry in GetTableCellParagraphEntries(ctx)) {
+            var p = entry.Paragraph;
+            if (!ctx.HasText(p)) continue;
+
+            bool violates = false;
+            var styleId = ctx.ParagraphStyleId(p);
+            var run = p.Descendants<Run>().FirstOrDefault(r => r.Elements<Text>().Any(t => !string.IsNullOrWhiteSpace(t.Text))) ?? p.Descendants<Run>().FirstOrDefault();
+            if (run != null) {
+                var curSize = ctx.SizeOf(run, styleId);
+                var curFont = ctx.FontOf(run, styleId);
+                if (Math.Abs(curSize - rules.TableFontSizePt) > 0.01) violates = true;
+                if (!string.IsNullOrEmpty(rules.TableFontFamily) && !curFont.Contains(rules.TableFontFamily)) violates = true;
             }
+
+            var spacing = p.ParagraphProperties?.SpacingBetweenLines;
+            if (spacing == null || spacing.Line?.Value != tableLineSpacingStr) violates = true;
+
+            var indent = p.ParagraphProperties?.Indentation?.FirstLine?.Value;
+            if (rules.TableRequireNoIndent && indent != null && indent != "0") violates = true;
+
+            if (!violates) continue;
+
+            var props = p.ParagraphProperties ??= new ParagraphProperties();
+            if (rules.TableRequireNoIndent) {
+                var ind = props.Indentation ??= new Indentation();
+                ind.FirstLine = "0";
+            }
+            var sp = props.SpacingBetweenLines ??= new SpacingBetweenLines();
+            sp.Line = tableLineSpacingStr;
+            sp.LineRule = LineSpacingRuleValues.Auto;
+
+            foreach (var r in p.Descendants<Run>()) {
+                var rPr = r.RunProperties ??= new RunProperties();
+                rPr.FontSize = new FontSize { Val = fontSizeHalfPtStr };
+                rPr.FontSizeComplexScript = new FontSizeComplexScript { Val = fontSizeHalfPtStr };
+                if (!string.IsNullOrEmpty(rules.TableFontFamily)) {
+                    var rf = rPr.RunFonts ??= new RunFonts();
+                    rf.Ascii = rules.TableFontFamily;
+                    rf.HighAnsi = rules.TableFontFamily;
+                    rf.ComplexScript = rules.TableFontFamily;
+                }
+            }
+            c++;
         }
 
         // Подписи к таблицам (Table Captions)
@@ -1898,26 +1962,35 @@ public static class DocumentChecker
             _ => JustificationValues.Left
         };
 
-        foreach (var p in ctx.AllParagraphs().ToList()) {
-            if (p.Ancestors<TableCell>().Any() || !ctx.HasText(p)) continue;
-            string text = p.InnerText.Trim();
-            bool isTableCaption = text.StartsWith("Таблица", StringComparison.OrdinalIgnoreCase) || text.StartsWith("Табл.", StringComparison.OrdinalIgnoreCase);
-            if (!isTableCaption) continue;
+        foreach (var entry in GetTableCaptionEntries(ctx)) {
+            var p = entry.Paragraph;
+            bool violates = false;
+            var curJc = p.ParagraphProperties?.Justification?.Val?.Value;
+            if (curJc != expectedJc) violates = true;
+
+            var ind = p.ParagraphProperties?.Indentation?.FirstLine?.Value;
+            if (rules.TableCaptionRequireNoIndent && ind != null && ind != "0") violates = true;
+
+            var spacing = p.ParagraphProperties?.SpacingBetweenLines;
+            if (spacing == null || spacing.Line?.Value != capLineSpacingStr || spacing.Before?.Value != capBeforeStr || spacing.After?.Value != capAfterStr)
+                violates = true;
+
+            if (!violates) continue;
 
             var props = p.ParagraphProperties ??= new ParagraphProperties();
             var jc = props.Justification ??= new Justification();
             jc.Val = expectedJc;
 
             if (rules.TableCaptionRequireNoIndent) {
-                var ind = props.Indentation ??= new Indentation();
-                ind.FirstLine = "0";
+                var indentation = props.Indentation ??= new Indentation();
+                indentation.FirstLine = "0";
             }
 
-            var spacing = props.SpacingBetweenLines ??= new SpacingBetweenLines();
-            spacing.Line = capLineSpacingStr;
-            spacing.LineRule = LineSpacingRuleValues.Auto;
-            spacing.Before = capBeforeStr;
-            spacing.After = capAfterStr;
+            var sp = props.SpacingBetweenLines ??= new SpacingBetweenLines();
+            sp.Line = capLineSpacingStr;
+            sp.LineRule = LineSpacingRuleValues.Auto;
+            sp.Before = capBeforeStr;
+            sp.After = capAfterStr;
             c++;
         }
 
@@ -1934,30 +2007,45 @@ public static class DocumentChecker
         string capSpacingAfterStr = Math.Round(rules.CaptionSpacingAfterPt * 20).ToString(CultureInfo.InvariantCulture);
         string capLineSpacingStr = Math.Round(rules.CaptionLineSpacing * 240).ToString(CultureInfo.InvariantCulture);
 
-        foreach (var p in ctx.AllParagraphs().ToList()) {
-            bool isFigure = p.Descendants<Drawing>().Any();
-            string text = p.InnerText.Trim();
-            bool isCaption = text.StartsWith("Рисунок", StringComparison.OrdinalIgnoreCase) || text.StartsWith("Рис.", StringComparison.OrdinalIgnoreCase);
+        foreach (var entry in GetFigureEntries(ctx)) {
+            var p = entry.Paragraph;
+            bool isFigure = entry.IsFigure;
+            bool isCaption = entry.IsCaption;
 
-            if (!isFigure && !isCaption) continue;
+            bool violates = false;
+            var curJc = p.ParagraphProperties?.Justification?.Val?.Value;
+            var indVal = p.ParagraphProperties?.Indentation?.FirstLine?.Value;
+            var spacing = p.ParagraphProperties?.SpacingBetweenLines;
+
+            if (isFigure) {
+                if (rules.FigureAlignment == "Center" && curJc != JustificationValues.Center) violates = true;
+                if (rules.FigureRequireNoIndent && indVal != null && indVal != "0") violates = true;
+                if (spacing == null || spacing.Before?.Value != figSpacingBeforeStr || spacing.After?.Value != figSpacingAfterStr) violates = true;
+            } else if (isCaption) {
+                if (rules.CaptionAlignment == "Center" && curJc != JustificationValues.Center) violates = true;
+                if (rules.CaptionRequireNoIndent && indVal != null && indVal != "0") violates = true;
+                if (spacing == null || spacing.Line?.Value != capLineSpacingStr || spacing.Before?.Value != capSpacingBeforeStr || spacing.After?.Value != capSpacingAfterStr) violates = true;
+            }
+
+            if (!violates) continue;
 
             var props = p.ParagraphProperties ??= new ParagraphProperties();
             var ind = props.Indentation ??= new Indentation();
-            var spacing = props.SpacingBetweenLines ??= new SpacingBetweenLines();
+            var sp = props.SpacingBetweenLines ??= new SpacingBetweenLines();
 
             if (isFigure) {
                 if (rules.FigureAlignment == "Center") props.Justification = new Justification { Val = JustificationValues.Center };
                 if (rules.FigureRequireNoIndent) ind.FirstLine = "0";
-                spacing.Before = figSpacingBeforeStr;
-                spacing.After = figSpacingAfterStr;
+                sp.Before = figSpacingBeforeStr;
+                sp.After = figSpacingAfterStr;
             } 
             else if (isCaption) {
                 if (rules.CaptionAlignment == "Center") props.Justification = new Justification { Val = JustificationValues.Center };
                 if (rules.CaptionRequireNoIndent) ind.FirstLine = "0";
-                spacing.Line = capLineSpacingStr;
-                spacing.LineRule = LineSpacingRuleValues.Auto;
-                spacing.Before = capSpacingBeforeStr;
-                spacing.After = capSpacingAfterStr;
+                sp.Line = capLineSpacingStr;
+                sp.LineRule = LineSpacingRuleValues.Auto;
+                sp.Before = capSpacingBeforeStr;
+                sp.After = capSpacingAfterStr;
             }
             count++;
         }
@@ -1971,27 +2059,42 @@ public static class DocumentChecker
         string codeLineSpacingStr = Math.Round(rules.CodeLineSpacing * 240).ToString(CultureInfo.InvariantCulture);
         string halfPointsStr = Math.Round(rules.CodeFontSizePt * 2).ToString(CultureInfo.InvariantCulture);
 
-        foreach (var p in ctx.AllParagraphs().ToList()) {
+        foreach (var entry in GetCodeSnippetEntries(ctx, rules)) {
+            var p = entry.Paragraph;
             if (!ctx.HasText(p)) continue;
-            string? styleId = ctx.ParagraphStyleId(p);
-            bool isCodeStyle = styleId != null && (styleId.Contains("Code", StringComparison.OrdinalIgnoreCase) || styleId.Contains("Листинг", StringComparison.OrdinalIgnoreCase));
-            
-            var firstRun = p.Descendants<Run>().FirstOrDefault(r => r.Elements<Text>().Any(t => !string.IsNullOrWhiteSpace(t.Text)));
-            bool isMonospace = firstRun != null && (ctx.FontOf(firstRun, styleId).Contains("Consolas") || ctx.FontOf(firstRun, styleId).Contains("Courier"));
-            
-            if (!isCodeStyle && !isMonospace) continue;
+
+            bool violates = false;
+            var indVal = p.ParagraphProperties?.Indentation?.FirstLine?.Value;
+            if (rules.CodeRequireNoIndent && indVal != null && indVal != "0") violates = true;
+
+            var spacing = p.ParagraphProperties?.SpacingBetweenLines;
+            if (spacing == null || spacing.Line?.Value != codeLineSpacingStr) violates = true;
+
+            var styleId = ctx.ParagraphStyleId(p);
+            var firstRun = p.Descendants<Run>().FirstOrDefault(r => r.Elements<Text>().Any(t => !string.IsNullOrWhiteSpace(t.Text))) ?? p.Descendants<Run>().FirstOrDefault();
+            if (firstRun != null) {
+                var curFont = ctx.FontOf(firstRun, styleId);
+                var curSize = ctx.SizeOf(firstRun, styleId);
+                if (!string.IsNullOrEmpty(rules.CodeFontFamily) && !curFont.Contains(rules.CodeFontFamily)) violates = true;
+                if (Math.Abs(curSize - rules.CodeFontSizePt) > 0.01) violates = true;
+            }
+
+            if (!violates) continue;
 
             var props = p.ParagraphProperties ??= new ParagraphProperties();
             var ind = props.Indentation ??= new Indentation();
             if (rules.CodeRequireNoIndent) ind.FirstLine = "0";
 
-            var spacing = props.SpacingBetweenLines ??= new SpacingBetweenLines();
-            spacing.Line = codeLineSpacingStr;
-            spacing.LineRule = LineSpacingRuleValues.Auto;
+            var sp = props.SpacingBetweenLines ??= new SpacingBetweenLines();
+            sp.Line = codeLineSpacingStr;
+            sp.LineRule = LineSpacingRuleValues.Auto;
 
             foreach (var run in p.Descendants<Run>()) {
                 var rPr = run.RunProperties ??= new RunProperties();
-                rPr.RunFonts = new RunFonts { Ascii = rules.CodeFontFamily, HighAnsi = rules.CodeFontFamily, ComplexScript = rules.CodeFontFamily };
+                var rf = rPr.RunFonts ??= new RunFonts();
+                rf.Ascii = rules.CodeFontFamily;
+                rf.HighAnsi = rules.CodeFontFamily;
+                rf.ComplexScript = rules.CodeFontFamily;
                 rPr.FontSize = new FontSize { Val = halfPointsStr }; 
                 rPr.FontSizeComplexScript = new FontSizeComplexScript { Val = halfPointsStr };
             }
@@ -2015,14 +2118,36 @@ public static class DocumentChecker
             _ => JustificationValues.Left
         };
 
-        foreach (var p in ctx.AllParagraphs().ToList()) {
+        foreach (var entry in GetHeadingEntries(ctx)) {
+            var p = entry.Paragraph;
             if (!ctx.HasText(p)) continue;
-            int? outlineLvl = p.ParagraphProperties?.OutlineLevel?.Val?.Value;
-            string? styleId = ctx.ParagraphStyleId(p);
-            bool isHeading = (outlineLvl != null && outlineLvl < 9) || 
-                             (styleId != null && (styleId.Contains("Heading", StringComparison.OrdinalIgnoreCase) || styleId.Contains("Заголовок", StringComparison.OrdinalIgnoreCase)));
-            
-            if (!isHeading) continue;
+
+            bool violates = false;
+            var curJc = p.ParagraphProperties?.Justification?.Val?.Value;
+            if (curJc != expectedJc) violates = true;
+
+            var indVal = p.ParagraphProperties?.Indentation?.FirstLine?.Value;
+            if (rules.HeadingRequireNoIndent && indVal != null && indVal != "0") violates = true;
+
+            var spacing = p.ParagraphProperties?.SpacingBetweenLines;
+            if (spacing == null || spacing.Line?.Value != headLineSpacingStr || spacing.Before?.Value != headBeforeStr || spacing.After?.Value != headAfterStr) violates = true;
+
+            var styleId = ctx.ParagraphStyleId(p);
+            var firstRun = p.Descendants<Run>().FirstOrDefault(r => r.Elements<Text>().Any(t => !string.IsNullOrWhiteSpace(t.Text))) ?? p.Descendants<Run>().FirstOrDefault();
+            if (firstRun != null) {
+                if (rules.HeadingRequireBold) {
+                    bool isBold = firstRun.RunProperties?.Bold != null && (firstRun.RunProperties.Bold.Val == null || firstRun.RunProperties.Bold.Val.Value);
+                    if (!isBold) violates = true;
+                }
+                var curFont = ctx.FontOf(firstRun, styleId);
+                if (!string.IsNullOrEmpty(rules.HeadingFontFamily) && !curFont.Contains(rules.HeadingFontFamily)) violates = true;
+                var curSize = ctx.SizeOf(firstRun, styleId);
+                if (rules.HeadingFontSizePt > 0 && Math.Abs(curSize - rules.HeadingFontSizePt) > 0.01) violates = true;
+            }
+
+            if (rules.HeadingRemoveTrailingDot && p.InnerText.TrimEnd().EndsWith('.')) violates = true;
+
+            if (!violates) continue;
 
             var props = p.ParagraphProperties ??= new ParagraphProperties();
             var ind = props.Indentation ??= new Indentation();
@@ -2031,11 +2156,11 @@ public static class DocumentChecker
             var jc = props.Justification ??= new Justification();
             jc.Val = expectedJc;
 
-            var spacing = props.SpacingBetweenLines ??= new SpacingBetweenLines();
-            spacing.Line = headLineSpacingStr;
-            spacing.LineRule = LineSpacingRuleValues.Auto;
-            spacing.Before = headBeforeStr;
-            spacing.After = headAfterStr;
+            var sp = props.SpacingBetweenLines ??= new SpacingBetweenLines();
+            sp.Line = headLineSpacingStr;
+            sp.LineRule = LineSpacingRuleValues.Auto;
+            sp.Before = headBeforeStr;
+            sp.After = headAfterStr;
 
             foreach (var run in p.Descendants<Run>()) {
                 var rPr = run.RunProperties ??= new RunProperties();
@@ -2044,7 +2169,10 @@ public static class DocumentChecker
                     rPr.BoldComplexScript = new BoldComplexScript { Val = true };
                 }
                 if (!string.IsNullOrEmpty(rules.HeadingFontFamily)) {
-                    rPr.RunFonts = new RunFonts { Ascii = rules.HeadingFontFamily, HighAnsi = rules.HeadingFontFamily, ComplexScript = rules.HeadingFontFamily };
+                    var rf = rPr.RunFonts ??= new RunFonts();
+                    rf.Ascii = rules.HeadingFontFamily;
+                    rf.HighAnsi = rules.HeadingFontFamily;
+                    rf.ComplexScript = rules.HeadingFontFamily;
                 }
                 if (rules.HeadingFontSizePt > 0) {
                     rPr.FontSize = new FontSize { Val = headFontSizeHalfPt };
@@ -2061,9 +2189,8 @@ public static class DocumentChecker
                     if (t.Text.TrimEnd().EndsWith(".")) {
                         int dotIndex = t.Text.LastIndexOf('.');
                         t.Text = t.Text.Remove(dotIndex, 1);
-                        count++;
+                        break;
                     }
-                    break;
                 }
             }
             count++;

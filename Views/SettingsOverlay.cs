@@ -64,6 +64,8 @@ public static class SettingsOverlay
                 Grid.SetColumnSpan(panel, Math.Max(1, grid.ColumnDefinitions.Count));
 
             panel.ZIndex = 10000;
+            panel.InputTransparent = false;
+            panel.CascadeInputTransparent = false;
             grid.Children.Add(panel);
         }
 

@@ -106,7 +106,7 @@ public partial class SettingsPanel : ContentView
             UpdateWidth();
 
             Scrim.Opacity = 0;
-            Panel.TranslationX = IsWindows ? _panelWidth : -_panelWidth;
+            Panel.TranslationX = -_panelWidth;
             IsVisible = true;
 
             await Task.WhenAll(
@@ -124,7 +124,7 @@ public partial class SettingsPanel : ContentView
 
         _animating = true;
         try {
-            double hideX = IsWindows ? _panelWidth : -_panelWidth;
+            double hideX = -_panelWidth;
             await Task.WhenAll(
                 Scrim.FadeToAsync(0, CloseMs, Easing.CubicIn),
                 Panel.TranslateToAsync(hideX, 0, CloseMs, Easing.CubicIn));
@@ -155,7 +155,7 @@ public partial class SettingsPanel : ContentView
         if (Scrim is not null)
             Scrim.Opacity = 0;
         if (Panel is not null)
-            Panel.TranslationX = IsWindows ? _panelWidth : -_panelWidth;
+            Panel.TranslationX = -_panelWidth;
 
         if (Parent is Layout parent)
         {
@@ -190,6 +190,7 @@ public partial class SettingsPanel : ContentView
     private void BuildSegment(Grid host, string[] labels, Func<int> get, Action<int> set)
     {
         host.ColumnSpacing = 6;
+        host.InputTransparent = false;
 
         var items = new List<(Border Box, Label Text)>();
 
@@ -203,12 +204,15 @@ public partial class SettingsPanel : ContentView
                 HorizontalTextAlignment = TextAlignment.Center,
                 VerticalTextAlignment = TextAlignment.Center,
                 LineBreakMode = LineBreakMode.WordWrap,
+                InputTransparent = true,
             };
 
             var box = new Border {
                 StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(10) },
                 StrokeThickness = 1,
                 Padding = new Thickness(6, 10),
+                BackgroundColor = Colors.Transparent,
+                InputTransparent = false,
                 Content = text,
             };
 
