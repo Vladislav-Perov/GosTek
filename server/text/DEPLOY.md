@@ -19,7 +19,7 @@ npx wrangler secret put GROQ_API_KEY
 Wrangler запросит ключ через терминал. Храните его только в Cloudflare Secrets. Запишите HTTPS-адрес нового Worker из вывода деплоя и добавьте `/generate`.
 
 ```powershell
-$endpoint = 'https://gostek-text.YOUR-SUBDOMAIN.workers.dev/generate'
+$endpoint = 'https://gostek-text.gostek-app-8e32.workers.dev/generate'
 $body = @{
     kind = 'explanation'
     message = 'I was 20 minutes late because the bus broke down. Draft the explanation.'
@@ -31,14 +31,14 @@ Invoke-RestMethod -Method Post -Uri $endpoint -ContentType 'application/json' -B
 
 ## Подключение приложения
 
-Из корня репозитория:
+Этот адрес уже задан в GosTek.csproj. Для сборки с другим сервером укажите его явно из корня репозитория:
 
 ```powershell
 dotnet build GosTek.csproj -f net10.0-windows10.0.19041.0 -p:GosTekTextGenerationEndpoint=$endpoint
 dotnet build GosTek.csproj -f net10.0-android -p:GosTekTextGenerationEndpoint=$endpoint
 ```
 
-Передавайте этот же параметр при публикации. Сборка без адреса позволяет заполнить поле вручную и сообщает, что сервер генерации не настроен.
+Передавайте этот же параметр при публикации. Если сервер недоступен, поле можно заполнить вручную.
 
 ## Проверка в приложении
 

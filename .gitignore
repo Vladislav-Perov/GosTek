@@ -5,3 +5,8 @@ obj/
 *.suo
 *.slnx
 *.zip
+
+# Cloudflare Workers local state and secrets
+.wrangler/
+.dev.vars
+.dev.vars.*

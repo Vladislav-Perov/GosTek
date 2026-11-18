@@ -9,6 +9,7 @@
 		<RootNamespace>GosTek</RootNamespace>
 		<UseMaui>true</UseMaui>
 		<SingleProject>true</SingleProject>
+		<GosTekTextGenerationEndpoint Condition="'$(GosTekTextGenerationEndpoint)' == ''">https://gostek-text.gostek-app-8e32.workers.dev/generate</GosTekTextGenerationEndpoint>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 
