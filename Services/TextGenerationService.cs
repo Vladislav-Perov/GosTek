@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Net.Sockets;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -16,7 +17,7 @@ public sealed class TextGenerationService(HttpClient client, Uri? endpoint)
     public const int MaxPreviousTextLength = 8000;
 
     public static TextGenerationService Instance { get; } = new(
-        new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(20) }, ReadEndpoint());
+        CreateClient(), ReadEndpoint());
 
     public async Task<TextGenerationResult> GenerateAsync(
         string message, TextGenerationKind kind, string? previousText, CancellationToken cancellationToken = default)
@@ -84,6 +85,54 @@ public sealed class TextGenerationService(HttpClient client, Uri? endpoint)
             return null;
         return Regex.Replace(value, @"\[[\p{L}]+_\d+\]", match =>
             replacements.TryGetValue(match.Value, out var original) ? original : match.Value);
+    }
+
+    private static HttpClient CreateClient()
+    {
+        HttpMessageHandler handler = OperatingSystem.IsWindows()
+            ? new SocketsHttpHandler { AllowAutoRedirect = false, ConnectCallback = ConnectWindowsAsync }
+            : new HttpClientHandler { AllowAutoRedirect = false };
+        return new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(20) };
+    }
+
+    private static async ValueTask<Stream> ConnectWindowsAsync(
+        SocketsHttpConnectionContext context, CancellationToken cancellationToken)
+    {
+        using var ipv4Timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        ipv4Timeout.CancelAfter(TimeSpan.FromSeconds(4));
+        try
+        {
+            return await ConnectAsync(context.DnsEndPoint, AddressFamily.InterNetwork, ipv4Timeout.Token)
+                .ConfigureAwait(false);
+        }
+        catch (SocketException) when (!cancellationToken.IsCancellationRequested)
+        {
+            // The host may only be reachable over IPv6.
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            // Reserve the remaining request time for IPv6.
+        }
+
+        return await ConnectAsync(context.DnsEndPoint, AddressFamily.InterNetworkV6, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private static async ValueTask<Stream> ConnectAsync(
+        DnsEndPoint endpoint, AddressFamily family, CancellationToken cancellationToken)
+    {
+        var socket = new Socket(family, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+        try
+        {
+            await socket.ConnectAsync(new DnsEndPoint(endpoint.Host, endpoint.Port, family), cancellationToken)
+                .ConfigureAwait(false);
+            return new NetworkStream(socket, ownsSocket: true);
+        }
+        catch
+        {
+            socket.Dispose();
+            throw;
+        }
     }
 
     private static Uri? ReadEndpoint()
