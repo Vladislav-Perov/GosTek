@@ -7,7 +7,6 @@
 [![Версия](https://img.shields.io/badge/версия-v0.45.0--stable-blue)](./GosTek.csproj)
 [![Платформа](https://img.shields.io/badge/платформа-.NET%2010%20MAUI-512BD4)](https://dotnet.microsoft.com/)
 [![Сборка](https://img.shields.io/badge/Windows%20%7C%20Android-green-success)](./GosTek.sln)
-[![Тесты](https://img.shields.io/badge/тесты-291%20passed-brightgreen)](./GosTek.Tests/)
 [![Лицензия](https://img.shields.io/badge/лицензия-Proprietary-red)](#лицензия)
 
 </div>
@@ -18,7 +17,7 @@
 
 **GosTek** — это современное приложение для автоматизации работы со служебными, деловыми и учебными документами. Оно помогает быстро заполнять типовые шаблоны, проверять готовые файлы на соответствие стандартам ГОСТ и оцифровывать данные с помощью встроенного оптического сканера.
 
-Приложение построено по принципу **Privacy-First (приватность прежде всего)**: все персональные данные, реквизиты организаций и создаваемые файлы хранятся исключительно локально на устройстве в зашифрованном виде (Android Keystore / Windows DPAPI) и никогда не передаются в облако в открытом виде.
+Профиль хранится локально в защищённом хранилище ОС (Android Keystore / Windows DPAPI). Инспектор работает локально и сохраняет рабочую копию DOCX в кэше приложения без дополнительного шифрования на уровне приложения. Экспортированные файлы сохраняются в выбранное пользователем место. Перед отправкой запросов облачному ИИ-ассистенту приложение маскирует распознаваемые персональные данные.
 
 ### 🌟 Ключевые возможности
 
@@ -60,7 +59,7 @@
 | **Камера видоискателя** | [CommunityToolkit.Maui.Camera 5.0.0](https://learn.microsoft.com/dotnet/communitytoolkit/maui/) |
 | **Локальная безопасность** | `Microsoft.Maui.Storage.SecureStorage` (Windows DPAPI / Android Keystore) |
 | **Облачный ИИ-прокси** | Cloudflare Workers (Edge JS, Zero-Text Logging, Model Cascade) |
-| **Тестирование** | [xUnit 2.9](https://xunit.net/) — 291 автоматизированный юнит-тест |
+| **Тестирование** | [xUnit 2.9](https://xunit.net/) — автоматизированные юнит-тесты |
 
 ---
 
@@ -77,7 +76,7 @@
 ### Основные команды
 
 ```bash
-# 1. Запуск полного набора юнит-тестов (291 тест)
+# 1. Запуск полного набора юнит-тестов
 dotnet test GosTek.Tests/GosTek.Tests.csproj
 
 # 2. Сборка приложения для Windows (Release)
@@ -126,7 +125,7 @@ GosTek/
 │   ├── SettingsPanel.xaml      # Боковая шторка настроек
 │   └── Controls/               # Специализированные элементы (DateInputField, IconView, Toast)
 ├── server/                     # Облачный прокси (Cloudflare Worker)
-└── GosTek.Tests/               # 291 модульный тест xUnit
+└── GosTek.Tests/               # Модульные тесты xUnit
 ```
 
 ---

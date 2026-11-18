@@ -29,7 +29,6 @@ namespace GosTek.Views;
 /// </summary>
 public partial class CheckPage : ContentPage
 {
-    private const string WorkFileName = "check_work.docx";
 
     private static readonly FilePickerFileType DocxFileType = new(new Dictionary<DevicePlatform, IEnumerable<string>> {
         [DevicePlatform.WinUI] = new[] { ".docx" },
@@ -51,7 +50,9 @@ public partial class CheckPage : ContentPage
     public ObservableCollection<CheckGroupVm> IssueGroups { get; } = new();
     public ObservableCollection<CheckGroupVm> Issues => IssueGroups;
     public bool HasIssues => IssueGroups.Count > 0;
-    public bool NoIssues => _workPath != null && IssueGroups.Count == 0;
+    public bool NoIssues => _workPath != null && _rawIssues.Count == 0;
+    public bool HasHiddenIssues => _rejectedIssues.Count > 0;
+    public string HiddenIssuesText => $"Скрыто замечаний: {_rejectedIssues.Count}";
     public bool HasFixableIssues => IssueGroups.Any(i => i.CanFix);
 
     public ICommand ToggleExpandCommand { get; }
@@ -229,73 +230,8 @@ public partial class CheckPage : ContentPage
             return;
         }
 
-        SetBusy(true);
-        try {
-            var work = Path.Combine(FileSystem.CacheDirectory, WorkFileName);
-
-            // Рабочая копия: оригинал не трогаем. Поток нужен, потому что на Android путь — это content://
-            await using (var input = await picked.OpenReadAsync())
-            await using (var output = File.Create(work))
-                await input.CopyToAsync(output);
-
-            // Автоопределение правила по категории из имени файла
-            var matchedRule = CustomRulesService.Instance.MatchRuleSetForTemplate(picked.FileName);
-            int matchIdx = _allRules.FindIndex(r => r.Id.Equals(matchedRule.Id, StringComparison.OrdinalIgnoreCase));
-            if (matchIdx >= 0)
-            {
-                RuleChips.SelectedIndex = matchIdx;
-                Preferences.Set("active_rule_id", matchedRule.Id);
-            }
-
-            var rules = (matchIdx >= 0) ? _allRules[matchIdx] : CurrentRules;
-            var swCheck = Stopwatch.StartNew();
-            var issues = await Task.Run(() => DocumentChecker.Check(work, rules));
-            swCheck.Stop();
-            System.Diagnostics.Debug.WriteLine($"[PERF] Check (PickAsync): {swCheck.ElapsedMilliseconds} ms, found {issues.Count} issues");
-
-            var swInfo = Stopwatch.StartNew();
-            var info = await Task.Run(() => DocumentChecker.ReadInfo(work));
-            swInfo.Stop();
-            System.Diagnostics.Debug.WriteLine($"[PERF] ReadInfo (PickAsync): {swInfo.ElapsedMilliseconds} ms, pages: {info.Pages}, paragraphs: {info.Paragraphs}");
-
-            _workPath = work;
-            _sourceName = picked.FileName;
-            _sourceSize = new FileInfo(work).Length;
-            _info = info;
-            _rawIssues = issues;
-            _rejectedIssues.Clear();
-
-            UpdateIssueGroupsInPlace(issues);
-
-            var category = CustomRulesService.Instance.ExtractCategoryFromFileName(picked.FileName);
-            if (!string.IsNullOrWhiteSpace(category) && matchedRule.Id != RuleSets.MasterRuleId) {
-                _status = $"Автоматически применено правило «{matchedRule.Title}» для категории «{category}».";
-            } else {
-                _status = null;
-            }
-        } catch (IOException ioEx) {
-            System.Diagnostics.Debug.WriteLine("IOException: " + ioEx.Message);
-            await Dialogs.AlertAsync("Файл заблокирован",
-                "Файл занят другой программой (например, Microsoft Word). Закройте его и повторите попытку.", DialogKind.Danger);
-        } catch (InvalidOperationException opEx) {
-            System.Diagnostics.Debug.WriteLine("InvalidOperationException: " + opEx.Message);
-            await Dialogs.AlertAsync("Не удалось открыть документ", opEx.Message, DialogKind.Danger);
-        } catch (InvalidDataException dataEx) {
-            System.Diagnostics.Debug.WriteLine("InvalidDataException: " + dataEx.Message);
-            await Dialogs.AlertAsync("Файл повреждён", dataEx.Message, DialogKind.Danger);
-        } catch (Exception ex) {
-            System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
-            await Dialogs.AlertAsync("Не удалось проверить файл",
-                "Файл повреждён или это не документ Word. " + ex.Message, DialogKind.Danger);
-        } finally {
-            SetBusy(false);
-            UpdateUi();
-        }
+        await LoadDocumentAsync(picked.FileName, picked.OpenReadAsync);
     }
-
-    // =====================================================================
-    //  ПРАВИЛА
-    // =====================================================================
 
     // Выбран другой набор правил: перепроверяем текущую рабочую копию
     private async void OnRuleChanged(object? sender, int index)
@@ -348,7 +284,11 @@ public partial class CheckPage : ContentPage
 
         HapticHelper.Click();
         var newRule = CustomRulesService.Instance.CreateNewRule();
-        await CustomRulesService.Instance.SaveRuleAsync(newRule);
+        if (!await CustomRulesService.Instance.SaveRuleAsync(newRule))
+        {
+            await Dialogs.AlertAsync("Не удалось создать правило", "Повторите попытку.", DialogKind.Danger);
+            return;
+        }
         RuleEditorPage.TargetRule = newRule;
         RuleEditorPage.LastSavedRuleId = newRule.Id;
         await Shell.Current.GoToAsync("RuleEditorPage");
@@ -383,7 +323,7 @@ public partial class CheckPage : ContentPage
 
         HapticHelper.Click();
         _rejectedIssues.Add((item.Parent.Issue.Kind, item.Index, item.Text));
-        Toast.Show("Скрыто, вернётся при повторной проверке", "info");
+        Toast.Show("Замечание скрыто", "info");
         ApplyRejectionFilter();
         UpdateUi();
     }
@@ -406,7 +346,7 @@ public partial class CheckPage : ContentPage
             _rejectedIssues.Add((group.Issue.Kind, -1, group.Issue.Title));
         }
 
-        Toast.Show("Скрыто, вернётся при повторной проверке", "info");
+        Toast.Show("Замечание скрыто", "info");
         ApplyRejectionFilter();
         UpdateUi();
     }
@@ -591,6 +531,16 @@ public partial class CheckPage : ContentPage
         ApplyRejectionFilter();
     }
 
+    private void OnShowHiddenClicked(object? sender, EventArgs e)
+    {
+        if (_busy)
+            return;
+
+        _rejectedIssues.Clear();
+        ApplyRejectionFilter();
+        UpdateUi();
+    }
+
     private void ApplyRejectionFilter()
     {
         var filtered = CheckIssueFilter.FilterIssues(_rawIssues, _rejectedIssues);
@@ -662,6 +612,25 @@ public partial class CheckPage : ContentPage
             await AcceptAllAsync();
         else
             await PickAsync();
+    }
+
+    private async void OnCloseDocumentClicked(object? sender, EventArgs e)
+    {
+        if (_busy || _workPath is null)
+            return;
+
+        var path = _workPath;
+        if (!await Dialogs.ConfirmAsync("Закрыть документ?",
+            "Несохранённые исправления будут потеряны.", "Закрыть") || _busy || _workPath != path)
+            return;
+
+        _workPath = null;
+        _rawIssues.Clear();
+        _rejectedIssues.Clear();
+        _status = null;
+        CheckDocumentImport.DeleteWorkingCopy(path);
+        UpdateIssueGroupsInPlace(_rawIssues);
+        UpdateUi();
     }
 
     private async void OnSaveCopyTapped(object? sender, TappedEventArgs e)
@@ -739,6 +708,8 @@ public partial class CheckPage : ContentPage
         OnPropertyChanged(nameof(Issues));
         OnPropertyChanged(nameof(HasIssues));
         OnPropertyChanged(nameof(NoIssues));
+        OnPropertyChanged(nameof(HasHiddenIssues));
+        OnPropertyChanged(nameof(HiddenIssuesText));
         OnPropertyChanged(nameof(HasFixableIssues));
 
         RuleNote.Text = CurrentRules.Description;
@@ -787,7 +758,9 @@ public partial class CheckPage : ContentPage
             var text = await e.Data.GetTextAsync();
             if (!string.IsNullOrWhiteSpace(text) && File.Exists(text) && text.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
             {
-                await LoadFromPathAsync(text);
+                await LoadDocumentAsync(Path.GetFileName(text), () => Task.FromResult<Stream>(
+                    new FileStream(text, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete,
+                        bufferSize: 4096, useAsync: true)));
             }
         }
         catch (Exception ex)
@@ -796,74 +769,44 @@ public partial class CheckPage : ContentPage
         }
     }
 
-    private async Task LoadFromPathAsync(string filePath)
+    private async Task LoadDocumentAsync(string fileName, Func<Task<Stream>> openReadAsync)
     {
+        if (_busy)
+            return;
+
         SetBusy(true);
         try
         {
-            var work = Path.Combine(FileSystem.CacheDirectory, WorkFileName);
-            await Task.Run(async () =>
-            {
-                await using var input = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-                await using var output = new FileStream(work, FileMode.Create, FileAccess.Write, FileShare.None);
-                await input.CopyToAsync(output);
-            });
+            var rulesService = CustomRulesService.Instance;
+            var matchedRule = rulesService.MatchRuleSetForTemplate(fileName);
+            int matchIndex = _allRules.FindIndex(rule => rule.Id.Equals(matchedRule.Id, StringComparison.OrdinalIgnoreCase));
+            var rules = matchIndex >= 0 ? _allRules[matchIndex] : CurrentRules;
+            var category = rulesService.ExtractCategoryFromFileName(fileName);
 
-            var fileName = Path.GetFileName(filePath);
-            var matchedRule = CustomRulesService.Instance.MatchRuleSetForTemplate(fileName);
-            int matchIdx = _allRules.FindIndex(r => r.Id.Equals(matchedRule.Id, StringComparison.OrdinalIgnoreCase));
-            if (matchIdx >= 0)
+            var imported = await CheckDocumentImport.LoadAsync(FileSystem.CacheDirectory, openReadAsync, rules);
+            var previousPath = _workPath;
+            _workPath = imported.Path;
+            _sourceName = fileName;
+            _sourceSize = imported.Size;
+            _info = imported.Info;
+            _rawIssues = imported.Issues;
+            _rejectedIssues.Clear();
+            CheckDocumentImport.DeleteWorkingCopy(previousPath);
+
+            if (matchIndex >= 0)
             {
-                RuleChips.SelectedIndex = matchIdx;
+                RuleChips.SelectedIndex = matchIndex;
                 Preferences.Set("active_rule_id", matchedRule.Id);
             }
 
-            var rules = (matchIdx >= 0) ? _allRules[matchIdx] : CurrentRules;
-            var swCheck = Stopwatch.StartNew();
-            var issues = await Task.Run(() => DocumentChecker.Check(work, rules));
-            swCheck.Stop();
-            System.Diagnostics.Debug.WriteLine($"[PERF] Check (LoadFromPath): {swCheck.ElapsedMilliseconds} ms, found {issues.Count} issues");
-
-            var swInfo = Stopwatch.StartNew();
-            var info = await Task.Run(() => DocumentChecker.ReadInfo(work));
-            swInfo.Stop();
-            System.Diagnostics.Debug.WriteLine($"[PERF] ReadInfo (LoadFromPath): {swInfo.ElapsedMilliseconds} ms, pages: {info.Pages}, paragraphs: {info.Paragraphs}");
-
-            _workPath = work;
-            _sourceName = fileName;
-            _sourceSize = new FileInfo(work).Length;
-            _info = info;
-            _rawIssues = issues;
-            _rejectedIssues.Clear();
-
-            UpdateIssueGroupsInPlace(issues);
-
-            var category = CustomRulesService.Instance.ExtractCategoryFromFileName(fileName);
-            if (!string.IsNullOrWhiteSpace(category) && matchedRule.Id != RuleSets.MasterRuleId) {
-                _status = $"Автоматически применено правило «{matchedRule.Title}» для категории «{category}».";
-            } else {
-                _status = null;
-            }
-        }
-        catch (IOException ioEx)
-        {
-            System.Diagnostics.Debug.WriteLine("IOException: " + ioEx.Message);
-            await Dialogs.AlertAsync("Файл заблокирован",
-                "Файл занят другой программой (например, Microsoft Word). Закройте его и повторите попытку.", DialogKind.Danger);
-        }
-        catch (InvalidOperationException opEx)
-        {
-            System.Diagnostics.Debug.WriteLine("InvalidOperationException: " + opEx.Message);
-            await Dialogs.AlertAsync("Не удалось открыть документ", opEx.Message, DialogKind.Danger);
-        }
-        catch (InvalidDataException dataEx)
-        {
-            System.Diagnostics.Debug.WriteLine("InvalidDataException: " + dataEx.Message);
-            await Dialogs.AlertAsync("Файл повреждён", dataEx.Message, DialogKind.Danger);
+            _status = !string.IsNullOrWhiteSpace(category) && matchedRule.Id != RuleSets.MasterRuleId
+                ? $"Автоматически применено правило «{matchedRule.Title}» для категории «{category}»."
+                : null;
+            UpdateIssueGroupsInPlace(imported.Issues);
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
+            System.Diagnostics.Debug.WriteLine($"[LoadDocument] {ex}");
             await Dialogs.AlertAsync("Не удалось проверить файл", ex.Message, DialogKind.Danger);
         }
         finally

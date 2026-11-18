@@ -86,8 +86,19 @@ public static class DocumentChecker
     {
         using var ms = CopyToMemory(path);
         using var doc = WordprocessingDocument.Open(ms, false);
-        var ctx = new Context(doc);
+        return Check(new Context(doc), rules);
+    }
 
+    public static (List<CheckIssue> Issues, DocumentInfo Info) CheckWithInfo(string path, RuleSet rules)
+    {
+        using var ms = CopyToMemory(path);
+        using var doc = WordprocessingDocument.Open(ms, false);
+        var ctx = new Context(doc);
+        return (Check(ctx, rules), ReadInfo(doc, ctx));
+    }
+
+    private static List<CheckIssue> Check(Context ctx, RuleSet rules)
+    {
         var issues = new List<CheckIssue>();
         CheckMargins(ctx, rules, issues);
         CheckFontName(ctx, rules, issues);
@@ -114,12 +125,17 @@ public static class DocumentChecker
             using var doc = WordprocessingDocument.Open(ms, false);
             var ctx = new Context(doc);
 
-            int? pages = int.TryParse(doc.ExtendedFilePropertiesPart?.Properties?.Pages?.Text, out var n) && n > 0 ? n : null;
-            return new DocumentInfo(pages, ctx.CountTextParagraphs());
+            return ReadInfo(doc, ctx);
         } catch (Exception ex) {
             Debug.WriteLine($"DocumentChecker.ReadInfo: {ex}");
             return new DocumentInfo(null, 0);
         }
+    }
+
+    private static DocumentInfo ReadInfo(WordprocessingDocument doc, Context ctx)
+    {
+        int? pages = int.TryParse(doc.ExtendedFilePropertiesPart?.Properties?.Pages?.Text, out var n) && n > 0 ? n : null;
+        return new DocumentInfo(pages, ctx.CountTextParagraphs());
     }
 
     private static string? GetSample(Paragraph? p)

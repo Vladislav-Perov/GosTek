@@ -34,6 +34,26 @@ public class CustomRulesServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task WriteFailure_PreservesSavedRulesInMemoryAndOnDisk()
+    {
+        var service = new CustomRulesService(_tempFile);
+        var rule = service.CreateNewRule();
+        Assert.True(await service.SaveRuleAsync(rule));
+        var originalJson = await File.ReadAllTextAsync(_tempFile);
+
+        using (File.Open(_tempFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            Assert.False(await service.SaveRuleAsync(rule with { Title = "Новое название" }));
+            Assert.False(await service.DeleteRuleAsync(rule.Id));
+        }
+
+        Assert.Equal(rule.Title, Assert.Single(service.GetCustomRules()).Title);
+        Assert.Equal(rule.Id, service.LastSavedRuleId);
+        Assert.Equal(originalJson, await File.ReadAllTextAsync(_tempFile));
+        Assert.Empty(Directory.EnumerateFiles(_tempDir, "*.tmp"));
+    }
+
+    [Fact]
     public async Task SaveRuleAsync_ValidCustomRule_PersistsToJsonAndCanBeLoaded()
     {
         // Arrange

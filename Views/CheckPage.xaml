@@ -247,6 +247,9 @@
 
                 <!-- Результат проверки: список замечаний со скроллом -->
                 <VerticalStackLayout x:Name="ResultPanel" IsVisible="False" Spacing="14">
+                    <Button Text="Закрыть документ"
+                            HorizontalOptions="End"
+                            Clicked="OnCloseDocumentClicked" />
                     <Label x:Name="StatusLabel"
                            IsVisible="False"
                            FontSize="13"
@@ -529,6 +532,13 @@
                         </BindableLayout.ItemTemplate>
                     </VerticalStackLayout>
 
+                    <HorizontalStackLayout IsVisible="{Binding HasHiddenIssues}" Spacing="12">
+                        <Label Text="{Binding HiddenIssuesText}"
+                               TextColor="{DynamicResource TextSecondary}"
+                               VerticalOptions="Center" />
+                        <Button Text="Показать скрытые" Clicked="OnShowHiddenClicked" />
+                    </HorizontalStackLayout>
+
                     <!-- Карточка Успеха (когда замечаний нет или все исправлены) -->
                     <Border IsVisible="{Binding NoIssues}"
                             BackgroundColor="{DynamicResource CardBg}"
@@ -550,11 +560,11 @@
                                                 VerticalOptions="Center" />
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                <Label Text="Все замечания устранены!"
+                                <Label Text="По выбранным правилам замечаний нет"
                                        FontSize="15.5"
                                        FontAttributes="Bold"
                                        TextColor="{DynamicResource TextPrimary}" />
-                                <Label Text="Документ полностью соответствует выбранному стандарту ГОСТ."
+                                <Label Text="Требования вне выбранного набора проверьте вручную."
                                        FontSize="12.5"
                                        TextColor="{DynamicResource TextSecondary}" />
                             </VerticalStackLayout>
