@@ -62,7 +62,8 @@
                             </VerticalStackLayout>
 
                             <!-- Сегментный бейдж процента с контрастной рамкой -->
-                            <Border Grid.Column="1"
+                            <Border x:Name="ProgressBadgeBorder"
+                                    Grid.Column="1"
                                     BackgroundColor="{DynamicResource IconBoxBg}"
                                     Stroke="{DynamicResource BrandGreen}"
                                     StrokeThickness="1"

@@ -29,22 +29,22 @@
             </BoxView.GestureRecognizers>
         </BoxView>
 
-        <!-- Выезжающая панель Side Drawer слева -->
+        <!-- Выезжающая панель Side Drawer: на Android слева, на Windows справа, чтобы не перекрывать левый Navigation Rail -->
         <Border x:Name="Panel"
                 SafeAreaEdges="{OnPlatform Android=Container, Default=None}"
                 ZIndex="100"
                 InputTransparent="False"
-                HorizontalOptions="Start"
+                HorizontalOptions="{OnPlatform Android=Start, WinUI=End, Default=Start}"
                 WidthRequest="{OnPlatform WinUI=360}"
                 MaximumWidthRequest="360"
                 Margin="{OnPlatform Android='0,0,48,0', WinUI=0}"
                 BackgroundColor="{DynamicResource PageBg}"
                 Stroke="{DynamicResource CardStroke}"
                 StrokeThickness="1"
-                StrokeShape="RoundRectangle 0, 24, 24, 0"
+                StrokeShape="{OnPlatform Android='RoundRectangle 0, 24, 24, 0', WinUI='RoundRectangle 24, 0, 0, 24', Default='RoundRectangle 0, 24, 24, 0'}"
                 Padding="0">
             <Border.Shadow>
-                <Shadow Brush="Black" Offset="6, 0" Radius="24" Opacity="0.3" />
+                <Shadow Brush="Black" Offset="{OnPlatform Android='6, 0', WinUI='-6, 0', Default='6, 0'}" Radius="24" Opacity="0.3" />
             </Border.Shadow>
 
             <Grid RowDefinitions="Auto, *"

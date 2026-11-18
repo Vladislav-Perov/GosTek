@@ -120,8 +120,9 @@ public partial class SettingsPanel : ContentView
             SyncAll();
             UpdateWidth();
 
+            double startX = IsWindows ? _panelWidth : -_panelWidth;
             Scrim.Opacity = 0;
-            Panel.TranslationX = -_panelWidth;
+            Panel.TranslationX = startX;
             IsVisible = true;
 
             await Task.WhenAll(
@@ -139,7 +140,7 @@ public partial class SettingsPanel : ContentView
 
         _animating = true;
         try {
-            double hideX = -_panelWidth;
+            double hideX = IsWindows ? _panelWidth : -_panelWidth;
             await Task.WhenAll(
                 Scrim.FadeToAsync(0, CloseMs, Easing.CubicIn),
                 Panel.TranslateToAsync(hideX, 0, CloseMs, Easing.CubicIn));
@@ -170,7 +171,7 @@ public partial class SettingsPanel : ContentView
         if (Scrim is not null)
             Scrim.Opacity = 0;
         if (Panel is not null)
-            Panel.TranslationX = -_panelWidth;
+            Panel.TranslationX = IsWindows ? _panelWidth : -_panelWidth;
 
         if (Parent is Layout parent)
         {

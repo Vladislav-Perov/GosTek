@@ -75,18 +75,13 @@
                                ReturnType="Search"
                                TextChanged="OnSearchChanged" />
 
-                        <!-- Векторная иконка лупы справа -->
-                        <Path Grid.Column="1"
-                              Data="M10.5,2.5 A8,8 0 1,1 2.5,10.5 A8,8 0 0,1 10.5,2.5 M16.5,16.5 L21.5,21.5"
-                              Stroke="{DynamicResource TextSecondary}"
-                              StrokeThickness="2"
-                              StrokeLineCap="Round"
-                              StrokeLineJoin="Round"
-                              WidthRequest="16"
-                              HeightRequest="16"
-                              Aspect="Uniform"
-                              HorizontalOptions="End"
-                              VerticalOptions="Center" />
+                        <!-- Векторная иконка лупы справа через единый IconView -->
+                        <vctrl:IconView Grid.Column="1"
+                                        Icon="search"
+                                        Size="16"
+                                        IconColor="TextSecondary"
+                                        HorizontalOptions="End"
+                                        VerticalOptions="Center" />
                     </Grid>
                 </Border>
 

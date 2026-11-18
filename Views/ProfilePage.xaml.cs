@@ -596,6 +596,28 @@ public partial class ProfilePage : ContentPage
         var summary = ProfileRules.Summarize(ReadForm(normalize: false));
         ProgressHint.Text = summary.Hint;
 
+        void ApplyBadgeStyle(int percent)
+        {
+            if (percent >= 100)
+            {
+                ProgressTitle.Text = "Профиль заполнен ✓";
+                ProgressBadgeLabel.Text = "100%";
+                ProgressBadgeLabel.TextColor = Colors.White;
+                ProgressBadgeBorder.Background = (Brush)Application.Current!.Resources["BrandGreenGradient"];
+                ProgressBadgeBorder.StrokeThickness = 0;
+            }
+            else
+            {
+                ProgressTitle.Text = $"Заполнено на {percent}%";
+                ProgressBadgeLabel.Text = $"{percent}%";
+                ProgressBadgeLabel.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
+                ProgressBadgeBorder.Background = null;
+                ProgressBadgeBorder.SetDynamicResource(VisualElement.BackgroundColorProperty, "IconBoxBg");
+                ProgressBadgeBorder.SetDynamicResource(Border.StrokeProperty, "BrandGreen");
+                ProgressBadgeBorder.StrokeThickness = 1;
+            }
+        }
+
         if (animated)
         {
             this.AbortAnimation("ProfilePercentCounter");
@@ -613,28 +635,24 @@ public partial class ProfilePage : ContentPage
                 var anim = new Animation(v =>
                 {
                     int current = (int)Math.Round(v);
-                    ProgressTitle.Text = $"Заполнено на {current}%";
-                    ProgressBadgeLabel.Text = $"{current}%";
+                    ApplyBadgeStyle(current);
                 }, startPercent, targetPercent, Easing.CubicInOut);
 
                 anim.Commit(this, "ProfilePercentCounter", 16, 1000, Easing.CubicInOut, (_, _) =>
                 {
-                    ProgressTitle.Text = $"Заполнено на {targetPercent}%";
-                    ProgressBadgeLabel.Text = $"{targetPercent}%";
+                    ApplyBadgeStyle(targetPercent);
                 });
             }
             else
             {
-                ProgressTitle.Text = $"Заполнено на {targetPercent}%";
-                ProgressBadgeLabel.Text = $"{targetPercent}%";
+                ApplyBadgeStyle(targetPercent);
             }
         }
         else
         {
             this.AbortAnimation("ProfilePercentCounter");
             FillProgress.Progress = summary.Progress;
-            ProgressTitle.Text = $"Заполнено на {summary.Percent}%";
-            ProgressBadgeLabel.Text = $"{summary.Percent}%";
+            ApplyBadgeStyle(summary.Percent);
         }
     }
 }
