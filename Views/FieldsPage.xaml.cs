@@ -1307,7 +1307,7 @@ public partial class FieldsPage : ContentPage
     private async Task SendChatMessageAsync()
     {
         var userText = ChatInput.Text?.Trim();
-        if (string.IsNullOrWhiteSpace(userText))
+        if (string.IsNullOrWhiteSpace(userText) || _chatRequestCts is not null)
             return;
 
         if (!SettingsService.AiConsentAccepted)
@@ -1330,13 +1330,15 @@ public partial class FieldsPage : ContentPage
             SettingsService.AiConsentAccepted = true;
         }
 
+        if (_chatRequestCts is not null)
+            return;
+
         HapticHelper.Click();
         ChatInput.Text = string.Empty;
 
         AddUserMessageBubble(userText);
         _ = ChatScrollView.ScrollToAsync(ChatMessagesStack, ScrollToPosition.End, true);
 
-        _chatRequestCts?.Cancel();
         _chatRequestCts = new CancellationTokenSource();
 
         TypingIndicator.IsVisible = true;
@@ -1344,58 +1346,47 @@ public partial class FieldsPage : ContentPage
 
         try
         {
-            var fieldNames = _template?.Fields.Select(f => f.Label).ToList() ?? new();
-            var currentFormFields = _fields
-                .Where(f => !string.IsNullOrWhiteSpace(f.Field.Label))
-                .ToDictionary(f => f.Field.Label, f => f.Input.Text?.Trim() ?? string.Empty);
-
-            var profile = await ProfileStorage.LoadAsync();
-            var maskedText = PrivacyMasker.Mask(
-                userText,
-                out var extractedPlaceholders,
-                out var suspiciousNames,
-                profile: profile,
-                numbered: true);
+            var requestFields = _fields.Select((field, index) => (Key: $"field_{index + 1}", Field: field))
+                .ToDictionary(item => item.Key, item => item.Field, StringComparer.Ordinal);
+            var currentFormFields = requestFields.ToDictionary(
+                pair => $"{pair.Key} ({pair.Value.Field.Label})",
+                pair => pair.Value.Input.Text?.Trim() ?? string.Empty);
 
             var response = await AiAssistantService.Instance.ProcessRequestAsync(
-                maskedText,
-                fieldNames,
+                userText,
+                currentFormFields.Keys.ToList(),
                 currentFormFields: currentFormFields,
-                extractedPlaceholders: extractedPlaceholders,
                 templateName: _template?.Title,
                 memory: AiMemory.Instance.FormatForPrompt(),
-                cancellationToken: _chatRequestCts.Token);
+                cancellationToken: _chatRequestCts.Token,
+                fieldIds: requestFields.Keys.ToArray());
 
             TypingIndicator.IsVisible = false;
 
-            if (!string.IsNullOrWhiteSpace(response.Question))
-            {
-                // Если question не пустой — выводим в чат как обычное сообщение от бота (не создавая карточку с полями)
-                AddBotMessageBubble(response.Question);
-            }
-            else
-            {
-                var filledFields = response.Fields
-                    .Where(kv => !string.IsNullOrWhiteSpace(kv.Value) &&
-                                 !string.Equals(kv.Value.Trim(), "null", StringComparison.OrdinalIgnoreCase))
-                    .ToDictionary(kv => kv.Key, kv => kv.Value);
+            var hasQuestion = !string.IsNullOrWhiteSpace(response.Question);
+            if (hasQuestion)
+                AddBotMessageBubble(response.Question!);
 
-                if (filledFields.Count > 0)
+            var filledFields = response.Fields
+                .Where(pair => requestFields.ContainsKey(pair.Key) && !string.IsNullOrWhiteSpace(pair.Value)
+                    && !string.Equals(pair.Value.Trim(), "null", StringComparison.OrdinalIgnoreCase))
+                .ToDictionary(pair => requestFields[pair.Key].Field.Id, pair => pair.Value);
+
+            if (filledFields.Count > 0)
+            {
+                if (!hasQuestion && SettingsService.AiAutoApplyMode && !WouldReplaceFields(filledFields))
                 {
-                    if (SettingsService.AiAutoApplyMode)
-                    {
-                        int applied = ApplyFieldsToForm(filledFields);
-                        AddBotMessageBubble($"✅ Поля заполнены автоматически ({applied} из {filledFields.Count})!");
-                    }
-                    else
-                    {
-                        AddProposedFieldsCard(filledFields);
-                    }
+                    int applied = ApplyFieldsToForm(filledFields);
+                    AddBotMessageBubble($"✅ Поля заполнены автоматически ({applied} из {filledFields.Count})!");
                 }
                 else
                 {
-                    AddBotMessageBubble("Не удалось извлечь поля из текста. Пожалуйста, укажите конкретные данные (например: «ФИО: Иванов Иван, причина: отпуск»).");
+                    AddProposedFieldsCard(filledFields);
                 }
+            }
+            else if (!hasQuestion)
+            {
+                AddBotMessageBubble("Не удалось извлечь поля из текста. Укажите, какое поле заполнить и какие данные использовать.");
             }
         }
         catch (OperationCanceledException)
@@ -1432,13 +1423,8 @@ public partial class FieldsPage : ContentPage
             if (string.IsNullOrWhiteSpace(value))
                 continue;
 
-            // Поиск по Label или Id (точное или неполное совпадение)
-            var targetField = _fields.FirstOrDefault(f =>
-                string.Equals(f.Field.Label, key, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(f.Field.Id, key, StringComparison.OrdinalIgnoreCase))
-                ?? _fields.FirstOrDefault(f =>
-                    f.Field.Label.Contains(key, StringComparison.OrdinalIgnoreCase) ||
-                    key.Contains(f.Field.Label, StringComparison.OrdinalIgnoreCase));
+            var targetField = _fields.FirstOrDefault(field =>
+                string.Equals(field.Field.Id, key, StringComparison.Ordinal));
 
             if (targetField is not null)
             {
@@ -1457,6 +1443,11 @@ public partial class FieldsPage : ContentPage
 
         return applied;
     }
+
+    private bool WouldReplaceFields(Dictionary<string, string> values) =>
+        _fields.Any(field => values.TryGetValue(field.Field.Id, out var value)
+            && !string.IsNullOrWhiteSpace(field.Input.Text)
+            && !string.Equals(field.Input.Text.Trim(), value.Trim(), StringComparison.Ordinal));
 
     private void AddUserMessageBubble(string text)
     {
@@ -1576,7 +1567,7 @@ public partial class FieldsPage : ContentPage
 
             var boldSpan = new Span
             {
-                Text = $"{k}: ",
+                Text = $"{_fields.FirstOrDefault(field => field.Field.Id == k)?.Field.Label ?? k}: ",
                 FontAttributes = FontAttributes.Bold
             };
             boldSpan.SetDynamicResource(Span.TextColorProperty, "TextPrimary");
@@ -1675,7 +1666,20 @@ public partial class FieldsPage : ContentPage
         applyTap.Tapped += async (_, _) =>
         {
             HapticHelper.Click();
-            await applyButton.AnimateBounceAsync();
+            actionsGrid.IsEnabled = false;
+            try
+            {
+                await applyButton.AnimateBounceAsync();
+                if (WouldReplaceFields(filledFields) && !await Dialogs.ConfirmAsync(
+                    "Заменить введённые значения?",
+                    "Предложения ИИ изменят уже заполненные поля документа.", "Заменить"))
+                    return;
+            }
+            finally
+            {
+                actionsGrid.IsEnabled = true;
+            }
+
             actionsGrid.IsVisible = false;
             int count = ApplyFieldsToForm(filledFields);
             statusLabel.Text = $"✅ Применено к документу ({count} полей)";

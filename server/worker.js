@@ -8,7 +8,8 @@
  */
 
 const MAX_PAYLOAD_BYTES = 32 * 1024; // 32 KB
-const OVERALL_DEADLINE_MS = 15000;    // 15 seconds
+const OVERALL_DEADLINE_MS = 15000;
+const PROVIDER_DEADLINE_MS = 7000;
 
 export default {
   async fetch(request, env, ctx) {
@@ -36,11 +37,35 @@ export default {
 
     let payload;
     try {
-      payload = await request.json();
+      if (!request.body) throw new Error("Missing request body");
+      const reader = request.body.getReader();
+      const decoder = new TextDecoder("utf-8", { fatal: true });
+      let size = 0;
+      let text = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        size += value.byteLength;
+        if (size > MAX_PAYLOAD_BYTES) {
+          await reader.cancel();
+          return jsonResponse({ success: false, error: "Размер запроса превышает 32 КБ" }, 413);
+        }
+        text += decoder.decode(value, { stream: true });
+      }
+      payload = JSON.parse(text + decoder.decode());
     } catch {
       return jsonResponse({ success: false, error: "Некорректный JSON в теле запроса" }, 400);
     }
 
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return jsonResponse({ success: false, error: "Ожидается объект JSON" }, 400);
+    }
+    const fieldIds = payload.fieldIds ?? null;
+    if (fieldIds !== null && (!Array.isArray(fieldIds) ||
+        fieldIds.some(id => typeof id !== "string" || !/^field_[1-9][0-9]*$/.test(id)))) {
+      return jsonResponse({ success: false, error: "Некорректные идентификаторы полей" }, 400);
+    }
+    const requestId = crypto.randomUUID();
     const startTime = Date.now();
 
     // Разбор и санирование входных данных
@@ -52,6 +77,7 @@ export default {
 
     // Вторая линия обороны: серверный Regex Scrubber перед отправкой в LLM
     const userText = scrubPii(rawUserText);
+    if (!userText.trim()) return jsonResponse({ success: false, error: "Введите текст запроса" }, 400);
     const templateName = scrubPii(rawTemplateName);
     const fieldsContext = scrubPii(rawFieldsContext);
     const memory = rawMemory.map((m) => scrubPii(String(m)));
@@ -60,7 +86,9 @@ export default {
     // Сборка системного промпта
     const systemPrompt = buildSystemPrompt({
       templateName,
-      fieldsContext,
+      fieldsContext: fieldIds
+        ? fieldsContext + "\nВ fields используй только эти идентификаторы: " + fieldIds.join(", ")
+        : fieldsContext,
       memory,
       targetField,
     });
@@ -68,94 +96,86 @@ export default {
     // Определение каскада моделей (через env.MODELS_CASCADE или стандартный отказоустойчивый стек)
     const cascade = resolveCascade(env);
 
-    // Общий дедлайн 15 секунд с AbortController
-    const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), OVERALL_DEADLINE_MS);
-
-    let lastError = null;
-
-    try {
-      for (const step of cascade) {
-        if (abortController.signal.aborted) {
-          throw new Error("Истекло общее время ожидания обработки запроса (15 сек)");
-        }
-
-        const stepStart = Date.now();
-        try {
-          let rawAnswer = null;
-
-          if (step.provider === "gemini") {
-            rawAnswer = await callGemini(env, step.model, systemPrompt, userText, abortController.signal);
-          } else if (step.provider === "groq") {
-            rawAnswer = await callOpenAiCompatible(
-              "https://api.groq.com/openai/v1/chat/completions",
-              env.GROQ_API_KEY,
-              step.model || "llama-3.1-8b-instant",
-              systemPrompt,
-              userText,
-              abortController.signal
-            );
-          } else if (step.provider === "openai_compatible") {
-            const apiKey = env[step.apiKeyEnv || "OPENAI_API_KEY"] || env.OPENAI_API_KEY;
-            rawAnswer = await callOpenAiCompatible(
-              step.url,
-              apiKey,
-              step.model,
-              systemPrompt,
-              userText,
-              abortController.signal
-            );
-          }
-
-          const durationMs = Date.now() - stepStart;
-
-          if (rawAnswer) {
-            // Строгая валидация JSON-схемы
-            const parsed = parseAndValidateOutput(rawAnswer);
-            if (!parsed.valid) {
-              console.warn(`[AI Proxy Schema Mismatch] Provider: ${step.provider}, Model: ${step.model}, Reason: Invalid JSON schema`);
-              continue; // Переход к следующей модели в каскаде
-            }
-
-            // Zero-Text Logging: логируем только технические метрики
-            console.log(`[AI Proxy Success] Provider: ${step.provider}, Model: ${step.model}, Duration: ${durationMs}ms`);
-
-            return jsonResponse({
-              success: true,
-              data: {
-                fields: parsed.fields,
-                question: parsed.question,
-                status: parsed.question ? "need_info" : "success",
-              },
-              memory_ops: parsed.memory_ops,
-              text: JSON.stringify({
-                fields: parsed.fields,
-                question: parsed.question,
-              }),
-              model: step.model,
-              duration_ms: Date.now() - startTime,
-            });
-          }
-        } catch (err) {
-          const durationMs = Date.now() - stepStart;
-          console.warn(`[AI Proxy Fallback] Provider: ${step.provider}, Model: ${step.model}, Duration: ${durationMs}ms, Status: Error`);
-          lastError = err;
-        }
-      }
-    } finally {
-      clearTimeout(timeoutId);
+    if (cascade.length === 0) {
+      console.error(JSON.stringify({ requestId, category: "configuration" }));
+      return jsonResponse({ success: false, code: "configuration", request_id: requestId }, 503);
     }
 
-    console.error(`[AI Proxy Failure] All cascade attempts exhausted in ${Date.now() - startTime}ms`);
-    return jsonResponse(
-      {
-        success: false,
-        error: "Сервис ИИ временно перегружен или недоступен. Пожалуйста, повторите запрос позже.",
-      },
-      503
-    );
+    for (const step of cascade) {
+      const remaining = OVERALL_DEADLINE_MS - (Date.now() - startTime);
+      if (remaining <= 0) break;
+      const stepStart = Date.now();
+      const signal = AbortSignal.timeout(Math.min(remaining, PROVIDER_DEADLINE_MS));
+      try {
+        let rawAnswer = null;
+
+        if (step.provider === "gemini") {
+          rawAnswer = await callGemini(env, step.model, systemPrompt, userText, signal);
+        } else if (step.provider === "groq") {
+          rawAnswer = await callOpenAiCompatible(
+            "https://api.groq.com/openai/v1/chat/completions",
+            env.GROQ_API_KEY,
+            step.model,
+            systemPrompt,
+            userText,
+            signal
+          );
+        } else if (step.provider === "openai_compatible") {
+          const apiKey = env[step.apiKeyEnv || "OPENAI_API_KEY"];
+          rawAnswer = await callOpenAiCompatible(
+            step.url,
+            apiKey,
+            step.model,
+            systemPrompt,
+            userText,
+            signal
+          );
+        }
+
+        if (rawAnswer) {
+          // Строгая валидация JSON-схемы
+          const parsed = parseAndValidateOutput(rawAnswer, fieldIds);
+          if (!parsed.valid) {
+            logAttempt(requestId, step, stepStart, "schema");
+            continue; // Переход к следующей модели в каскаде
+          }
+
+          logAttempt(requestId, step, stepStart, "success");
+          return jsonResponse({
+            success: true,
+            data: {
+              fields: parsed.fields,
+              question: parsed.question,
+              status: parsed.question ? "need_info" : "success",
+            },
+            memory_ops: parsed.memory_ops,
+            text: JSON.stringify({
+              fields: parsed.fields,
+              question: parsed.question,
+            }),
+            model: step.model,
+            request_id: requestId,
+            duration_ms: Date.now() - startTime,
+          });
+        }
+      } catch (err) {
+        logAttempt(requestId, step, stepStart, signal.aborted ? "timeout" : "provider", err.status);
+      }
+    }
+
+    return jsonResponse({
+      success: false,
+      code: "providers_unavailable",
+      request_id: requestId,
+    }, 503);
   },
 };
+
+function logAttempt(requestId, step, started, category, status) {
+  console.log(JSON.stringify({
+    requestId, provider: step.provider, model: step.model, durationMs: Date.now() - started, category, status,
+  }));
+}
 
 /**
  * Определение каскада моделей: чтение из env.MODELS_CASCADE или дефолтная конфигурация
@@ -163,20 +183,30 @@ export default {
 function resolveCascade(env) {
   if (env.MODELS_CASCADE) {
     try {
-      const parsed = JSON.parse(env.MODELS_CASCADE);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      const steps = JSON.parse(env.MODELS_CASCADE);
+      if (!Array.isArray(steps)) return [];
+      return steps.filter(step => {
+        if (!step || typeof step.model !== "string" || !/^[\w./-]+$/.test(step.model)) return false;
+        if (step.provider === "gemini") return Boolean(env.GEMINI_API_KEY);
+        if (step.provider === "groq") return Boolean(env.GROQ_API_KEY);
+        if (step.provider !== "openai_compatible") return false;
+        try {
+          return new URL(step.url).protocol === "https:" && Boolean(env[step.apiKeyEnv || "OPENAI_API_KEY"]);
+        } catch {
+          return false;
+        }
+      });
     } catch {
-      console.warn("[AI Proxy Config] Failed to parse env.MODELS_CASCADE, using default");
+      return [];
     }
   }
 
   const list = [];
-  const primaryGeminiModel = env.GEMINI_MODEL || "gemini-2.0-flash";
+  if (env.GROQ_API_KEY) {
+    list.push({ provider: "groq", model: env.GROQ_MODEL || "openai/gpt-oss-20b" });
+  }
   if (env.GEMINI_API_KEY) {
-    list.push({ provider: "gemini", model: primaryGeminiModel });
-    if (primaryGeminiModel !== "gemini-1.5-flash") {
-      list.push({ provider: "gemini", model: "gemini-1.5-flash" });
-    }
+    list.push({ provider: "gemini", model: env.GEMINI_MODEL || "gemini-3.6-flash" });
   }
   if (env.DEEPSEEK_API_KEY) {
     list.push({
@@ -186,16 +216,6 @@ function resolveCascade(env) {
       model: env.DEEPSEEK_MODEL || "deepseek-chat",
     });
   }
-  if (env.GROQ_API_KEY) {
-    list.push({ provider: "groq", model: env.GROQ_MODEL || "llama-3.1-8b-instant" });
-  }
-
-  // Если ключи не переданы в env, сохраняем стандартную последовательность
-  if (list.length === 0) {
-    list.push({ provider: "gemini", model: primaryGeminiModel });
-    list.push({ provider: "groq", model: "llama-3.1-8b-instant" });
-  }
-
   return list;
 }
 
@@ -266,11 +286,11 @@ async function callGemini(env, model, systemPrompt, userText, signal) {
   const apiKey = env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
     signal,
     body: JSON.stringify({
       contents: [
@@ -287,7 +307,7 @@ async function callGemini(env, model, systemPrompt, userText, signal) {
   });
 
   if (!response.ok) {
-    throw new Error(`Gemini status ${response.status}`);
+    throw Object.assign(new Error("Provider HTTP error"), { status: response.status });
   }
 
   const data = await response.json();
@@ -321,7 +341,7 @@ async function callOpenAiCompatible(endpoint, apiKey, model, systemPrompt, userT
   });
 
   if (!response.ok) {
-    throw new Error(`Provider status ${response.status}`);
+    throw Object.assign(new Error("Provider HTTP error"), { status: response.status });
   }
 
   const data = await response.json();
@@ -333,7 +353,7 @@ async function callOpenAiCompatible(endpoint, apiKey, model, systemPrompt, userT
 /**
  * Строгий парсинг и валидация схемы JSON-ответа от LLM
  */
-function parseAndValidateOutput(rawText) {
+function parseAndValidateOutput(rawText, fieldIds) {
   let cleaned = rawText.trim();
   if (cleaned.startsWith("```json")) cleaned = cleaned.slice(7);
   else if (cleaned.startsWith("```")) cleaned = cleaned.slice(3);
@@ -352,21 +372,25 @@ function parseAndValidateOutput(rawText) {
       return { valid: false };
     }
 
-    const fields = parsed.fields && typeof parsed.fields === "object" && !Array.isArray(parsed.fields)
-      ? parsed.fields
-      : {};
-
-    let question = parsed.question;
-    if (typeof question === "string") {
-      question = question.trim();
-      if (question.toLowerCase() === "null" || question.length === 0) question = null;
-    } else {
-      question = null;
+    const fields = parsed.fields;
+    if (!fields || typeof fields !== "object" || Array.isArray(fields) ||
+        Object.entries(fields).some(([key, value]) =>
+          !key.trim() || typeof value !== "string" || !value.trim() ||
+          (fieldIds && !fieldIds.includes(key)))) {
+      return { valid: false };
     }
+    if (parsed.question != null && typeof parsed.question !== "string") return { valid: false };
+    const questionText = parsed.question?.trim();
+    const question = questionText && questionText.toLowerCase() !== "null" ? questionText : null;
+    if (!Object.keys(fields).length && !question) return { valid: false };
 
-    const memoryOps = Array.isArray(parsed.memory_ops)
-      ? parsed.memory_ops.filter((op) => op && typeof op === "object" && op.key)
-      : [];
+    const memoryOps = parsed.memory_ops ?? [];
+    if (!Array.isArray(memoryOps) || memoryOps.some(op =>
+      !op || typeof op.key !== "string" || !op.key.trim() ||
+      (op.action !== "add" && op.action !== "remove") ||
+      (op.action === "add" && (typeof op.value !== "string" || !op.value.trim())))) {
+      return { valid: false };
+    }
 
     return {
       valid: true,
