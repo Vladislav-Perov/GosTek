@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text.Json;
@@ -50,11 +51,12 @@ public sealed class TextGenerationService(HttpClient client, Uri? endpoint)
 
         try
         {
-            using var response = await client.PostAsJsonAsync(endpoint, request, TextGenerationJsonContext.Default.GenerationRequest, cancellationToken);
-            if (response.StatusCode == HttpStatusCode.TooManyRequests)
-                throw new AiAssistantException("Слишком много запросов. Повторите попытку позже.");
+            var payload = JsonSerializer.SerializeToUtf8Bytes(request, TextGenerationJsonContext.Default.GenerationRequest);
+            using var content = new ByteArrayContent(payload);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            using var response = await client.PostAsync(endpoint, content, cancellationToken);
             if (!response.IsSuccessStatusCode)
-                throw new AiAssistantException("Генерация текста сейчас недоступна. Поле можно заполнить вручную.");
+                throw new AiAssistantException(DescribeHttpFailure(response));
 
             var result = await response.Content.ReadFromJsonAsync(TextGenerationJsonContext.Default.TextGenerationResult, cancellationToken);
             var text = result?.Text?.Trim();
@@ -77,6 +79,25 @@ public sealed class TextGenerationService(HttpClient client, Uri? endpoint)
         {
             throw new AiAssistantException("Сервис вернул некорректный ответ. Попробуйте ещё раз.");
         }
+    }
+
+    private static string DescribeHttpFailure(HttpResponseMessage response)
+    {
+        var status = response.StatusCode;
+        var message = status switch
+        {
+            HttpStatusCode.BadRequest => "Сервер отклонил запрос. Попробуйте короткое сообщение.",
+            HttpStatusCode.Forbidden => "Доступ к серверу генерации отклонён.",
+            HttpStatusCode.RequestEntityTooLarge => "Запрос слишком большой. Сократите текст.",
+            HttpStatusCode.TooManyRequests => "Слишком много запросов. Повторите попытку позже.",
+            HttpStatusCode.GatewayTimeout => "Сервер не дождался ответа модели. Попробуйте ещё раз.",
+            _ => "Генерация текста сейчас недоступна. Поле можно заполнить вручную."
+        };
+
+        var ray = response.Headers.TryGetValues("CF-Ray", out var values) ? values.FirstOrDefault() : null;
+        return ray is not null && Regex.IsMatch(ray, @"\A[0-9a-fA-F]{16}-[A-Za-z]{3}\z")
+            ? $"{message} HTTP {(int)status}, запрос {ray}."
+            : $"{message} HTTP {(int)status}.";
     }
 
     private static string? Restore(string? value, Dictionary<string, string> replacements)

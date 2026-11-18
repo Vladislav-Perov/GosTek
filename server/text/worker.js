@@ -56,7 +56,16 @@ export default {
         }),
       });
       if (!response.ok) {
-        console.warn(JSON.stringify({ requestId, category: "provider_http", status: response.status }));
+        const upstream = await response.json().catch(() => null);
+        const rawCode = upstream?.error?.code;
+        const providerCode = [
+          "model_permission_blocked_org", "model_permission_blocked_project",
+          "country_territory_not_supported", "invalid_api_key", "rate_limit_exceeded",
+        ].includes(rawCode) ? rawCode : undefined;
+        console.warn(JSON.stringify({
+          requestId, category: "provider_http", status: response.status,
+          colo: request.cf?.colo, providerCode,
+        }));
         return error(503, "provider_unavailable");
       }
 

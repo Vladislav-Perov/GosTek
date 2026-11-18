@@ -65,18 +65,38 @@ public class TextGenerationServiceTests
         Assert.Null(handler.Body);
     }
 
-    private sealed class CaptureHandler(string response) : HttpMessageHandler
+    [Fact]
+    public async Task GenerateAsync_ReportsHttpStatusAndRayWithoutUsingServerErrorBody()
+    {
+        using var handler = new CaptureHandler("Untrusted response", HttpStatusCode.Forbidden);
+        using var client = new HttpClient(handler);
+        var service = new TextGenerationService(client, new Uri("https://example.com/generate"));
+
+        var error = await Assert.ThrowsAsync<AiAssistantException>(() =>
+            service.GenerateAsync("Опоздал", TextGenerationKind.Explanation, null));
+
+        Assert.Contains("HTTP 403", error.Message);
+        Assert.Contains("abcdef0123456789-FRA", error.Message);
+        Assert.DoesNotContain("Untrusted response", error.Message);
+        Assert.True(handler.ContentLength > 0);
+    }
+
+    private sealed class CaptureHandler(string response, HttpStatusCode status = HttpStatusCode.OK) : HttpMessageHandler
     {
         public string? Body { get; private set; }
+        public long? ContentLength { get; private set; }
 
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            Body = await request.Content!.ReadAsStringAsync(cancellationToken);
-            return new HttpResponseMessage(HttpStatusCode.OK)
+            ContentLength = request.Content!.Headers.ContentLength;
+            Body = await request.Content.ReadAsStringAsync(cancellationToken);
+            var result = new HttpResponseMessage(status)
             {
                 Content = new StringContent(response, Encoding.UTF8, "application/json")
             };
+            result.Headers.Add("CF-Ray", "abcdef0123456789-FRA");
+            return result;
         }
     }
 }
