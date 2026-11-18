@@ -1,8 +1,8 @@
 /*
  * ==============================================================================
- * НАЗНАЧЕНИЕ: Страница аудита оформления документов Word по стандартам ГОСТ с пакетным исправлением и конструктором правил
+ * НАЗНАЧЕНИЕ: Страница аудита оформления документов Word по стандартам ГОСТ с пакетным и точечным исправлением
  * СОДЕРЖИМОЕ: CheckPage
- * ЗАВИСИМОСТИ: GosTek.Services.DocumentChecker, GosTek.Models.CheckModels, GosTek.Services.ExportService, GosTek.Services.CustomRulesService, GosTek.Helpers
+ * ЗАВИСИМОСТИ: GosTek.Services.DocumentChecker, GosTek.Models.CheckModels, GosTek.Views.CheckGroupVm, GosTek.Services.ExportService, GosTek.Services.CustomRulesService, GosTek.Helpers
  * ==============================================================================
  */
 using System.Collections.ObjectModel;
@@ -22,7 +22,7 @@ namespace GosTek.Views;
 
 /// <summary>
 /// Экран «Проверка»: выбрать .docx, проверить оформление по набору правил,
-/// исправить замечания и сохранить исправленную копию.
+/// исправить замечания (целиком или точечно) и сохранить исправленную копию.
 ///
 /// Исходный файл никогда не меняется: проверка и исправления идут по рабочей копии в кэше приложения.
 /// </summary>
@@ -41,29 +41,39 @@ public partial class CheckPage : ContentPage
     private long _sourceSize;
 
     private List<RuleSet> _allRules = new();
-    private List<CheckIssue> _issues = new();                 // что ещё не так
-    private readonly List<CheckIssue> _fixedIssues = new();   // что уже исправили
-    private readonly HashSet<IssueKind> _rejectedKinds = new(); // отклонённые типы замечаний
+    private List<CheckIssue> _rawIssues = new(); // полный результат последней проверки
+    private readonly HashSet<(IssueKind Kind, int Index, string Text)> _rejectedIssues = new(); // отклонённые элементы и карточки
     private string? _status;
 
     private bool _busy;
 
-    public ObservableCollection<CheckIssue> Issues { get; } = new();
-    public bool HasIssues => Issues.Count > 0;
-    public bool NoIssues => Issues.Count == 0;
-    public bool HasFixableIssues => Issues.Any(i => i.CanFix);
+    public ObservableCollection<CheckGroupVm> IssueGroups { get; } = new();
+    public ObservableCollection<CheckGroupVm> Issues => IssueGroups;
+    public bool HasIssues => IssueGroups.Count > 0;
+    public bool NoIssues => _workPath != null && IssueGroups.Count == 0;
+    public bool HasFixableIssues => IssueGroups.Any(i => i.CanFix);
 
-    public ICommand AcceptFixCommand { get; }
-    public ICommand RejectFixCommand { get; }
+    public ICommand ToggleExpandCommand { get; }
+    public ICommand AcceptItemCommand { get; }
+    public ICommand RejectItemCommand { get; }
+    public ICommand AcceptGroupCommand { get; }
+    public ICommand RejectGroupCommand { get; }
     public ICommand AcceptAllCommand { get; }
+
+    // Для обратной совместимости
+    public ICommand AcceptFixCommand => AcceptGroupCommand;
+    public ICommand RejectFixCommand => RejectGroupCommand;
 
     public CheckPage()
     {
         InitializeComponent();
         BindingContext = this;
 
-        AcceptFixCommand = new Command<CheckIssue>(async issue => await AcceptFixAsync(issue));
-        RejectFixCommand = new Command<CheckIssue>(issue => RejectFix(issue));
+        ToggleExpandCommand = new Command<CheckGroupVm>(ToggleExpand);
+        AcceptItemCommand = new Command<CheckItemVm>(async item => await AcceptItemAsync(item));
+        RejectItemCommand = new Command<CheckItemVm>(RejectItem);
+        AcceptGroupCommand = new Command<CheckGroupVm>(async group => await AcceptGroupAsync(group));
+        RejectGroupCommand = new Command<CheckGroupVm>(RejectGroup);
         AcceptAllCommand = new Command(async () => await AcceptAllAsync());
 
         RuleChips.ShowArrows = true;
@@ -204,13 +214,12 @@ public partial class CheckPage : ContentPage
             _sourceName = picked.FileName;
             _sourceSize = new FileInfo(work).Length;
             _info = info;
-            _issues = issues;
-            _fixedIssues.Clear();
-            _rejectedKinds.Clear();
+            _rawIssues = issues;
+            _rejectedIssues.Clear();
 
-            Issues.Clear();
+            IssueGroups.Clear();
             foreach (var issue in issues)
-                Issues.Add(issue);
+                IssueGroups.Add(new CheckGroupVm(issue));
 
             var category = CustomRulesService.Instance.ExtractCategoryFromFileName(picked.FileName);
             if (!string.IsNullOrWhiteSpace(category) && matchedRule.Id != RuleSets.Universal.Id) {
@@ -245,14 +254,13 @@ public partial class CheckPage : ContentPage
             var path = _workPath;
             var rules = CurrentRules;
             var raw = await Task.Run(() => DocumentChecker.Check(path, rules));
-            _fixedIssues.Clear();
-            _issues = raw.Where(i => !_rejectedKinds.Contains(i.Kind)).ToList();
-
-            Issues.Clear();
-            foreach (var issue in _issues)
-                Issues.Add(issue);
-
+            _rejectedIssues.Clear();
+            _rawIssues = raw;
             _status = null;
+
+            IssueGroups.Clear();
+            foreach (var issue in raw)
+                IssueGroups.Add(new CheckGroupVm(issue));
         } catch (Exception ex) {
             System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
             await Dialogs.AlertAsync("Не удалось проверить файл", ex.Message, DialogKind.Danger);
@@ -274,12 +282,56 @@ public partial class CheckPage : ContentPage
     //  ИСПРАВЛЕНИЯ И КОМАНДЫ КАРТОЧЕК
     // =====================================================================
 
-    private async Task AcceptFixAsync(CheckIssue? issue)
+    private void ToggleExpand(CheckGroupVm? group)
     {
-        if (issue is null || _busy || _workPath is null)
+        if (group == null)
             return;
 
-        if (!issue.CanFix)
+        HapticHelper.Click();
+        group.IsExpanded = !group.IsExpanded;
+    }
+
+    private void RejectItem(CheckItemVm? item)
+    {
+        if (item == null)
+            return;
+
+        HapticHelper.Click();
+        _rejectedIssues.Add((item.Parent.Issue.Kind, item.Index, item.Text));
+        Toast.Show("Скрыто, вернётся при повторной проверке", "info");
+        ApplyRejectionFilter();
+        UpdateUi();
+    }
+
+    private void RejectGroup(CheckGroupVm? group)
+    {
+        if (group == null)
+            return;
+
+        HapticHelper.Click();
+        if (group.Issue.Items != null && group.Issue.Items.Count > 0)
+        {
+            foreach (var it in group.Issue.Items)
+            {
+                _rejectedIssues.Add((group.Issue.Kind, it.Index, it.Text));
+            }
+        }
+        else
+        {
+            _rejectedIssues.Add((group.Issue.Kind, -1, group.Issue.Title));
+        }
+
+        Toast.Show("Скрыто, вернётся при повторной проверке", "info");
+        ApplyRejectionFilter();
+        UpdateUi();
+    }
+
+    private async Task AcceptItemAsync(CheckItemVm? item)
+    {
+        if (item == null || _busy || _workPath == null)
+            return;
+
+        if (!item.CanFix)
         {
             Toast.Show("Это замечание необходимо поправить вручную в Word", "info");
             return;
@@ -290,23 +342,17 @@ public partial class CheckPage : ContentPage
         {
             var path = _workPath;
             var rules = CurrentRules;
+            var kind = item.Parent.Issue.Kind;
+            var indices = new HashSet<int> { item.Index };
+            var samples = new Dictionary<int, string> { [item.Index] = item.Text };
 
-            int changes = await Task.Run(() => DocumentChecker.Fix(path, rules, new[] { issue.Kind }));
-
-            // Fix работает по Kind, поэтому убираем из списка все замечания этого типа
-            var sameKind = Issues.Where(x => x.Kind == issue.Kind).ToList();
-            foreach (var i in sameKind)
-            {
-                _fixedIssues.Add(i);
-                Issues.Remove(i);
-            }
-            _issues = Issues.ToList();
-
-            if (changes > 0)
+            int changed = await Task.Run(() => DocumentChecker.FixItems(path, rules, kind, indices, samples));
+            if (changed > 0)
             {
                 HapticHelper.Success();
                 Toast.Show("Исправление применено", "check");
             }
+            await RecheckAsync();
         }
         catch (Exception ex)
         {
@@ -320,16 +366,53 @@ public partial class CheckPage : ContentPage
         }
     }
 
-    private void RejectFix(CheckIssue? issue)
+    private async Task AcceptGroupAsync(CheckGroupVm? group)
     {
-        if (issue is null)
+        if (group == null || _busy || _workPath == null)
             return;
 
-        HapticHelper.Click();
-        _rejectedKinds.Add(issue.Kind);
-        Issues.Remove(issue);
-        _issues = Issues.ToList();
-        UpdateUi();
+        if (!group.CanFix)
+        {
+            Toast.Show("Это замечание необходимо поправить вручную в Word", "info");
+            return;
+        }
+
+        SetBusy(true);
+        try
+        {
+            var path = _workPath;
+            var rules = CurrentRules;
+            var issue = group.Issue;
+            int changed;
+
+            if (issue.Items != null && issue.Items.Count > 0)
+            {
+                var indices = issue.Items.Select(it => it.Index).ToHashSet();
+                var samples = issue.Items.ToDictionary(it => it.Index, it => it.Text);
+                changed = await Task.Run(() => DocumentChecker.FixItems(path, rules, issue.Kind, indices, samples));
+            }
+            else
+            {
+                changed = await Task.Run(() => DocumentChecker.Fix(path, rules, new[] { issue.Kind }));
+            }
+
+            if (changed > 0)
+            {
+                HapticHelper.Success();
+                Toast.Show("Исправление применено", "check");
+            }
+            await RecheckAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
+            await Dialogs.AlertAsync("Не удалось исправить", ex.Message, DialogKind.Danger);
+        }
+        finally
+        {
+            SetBusy(false);
+            UpdateUi();
+        }
     }
 
     private async Task AcceptAllAsync()
@@ -337,7 +420,7 @@ public partial class CheckPage : ContentPage
         if (_busy || _workPath is null)
             return;
 
-        var fixable = Issues.Where(i => i.CanFix).ToList();
+        var fixable = IssueGroups.Where(i => i.CanFix).ToList();
         if (fixable.Count == 0)
             return;
 
@@ -346,16 +429,9 @@ public partial class CheckPage : ContentPage
         {
             var path = _workPath;
             var rules = CurrentRules;
-            var kinds = fixable.Select(t => t.Kind).Distinct().ToList();
+            var kinds = fixable.Select(t => t.Issue.Kind).Distinct().ToList();
 
             int changes = await Task.Run(() => DocumentChecker.Fix(path, rules, kinds));
-
-            foreach (var f in fixable)
-            {
-                _fixedIssues.Add(f);
-                Issues.Remove(f);
-            }
-            _issues = Issues.ToList();
 
             if (changes > 0)
             {
@@ -365,6 +441,8 @@ public partial class CheckPage : ContentPage
             _status = changes > 0
                 ? $"Исправлено: {RuFormat.Count(changes, "изменение", "изменения", "изменений")}."
                 : null;
+
+            await RecheckAsync();
         }
         catch (Exception ex)
         {
@@ -375,6 +453,36 @@ public partial class CheckPage : ContentPage
         {
             SetBusy(false);
             UpdateUi();
+        }
+    }
+
+    private async Task RecheckAsync()
+    {
+        if (_workPath == null)
+            return;
+
+        var path = _workPath;
+        var rules = CurrentRules;
+        var raw = await Task.Run(() => DocumentChecker.Check(path, rules));
+        var info = await Task.Run(() => DocumentChecker.ReadInfo(path));
+        _rawIssues = raw;
+        _info = info;
+
+        ApplyRejectionFilter();
+    }
+
+    private void ApplyRejectionFilter()
+    {
+        var filtered = CheckIssueFilter.FilterIssues(_rawIssues, _rejectedIssues);
+        var expandedKinds = IssueGroups.Where(g => g.IsExpanded).Select(g => g.Issue.Kind).ToHashSet();
+
+        IssueGroups.Clear();
+        foreach (var issue in filtered)
+        {
+            var vm = new CheckGroupVm(issue);
+            if (expandedKinds.Contains(issue.Kind))
+                vm.IsExpanded = true;
+            IssueGroups.Add(vm);
         }
     }
 
@@ -385,7 +493,7 @@ public partial class CheckPage : ContentPage
         if (_busy)
             return;
 
-        var fixable = Issues.Where(i => i.CanFix).ToList();
+        var fixable = IssueGroups.Where(i => i.CanFix).ToList();
         if (_workPath is not null && fixable.Count > 0)
             await AcceptAllAsync();
         else
@@ -449,6 +557,7 @@ public partial class CheckPage : ContentPage
         EmptyPanel.IsVisible = !hasFile;
         ResultPanel.IsVisible = hasFile;
 
+        OnPropertyChanged(nameof(IssueGroups));
         OnPropertyChanged(nameof(Issues));
         OnPropertyChanged(nameof(HasIssues));
         OnPropertyChanged(nameof(NoIssues));
@@ -471,7 +580,7 @@ public partial class CheckPage : ContentPage
         FileInfoLabel.Text = BuildInfoText();
         PickLabel.Text = "Заменить";
 
-        var fixable = Issues.Where(i => i.CanFix).ToList();
+        var fixable = IssueGroups.Where(i => i.CanFix).ToList();
 
         // Главная кнопка: исправить (если есть что), иначе снова выбрать
         if (fixable.Count > 0) {
@@ -527,13 +636,12 @@ public partial class CheckPage : ContentPage
             _sourceName = fileName;
             _sourceSize = new FileInfo(work).Length;
             _info = info;
-            _issues = issues;
-            _fixedIssues.Clear();
-            _rejectedKinds.Clear();
+            _rawIssues = issues;
+            _rejectedIssues.Clear();
 
-            Issues.Clear();
+            IssueGroups.Clear();
             foreach (var issue in issues)
-                Issues.Add(issue);
+                IssueGroups.Add(new CheckGroupVm(issue));
 
             var category = CustomRulesService.Instance.ExtractCategoryFromFileName(fileName);
             if (!string.IsNullOrWhiteSpace(category) && matchedRule.Id != RuleSets.Universal.Id) {
