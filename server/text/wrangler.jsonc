@@ -1,0 +1,15 @@
+{
+  "name": "gostek-text",
+  "main": "worker.js",
+  "compatibility_date": "2026-11-18",
+  "observability": { "enabled": false },
+  "ai": { "binding": "AI" },
+  "placement": { "region": "aws:eu-central-1" },
+  "ratelimits": [
+    {
+      "name": "GENERATION_LIMIT",
+      "namespace_id": "814022",
+      "simple": { "limit": 10, "period": 60 }
+    }
+  ]
+}

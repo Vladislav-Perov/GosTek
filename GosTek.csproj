@@ -9,6 +9,7 @@
 		<RootNamespace>GosTek</RootNamespace>
 		<UseMaui>true</UseMaui>
 		<SingleProject>true</SingleProject>
+		<GosTekTextGenerationEndpoint Condition="'$(GosTekTextGenerationEndpoint)' == ''">https://gostek-text.gostek-app-8e32.workers.dev/generate</GosTekTextGenerationEndpoint>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 
@@ -20,7 +21,7 @@
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>0.45</ApplicationDisplayVersion>
-		<ApplicationVersion>1</ApplicationVersion>
+		<ApplicationVersion>3</ApplicationVersion>
 
 		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
 		<WindowsPackageType>None</WindowsPackageType>
@@ -41,6 +42,10 @@
 	  <AndroidKeyStore>False</AndroidKeyStore>
 	  <Debugger>Xamarin</Debugger>
 	</PropertyGroup>
+
+	<ItemGroup Condition="'$(GosTekTextGenerationEndpoint)' != ''">
+		<AssemblyMetadata Include="GosTekTextGenerationEndpoint" Value="$(GosTekTextGenerationEndpoint)" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<!-- App Icon -->

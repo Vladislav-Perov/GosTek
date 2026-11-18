@@ -64,6 +64,9 @@ public class AiProxyRequest
 
     [JsonPropertyName("targetField")]
     public string? TargetField { get; set; }
+
+    [JsonPropertyName("fieldIds")]
+    public IReadOnlyList<string>? FieldIds { get; set; }
 }
 
 /// <summary>
@@ -193,99 +196,48 @@ public class AiAssistantService
         string? templateName = null,
         List<string>? memory = null,
         ProfileData? profile = null,
-        DateTime? today = null)
+        DateTime? today = null,
+        IReadOnlyList<string>? fieldIds = null)
     {
         var allPlaceholders = extractedPlaceholders != null
             ? new Dictionary<string, string>(extractedPlaceholders, StringComparer.OrdinalIgnoreCase)
             : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        // 1. Санитизируем UserText
-        var safeUserText = PrivacyMasker.Mask(
-            userText,
-            out var uExtracted,
-            out _,
-            profile: profile,
-            numbered: true);
+        var placeholderOffset = 0;
+        foreach (var key in allPlaceholders.Keys)
+        {
+            var match = Regex.Match(key, @"_(\d+)\]$");
+            if (match.Success && int.TryParse(match.Groups[1].Value, out var number))
+                placeholderOffset = Math.Max(placeholderOffset, number);
+        }
 
-        foreach (var (k, v) in uExtracted)
-            allPlaceholders[k] = v;
+        string MaskRequestPart(string? text)
+        {
+            var safe = PrivacyMasker.Mask(text, out var extracted, out _, profile,
+                numbered: true, placeholderOffset: placeholderOffset);
+            foreach (var (key, value) in extracted)
+                allPlaceholders.TryAdd(key, value);
+            placeholderOffset += extracted.Count;
+            return safe;
+        }
 
-        // 2. Санитизируем поля текущей формы (currentFormFields)
+        var safeUserText = MaskRequestPart(userText);
+        var safeFieldNames = fieldNames.Select(MaskRequestPart).ToList();
         var safeFormFields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         if (currentFormFields != null)
         {
-            foreach (var (fName, fVal) in currentFormFields)
-            {
-                if (string.IsNullOrWhiteSpace(fVal))
-                {
-                    safeFormFields[fName] = string.Empty;
-                    continue;
-                }
-
-                var maskedVal = PrivacyMasker.Mask(
-                    fVal,
-                    out var fExtracted,
-                    out _,
-                    profile: profile,
-                    numbered: true);
-
-                foreach (var (k, v) in fExtracted)
-                    allPlaceholders[k] = v;
-
-                safeFormFields[fName] = maskedVal;
-            }
+            foreach (var (name, value) in currentFormFields)
+                safeFormFields[MaskRequestPart(name)] = MaskRequestPart(value);
         }
 
-        // 3. Санитизируем название шаблона и целевое поле
-        var safeTemplateName = PrivacyMasker.Mask(
-            templateName ?? "Документ",
-            out var tExtracted,
-            out _,
-            profile: profile,
-            numbered: false);
-
-        foreach (var (k, v) in tExtracted)
-            allPlaceholders[k] = v;
-
-        string? safeTargetField = null;
-        if (!string.IsNullOrWhiteSpace(targetField))
-        {
-            safeTargetField = PrivacyMasker.Mask(
-                targetField,
-                out var tgExtracted,
-                out _,
-                profile: profile,
-                numbered: false);
-
-            foreach (var (k, v) in tgExtracted)
-                allPlaceholders[k] = v;
-        }
-
-        // 4. Санитизируем факты памяти
-        List<string>? safeMemory = null;
-        if (memory != null && memory.Count > 0)
-        {
-            safeMemory = new List<string>(memory.Count);
-            foreach (var m in memory)
-            {
-                var safeM = PrivacyMasker.Mask(
-                    m,
-                    out var mExtracted,
-                    out _,
-                    profile: profile,
-                    numbered: false);
-
-                foreach (var (k, v) in mExtracted)
-                    allPlaceholders[k] = v;
-
-                safeMemory.Add(safeM);
-            }
-        }
+        var safeTemplateName = MaskRequestPart(templateName ?? "Документ");
+        var safeTargetField = string.IsNullOrWhiteSpace(targetField) ? null : MaskRequestPart(targetField);
+        var safeMemory = memory is { Count: > 0 } ? memory.Select(MaskRequestPart).ToList() : null;
 
         // 5. Формируем безопасный системный промпт и контекст полей
         var safePrompt = BuildPrompt(
             safeUserText,
-            fieldNames,
+            safeFieldNames,
             safeFormFields,
             today: today,
             targetField: safeTargetField,
@@ -296,9 +248,10 @@ public class AiAssistantService
             Prompt = safePrompt,
             UserText = safeUserText,
             TemplateName = safeTemplateName,
-            FieldsContext = FormatFieldsContext(safeFormFields, fieldNames),
+            FieldsContext = FormatFieldsContext(safeFormFields, safeFieldNames),
             Memory = safeMemory,
-            TargetField = safeTargetField
+            TargetField = safeTargetField,
+            FieldIds = fieldIds
         };
 
         // 6. Строгая валидация перед отправкой
@@ -324,6 +277,8 @@ public class AiAssistantService
 
         if (request.Memory != null)
             parts.AddRange(request.Memory);
+        if (request.FieldIds != null)
+            parts.AddRange(request.FieldIds);
 
         foreach (var part in parts)
         {
@@ -394,7 +349,8 @@ public class AiAssistantService
         string? targetField = null,
         string? templateName = null,
         List<string>? memory = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IReadOnlyList<string>? fieldIds = null)
     {
         ProfileData? profile = null;
         try { profile = await ProfileStorage.LoadAsync(); } catch { }
@@ -409,7 +365,8 @@ public class AiAssistantService
             targetField: targetField,
             templateName: templateName,
             memory: activeMemory,
-            profile: profile);
+            profile: profile,
+            fieldIds: fieldIds);
 
         try
         {
@@ -437,6 +394,13 @@ public class AiAssistantService
                 };
 
                 using var response = await _httpClient.SendAsync(request, cancellationToken);
+
+                if (response.StatusCode == HttpStatusCode.ServiceUnavailable)
+                {
+                    var error = await response.Content.ReadAsStringAsync(cancellationToken);
+                    if (GetServiceUnavailableMessage(error) is { } message)
+                        throw new AiAssistantException(message);
+                }
 
                 // Обработка 5xx (500, 502, 503, 504 - временные сбои сервера): до MaxRetryAttempts попыток
                 if ((int)response.StatusCode >= 500)
@@ -480,12 +444,16 @@ public class AiAssistantService
                     }
                 }
 
-                var restoredFields = await RestorePlaceholdersAsync(parsed.Fields, allPlaceholders, profile);
+                var fields = fieldIds is null
+                    ? parsed.Fields
+                    : parsed.Fields.Where(field => fieldIds.Contains(field.Key, StringComparer.Ordinal))
+                        .ToDictionary(field => field.Key, field => field.Value, StringComparer.Ordinal);
+                var restoredFields = await RestorePlaceholdersAsync(fields, allPlaceholders, profile);
                 return parsed with { Fields = restoredFields };
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                throw new AiAssistantException("Запрос к сервису ИИ был отменен.");
+                throw;
             }
             catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
             {
@@ -503,6 +471,29 @@ public class AiAssistantService
         }
 
         throw new AiAssistantException("Сервис ИИ временно перегружен или недоступен.");
+    }
+
+    private static string? GetServiceUnavailableMessage(string json)
+    {
+        try
+        {
+            using var response = JsonDocument.Parse(json);
+            if (response.RootElement.ValueKind != JsonValueKind.Object ||
+                !response.RootElement.TryGetProperty("code", out var code) ||
+                code.ValueKind != JsonValueKind.String)
+                return null;
+
+            return code.GetString() switch
+            {
+                "configuration" => "ИИ-ассистент не настроен на сервере. Документ можно заполнить вручную.",
+                "providers_unavailable" => "Модели ИИ сейчас недоступны. Повторите попытку позже.",
+                _ => null
+            };
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     /// <summary>
@@ -563,10 +554,12 @@ public class AiAssistantService
 
             // 2. Обрабатываем любые оставшиеся нумерованные или ненанумерованные плейсхолдеры
             // Регулярное выражение для [ФИО], [ФИО_1], [ПАСПОРТ_1] и т.п.
-            val = Regex.Replace(val, @"\[(ФИО|ПАСПОРТ|ТЕЛЕФОН|СЧЕТ|УНП)(?:_\d+)?\]", match =>
+            val = Regex.Replace(val, @"\[(ФИО|ПАСПОРТ|ТЕЛЕФОН|СЧЕТ|УНП)(?:_(\d+))?\]", match =>
             {
                 var fullPlaceholder = match.Value;
                 var baseCategory = match.Groups[1].Value.ToUpperInvariant();
+                if (match.Groups[2].Success)
+                    return fullPlaceholder;
 
                 // Проверяем словарь
                 if (extractedPlaceholders != null)

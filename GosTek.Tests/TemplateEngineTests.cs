@@ -29,6 +29,43 @@ public class TemplateEngineTests
     }
 
     [Fact]
+    public void Scan_EnablesGenerationOnlyForTextMarkerAndBuiltInExplanation()
+    {
+        var custom = CreateTestDocument(body => body.AppendChild(new Paragraph(
+            new Run(new Text("[ФИО] [Текст] {Текст} {Текст} {Дата}")))));
+        var manual = CreateTestDocument(body => body.AppendChild(new Paragraph(
+            new Run(new Text("[Текст] {{Текст}} [Текст объяснения обстоятельств]")))));
+        var explanation = CreateTestDocument(body => body.AppendChild(new Paragraph(
+            new Run(new Text("[Причина или событие] [Текст объяснения обстоятельств]")))));
+        var folder = Directory.CreateTempSubdirectory("gostek-text-");
+        try
+        {
+            File.Move(custom, Path.Combine(folder.FullName, "Custom.docx"));
+            File.Move(manual, Path.Combine(folder.FullName, "Manual.docx"));
+            File.Move(explanation, Path.Combine(folder.FullName, GosTek.Services.TemplateSeeder.ExplanationTargetName));
+            var templates = TemplateEngine.Scan(folder.FullName);
+
+            var generated = Assert.Single(templates.Single(t => t.Title == "Custom").Fields,
+                f => f.TextGeneration is not null);
+            Assert.Equal("текст", generated.Id);
+            Assert.True(generated.Multiline);
+            Assert.Equal(TextGenerationKind.DocumentText, generated.TextGeneration);
+            Assert.All(templates.Single(t => t.Title == "Manual").Fields, f => Assert.Null(f.TextGeneration));
+            var legacy = Assert.Single(templates.Single(t => t.Title == "Объяснительная_записка").Fields,
+                f => f.TextGeneration is not null);
+            Assert.Equal("текст объяснения обстоятельств", legacy.Id);
+            Assert.Equal(TextGenerationKind.Explanation, legacy.TextGeneration);
+        }
+        finally
+        {
+            File.Delete(custom);
+            File.Delete(manual);
+            File.Delete(explanation);
+            folder.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public void FillTo_SingleRun_ReplacesToken()
     {
         var inputPath = CreateTestDocument(body => {

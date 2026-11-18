@@ -32,6 +32,34 @@ public class DocumentCheckerTests
     }
 
     [Fact]
+    public async Task Import_InvalidReplacementLeavesPreviousWorkingCopyIntact()
+    {
+        var source = CreateDocWithSection((body, _) =>
+            body.AppendChild(new Paragraph(new Run(new Text("Первый документ")))));
+        var cache = Directory.CreateTempSubdirectory("gostek-check-");
+        try
+        {
+            var first = await CheckDocumentImport.LoadAsync(cache.FullName,
+                () => Task.FromResult<Stream>(File.OpenRead(source)), RuleSets.MasterRule);
+            var original = await File.ReadAllBytesAsync(first.Path);
+
+            await Assert.ThrowsAnyAsync<Exception>(() => CheckDocumentImport.LoadAsync(cache.FullName,
+                () => Task.FromResult<Stream>(new MemoryStream([1, 2, 3])), RuleSets.MasterRule));
+
+            Assert.Equal(first.Path, Assert.Single(cache.EnumerateFiles()).FullName);
+            Assert.Equal(original, await File.ReadAllBytesAsync(first.Path));
+            Assert.Equal(1, first.Info.Paragraphs);
+            CheckDocumentImport.DeleteWorkingCopy(first.Path);
+            Assert.Empty(cache.EnumerateFiles());
+        }
+        finally
+        {
+            File.Delete(source);
+            cache.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public void Check_InvalidMargins_ReportsMarginIssues()
     {
         var tempFile = CreateDocWithSection((body, secProps) => {

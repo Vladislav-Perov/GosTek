@@ -37,6 +37,67 @@ public class AiAssistantServiceTests
     }
 
     [Fact]
+    public async Task ProcessRequestAsync_ConfigurationUnavailable_DoesNotRetry()
+    {
+        var handler = new MockHttpMessageHandler(new[]
+        {
+            new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+            {
+                Content = new StringContent("""{"code":"configuration"}""")
+            }
+        });
+        using var client = new HttpClient(handler);
+        var service = new AiAssistantService(client);
+
+        var error = await Assert.ThrowsAsync<AiAssistantException>(() =>
+            service.ProcessRequestAsync("Плановый ремонт", ["Причина"]));
+
+        Assert.Contains("не настроен", error.Message);
+        Assert.Equal(1, handler.CallsCount);
+    }
+
+    [Fact]
+    public async Task ProcessRequestAsync_IgnoresUnknownFieldIds()
+    {
+        var handler = new MockHttpMessageHandler(new[]
+        {
+            new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("""
+                    {"success":true,"data":{"fields":{"field_1":"Плановый ремонт","field_2":"Лишнее"}}}
+                    """)
+            }
+        });
+        using var client = new HttpClient(handler);
+        var service = new AiAssistantService(client);
+
+        var result = await service.ProcessRequestAsync("Плановый ремонт", ["Причина"], fieldIds: ["field_1"]);
+
+        Assert.Equal("Плановый ремонт", Assert.Single(result.Fields).Value);
+        Assert.Equal("field_1", Assert.Single(result.Fields).Key);
+    }
+
+    [Fact]
+    public async Task MaskedRequest_DistinguishesTwoPassportsAndDoesNotGuessUnknownToken()
+    {
+        var (payload, placeholders) = AiAssistantService.SanitizeOutgoingPayload(
+            "Паспорт MP1234567", ["Паспорт"],
+            currentFormFields: new() { ["Паспорт"] = "AB7654321" });
+
+        Assert.Contains("[ПАСПОРТ_1]", payload.UserText);
+        var formToken = Assert.Single(placeholders, pair => pair.Value == "AB7654321" &&
+            pair.Key != PrivacyMasker.MaskPassport).Key;
+        Assert.Contains(formToken, payload.FieldsContext);
+        Assert.NotEqual("[ПАСПОРТ_1]", formToken);
+
+        var restored = await AiAssistantService.RestorePlaceholdersAsync(
+            new() { ["a"] = "[ПАСПОРТ_1]", ["b"] = formToken, ["c"] = "[ПАСПОРТ_999]" }, placeholders);
+        Assert.Equal("MP1234567", restored["a"]);
+        Assert.Equal("AB7654321", restored["b"]);
+        Assert.Equal("[ПАСПОРТ_999]", restored["c"]);
+    }
+
+    [Fact]
     public void ExtractJson_StripsMarkdownBackticksAndSurroundingText()
     {
         const string raw = "Вот результат:\n```json\n{\n  \"fields\": {\"FIO\": \"Иванов\"},\n  \"question\": null\n}\n```\nНадеюсь помогло.";

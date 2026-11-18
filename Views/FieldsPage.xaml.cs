@@ -67,6 +67,11 @@ public partial class FieldsPage : ContentPage
     private readonly List<FieldUi> _fields = new();
     private Dictionary<string, string> _values = new();
 
+    private FieldUi? _generationField;
+    private string? _lastGeneratedText;
+    private string? _selectedRevision;
+    private string? _pendingDescription;
+    private bool _consentDialogOpen;
     private bool _isChatMaximized;
     private double _originalChatHeight = 540;
     private bool _isProgrammaticFilling;
@@ -159,10 +164,16 @@ public partial class FieldsPage : ContentPage
 
     private void BuildForm()
     {
+        _chatRequestCts?.Cancel();
+        _generationField = null;
+        _lastGeneratedText = null;
+        _selectedRevision = null;
+        _pendingDescription = null;
+        ChatMessagesStack.Children.Clear();
         _template = TemplateCatalog.Find(_templateId);
         FieldsHost.Children.Clear();
         _fields.Clear();
-        AiMemory.Instance.Clear();
+
 
         if (_template is null)
             return;
@@ -397,6 +408,16 @@ public partial class FieldsPage : ContentPage
         stack.Children.Add(error);
 
         var ui = new FieldUi(field, input, box, error, stack, profileTag);
+        if (field.TextGeneration is not null)
+        {
+            var generateButton = new Button
+            {
+                Text = "Сгенерировать текст",
+                HorizontalOptions = LayoutOptions.Start,
+            };
+            generateButton.Clicked += (_, _) => OpenChat(ui);
+            stack.Children.Insert(1, generateButton);
+        }
 
         // Текст изменился: сохранить в черновик, убрать подсветку, обновить лист
         void Changed(string? text)
@@ -658,18 +679,42 @@ public partial class FieldsPage : ContentPage
 #endif
         StartBuildPulse();
 
-        if (!string.IsNullOrWhiteSpace(DraftStore.PendingOcrText))
+        if (DraftStore.PendingOcrText is { Length: > 0 } ocrText)
         {
-            string ocrText = DraftStore.PendingOcrText;
             DraftStore.PendingOcrText = null;
-            ChatInput.Text = $"Заполни поля документа по тексту:\n{ocrText}";
-            OpenChat();
+            _ = InsertScannedTextAsync(ocrText);
         }
+    }
+
+    private async Task InsertScannedTextAsync(string text)
+    {
+        var fields = _fields.Where(field => field.Input is Editor).ToArray();
+        if (fields.Length == 0)
+        {
+            await Dialogs.AlertAsync("В шаблоне нет текстового поля", "Распознанный текст можно скопировать в сканере.");
+            return;
+        }
+
+        var choices = fields.Select((field, index) => $"{index + 1}. {GetDisplayLabel(field.Field.Label)}").ToArray();
+        var selected = await DisplayActionSheetAsync("Куда вставить текст скана?", "Отмена", null, choices);
+        var index = Array.IndexOf(choices, selected);
+        if (index < 0)
+            return;
+
+        var target = fields[index];
+        if (!string.IsNullOrWhiteSpace(target.Input.Text) &&
+            !await Dialogs.ConfirmAsync("Заменить введённый текст?",
+                "Распознанный текст заменит текущее значение поля.", "Заменить"))
+            return;
+
+        if (_fields.Contains(target))
+            target.Input.Text = text;
     }
 
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        _chatRequestCts?.Cancel();
         SettingsOverlay.Dismiss();
 #if WINDOWS
         if (Shell.Current is { } shell)
@@ -753,7 +798,6 @@ public partial class FieldsPage : ContentPage
             if (result is null)
                 return;
 
-            AiMemory.Instance.Clear();
             CloseExport();
             HapticHelper.Success();
             Toast.Show("Документ Word сохранён", "file");
@@ -777,7 +821,6 @@ public partial class FieldsPage : ContentPage
             if (result is null)
                 return;
 
-            AiMemory.Instance.Clear();
             CloseExport();
             HapticHelper.Click();
             Toast.Show("Файл готов к отправке", "share");
@@ -801,7 +844,6 @@ public partial class FieldsPage : ContentPage
             if (result is null)
                 return;
 
-            AiMemory.Instance.Clear();
             CloseExport();
             HapticHelper.Success();
             Toast.Show("Документ PDF сохранён", "file");
@@ -991,30 +1033,29 @@ public partial class FieldsPage : ContentPage
         return badge;
     }
 
-    private void OpenChat()
+    private void OpenChat(FieldUi field)
     {
         HapticHelper.Click();
-        AiAutoApplySwitch.IsToggled = SettingsService.AiAutoApplyMode;
-
-        _originalChatHeight = DeviceInfo.Platform == DevicePlatform.Android
-            ? Math.Min(520, Math.Max(360, (this.Height > 0 ? this.Height : 700) * 0.75))
-            : 560;
-        ApplyChatCompactLayout();
-
-        if (ChatMessagesStack.Children.Count == 0)
+        if (!ReferenceEquals(_generationField, field))
         {
-            AddBotMessageBubble("Привет! Расскажите, какой документ и для чего вам нужен. Можете описать ситуацию в свободной форме, а я выделю нужные данные и сам запрошу недостающие.");
+            _chatRequestCts?.Cancel();
+            _generationField = field;
+            _lastGeneratedText = null;
+            _selectedRevision = null;
+            _pendingDescription = null;
+            ChatInput.Text = string.Empty;
+            ChatMessagesStack.Children.Clear();
         }
 
+        ChatFieldLabel.Text = GetDisplayLabel(field.Field.Label);
+        _originalChatHeight = DeviceInfo.Platform == DevicePlatform.Android
+            ? Math.Min(520, Math.Max(360, (Height > 0 ? Height : 700) * 0.75))
+            : 560;
+        ApplyChatCompactLayout();
         ChatOverlay.IsVisible = true;
         ChatSheet.TranslationY = 700;
         _ = ChatSheet.TranslateToAsync(0, 0, 250, Easing.CubicOut);
         ChatInput.Focus();
-    }
-
-    private void OnOpenChatTapped(object? sender, TappedEventArgs e)
-    {
-        OpenChat();
     }
 
     private void ApplyChatCompactLayout()
@@ -1171,7 +1212,7 @@ public partial class FieldsPage : ContentPage
     {
         HapticHelper.Click();
         _chatRequestCts?.Cancel();
-        MemoryPanel.IsVisible = false;
+
         await ChatSheet.TranslateToAsync(0, 700, 200, Easing.CubicIn);
         ChatOverlay.IsVisible = false;
         ApplyChatCompactLayout();
@@ -1180,7 +1221,7 @@ public partial class FieldsPage : ContentPage
     private async void OnChatOverlayBackgroundTapped(object? sender, TappedEventArgs e)
     {
         _chatRequestCts?.Cancel();
-        MemoryPanel.IsVisible = false;
+
         await ChatSheet.TranslateToAsync(0, 700, 200, Easing.CubicIn);
         ChatOverlay.IsVisible = false;
         ApplyChatCompactLayout();
@@ -1189,111 +1230,6 @@ public partial class FieldsPage : ContentPage
     private void OnChatSheetTapped(object? sender, TappedEventArgs e)
     {
         // Предотвращаем закрытие шторки при клике на саму панель
-    }
-
-    private void OnToggleMemoryTapped(object? sender, TappedEventArgs e)
-    {
-        HapticHelper.Click();
-        MemoryPanel.IsVisible = !MemoryPanel.IsVisible;
-        if (MemoryPanel.IsVisible)
-            RefreshMemoryUi();
-    }
-
-    private void OnCloseMemoryTapped(object? sender, TappedEventArgs e)
-    {
-        HapticHelper.Click();
-        MemoryPanel.IsVisible = false;
-    }
-
-    private void OnClearAllMemoryTapped(object? sender, TappedEventArgs e)
-    {
-        HapticHelper.Click();
-        AiMemory.Instance.Clear();
-        RefreshMemoryUi();
-        ShowStatus("Память ассистента очищена");
-    }
-
-    private void RefreshMemoryUi()
-    {
-        MemoryStack.Children.Clear();
-        var facts = AiMemory.Instance.Facts;
-
-        MemoryEmptyLabel.IsVisible = facts.Count == 0;
-        ClearMemoryButton.IsVisible = facts.Count > 0;
-
-        foreach (var fact in facts)
-        {
-            var factBorder = new Border
-            {
-                StyleClass = new[] { "HoverCard" },
-                Padding = new Thickness(10, 8),
-                StrokeThickness = 1,
-                StrokeShape = new RoundRectangle { CornerRadius = 10 }
-            };
-            factBorder.SetDynamicResource(VisualElement.BackgroundColorProperty, "PageBg");
-            factBorder.SetDynamicResource(Border.StrokeProperty, "CardStroke");
-
-            var rowGrid = new Grid
-            {
-                ColumnDefinitions =
-                {
-                    new ColumnDefinition(GridLength.Star),
-                    new ColumnDefinition(GridLength.Auto)
-                },
-                ColumnSpacing = 8
-            };
-
-            var textLabel = new Label
-            {
-                Text = $"Помню ({fact.Key}): {fact.Value}",
-                FontSize = 12,
-                LineBreakMode = LineBreakMode.WordWrap,
-                VerticalOptions = LayoutOptions.Center
-            };
-            textLabel.SetDynamicResource(Label.TextColorProperty, "TextPrimary");
-            Grid.SetColumn(textLabel, 0);
-            rowGrid.Children.Add(textLabel);
-
-            var deleteBtn = new Border
-            {
-                WidthRequest = 24,
-                HeightRequest = 24,
-                StrokeThickness = 0,
-                StrokeShape = new RoundRectangle { CornerRadius = 6 },
-                VerticalOptions = LayoutOptions.Center
-            };
-            deleteBtn.SetDynamicResource(VisualElement.BackgroundColorProperty, "IconBoxBg");
-            deleteBtn.Content = new Label
-            {
-                Text = "✕",
-                FontSize = 11,
-                FontAttributes = FontAttributes.Bold,
-                TextColor = Color.FromArgb("#EF4444"),
-                HorizontalOptions = LayoutOptions.Center,
-                VerticalOptions = LayoutOptions.Center
-            };
-
-            deleteBtn.GestureRecognizers.Add(new TapGestureRecognizer
-            {
-                Command = new Command(() =>
-                {
-                    HapticHelper.Click();
-                    AiMemory.Instance.RemoveFact(fact.Key);
-                    RefreshMemoryUi();
-                })
-            });
-
-            Grid.SetColumn(deleteBtn, 1);
-            rowGrid.Children.Add(deleteBtn);
-
-            factBorder.Content = rowGrid;
-            MemoryStack.Children.Add(factBorder);
-        }
-    }
-
-    private void OnAiAutoApplySwitchToggled(object? sender, ToggledEventArgs e)
-    {
-        SettingsService.AiAutoApplyMode = e.Value;
     }
 
     private async void OnChatInputCompleted(object? sender, EventArgs e)
@@ -1308,156 +1244,163 @@ public partial class FieldsPage : ContentPage
 
     private async Task SendChatMessageAsync()
     {
-        var userText = ChatInput.Text?.Trim();
-        if (string.IsNullOrWhiteSpace(userText))
+        var message = ChatInput.Text?.Trim();
+        var field = _generationField;
+        if (string.IsNullOrWhiteSpace(message) || field?.Field.TextGeneration is not { } kind ||
+            _chatRequestCts is not null || _consentDialogOpen)
             return;
 
-        if (!SettingsService.AiConsentAccepted)
+        if (!SettingsService.TextGenerationConsentAccepted)
         {
-            var accepted = await Dialogs.ConfirmAsync(
-                "Использование ИИ-ассистента",
-                "Для интеллектуального заполнения полей текст вашего запроса и структура полей шаблона отправляются через защищённый облачный сервис.\n\n" +
-                "Персональные данные (ФИО, паспорт, телефон, адрес, УНП, банковские счета) маскируются локально на устройстве перед отправкой.\n\n" +
-                "Разрешить использование сервиса ИИ?",
-                "Разрешить",
-                DialogKind.Info,
-                cancel: "Отклонить");
-
-            if (!accepted)
+            _consentDialogOpen = true;
+            try
             {
-                AddBotMessageBubble("Использование сервиса ИИ отклонено. Вы можете включить его в Настройках приложения в любое время.");
+                if (!await Dialogs.ConfirmAsync("Облачная генерация текста",
+                    "Сервис получает отправленное сообщение и при правке предыдущий вариант из чата. " +
+                    "GosTek маскирует распознанные реквизиты. Не вводите конфиденциальные сведения. " +
+                    "Поля документа, профиль и сканы остаются в приложении.",
+                    "Разрешить", DialogKind.Info))
+                    return;
+
+                SettingsService.TextGenerationConsentAccepted = true;
+            }
+            finally
+            {
+                _consentDialogOpen = false;
+            }
+        }
+
+        if (!ChatOverlay.IsVisible || !ReferenceEquals(_generationField, field))
+            return;
+
+        var description = _pendingDescription is null
+            ? message : $"{_pendingDescription}\nУточнение: {message}";
+        if (description.Length > TextGenerationService.MaxMessageLength)
+        {
+            AddErrorMessageBubble("Опишите ситуацию короче, чтобы отправить запрос.");
+            _pendingDescription = null;
+            return;
+        }
+
+        using var request = new CancellationTokenSource();
+        _chatRequestCts = request;
+        ChatInput.Text = string.Empty;
+        AddUserMessageBubble(message);
+        TypingIndicator.IsVisible = true;
+        SendButton.IsEnabled = false;
+        try
+        {
+            var previousText = _selectedRevision;
+            if (previousText is null && IsRevisionRequest(message))
+                previousText = _lastGeneratedText;
+
+            var result = await TextGenerationService.Instance.GenerateAsync(description, kind,
+                previousText, request.Token);
+            request.Token.ThrowIfCancellationRequested();
+            if (!ReferenceEquals(_generationField, field) || !_fields.Contains(field))
+                return;
+
+            if (result.Question is { } question)
+            {
+                _pendingDescription = description;
+                _selectedRevision = previousText;
+                AddBotMessageBubble(question);
                 return;
             }
 
-            SettingsService.AiConsentAccepted = true;
+            var text = result.Text!;
+            _pendingDescription = null;
+            _lastGeneratedText = text;
+            _selectedRevision = null;
+            ChatInput.Placeholder = "Опишите ситуацию или попросите изменить текст";
+            AddBotMessageBubble(text);
+            AddTextInsertionAction(field, text);
         }
-
-        HapticHelper.Click();
-        ChatInput.Text = string.Empty;
-
-        AddUserMessageBubble(userText);
-        _ = ChatScrollView.ScrollToAsync(ChatMessagesStack, ScrollToPosition.End, true);
-
-        _chatRequestCts?.Cancel();
-        _chatRequestCts = new CancellationTokenSource();
-
-        TypingIndicator.IsVisible = true;
-        SendButton.IsEnabled = false;
-
-        try
+        catch (OperationCanceledException) when (request.IsCancellationRequested)
         {
-            var fieldNames = _template?.Fields.Select(f => f.Label).ToList() ?? new();
-            var currentFormFields = _fields
-                .Where(f => !string.IsNullOrWhiteSpace(f.Field.Label))
-                .ToDictionary(f => f.Field.Label, f => f.Input.Text?.Trim() ?? string.Empty);
-
-            var profile = await ProfileStorage.LoadAsync();
-            var maskedText = PrivacyMasker.Mask(
-                userText,
-                out var extractedPlaceholders,
-                out var suspiciousNames,
-                profile: profile,
-                numbered: true);
-
-            var response = await AiAssistantService.Instance.ProcessRequestAsync(
-                maskedText,
-                fieldNames,
-                currentFormFields: currentFormFields,
-                extractedPlaceholders: extractedPlaceholders,
-                templateName: _template?.Title,
-                memory: AiMemory.Instance.FormatForPrompt(),
-                cancellationToken: _chatRequestCts.Token);
-
-            TypingIndicator.IsVisible = false;
-
-            if (!string.IsNullOrWhiteSpace(response.Question))
-            {
-                // Если question не пустой — выводим в чат как обычное сообщение от бота (не создавая карточку с полями)
-                AddBotMessageBubble(response.Question);
-            }
-            else
-            {
-                var filledFields = response.Fields
-                    .Where(kv => !string.IsNullOrWhiteSpace(kv.Value) &&
-                                 !string.Equals(kv.Value.Trim(), "null", StringComparison.OrdinalIgnoreCase))
-                    .ToDictionary(kv => kv.Key, kv => kv.Value);
-
-                if (filledFields.Count > 0)
-                {
-                    if (SettingsService.AiAutoApplyMode)
-                    {
-                        int applied = ApplyFieldsToForm(filledFields);
-                        AddBotMessageBubble($"✅ Поля заполнены автоматически ({applied} из {filledFields.Count})!");
-                    }
-                    else
-                    {
-                        AddProposedFieldsCard(filledFields);
-                    }
-                }
-                else
-                {
-                    AddBotMessageBubble("Не удалось извлечь поля из текста. Пожалуйста, укажите конкретные данные (например: «ФИО: Иванов Иван, причина: отпуск»).");
-                }
-            }
         }
-        catch (OperationCanceledException)
+        catch (AiAssistantException ex)
         {
-            TypingIndicator.IsVisible = false;
-            AddBotMessageBubble("Запрос к сервису ИИ был отменен.");
-        }
-        catch (Exception ex)
-        {
-            TypingIndicator.IsVisible = false;
-            AddErrorMessageBubble(ex is AiAssistantException
-                ? ex.Message
-                : "Произошла ошибка при обращении к сервису ИИ. Попробуйте еще раз.");
+            AddErrorMessageBubble(ex.Message);
+            if (string.IsNullOrWhiteSpace(ChatInput.Text))
+                ChatInput.Text = message;
         }
         finally
         {
+            _chatRequestCts = null;
             TypingIndicator.IsVisible = false;
             SendButton.IsEnabled = true;
-            _chatRequestCts?.Dispose();
-            _chatRequestCts = null;
             _ = ChatScrollView.ScrollToAsync(ChatMessagesStack, ScrollToPosition.End, true);
         }
     }
 
-    /// <summary>
-    /// Применяет словарь значений полей, возвращенный ИИ, к UI и DraftStore.
-    /// </summary>
-    public int ApplyFieldsToForm(Dictionary<string, string> fields)
+    private static bool IsRevisionRequest(string message) => System.Text.RegularExpressions.Regex.IsMatch(
+        message,
+        @"^(?:сделай\s+(?:его\s+|текст\s+)?(?:короче|длиннее|официальнее|проще)|сократи|перефразируй|перепиши|убери|измени|shorten|rewrite|rephrase)\b",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+    private void AddTextInsertionAction(FieldUi field, string text)
     {
-        int applied = 0;
+        var previousText = field.Input.Text;
+        var inserted = string.IsNullOrWhiteSpace(previousText);
+        if (inserted)
+            field.Input.Text = text;
 
-        foreach (var (key, value) in fields)
+        var action = new Button
         {
-            if (string.IsNullOrWhiteSpace(value))
-                continue;
+            Text = inserted ? "Отменить вставку" : "Заменить текст",
+            HorizontalOptions = LayoutOptions.Start,
+        };
+        action.Clicked += async (_, _) =>
+        {
+            if (!ReferenceEquals(_generationField, field) || !_fields.Contains(field))
+                return;
 
-            // Поиск по Label или Id (точное или неполное совпадение)
-            var targetField = _fields.FirstOrDefault(f =>
-                string.Equals(f.Field.Label, key, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(f.Field.Id, key, StringComparison.OrdinalIgnoreCase))
-                ?? _fields.FirstOrDefault(f =>
-                    f.Field.Label.Contains(key, StringComparison.OrdinalIgnoreCase) ||
-                    key.Contains(f.Field.Label, StringComparison.OrdinalIgnoreCase));
-
-            if (targetField is not null)
+            var currentText = field.Input.Text;
+            if (inserted)
             {
-                targetField.Input.Text = value.Trim();
-                if (targetField.ProfileTag is not null)
-                    targetField.ProfileTag.IsVisible = true;
-                applied++;
+                if (string.Equals(currentText, text, StringComparison.Ordinal))
+                    field.Input.Text = previousText;
+                action.IsEnabled = false;
+                return;
             }
-        }
 
-        if (applied > 0)
+            action.IsEnabled = false;
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(currentText) && !await Dialogs.ConfirmAsync(
+                    "Заменить введённый текст?", "В поле будет вставлен вариант из чата.", "Заменить"))
+                    return;
+                if (!ReferenceEquals(_generationField, field) || !_fields.Contains(field) ||
+                    !string.Equals(field.Input.Text, currentText, StringComparison.Ordinal))
+                    return;
+
+                previousText = currentText;
+                field.Input.Text = text;
+                inserted = true;
+                action.Text = "Отменить вставку";
+            }
+            finally
+            {
+                action.IsEnabled = true;
+            }
+        };
+        var edit = new Button { Text = "Править этот вариант", HorizontalOptions = LayoutOptions.Start };
+        edit.Clicked += (_, _) =>
         {
-            QueueRender();
-            ShowStatus($"ИИ применил {applied} полей");
-        }
+            if (!ReferenceEquals(_generationField, field) || _chatRequestCts is not null)
+                return;
 
-        return applied;
+            _selectedRevision = text;
+            _pendingDescription = null;
+            ChatInput.Placeholder = "Что изменить в этом варианте?";
+            ChatInput.Focus();
+        };
+        ChatMessagesStack.Children.Add(new FlexLayout
+        {
+            Wrap = Microsoft.Maui.Layouts.FlexWrap.Wrap,
+            Children = { action, edit }
+        });
     }
 
     private void AddUserMessageBubble(string text)
@@ -1534,185 +1477,12 @@ public partial class FieldsPage : ContentPage
         ChatMessagesStack.Children.Add(border);
     }
 
-    private void AddProposedFieldsCard(Dictionary<string, string> fields)
-    {
-        var filledFields = fields
-            .Where(kv => !string.IsNullOrWhiteSpace(kv.Value) &&
-                         !string.Equals(kv.Value.Trim(), "null", StringComparison.OrdinalIgnoreCase))
-            .ToDictionary(kv => kv.Key, kv => kv.Value);
-
-        if (filledFields.Count == 0)
-            return;
-
-        var contentStack = new VerticalStackLayout { Spacing = 10 };
-
-        var headerLabel = new Label
-        {
-            Text = "Предложенные данные для полей:",
-            FontSize = 13.5,
-            FontAttributes = FontAttributes.Bold
-        };
-        headerLabel.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
-        contentStack.Children.Add(headerLabel);
-
-        // Блок живого предпросмотра: аккуратный список (каждое поле с новой строки, название поля жирным, значение обычным)
-        var previewBox = new Border
-        {
-            StrokeThickness = 1,
-            StrokeShape = new RoundRectangle { CornerRadius = 10 },
-            Padding = new Thickness(12, 10),
-            Margin = new Thickness(0, 2, 0, 2)
-        };
-        previewBox.SetDynamicResource(VisualElement.BackgroundColorProperty, "PageBg");
-        previewBox.SetDynamicResource(Border.StrokeProperty, "CardStroke");
-
-        var previewStack = new VerticalStackLayout { Spacing = 6 };
-        foreach (var (k, v) in filledFields)
-        {
-            var rowLabel = new Label
-            {
-                FontSize = 12.5,
-                LineBreakMode = LineBreakMode.WordWrap
-            };
-            var formatted = new FormattedString();
-
-            var boldSpan = new Span
-            {
-                Text = $"{k}: ",
-                FontAttributes = FontAttributes.Bold
-            };
-            boldSpan.SetDynamicResource(Span.TextColorProperty, "TextPrimary");
-
-            var valSpan = new Span
-            {
-                Text = v
-            };
-            valSpan.SetDynamicResource(Span.TextColorProperty, "TextSecondary");
-
-            formatted.Spans.Add(boldSpan);
-            formatted.Spans.Add(valSpan);
-
-            rowLabel.FormattedText = formatted;
-            previewStack.Children.Add(rowLabel);
-        }
-        previewBox.Content = previewStack;
-        contentStack.Children.Add(previewBox);
-
-        var actionsGrid = new Grid
-        {
-            ColumnDefinitions =
-            {
-                new ColumnDefinition(GridLength.Star),
-                new ColumnDefinition(GridLength.Star)
-            },
-            ColumnSpacing = 10,
-            Margin = new Thickness(0, 4, 0, 0)
-        };
-
-        var applyButton = new Border
-        {
-            StyleClass = new[] { "HoverGreen" },
-            StrokeThickness = 0,
-            StrokeShape = new RoundRectangle { CornerRadius = 12 },
-            Padding = new Thickness(10, 8),
-            Content = new Label
-            {
-                Text = "Применить",
-                FontSize = 13,
-                FontAttributes = FontAttributes.Bold,
-                TextColor = Colors.White,
-                HorizontalOptions = LayoutOptions.Center
-            }
-        };
-        applyButton.SetDynamicResource(VisualElement.BackgroundProperty, "BrandGreenGradient");
-
-        var cancelButton = new Border
-        {
-            StyleClass = new[] { "HoverCard" },
-            StrokeThickness = 1,
-            StrokeShape = new RoundRectangle { CornerRadius = 12 },
-            Padding = new Thickness(10, 8)
-        };
-        cancelButton.SetDynamicResource(VisualElement.BackgroundColorProperty, "CardBg");
-        cancelButton.SetDynamicResource(Border.StrokeProperty, "CardStroke");
-
-        var cancelLabel = new Label
-        {
-            Text = "Отменить",
-            FontSize = 13,
-            FontAttributes = FontAttributes.Bold,
-            HorizontalOptions = LayoutOptions.Center
-        };
-        cancelLabel.SetDynamicResource(Label.TextColorProperty, "TextSecondary");
-        cancelButton.Content = cancelLabel;
-
-        Grid.SetColumn(applyButton, 0);
-        Grid.SetColumn(cancelButton, 1);
-        actionsGrid.Children.Add(applyButton);
-        actionsGrid.Children.Add(cancelButton);
-
-        contentStack.Children.Add(actionsGrid);
-
-        var statusLabel = new Label
-        {
-            FontSize = 12.5,
-            FontAttributes = FontAttributes.Bold,
-            IsVisible = false
-        };
-        contentStack.Children.Add(statusLabel);
-
-        var cardBorder = new Border
-        {
-            HorizontalOptions = LayoutOptions.Start,
-            MaximumWidthRequest = 480,
-            Padding = new Thickness(14, 12),
-            StrokeThickness = 1,
-            StrokeShape = new RoundRectangle { CornerRadius = 16 },
-            Content = contentStack
-        };
-        cardBorder.SetDynamicResource(VisualElement.BackgroundColorProperty, "CardBg");
-        cardBorder.SetDynamicResource(Border.StrokeProperty, "CardStroke");
-
-        var applyTap = new TapGestureRecognizer();
-        applyTap.Tapped += async (_, _) =>
-        {
-            HapticHelper.Click();
-            await applyButton.AnimateBounceAsync();
-            actionsGrid.IsVisible = false;
-            int count = ApplyFieldsToForm(filledFields);
-            statusLabel.Text = $"✅ Применено к документу ({count} полей)";
-            statusLabel.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
-            statusLabel.IsVisible = true;
-        };
-        applyButton.GestureRecognizers.Add(applyTap);
-
-        var cancelTap = new TapGestureRecognizer();
-        cancelTap.Tapped += async (_, _) =>
-        {
-            HapticHelper.Click();
-            await cancelButton.AnimateBounceAsync();
-            actionsGrid.IsVisible = false;
-            statusLabel.Text = "✕ Применение отменено";
-            statusLabel.SetDynamicResource(Label.TextColorProperty, "TextSecondary");
-            statusLabel.IsVisible = true;
-        };
-        cancelButton.GestureRecognizers.Add(cancelTap);
-
-        ChatMessagesStack.Children.Add(cardBorder);
-    }
-
-    /// <summary>Закрыть открытые оверлеи (панель памяти, чат ИИ, окно экспорта). true, если что-то было открыто.</summary>
+    /// <summary>Закрыть открытый чат или окно экспорта.</summary>
     public bool TryDismissOverlays()
     {
-        if (MemoryPanel.IsVisible)
-        {
-            MemoryPanel.IsVisible = false;
-            return true;
-        }
-
         if (ChatOverlay.IsVisible)
         {
-            MemoryPanel.IsVisible = false;
+            _chatRequestCts?.Cancel();
             ChatOverlay.IsVisible = false;
             ApplyChatCompactLayout();
             return true;

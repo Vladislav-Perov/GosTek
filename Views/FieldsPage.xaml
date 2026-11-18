@@ -275,37 +275,6 @@
                      HorizontalOptions="Start"
                      Color="{DynamicResource Divider}" />
 
-            <!-- Плавающая кнопка (FAB) ИИ-помощника -->
-            <Border x:Name="AiChatFab"
-                    Grid.Column="0"
-                    Grid.ColumnSpan="2"
-                    StyleClass="HoverGreen"
-                    HorizontalOptions="End"
-                    VerticalOptions="End"
-                    Margin="0, 0, 20, 16"
-                    Padding="16, 10"
-                    StrokeShape="RoundRectangle 24"
-                    StrokeThickness="0"
-                    Background="{DynamicResource BrandGreenGradient}"
-                    SemanticProperties.Description="Спросить ИИ-помощника">
-                <Border.Shadow>
-                    <Shadow Brush="Black" Offset="0, 4" Radius="12" Opacity="0.25" />
-                </Border.Shadow>
-                <Border.GestureRecognizers>
-                    <TapGestureRecognizer Tapped="OnOpenChatTapped" />
-                </Border.GestureRecognizers>
-                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
-                    <vctrl:IconView Icon="sparkles"
-                                    IconColor="White"
-                                    Size="18"
-                                    VerticalOptions="Center" />
-                    <Label Text="Спросить ИИ"
-                           FontSize="14"
-                           FontAttributes="Bold"
-                           TextColor="#FFFFFF"
-                           VerticalOptions="Center" />
-                </HorizontalStackLayout>
-            </Border>
 
         </Grid>
 
@@ -481,7 +450,7 @@
                     <TapGestureRecognizer Tapped="OnChatSheetTapped" />
                 </Border.GestureRecognizers>
 
-                <Grid RowDefinitions="Auto, Auto, Auto, *, Auto">
+                <Grid RowDefinitions="Auto, Auto, *, Auto">
                     <!-- Индикатор перетаскивания шторки -->
                     <BoxView Grid.Row="0"
                              WidthRequest="44"
@@ -494,7 +463,7 @@
                     <!-- Шапка чата -->
                     <Grid Grid.Row="1"
                           Padding="20, 6, 20, 10"
-                          ColumnDefinitions="Auto, *, Auto, Auto, Auto"
+                          ColumnDefinitions="Auto, *, Auto, Auto"
                           ColumnSpacing="8"
                           VerticalOptions="Center">
                         <Border BackgroundColor="{DynamicResource IconBoxBg}"
@@ -511,38 +480,17 @@
                         </Border>
 
                         <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                            <Label Text="ИИ-Помощник"
+                            <Label Text="Генерация текста"
                                    FontSize="18"
                                    FontAttributes="Bold"
                                    TextColor="{DynamicResource TextPrimary}" />
-                            <Label Text="Понимает запрос и безопасно заполняет поля"
+                            <Label x:Name="ChatFieldLabel"
                                    FontSize="11.5"
                                    TextColor="{DynamicResource TextSecondary}" />
                         </VerticalStackLayout>
 
-                        <!-- Кнопка памяти Мозг 🧠 -->
-                        <Border Grid.Column="2"
-                                StyleClass="HoverCard"
-                                StrokeThickness="1"
-                                Stroke="{DynamicResource CardStroke}"
-                                StrokeShape="RoundRectangle 12"
-                                WidthRequest="34"
-                                HeightRequest="34"
-                                Padding="0"
-                                VerticalOptions="Center"
-                                SemanticProperties.Description="Память ассистента">
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnToggleMemoryTapped" />
-                            </Border.GestureRecognizers>
-                            <vctrl:IconView Icon="brain"
-                                            Size="16"
-                                            IconColor="BrandGreen"
-                                            HorizontalOptions="Center"
-                                            VerticalOptions="Center" />
-                        </Border>
-
                         <!-- Кнопка развернуть / свернуть на весь экран -->
-                        <Border Grid.Column="3"
+                        <Border Grid.Column="2"
                                 StyleClass="HoverCard"
                                 StrokeThickness="1"
                                 Stroke="{DynamicResource CardStroke}"
@@ -564,7 +512,7 @@
                         </Border>
 
                         <!-- Кнопка закрытия ✕ -->
-                        <Border Grid.Column="4"
+                        <Border Grid.Column="3"
                                 StyleClass="HoverCard"
                                 StrokeThickness="1"
                                 Stroke="{DynamicResource CardStroke}"
@@ -585,111 +533,8 @@
                         </Border>
                     </Grid>
 
-                    <!-- Панель структурированной памяти ассистента -->
-                    <Border x:Name="MemoryPanel"
-                            Grid.Row="1"
-                            Grid.RowSpan="4"
-                            IsVisible="False"
-                            Margin="16, 0, 16, 16"
-                            BackgroundColor="{DynamicResource CardBg}"
-                            Stroke="{DynamicResource CardStroke}"
-                            StrokeThickness="1.5"
-                            StrokeShape="RoundRectangle 16"
-                            ZIndex="100">
-                        <Border.Shadow>
-                            <Shadow Brush="Black" Offset="0, 4" Radius="16" Opacity="0.25" />
-                        </Border.Shadow>
-                        <Grid RowDefinitions="Auto, *, Auto" Padding="16, 12">
-                            <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0, 0, 0, 8">
-                                <VerticalStackLayout Spacing="2">
-                                    <Label Text="🧠 Память ассистента"
-                                           FontSize="15"
-                                           FontAttributes="Bold"
-                                           TextColor="{DynamicResource BrandGreen}" />
-                                    <Label Text="Факты, которые ИИ помнит для текущего документа"
-                                           FontSize="11.5"
-                                           TextColor="{DynamicResource TextSecondary}" />
-                                </VerticalStackLayout>
-                                <Border Grid.Column="1"
-                                        StyleClass="HoverCard"
-                                        WidthRequest="28"
-                                        HeightRequest="28"
-                                        StrokeThickness="1"
-                                        Stroke="{DynamicResource CardStroke}"
-                                        StrokeShape="RoundRectangle 8"
-                                        VerticalOptions="Center">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Tapped="OnCloseMemoryTapped" />
-                                    </Border.GestureRecognizers>
-                                    <Label Text="✕"
-                                           FontSize="12"
-                                           FontAttributes="Bold"
-                                           TextColor="{DynamicResource TextSecondary}"
-                                           HorizontalOptions="Center"
-                                           VerticalOptions="Center" />
-                                </Border>
-                            </Grid>
-
-                            <ScrollView Grid.Row="1" Margin="0, 4">
-                                <VerticalStackLayout x:Name="MemoryStack" Spacing="8">
-                                    <!-- Динамический список фактов -->
-                                </VerticalStackLayout>
-                            </ScrollView>
-
-                            <Grid Grid.Row="2" ColumnDefinitions="*, Auto" Margin="0, 8, 0, 0">
-                                <Label x:Name="MemoryEmptyLabel"
-                                       Text="Нет зафиксированных фактов"
-                                       FontSize="12"
-                                       TextColor="{DynamicResource TextSecondary}"
-                                       VerticalOptions="Center" />
-                                <Border Grid.Column="1"
-                                        x:Name="ClearMemoryButton"
-                                        StyleClass="HoverCard"
-                                        Padding="10, 6"
-                                        StrokeThickness="1"
-                                        Stroke="{DynamicResource CardStroke}"
-                                        StrokeShape="RoundRectangle 8">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Tapped="OnClearAllMemoryTapped" />
-                                    </Border.GestureRecognizers>
-                                    <Label Text="Очистить память"
-                                           FontSize="11.5"
-                                           FontAttributes="Bold"
-                                           TextColor="{DynamicResource TextSecondary}" />
-                                </Border>
-                            </Grid>
-                        </Grid>
-                    </Border>
-
-                    <!-- Панель переключателя режима -->
-                    <Border Grid.Row="2"
-                            Margin="20, 0, 20, 8"
-                            BackgroundColor="{DynamicResource CardBg}"
-                            Stroke="{DynamicResource CardStroke}"
-                            StrokeThickness="1"
-                            StrokeShape="RoundRectangle 14"
-                            Padding="14, 8">
-                        <Grid ColumnDefinitions="*, Auto" VerticalOptions="Center">
-                            <VerticalStackLayout Spacing="1" VerticalOptions="Center">
-                                <Label Text="⚡ Заполнять сразу без подтверждения"
-                                       FontSize="13"
-                                       FontAttributes="Bold"
-                                       TextColor="{DynamicResource TextPrimary}" />
-                                <Label Text="Автоматически вносить распознанные данные в документ"
-                                       FontSize="11"
-                                       TextColor="{DynamicResource TextSecondary}" />
-                            </VerticalStackLayout>
-                            <Switch x:Name="AiAutoApplySwitch"
-                                    Grid.Column="1"
-                                    OnColor="{DynamicResource BrandGreen}"
-                                    ThumbColor="#FFFFFF"
-                                    VerticalOptions="Center"
-                                    Toggled="OnAiAutoApplySwitchToggled" />
-                        </Grid>
-                    </Border>
-
                     <!-- Область диалога (сообщения) -->
-                    <ScrollView Grid.Row="3"
+                    <ScrollView Grid.Row="2"
                                 x:Name="ChatScrollView"
                                 Padding="20, 6, 20, 10"
                                 VerticalScrollBarVisibility="Never">
@@ -697,7 +542,7 @@
                     </ScrollView>
 
                     <!-- Подвал: Индикатор набора + Поле ввода и кнопка отправить -->
-                    <VerticalStackLayout Grid.Row="4"
+                    <VerticalStackLayout Grid.Row="3"
                                          Spacing="6"
                                          Padding="16, 8, 16, 16"
                                          BackgroundColor="{DynamicResource PageBg}">
@@ -741,7 +586,8 @@
                                     Padding="14, 0"
                                     HeightRequest="46">
                                 <Entry x:Name="ChatInput"
-                                       Placeholder="Опишите ситуацию, напр. «Я Иванов Иван...»"
+                                       Placeholder="Опишите ситуацию или попросите изменить текст"
+                                       MaxLength="4000"
                                        PlaceholderColor="{DynamicResource TextSecondary}"
                                        TextColor="{DynamicResource TextPrimary}"
                                        BackgroundColor="Transparent"

@@ -194,6 +194,8 @@ public static class TemplateEngine
     private static TemplateField[] ReadFields(string file)
     {
         var list = new List<TemplateField>();
+        var isBuiltInExplanation = string.Equals(Path.GetFileName(file),
+            Services.TemplateSeeder.ExplanationTargetName, StringComparison.OrdinalIgnoreCase);
 
         using var ms = CopyToMemory(file);
         using var doc = WordprocessingDocument.Open(ms, false);
@@ -206,6 +208,13 @@ public static class TemplateEngine
                     if (id.Length == 0)
                         continue;
 
+                    var explicitText = m.Groups[3].Success &&
+                        string.Equals(m.Groups[3].Value.Trim(), "Текст", StringComparison.OrdinalIgnoreCase);
+                    var legacyExplanationText = isBuiltInExplanation && id == "текст объяснения обстоятельств";
+                    TextGenerationKind? generation = legacyExplanationText || (explicitText && isBuiltInExplanation)
+                        ? TextGenerationKind.Explanation
+                        : explicitText ? TextGenerationKind.DocumentText : null;
+
                     var existing = list.FindIndex(f => f.Id == id);
                     if (existing >= 0) {
                         // Подсказка могла быть только в одном из вхождений
@@ -216,11 +225,13 @@ public static class TemplateEngine
                                 ExpansionMode = mode,
                                 Multiline = mode == FieldExpansionMode.Elaborate || list[existing].Multiline
                             };
+                        if (generation is not null)
+                            list[existing] = list[existing] with { TextGeneration = generation, Multiline = true };
                         continue;
                     }
 
                     bool multiline = mode == FieldExpansionMode.Elaborate || IsMultiline(label);
-                    list.Add(new TemplateField(id, label, hint, GuessSource(label), multiline, mode));
+                    list.Add(new TemplateField(id, label, hint, GuessSource(label), multiline || generation is not null, mode, generation));
                 }
             }
 

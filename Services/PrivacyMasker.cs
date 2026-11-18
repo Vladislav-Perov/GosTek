@@ -247,7 +247,8 @@ public static class PrivacyMasker
         out Dictionary<string, string> extractedValues,
         out List<string> suspiciousNames,
         ProfileData? profile = null,
-        bool numbered = false)
+        bool numbered = false,
+        int placeholderOffset = 0)
     {
         var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var suspicious = new List<string>();
@@ -270,7 +271,7 @@ public static class PrivacyMasker
         string GetPlaceholder(string prefix, ref int counter)
         {
             counter++;
-            return numbered ? $"[{prefix}_{counter}]" : $"[{prefix}]";
+            return numbered ? $"[{prefix}_{placeholderOffset + counter}]" : $"[{prefix}]";
         }
 
         // Шаг 1. Маскируем банковские счета IBAN

@@ -426,7 +426,7 @@
                                                             VerticalOptions="Center" />
                                         </Border>
                                         <Label Grid.Column="1"
-                                               Text="Профиль и шаблоны хранятся локально в зашифрованном виде. При использовании ИИ-ассистента текст запроса и структура полей формы обезличиваются локально перед отправкой в облачный сервис."
+                                               Text="При генерации в облако отправляются сообщение из чата и, при правке, предыдущий вариант из чата. Поля документа, профиль и сканы остаются в приложении."
                                                FontSize="12"
                                                TextColor="{DynamicResource TextSecondary}"
                                                LineBreakMode="WordWrap"
@@ -441,7 +441,7 @@
                                                    FontSize="13"
                                                    FontAttributes="Bold"
                                                    TextColor="{DynamicResource TextPrimary}" />
-                                            <Label Text="Отправка обезличенных запросов в сервис ИИ"
+                                            <Label Text="Отправка сообщений из чата для генерации текста"
                                                    FontSize="11"
                                                    TextColor="{DynamicResource TextSecondary}" />
                                         </VerticalStackLayout>

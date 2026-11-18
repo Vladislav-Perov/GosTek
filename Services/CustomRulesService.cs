@@ -106,65 +106,71 @@ public class CustomRulesService : ICustomRulesService
     public async Task<IReadOnlyList<RuleSet>> LoadRulesAsync()
     {
         await _lock.WaitAsync().ConfigureAwait(false);
-        try {
-            if (!File.Exists(_storageFilePath)) {
-                _loaded = true;
-                return GetCustomRules();
-            }
-
-            string json;
-            try {
-                json = await File.ReadAllTextAsync(_storageFilePath).ConfigureAwait(false);
-            } catch (Exception ex) {
-                Debug.WriteLine($"[CustomRulesService] Ошибка чтения файла: {ex.Message}");
-                return GetCustomRules();
-            }
-
-            if (string.IsNullOrWhiteSpace(json)) {
-                _loaded = true;
-                return GetCustomRules();
-            }
-
-            try {
-                var dtos = JsonSerializer.Deserialize<List<CustomRuleDto>>(json, JsonOptions);
-                lock (_customRules) {
-                    _customRules.Clear();
-                    if (dtos != null) {
-                        foreach (var dto in dtos) {
-                            if (string.IsNullOrWhiteSpace(dto.Title))
-                                continue;
-
-                            if (dto.Id.Equals(RuleSets.MasterRuleId, StringComparison.OrdinalIgnoreCase) ||
-                                dto.Id.Equals("universal", StringComparison.OrdinalIgnoreCase))
-                            {
-                                _masterRule = RuleSet.FromDto(dto) with {
-                                    Id = RuleSets.MasterRuleId,
-                                    Title = "Основной ГОСТ",
-                                    IsCustom = false
-                                };
-                            }
-                            else
-                            {
-                                _customRules.Add(RuleSet.FromDto(dto));
-                            }
-                        }
-                    }
-                }
-                _loaded = true;
-            } catch (JsonException ex) {
-                Debug.WriteLine($"[CustomRulesService] Повреждён JSON-файл: {ex.Message}");
-                try {
-                    var backupPath = $"{_storageFilePath}.corrupted.{DateTime.UtcNow:yyyyMMddHHmmss}";
-                    File.Copy(_storageFilePath, backupPath, overwrite: true);
-                } catch {
-                    // Игнорируем ошибку резервного копирования
-                }
-            }
-
+        try
+        {
+            await TryLoadRulesAsync().ConfigureAwait(false);
             return GetCustomRules();
-        } finally {
+        }
+        finally
+        {
             _lock.Release();
         }
+    }
+
+    private async Task<bool> TryLoadRulesAsync()
+    {
+        try
+        {
+            var json = File.Exists(_storageFilePath)
+                ? await File.ReadAllTextAsync(_storageFilePath).ConfigureAwait(false)
+                : null;
+            var dtos = string.IsNullOrWhiteSpace(json)
+                ? null
+                : JsonSerializer.Deserialize<List<CustomRuleDto>>(json, JsonOptions);
+
+            var master = RuleSets.MasterRule;
+            var custom = new List<RuleSet>();
+            foreach (var dto in dtos ?? [])
+            {
+                if (string.IsNullOrWhiteSpace(dto.Title))
+                    continue;
+
+                var rule = RuleSet.FromDto(dto);
+                if (rule.Id.Equals(RuleSets.MasterRuleId, StringComparison.OrdinalIgnoreCase) ||
+                    rule.Id.Equals("universal", StringComparison.OrdinalIgnoreCase))
+                {
+                    master = rule with { Id = RuleSets.MasterRuleId, Title = "Основной ГОСТ", IsCustom = false };
+                }
+                else
+                {
+                    custom.Add(rule);
+                }
+            }
+
+            SetRules(master, custom);
+            _loaded = true;
+            return true;
+        }
+        catch (JsonException ex)
+        {
+            Debug.WriteLine($"[CustomRulesService] Повреждён JSON-файл: {ex.Message}");
+            try
+            {
+                var backupPath = $"{_storageFilePath}.corrupted.{DateTime.UtcNow:yyyyMMddHHmmss}";
+                File.Copy(_storageFilePath, backupPath, overwrite: true);
+            }
+            catch (Exception backupError) when (backupError is IOException or UnauthorizedAccessException)
+            {
+                Debug.WriteLine($"[CustomRulesService] Ошибка резервного копирования: {backupError.Message}");
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Debug.WriteLine($"[CustomRulesService] Ошибка чтения файла: {ex.Message}");
+        }
+
+        _loaded = false;
+        return false;
     }
 
     public async Task<bool> SaveRuleAsync(RuleSet rule)
@@ -177,84 +183,33 @@ public class CustomRulesService : ICustomRulesService
 
         await _lock.WaitAsync();
         try {
-            if (!_loaded && File.Exists(_storageFilePath)) {
-                try {
-                    var json = await File.ReadAllTextAsync(_storageFilePath);
-                    var dtos = JsonSerializer.Deserialize<List<CustomRuleDto>>(json, JsonOptions);
-                    lock (_customRules) {
-                        _customRules.Clear();
-                        if (dtos != null) {
-                            foreach (var d in dtos) {
-                                if (string.IsNullOrWhiteSpace(d.Title))
-                                    continue;
-
-                                if (d.Id.Equals(RuleSets.MasterRuleId, StringComparison.OrdinalIgnoreCase) ||
-                                    d.Id.Equals("universal", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    _masterRule = RuleSet.FromDto(d) with {
-                                        Id = RuleSets.MasterRuleId,
-                                        Title = "Основной ГОСТ",
-                                        IsCustom = false
-                                    };
-                                }
-                                else
-                                {
-                                    _customRules.Add(RuleSet.FromDto(d));
-                                }
-                            }
-                        }
-                    }
-                } catch {
-                    // Игнорируем
-                }
-                _loaded = true;
-            }
+            if (!_loaded && !await TryLoadRulesAsync())
+                return false;
 
             bool isMaster = rule.Id.Equals(RuleSets.MasterRuleId, StringComparison.OrdinalIgnoreCase) ||
                             rule.Id.Equals("universal", StringComparison.OrdinalIgnoreCase);
 
-            string targetId;
+            var targetId = isMaster
+                ? RuleSets.MasterRuleId
+                : string.IsNullOrWhiteSpace(rule.Id) ? Guid.NewGuid().ToString("N")[..8] : rule.Id;
+            var master = MasterRule;
+            var custom = GetCustomRules().ToList();
             if (isMaster)
             {
-                targetId = RuleSets.MasterRuleId;
-                var updatedMaster = rule with {
-                    Id = RuleSets.MasterRuleId,
-                    Title = "Основной ГОСТ",
-                    IsCustom = false
-                };
-                lock (_customRules)
-                {
-                    _masterRule = updatedMaster;
-                }
+                master = rule with { Id = targetId, Title = "Основной ГОСТ", IsCustom = false };
             }
             else
             {
-                targetId = string.IsNullOrWhiteSpace(rule.Id) ? Guid.NewGuid().ToString("N")[..8] : rule.Id;
-                var customRule = rule with { Id = targetId, IsCustom = true };
-
-                lock (_customRules) {
-                    int existingIdx = _customRules.FindIndex(r => r.Id.Equals(targetId, StringComparison.OrdinalIgnoreCase));
-                    if (existingIdx >= 0)
-                        _customRules[existingIdx] = customRule;
-                    else
-                        _customRules.Add(customRule);
-                }
+                var updated = rule with { Id = targetId, IsCustom = true };
+                int index = custom.FindIndex(item => item.Id.Equals(targetId, StringComparison.OrdinalIgnoreCase));
+                if (index >= 0)
+                    custom[index] = updated;
+                else
+                    custom.Add(updated);
             }
 
+            await PersistRulesAsync(master, custom);
             LastSavedRuleId = targetId;
-
-            var dir = Path.GetDirectoryName(_storageFilePath);
-            if (!string.IsNullOrWhiteSpace(dir) && !Directory.Exists(dir))
-                Directory.CreateDirectory(dir);
-
-            List<CustomRuleDto> dtosToSave = new();
-            lock (_customRules) {
-                dtosToSave.Add(_masterRule.ToDto());
-                dtosToSave.AddRange(_customRules.Select(r => r.ToDto()));
-            }
-
-            var serialized = JsonSerializer.Serialize(dtosToSave, JsonOptions);
-            await File.WriteAllTextAsync(_storageFilePath, serialized);
             return true;
         } catch (Exception ex) {
             Debug.WriteLine($"[CustomRulesService] Ошибка сохранения правила: {ex.Message}");
@@ -280,31 +235,59 @@ public class CustomRulesService : ICustomRulesService
 
         await _lock.WaitAsync();
         try {
-            bool removed;
-            lock (_customRules) {
-                int idx = _customRules.FindIndex(r => r.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
-                if (idx < 0)
-                    return false;
-                _customRules.RemoveAt(idx);
-                removed = true;
-            }
+            if (!_loaded && !await TryLoadRulesAsync())
+                return false;
 
-            if (removed) {
-                List<CustomRuleDto> dtosToSave = new();
-                lock (_customRules) {
-                    dtosToSave.Add(_masterRule.ToDto());
-                    dtosToSave.AddRange(_customRules.Select(r => r.ToDto()));
-                }
+            var custom = GetCustomRules().ToList();
+            var index = custom.FindIndex(rule => rule.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+            if (index < 0)
+                return false;
 
-                var serialized = JsonSerializer.Serialize(dtosToSave, JsonOptions);
-                await File.WriteAllTextAsync(_storageFilePath, serialized);
-            }
-            return removed;
+            custom.RemoveAt(index);
+            await PersistRulesAsync(MasterRule, custom);
+            return true;
         } catch (Exception ex) {
             Debug.WriteLine($"[CustomRulesService] Ошибка удаления правила: {ex.Message}");
             return false;
         } finally {
             _lock.Release();
+        }
+    }
+
+    private async Task PersistRulesAsync(RuleSet master, List<RuleSet> custom)
+    {
+        var target = Path.GetFullPath(_storageFilePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        var temporary = $"{target}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            var dtos = new List<CustomRuleDto> { master.ToDto() };
+            dtos.AddRange(custom.Select(rule => rule.ToDto()));
+            await File.WriteAllTextAsync(temporary, JsonSerializer.Serialize(dtos, JsonOptions));
+            File.Move(temporary, target, overwrite: true);
+        }
+        finally
+        {
+            try
+            {
+                File.Delete(temporary);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Debug.WriteLine($"[CustomRulesService] Не удалось удалить временный файл: {ex.Message}");
+            }
+        }
+
+        SetRules(master, custom);
+    }
+
+    private void SetRules(RuleSet master, List<RuleSet> custom)
+    {
+        lock (_customRules)
+        {
+            _masterRule = master;
+            _customRules.Clear();
+            _customRules.AddRange(custom);
         }
     }
 

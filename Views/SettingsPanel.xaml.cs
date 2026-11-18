@@ -264,13 +264,13 @@ public partial class SettingsPanel : ContentView
         ResetFolderButton.IsVisible = !SettingsService.IsDefaultFolder;
         TemplatesPathLabel.Text = SettingsService.TemplatesFolder;
         ResetTemplatesButton.IsVisible = !SettingsService.IsDefaultTemplatesFolder;
-        AiConsentSwitch.IsToggled = SettingsService.AiConsentAccepted;
+        AiConsentSwitch.IsToggled = SettingsService.TextGenerationConsentAccepted;
         AiMaskSilentSwitch.IsToggled = SettingsService.AiMaskAmbiguousSilent;
     }
 
     private void OnAiConsentToggled(object? sender, ToggledEventArgs e)
     {
-        SettingsService.AiConsentAccepted = e.Value;
+        SettingsService.TextGenerationConsentAccepted = e.Value;
     }
 
     private void OnAiMaskSilentToggled(object? sender, ToggledEventArgs e)
