@@ -14,7 +14,8 @@
              x:Class="GosTek.Views.ScanPage"
              Title="Сканер"
              BackgroundColor="{DynamicResource PageBg}"
-             Shell.NavBarIsVisible="False">
+             Shell.NavBarIsVisible="False"
+             SafeAreaEdges="{OnPlatform Android=Container, Default=None}">
 
     <ContentPage.Resources>
         <!-- Акцентные полоски углов видоискателя -->
@@ -30,7 +31,7 @@
 
         <!-- ==================== ШАПКА ==================== -->
         <Grid Grid.Row="0"
-              Padding="{OnPlatform Android='20, 24, 20, 10', WinUI='20, 14, 20, 10'}"
+              Padding="20, 14, 20, 10"
               ColumnDefinitions="Auto, *"
               ColumnSpacing="14"
               VerticalOptions="Center"

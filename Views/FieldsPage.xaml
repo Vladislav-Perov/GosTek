@@ -14,6 +14,7 @@
              Title="Шаблон"
              BackgroundColor="{DynamicResource PageBg}"
              Shell.NavBarIsVisible="False"
+             SafeAreaEdges="{OnPlatform Android=Container, Default=None}"
              Shell.TabBarIsVisible="False"
              SizeChanged="OnPageSizeChanged">
 
@@ -21,7 +22,7 @@
 
         <!-- ==================== ШАПКА С ИНДИКАТОРОМ ШАГА ==================== -->
         <Grid Grid.Row="0"
-              Padding="{OnPlatform Android='20, 24, 20, 10', WinUI='20, 14, 20, 10'}"
+              Padding="20, 14, 20, 10"
               ColumnDefinitions="Auto, *"
               ColumnSpacing="14"
               VerticalOptions="Center"

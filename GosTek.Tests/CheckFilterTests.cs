@@ -158,4 +158,185 @@ public class CheckFilterTests
 
         Assert.Equal("«Введение и постановка задачи»", itemVm.DisplayText);
     }
+
+    [Fact]
+    public void CheckGroupVm_ToggleExpandCommand_InvertsIsExpandedAndNotifies()
+    {
+        var issue = new CheckIssue(IssueKind.FontName, IssueSeverity.Important,
+            "Гарнитура шрифта", "В тексте", true);
+        var group = new CheckGroupVm(issue);
+
+        Assert.False(group.IsExpanded);
+        Assert.Equal("Подробнее ▾", group.ExpandButtonText);
+
+        var propertyChangedList = new List<string>();
+        group.PropertyChanged += (_, e) => propertyChangedList.Add(e.PropertyName ?? string.Empty);
+
+        group.ToggleExpandCommand.Execute(null);
+
+        Assert.True(group.IsExpanded);
+        Assert.Equal("Свернуть ▴", group.ExpandButtonText);
+        Assert.Contains(nameof(CheckGroupVm.IsExpanded), propertyChangedList);
+        Assert.Contains(nameof(CheckGroupVm.ExpandButtonText), propertyChangedList);
+
+        group.ToggleExpandCommand.Execute(null);
+        Assert.False(group.IsExpanded);
+    }
+
+    [Fact]
+    public void CheckGroupVm_RejectGroupCommand_TriggersOnRejectGroupCallback()
+    {
+        var issue = new CheckIssue(IssueKind.LineSpacing, IssueSeverity.Warning,
+            "Интервал", "В тексте", true);
+        var group = new CheckGroupVm(issue);
+        CheckGroupVm? rejectedGroup = null;
+        group.OnRejectGroup = g => rejectedGroup = g;
+
+        group.RejectGroupCommand.Execute(null);
+
+        Assert.Same(group, rejectedGroup);
+    }
+
+    [Fact]
+    public async Task CheckGroupVm_AcceptGroupCommand_TriggersOnAcceptGroupCallback()
+    {
+        var issue = new CheckIssue(IssueKind.MarginLeft, IssueSeverity.Important,
+            "Поля", "В тексте", true);
+        var group = new CheckGroupVm(issue);
+        CheckGroupVm? acceptedGroup = null;
+        group.OnAcceptGroup = g =>
+        {
+            acceptedGroup = g;
+            return Task.CompletedTask;
+        };
+
+        group.AcceptGroupCommand.Execute(null);
+        await Task.Yield();
+
+        Assert.Same(group, acceptedGroup);
+    }
+
+    [Fact]
+    public void CheckItemVm_RejectItemCommand_TriggersParentOnRejectItemCallback()
+    {
+        var item = new IssueItem(2, "Параграф", "Arial", "Times New Roman");
+        var issue = new CheckIssue(IssueKind.FontName, IssueSeverity.Important,
+            "Шрифт", "В тексте", true, Items: new List<IssueItem> { item });
+        var group = new CheckGroupVm(issue);
+        CheckItemVm? rejectedItem = null;
+        group.OnRejectItem = it => rejectedItem = it;
+
+        var itemVm = group.Items[0];
+        itemVm.RejectItemCommand.Execute(null);
+
+        Assert.Same(itemVm, rejectedItem);
+    }
+
+    [Fact]
+    public async Task CheckItemVm_AcceptItemCommand_TriggersParentOnAcceptItemCallback()
+    {
+        var item = new IssueItem(3, "Параграф", "12 pt", "14 pt");
+        var issue = new CheckIssue(IssueKind.FontSize, IssueSeverity.Important,
+            "Кегль", "В тексте", true, Items: new List<IssueItem> { item });
+        var group = new CheckGroupVm(issue);
+        CheckItemVm? acceptedItem = null;
+        group.OnAcceptItem = it =>
+        {
+            acceptedItem = it;
+            return Task.CompletedTask;
+        };
+
+        var itemVm = group.Items[0];
+        itemVm.AcceptItemCommand.Execute(null);
+        await Task.Yield();
+
+        Assert.Same(itemVm, acceptedItem);
+    }
+
+    [Fact]
+    public async Task CheckGroupVm_TypicalLifecycleScenario_InitialItemsAndLoadMoreAndUpdatesHaveWiredDelegates()
+    {
+        // 1. Создаем замечание с 70 элементами (первичная порция = 30, остальное для подгрузки)
+        var items = Enumerable.Range(1, 70)
+            .Select(i => new IssueItem(i, $"Параграф {i}", "Arial", "Times New Roman"))
+            .ToList();
+
+        var issue = new CheckIssue(IssueKind.FontName, IssueSeverity.Important,
+            "Шрифт", "Затронуто: 70", true, Items: items);
+
+        CheckGroupVm? rejectedGroup = null;
+        CheckGroupVm? acceptedGroup = null;
+        CheckItemVm? rejectedItem = null;
+        CheckItemVm? acceptedItem = null;
+
+        // 2. Создание группы через конструктор со всеми делегатами (типовой сценарий фабрики)
+        var group = new CheckGroupVm(
+            issue,
+            onRejectGroup: g => rejectedGroup = g,
+            onAcceptGroup: g => { acceptedGroup = g; return Task.CompletedTask; },
+            onRejectItem: it => rejectedItem = it,
+            onAcceptItem: it => { acceptedItem = it; return Task.CompletedTask; });
+
+        // Проверяем первичную порцию (30 элементов)
+        Assert.Equal(30, group.Items.Count);
+        Assert.True(group.HasMore);
+
+        // Проверяем работу команд для группы
+        group.RejectGroupCommand.Execute(null);
+        Assert.Same(group, rejectedGroup);
+
+        group.AcceptGroupCommand.Execute(null);
+        await Task.Yield();
+        Assert.Same(group, acceptedGroup);
+
+        // Проверяем работу команд для начального элемента
+        var firstItem = group.Items[0];
+        firstItem.RejectItemCommand.Execute(null);
+        Assert.Same(firstItem, rejectedItem);
+
+        firstItem.AcceptItemCommand.Execute(null);
+        await Task.Yield();
+        Assert.Same(firstItem, acceptedItem);
+
+        // 3. Подгрузка следующей порции элементов (LoadMore)
+        rejectedItem = null;
+        acceptedItem = null;
+        group.LoadMore(30);
+
+        Assert.Equal(60, group.Items.Count);
+        // Элемент из новой подгруженной пачки (индекс 45)
+        var loadedItem = group.Items[45];
+        Assert.NotNull(loadedItem.Parent);
+        Assert.Same(group, loadedItem.Parent);
+
+        loadedItem.RejectItemCommand.Execute(null);
+        Assert.Same(loadedItem, rejectedItem);
+
+        loadedItem.AcceptItemCommand.Execute(null);
+        await Task.Yield();
+        Assert.Same(loadedItem, acceptedItem);
+
+        // 4. Обновление замечания (UpdateIssue, например после повторной проверки или правки)
+        rejectedItem = null;
+        acceptedItem = null;
+        var updatedItems = Enumerable.Range(1, 40)
+            .Select(i => new IssueItem(i, $"Обновленный параграф {i}", "Calibri", "Times New Roman"))
+            .ToList();
+        var updatedIssue = new CheckIssue(IssueKind.FontName, IssueSeverity.Important,
+            "Шрифт", "Затронуто: 40", true, Items: updatedItems);
+
+        group.UpdateIssue(updatedIssue);
+        Assert.True(group.Items.Count >= 30);
+
+        var updatedItem = group.Items[10];
+        Assert.NotNull(updatedItem.Parent);
+        Assert.Same(group, updatedItem.Parent);
+
+        updatedItem.RejectItemCommand.Execute(null);
+        Assert.Same(updatedItem, rejectedItem);
+
+        updatedItem.AcceptItemCommand.Execute(null);
+        await Task.Yield();
+        Assert.Same(updatedItem, acceptedItem);
+    }
 }

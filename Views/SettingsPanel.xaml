@@ -31,6 +31,7 @@
 
         <!-- Выезжающая панель Side Drawer слева -->
         <Border x:Name="Panel"
+                SafeAreaEdges="{OnPlatform Android=Container, Default=None}"
                 ZIndex="100"
                 InputTransparent="False"
                 HorizontalOptions="Start"
@@ -54,7 +55,7 @@
                 <Grid Grid.Row="0"
                       ColumnDefinitions="Auto, *, Auto"
                       ColumnSpacing="12"
-                      Padding="{OnPlatform Android='20, 28, 16, 12', WinUI='20, 18, 16, 12'}"
+                      Padding="20, 18, 16, 12"
                       BackgroundColor="{DynamicResource PageBg}"
                       InputTransparent="False"
                       CascadeInputTransparent="False">

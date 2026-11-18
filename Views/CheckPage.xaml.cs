@@ -373,6 +373,24 @@ public partial class CheckPage : ContentPage
     //  ИСПРАВЛЕНИЯ И КОМАНДЫ КАРТОЧЕК
     // =====================================================================
 
+    private CheckGroupVm CreateGroupVm(CheckIssue issue)
+    {
+        return new CheckGroupVm(
+            issue,
+            onRejectGroup: g => RejectGroup(g),
+            onAcceptGroup: g => AcceptGroupAsync(g),
+            onRejectItem: item => RejectItem(item),
+            onAcceptItem: item => AcceptItemAsync(item));
+    }
+
+    private void AttachGroupCommands(CheckGroupVm group)
+    {
+        group.OnRejectGroup = g => RejectGroup(g);
+        group.OnAcceptGroup = g => AcceptGroupAsync(g);
+        group.OnRejectItem = item => RejectItem(item);
+        group.OnAcceptItem = item => AcceptItemAsync(item);
+    }
+
     private void ToggleExpand(CheckGroupVm? group)
     {
         if (_busy || group == null)
@@ -644,7 +662,7 @@ public partial class CheckPage : ContentPage
             else
             {
                 // Новая группа замечаний
-                var newGroup = new CheckGroupVm(issue);
+                var newGroup = CreateGroupVm(issue);
                 IssueGroups.Insert(i, newGroup);
                 existingByKind[issue.Kind] = newGroup;
             }
@@ -740,6 +758,7 @@ public partial class CheckPage : ContentPage
         DropzoneBorder.IsVisible = !hasFile;
         EmptyPanel.IsVisible = !hasFile;
         ResultPanel.IsVisible = hasFile;
+        FileSelectedCard.IsVisible = hasFile;
 
         OnPropertyChanged(nameof(IssueGroups));
         OnPropertyChanged(nameof(Issues));

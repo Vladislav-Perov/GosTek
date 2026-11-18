@@ -17,7 +17,8 @@
              x:DataType="views:CheckPage"
              Title="Проверка"
              BackgroundColor="{DynamicResource PageBg}"
-             Shell.NavBarIsVisible="False">
+             Shell.NavBarIsVisible="False"
+             SafeAreaEdges="{OnPlatform Android=Container, Default=None}">
 
     <Grid RowDefinitions="*">
 
@@ -27,7 +28,7 @@
                     VerticalScrollBarVisibility="Default">
             <VerticalStackLayout MaximumWidthRequest="950"
                                  HorizontalOptions="Fill"
-                                 Padding="{OnPlatform Android='20, 24, 20, 80', WinUI='20, 20, 20, 24'}"
+                                 Padding="20, 20, 20, 24"
                                  Spacing="16">
 
                 <!-- Шапка страницы -->
@@ -153,7 +154,6 @@
 
                 <!-- Карточка выбранного документа (активна после выбора файла) -->
                 <Border x:Name="FileSelectedCard"
-                        IsVisible="{Binding Source={x:Reference ResultPanel}, Path=IsVisible}"
                         BackgroundColor="{DynamicResource CardBg}"
                         Stroke="{DynamicResource CardStroke}"
                         StrokeThickness="1"
@@ -372,8 +372,7 @@
                                                         Padding="10, 5"
                                                         VerticalOptions="Center">
                                                     <Border.GestureRecognizers>
-                                                        <TapGestureRecognizer Command="{Binding Source={x:Reference Root}, Path=ToggleExpandCommand}"
-                                                                              CommandParameter="{Binding .}" />
+                                                        <TapGestureRecognizer Command="{Binding ToggleExpandCommand}" />
                                                     </Border.GestureRecognizers>
                                                     <Label Text="{Binding ExpandButtonText}"
                                                            FontSize="11.5"
@@ -391,8 +390,7 @@
                                                         Padding="12, 5"
                                                         VerticalOptions="Center">
                                                     <Border.GestureRecognizers>
-                                                        <TapGestureRecognizer Command="{Binding Source={x:Reference Root}, Path=RejectGroupCommand}"
-                                                                              CommandParameter="{Binding .}" />
+                                                        <TapGestureRecognizer Command="{Binding RejectGroupCommand}" />
                                                     </Border.GestureRecognizers>
                                                     <Label Text="Отклонить"
                                                            FontSize="11.5"
@@ -424,8 +422,7 @@
                                                         Padding="14, 5"
                                                         VerticalOptions="Center">
                                                     <Border.GestureRecognizers>
-                                                        <TapGestureRecognizer Command="{Binding Source={x:Reference Root}, Path=AcceptGroupCommand}"
-                                                                              CommandParameter="{Binding .}" />
+                                                        <TapGestureRecognizer Command="{Binding AcceptGroupCommand}" />
                                                     </Border.GestureRecognizers>
                                                     <Label Text="Принять"
                                                            FontSize="11.5"
@@ -479,8 +476,7 @@
                                                                             Padding="8, 4"
                                                                             VerticalOptions="Center">
                                                                         <Border.GestureRecognizers>
-                                                                            <TapGestureRecognizer Command="{Binding Source={x:Reference Root}, Path=RejectItemCommand}"
-                                                                                                  CommandParameter="{Binding .}" />
+                                                                            <TapGestureRecognizer Command="{Binding RejectItemCommand}" />
                                                                         </Border.GestureRecognizers>
                                                                         <Label Text="Отклонить"
                                                                                FontSize="11"
@@ -497,8 +493,7 @@
                                                                             Padding="10, 4"
                                                                             VerticalOptions="Center">
                                                                         <Border.GestureRecognizers>
-                                                                            <TapGestureRecognizer Command="{Binding Source={x:Reference Root}, Path=AcceptItemCommand}"
-                                                                                                  CommandParameter="{Binding .}" />
+                                                                            <TapGestureRecognizer Command="{Binding AcceptItemCommand}" />
                                                                         </Border.GestureRecognizers>
                                                                         <Label Text="Принять"
                                                                                FontSize="11"

@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Microsoft.Maui.Controls;
 using GosTek.Models;
+using GosTek.Services;
 
 namespace GosTek.Views;
 
@@ -75,10 +76,27 @@ public sealed class CheckGroupVm : INotifyPropertyChanged, IDisposable
     public CheckIssue Issue => _issue;
     public BatchObservableCollection<CheckItemVm> Items { get; }
     public ICommand LoadMoreCommand { get; }
+    public ICommand ToggleExpandCommand { get; }
+    public ICommand RejectGroupCommand { get; }
+    public ICommand AcceptGroupCommand { get; }
 
-    public CheckGroupVm(CheckIssue issue)
+    public Action<CheckGroupVm>? OnRejectGroup { get; set; }
+    public Func<CheckGroupVm, Task>? OnAcceptGroup { get; set; }
+    public Action<CheckItemVm>? OnRejectItem { get; set; }
+    public Func<CheckItemVm, Task>? OnAcceptItem { get; set; }
+
+    public CheckGroupVm(
+        CheckIssue issue,
+        Action<CheckGroupVm>? onRejectGroup = null,
+        Func<CheckGroupVm, Task>? onAcceptGroup = null,
+        Action<CheckItemVm>? onRejectItem = null,
+        Func<CheckItemVm, Task>? onAcceptItem = null)
     {
         _issue = issue ?? throw new ArgumentNullException(nameof(issue));
+        OnRejectGroup = onRejectGroup;
+        OnAcceptGroup = onAcceptGroup;
+        OnRejectItem = onRejectItem;
+        OnAcceptItem = onAcceptItem;
         Items = new BatchObservableCollection<CheckItemVm>();
         LoadMoreCommand = new Command(() =>
         {
@@ -89,6 +107,44 @@ public sealed class CheckGroupVm : INotifyPropertyChanged, IDisposable
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[CheckGroupVm.LoadMoreCommand] Error: {ex.Message}");
+            }
+        });
+
+        ToggleExpandCommand = new Command(() =>
+        {
+            try
+            {
+                HapticHelper.Click();
+                IsExpanded = !IsExpanded;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[CheckGroupVm.ToggleExpandCommand] Error: {ex.Message}");
+            }
+        });
+
+        RejectGroupCommand = new Command(() =>
+        {
+            try
+            {
+                OnRejectGroup?.Invoke(this);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[CheckGroupVm.RejectGroupCommand] Error: {ex.Message}");
+            }
+        });
+
+        AcceptGroupCommand = new Command(async () =>
+        {
+            try
+            {
+                if (OnAcceptGroup != null)
+                    await OnAcceptGroup(this);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[CheckGroupVm.AcceptGroupCommand] Error: {ex.Message}");
             }
         });
 
@@ -111,10 +167,17 @@ public sealed class CheckGroupVm : INotifyPropertyChanged, IDisposable
 
     public void LoadMore(int count = PageSize)
     {
-        if (!MainThread.IsMainThread)
+        try
         {
-            MainThread.BeginInvokeOnMainThread(() => LoadMore(count));
-            return;
+            if (Application.Current is not null && !MainThread.IsMainThread)
+            {
+                MainThread.BeginInvokeOnMainThread(() => LoadMore(count));
+                return;
+            }
+        }
+        catch
+        {
+            // Fallback: в тестовом окружении без DispatcherQueue продолжаем синхронно
         }
 
         try
@@ -145,10 +208,17 @@ public sealed class CheckGroupVm : INotifyPropertyChanged, IDisposable
 
     public void UpdateIssue(CheckIssue newIssue)
     {
-        if (!MainThread.IsMainThread)
+        try
         {
-            MainThread.BeginInvokeOnMainThread(() => UpdateIssue(newIssue));
-            return;
+            if (Application.Current is not null && !MainThread.IsMainThread)
+            {
+                MainThread.BeginInvokeOnMainThread(() => UpdateIssue(newIssue));
+                return;
+            }
+        }
+        catch
+        {
+            // Fallback: в тестовом окружении без DispatcherQueue продолжаем синхронно
         }
 
         try
@@ -335,10 +405,51 @@ public sealed class CheckItemVm : INotifyPropertyChanged, IDisposable
     public IssueItem Item { get; }
     public CheckGroupVm? Parent { get; private set; }
 
-    public CheckItemVm(IssueItem item, CheckGroupVm parent)
+    public ICommand RejectItemCommand { get; }
+    public ICommand AcceptItemCommand { get; }
+    public Action<CheckItemVm>? OnRejectItem { get; set; }
+    public Func<CheckItemVm, Task>? OnAcceptItem { get; set; }
+
+    public CheckItemVm(
+        IssueItem item,
+        CheckGroupVm? parent = null,
+        Action<CheckItemVm>? onRejectItem = null,
+        Func<CheckItemVm, Task>? onAcceptItem = null)
     {
         Item = item ?? throw new ArgumentNullException(nameof(item));
-        Parent = parent ?? throw new ArgumentNullException(nameof(parent));
+        Parent = parent;
+        OnRejectItem = onRejectItem;
+        OnAcceptItem = onAcceptItem;
+
+        RejectItemCommand = new Command(() =>
+        {
+            try
+            {
+                if (OnRejectItem != null)
+                    OnRejectItem(this);
+                else
+                    Parent?.OnRejectItem?.Invoke(this);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[CheckItemVm.RejectItemCommand] Error: {ex.Message}");
+            }
+        });
+
+        AcceptItemCommand = new Command(async () =>
+        {
+            try
+            {
+                if (OnAcceptItem != null)
+                    await OnAcceptItem(this);
+                else if (Parent?.OnAcceptItem != null)
+                    await Parent.OnAcceptItem(this);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[CheckItemVm.AcceptItemCommand] Error: {ex.Message}");
+            }
+        });
     }
 
     public void Dispose()
