@@ -344,24 +344,22 @@
                                                    TextColor="{DynamicResource TextPrimary}" />
                                         </Border>
 
-                                        <!-- Строка 3: слева «Принять: исправит все N», справа кнопки карточки -->
-                                        <FlexLayout Direction="Row"
-                                                    Wrap="Wrap"
-                                                    JustifyContent="SpaceBetween"
-                                                    AlignItems="Center">
+                                        <!-- Строка 3: две строки Grid с FixAllHint в строке 1 и кнопками в строке 2 -->
+                                        <Grid RowDefinitions="Auto, Auto"
+                                              RowSpacing="4">
 
-                                            <!-- Левая часть: подсказка мелким серым шрифтом -->
-                                            <Label Text="{Binding FixAllHint}"
+                                            <!-- Строка 1: подпись FixAllHint -->
+                                            <Label Grid.Row="0"
+                                                   Text="{Binding FixAllHint}"
                                                    FontSize="11.5"
                                                    TextColor="{DynamicResource TextSecondary}"
-                                                   VerticalOptions="Center"
-                                                   Margin="0, 4, 8, 4" />
+                                                   VerticalOptions="Center" />
 
-                                            <!-- Правая часть: кнопки действий -->
-                                            <FlexLayout Direction="Row"
-                                                        Wrap="Wrap"
-                                                        JustifyContent="End"
-                                                        AlignItems="Center">
+                                            <!-- Строка 2: кнопки действий -->
+                                            <HorizontalStackLayout Grid.Row="1"
+                                                                   Spacing="6"
+                                                                   HorizontalOptions="End"
+                                                                   VerticalOptions="Center">
 
                                                 <!-- Кнопка «Подробнее ▾» / «Свернуть ▴» -->
                                                 <Border IsVisible="{Binding HasItems}"
@@ -371,7 +369,6 @@
                                                         BackgroundColor="Transparent"
                                                         StrokeShape="RoundRectangle 8"
                                                         Padding="10, 5"
-                                                        Margin="0, 2, 6, 2"
                                                         VerticalOptions="Center">
                                                     <Border.GestureRecognizers>
                                                         <TapGestureRecognizer Command="{Binding Source={x:Reference Root}, Path=ToggleExpandCommand}"
@@ -391,7 +388,6 @@
                                                         BackgroundColor="Transparent"
                                                         StrokeShape="RoundRectangle 8"
                                                         Padding="12, 5"
-                                                        Margin="0, 2, 6, 2"
                                                         VerticalOptions="Center">
                                                     <Border.GestureRecognizers>
                                                         <TapGestureRecognizer Command="{Binding Source={x:Reference Root}, Path=RejectGroupCommand}"
@@ -410,7 +406,6 @@
                                                         BackgroundColor="{DynamicResource CardHoverBg}"
                                                         StrokeShape="RoundRectangle 8"
                                                         Padding="12, 5"
-                                                        Margin="0, 2, 0, 2"
                                                         VerticalOptions="Center">
                                                     <Label Text="Вручную"
                                                            FontSize="11.5"
@@ -426,7 +421,6 @@
                                                         BackgroundColor="{DynamicResource BrandGreen}"
                                                         StrokeShape="RoundRectangle 8"
                                                         Padding="14, 5"
-                                                        Margin="0, 2, 0, 2"
                                                         VerticalOptions="Center">
                                                     <Border.GestureRecognizers>
                                                         <TapGestureRecognizer Command="{Binding Source={x:Reference Root}, Path=AcceptGroupCommand}"
@@ -438,8 +432,8 @@
                                                            TextColor="#FFFFFF"
                                                            VerticalOptions="Center" />
                                                 </Border>
-                                            </FlexLayout>
-                                        </FlexLayout>
+                                            </HorizontalStackLayout>
+                                        </Grid>
 
                                         <!-- ==================== РАЗВЁРНУТАЯ ЧАСТЬ (СЕКЦИЯ ITEMS) ==================== -->
                                         <VerticalStackLayout IsVisible="{Binding IsExpanded}"
@@ -464,13 +458,11 @@
                                                                     <Label Text="{Binding DisplayText}"
                                                                            FontSize="12.5"
                                                                            TextColor="{DynamicResource TextPrimary}"
-                                                                           LineBreakMode="TailTruncation"
-                                                                           MaxLines="1" />
+                                                                           LineBreakMode="TailTruncation" />
                                                                     <Label Text="{Binding DiffSubtext}"
                                                                            FontSize="11"
                                                                            TextColor="{DynamicResource TextSecondary}"
-                                                                           LineBreakMode="TailTruncation"
-                                                                           MaxLines="1" />
+                                                                           LineBreakMode="TailTruncation" />
                                                                 </VerticalStackLayout>
 
                                                                 <!-- Справа: кнопки строки «Отклонить» и «Принять» -->
