@@ -11,6 +11,7 @@
 
 | # | Дата | Батч | ID | Затронутый файл / компонент | Статус | Проверено |
 |:---:|:---:|:---:|:---:|:---|:---:|:---|
+| **76** | 18.11.2026 | F16 | **DOCS-FULL-AUDIT-AND-SYNCHRONIZATION** | README.md, PRIVACY.md, NOTES.md, GOSTEK_FOR_BEGINNERS.md, Речь к презентации GosTek.md, docs/* | 🏆 Реализовано | Фаза 16: Комплексный аудит и синхронизация всей проектной документации Markdown: 1) README.md (355 тестов, 9 встроенных шаблонов в 4 категориях, стек версий .NET 10 MAUI, дерево каталогов с RuleEditorPage и TemplateSeeder); 2) Речь к презентации GosTek.md (355 тестов, 9 шаблонов, кнопка «Принять все», согласование модели монетизации с доступностью правил ГОСТ в бесплатной версии); 3) GOSTEK_FOR_BEGINNERS.md (355 тестов, замена примеров РФ на Закон РБ № 99-З, Минск/Бобруйск и паспорт РБ, актуализация путеводителя по файлам); 4) PRIVACY.md (Закон РБ № 99-З, СТБ 6.38-2016, токены ПДн, Zero-Text Logging Cloudflare Worker, Android 15 SafeAreaEdges); 5) NOTES.md, docs/DECISIONS.md (D-012, D-013), docs/FINAL_REPORT.md, docs/MANUAL_CHECKLIST.md, docs/RELEASE.md, docs/PROJECT_OVERVIEW.md (355 тестов, 0 warnings с -warnaserror); 355/355 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
 | **75** | 18.11.2026 | F15 | **COMPILED-BINDINGS-XC0025-AND-ANDROID15-SAFE-AREA** | Views/CheckGroupVm.cs, Views/CheckPage.*, Views/*.xaml, GosTek.csproj, GosTek.Tests/CheckFilterTests.cs | 🏆 Реализовано | Фаза 15: Устранение первопричины XC0025 через скомпилированные привязки и системные SafeAreaEdges для Android 15: 1) Перенос команд карточек замечаний (ToggleExpand, RejectGroup, AcceptGroup, RejectItem, AcceptItem) непосредственно в CheckGroupVm и CheckItemVm со связыванием через фабричный конструктор и делегаты; 2) Управление видимостью FileSelectedCard через code-behind UpdateUi(); 3) Полное удаление XC0025 из NoWarn в GosTek.csproj; 4) Внедрение SafeAreaEdges="{OnPlatform Android=Container, Default=None}" на всех 7 экранах и оверлеях; 5) 6 новых юнит-тестов включая сквозной сценарий жизненного цикла (всего 355/355); Win Release (0/0), Android Release (0/0 с ILLink+R8), dotnet format 0 |
 | **73** | 18.11.2026 | F14 | **ANDROID-LAYOUT-AUDIT-AND-RULE-EDITOR-OVERHAUL** | Views/RuleEditorPage.*, Views/CheckPage.*, Views/SettingsPanel.*, Views/FieldsPage.*, Views/* | 🏆 Реализовано | Фаза 14: Комплексный аудит и исправление верстки Android без изменений Windows: 1) В RuleEditorPage устранен дефект зависания вложенного скролла и искажения листа А4 (внедрен селектор режимов [Параметры | Лист А4], RowDefinitions="*", адаптация ширины листа DocumentSheetBorder под экран screenW-56); 2) В CheckPage устранен перехват скролла (DropGestureRecognizer перенесен в Windows-only, Orientation=Vertical); 3) В SettingsPanel ширина адаптирована под экраны 360 dp (Margin справа 48 dp, MaximumWidthRequest=360); 4) В FieldsPage высота ИИ-шторки ограничена 75% экрана для клавиатуры; 5) Учтены safe area статус-бара (24 dp) и TabBar/жестов (24-80 dp); 6) Touch targets увеличены до 44+ dp; 349/349 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
 | **71** | 13.11.2026 | F12 | **GLOBAL-CODE-CLEANUP-AND-HUMAN-COMMENTS** | Services/*, Views/*, README.md | 🏆 Реализовано | Фаза 12: Глобальная чистка проекта, реструктуризация файлов и добавление человечных комментариев: 1) Перенос сервисов (FileSaveService, SettingsService, TemplateEngine, ThemeService) в каталог Services/; 2) Добавление понятных комментариев («Что делает», «С чем взаимодействует», «Зачем нужно») к ключевым сервисам (MrzParserService, MrzSanitizer, DocumentDataExtractor, SmartInputHelper, TransliterationHelper, ScanPage); 3) Обновление README.md (актуализация до 291 теста, структуры и инструкций); 291/291 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
@@ -89,6 +90,41 @@
 ---
 
 ## 2. Этапы комплексного аудита и финализации архитектуры (Этапы 2-8, Фаза 11, Фаза 12)
+
+### [Запись #76] 2026-11-18 | Фаза 16 | DOCS-FULL-AUDIT-AND-SYNCHRONIZATION | Комплексный аудит и полная синхронизация всей проектной документации Markdown
+
+- **Что сделано:**
+  1. **Инвентаризация и синхронизация единого источника истины:**
+     - Единственный источник истины — актуальный C#/XAML код в ветке `main` (проекты `GosTek.csproj` и `GosTek.Tests.csproj`).
+     - Зафиксированы точные проектные факты: 355 юнит-тестов xUnit (100% зелёные), чистые сборки Windows Release (`net10.0-windows10.0.19041.0`) и Android Release (`net10.0-android` с ILLink+R8) с флагом `-warnaserror` (0 ошибок, 0 предупреждений), 9 встроенных эталонных шаблонов документов в 4 категориях («Заявления», «Договоры», «Служебные», «Учёба»), кнопки «Принять все» и «Сохранить копию».
+  2. **Актуализация `README.md`:**
+     - Обновлены ключевые возможности: визуальный конструктор правил ГОСТ `RuleEditorPage`, список 9 эталонных шаблонов, безопасное локальное хранение по Закону РБ № 99-З, Cloudflare Worker каскад нейросетей с Zero-Text Logging, Android 15 Edge-to-Edge (`SafeAreaEdges`).
+     - Актуализирован технологический стек с точными версиями библиотек (`OpenXML 3.5.1`, `QuestPDF 2026.9.1`, `TesseractOcrMaui 1.5.1`, `CommunityToolkit.Maui.Camera 5.0.0`, `SkiaSharp 4.155.0`, `Logging.Debug 10.0.0`, `xUnit 2.9` — 355 тестов).
+     - Дополнены дерево каталогов (`RuleEditorPage.xaml`, `TemplateSeeder.cs`, `CustomRulesService.cs`) и список документации.
+  3. **Актуализация `Речь к презентации GosTek.md`:**
+     - Число тестов обновлено до 355 автоматизированных юнит-тестов (слайд 10).
+     - Слайд 7: точный список 9 шаблонов в 4 категориях («Заявления», «Договоры», «Служебные», «Учёба» — 6 студенческих бланков).
+     - Слайд 8: кнопки приведены в строгое соответствие с интерфейсом («Принять все» и «Сохранить копию»).
+     - Слайд 11 (монетизация): отражено, что создание и настройка собственных правил ГОСТ уже доступны в бесплатной версии; в PRO/Team вынесены неограниченные токены ИИ, пакетная обработка файлов и командная синхронизация шаблонов.
+     - Сохранён заметный плейсхолдер спикера `*(имя спикера)*`.
+  4. **Актуализация `GOSTEK_FOR_BEGINNERS.md`:**
+     - Число тестов актуализировано до 355.
+     - Российские примеры (152-ФЗ, г. Москва, паспорт 1415 987654) заменены на белорусские реквизиты: Закон РБ от 07.05.2021 № 99-З, г. Минск / г. Бобруйск, паспорт РБ `AB1234567`, 14-значный личный номер `1234567A001PB1`.
+     - Таблица «Путеводитель по файлам» приведена в полное соответствие с текущей структурой (`RuleEditorPage`, `TemplateSeeder`, `CheckGroupVm`, `MrzParserService` и др.).
+  5. **Актуализация `PRIVACY.md` и `NOTES.md`:**
+     - В `PRIVACY.md` закреплены Закон РБ № 99-З, стандарты СТБ 6.38-2016 / ГОСТ 7.32 / ГОСТ 2.105, все токены ПДн, Zero-Text Logging, вторичный скруббер и Android 15 `SafeAreaEdges`.
+     - В `NOTES.md` зафиксирован статус успешной реализации MasterRule, фабрики команд ViewModel, скомпилированных привязок и 355 тестов.
+  6. **Актуализация документации в `docs/`:**
+     - `docs/DECISIONS.md`: добавлены архитектурные решения D-012 (MasterRule, запрет дубликатов, экспертный конструктор) и D-013 (XC0025, фабрика команд `CheckGroupVm`, `SafeAreaEdges`).
+     - `docs/FINAL_REPORT.md`: обновлены итоговые метрики (355 тестов, чистые сборки Release, реестр решений D-001 — D-013).
+     - `docs/MANUAL_CHECKLIST.md`: исправлены названия кнопок («Принять все», «Сохранить копию»), добавлен сценарий проверки конструктора правил ГОСТ (`RuleEditorPage`).
+     - `docs/RELEASE.md`: актуализировано число тестов (355), 9 встроенных шаблонов, `DefaultEndpoint`.
+     - `docs/PROJECT_OVERVIEW.md`: синхронизировано число тестов (355) и перечень протестированных модулей.
+- **Верификация:**
+  - `dotnet test GosTek.Tests/GosTek.Tests.csproj`: 355 пройденных тестов (100% зелёные).
+  - Сборка Windows Release (`-warnaserror`): 0 warnings, 0 errors.
+  - Сборка Android Release (`-warnaserror`): 0 warnings, 0 errors.
+  - `dotnet format GosTek.sln --verify-no-changes`: Exit code 0.
 
 ### [Запись #75] 2026-11-18 | Фаза 15 | COMPILED-BINDINGS-XC0025-AND-ANDROID15-SAFE-AREA | Устранение первопричины XC0025 через скомпилированные привязки и поддержка Edge-to-Edge SafeAreaEdges Android 15
 
