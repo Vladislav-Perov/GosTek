@@ -68,7 +68,7 @@ public static class ThemeService
             app.RequestedThemeChanged += (_, _) => {
                 if (Mode != ThemeMode.System) return;
                 Apply();
-                Changed?.Invoke();
+                NotifyChanged();
             };
     }
 
@@ -79,7 +79,24 @@ public static class ThemeService
         Mode = mode;
         Preferences.Default.Set(ModeKey, (int)mode);
         Apply();
-        Changed?.Invoke();
+        NotifyChanged();
+    }
+
+    private static void NotifyChanged()
+    {
+        var handler = Changed;
+        if (handler == null) return;
+        foreach (var d in handler.GetInvocationList())
+        {
+            try
+            {
+                ((Action)d)();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ThemeService.Changed] Handler error: {ex.Message}");
+            }
+        }
     }
 
     /// <summary>Плавное переключение темы с эффектом мягкого затемнения и моргания.</summary>

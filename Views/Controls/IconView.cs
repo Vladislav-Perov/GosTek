@@ -93,7 +93,20 @@ public class IconView : ContentView
         VerticalOptions = LayoutOptions.Center;
         InputTransparent = true;
 
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+    }
+
+    private void OnLoaded(object? sender, EventArgs e)
+    {
+        ThemeService.Changed -= OnThemeChanged;
         ThemeService.Changed += OnThemeChanged;
+        UpdateIcon();
+    }
+
+    private void OnUnloaded(object? sender, EventArgs e)
+    {
+        ThemeService.Changed -= OnThemeChanged;
     }
 
     private void OnThemeChanged()

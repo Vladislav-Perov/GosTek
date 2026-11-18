@@ -71,18 +71,49 @@ public partial class CheckPage : ContentPage
         InitializeComponent();
         BindingContext = this;
 
-        ToggleExpandCommand = new Command<CheckGroupVm>(ToggleExpand);
+        ToggleExpandCommand = new Command<CheckGroupVm>(group =>
+        {
+            try { ToggleExpand(group); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[ToggleExpandCommand] Error: {ex.Message}"); }
+        });
         LoadMoreCommand = new Command<CheckGroupVm>(group =>
         {
-            if (_busy || group == null) return;
-            HapticHelper.Click();
-            group.LoadMore(CheckGroupVm.PageSize);
+            try
+            {
+                if (_busy || group == null) return;
+                HapticHelper.Click();
+                group.LoadMore(CheckGroupVm.PageSize);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[LoadMoreCommand] Error: {ex.Message}");
+            }
         });
-        AcceptItemCommand = new Command<CheckItemVm>(async item => await AcceptItemAsync(item));
-        RejectItemCommand = new Command<CheckItemVm>(RejectItem);
-        AcceptGroupCommand = new Command<CheckGroupVm>(async group => await AcceptGroupAsync(group));
-        RejectGroupCommand = new Command<CheckGroupVm>(RejectGroup);
-        AcceptAllCommand = new Command(async () => await AcceptAllAsync());
+        AcceptItemCommand = new Command<CheckItemVm>(async item =>
+        {
+            try { await AcceptItemAsync(item); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[AcceptItemCommand] Error: {ex.Message}"); }
+        });
+        RejectItemCommand = new Command<CheckItemVm>(item =>
+        {
+            try { RejectItem(item); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[RejectItemCommand] Error: {ex.Message}"); }
+        });
+        AcceptGroupCommand = new Command<CheckGroupVm>(async group =>
+        {
+            try { await AcceptGroupAsync(group); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[AcceptGroupCommand] Error: {ex.Message}"); }
+        });
+        RejectGroupCommand = new Command<CheckGroupVm>(group =>
+        {
+            try { RejectGroup(group); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[RejectGroupCommand] Error: {ex.Message}"); }
+        });
+        AcceptAllCommand = new Command(async () =>
+        {
+            try { await AcceptAllAsync(); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[AcceptAllCommand] Error: {ex.Message}"); }
+        });
 
         RuleChips.ShowArrows = true;
         _allRules = CustomRulesService.Instance.GetAllRules().ToList();
@@ -242,6 +273,16 @@ public partial class CheckPage : ContentPage
             } else {
                 _status = null;
             }
+        } catch (IOException ioEx) {
+            System.Diagnostics.Debug.WriteLine("IOException: " + ioEx.Message);
+            await Dialogs.AlertAsync("Файл заблокирован",
+                "Файл занят другой программой (например, Microsoft Word). Закройте его и повторите попытку.", DialogKind.Danger);
+        } catch (InvalidOperationException opEx) {
+            System.Diagnostics.Debug.WriteLine("InvalidOperationException: " + opEx.Message);
+            await Dialogs.AlertAsync("Не удалось открыть документ", opEx.Message, DialogKind.Danger);
+        } catch (InvalidDataException dataEx) {
+            System.Diagnostics.Debug.WriteLine("InvalidDataException: " + dataEx.Message);
+            await Dialogs.AlertAsync("Файл повреждён", dataEx.Message, DialogKind.Danger);
         } catch (Exception ex) {
             System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
             await Dialogs.AlertAsync("Не удалось проверить файл",
@@ -402,6 +443,12 @@ public partial class CheckPage : ContentPage
             }
             await RecheckAsync();
         }
+        catch (IOException ioEx)
+        {
+            System.Diagnostics.Debug.WriteLine("IOException: " + ioEx.Message);
+            await Dialogs.AlertAsync("Файл заблокирован",
+                "Не удалось сохранить изменения: файл открыт в другой программе (например, Microsoft Word). Закройте его и повторите попытку.", DialogKind.Danger);
+        }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
@@ -436,9 +483,12 @@ public partial class CheckPage : ContentPage
 
             if (issue.Items != null && issue.Items.Count > 0)
             {
-                var indices = issue.Items.Select(it => it.Index).ToHashSet();
-                var samples = issue.Items.ToDictionary(it => it.Index, it => it.Text);
-                changed = await Task.Run(() => DocumentChecker.FixItems(path, rules, issue.Kind, indices, samples));
+                changed = await Task.Run(() =>
+                {
+                    var indices = issue.Items.Select(it => it.Index).ToHashSet();
+                    var samples = issue.Items.ToDictionary(it => it.Index, it => it.Text);
+                    return DocumentChecker.FixItems(path, rules, issue.Kind, indices, samples);
+                });
             }
             else
             {
@@ -453,6 +503,12 @@ public partial class CheckPage : ContentPage
                 Toast.Show("Исправление применено", "check");
             }
             await RecheckAsync();
+        }
+        catch (IOException ioEx)
+        {
+            System.Diagnostics.Debug.WriteLine("IOException: " + ioEx.Message);
+            await Dialogs.AlertAsync("Файл заблокирован",
+                "Не удалось сохранить изменения: файл открыт в другой программе (например, Microsoft Word). Закройте его и повторите попытку.", DialogKind.Danger);
         }
         catch (Exception ex)
         {
@@ -498,6 +554,12 @@ public partial class CheckPage : ContentPage
 
             await RecheckAsync();
         }
+        catch (IOException ioEx)
+        {
+            System.Diagnostics.Debug.WriteLine("IOException: " + ioEx.Message);
+            await Dialogs.AlertAsync("Файл заблокирован",
+                "Не удалось сохранить изменения: файл открыт в другой программе (например, Microsoft Word). Закройте его и повторите попытку.", DialogKind.Danger);
+        }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
@@ -537,6 +599,12 @@ public partial class CheckPage : ContentPage
 
     private void UpdateIssueGroupsInPlace(IReadOnlyList<CheckIssue> newIssues)
     {
+        if (!MainThread.IsMainThread)
+        {
+            MainThread.BeginInvokeOnMainThread(() => UpdateIssueGroupsInPlace(newIssues));
+            return;
+        }
+
         var sw = Stopwatch.StartNew();
 
         // 1. Удаляем группы, которых больше нет в замечаниях
@@ -545,6 +613,7 @@ public partial class CheckPage : ContentPage
         {
             if (!newKindSet.Contains(IssueGroups[i].Issue.Kind))
             {
+                IssueGroups[i].Dispose();
                 IssueGroups.RemoveAt(i);
             }
         }
@@ -733,7 +802,12 @@ public partial class CheckPage : ContentPage
         try
         {
             var work = Path.Combine(FileSystem.CacheDirectory, WorkFileName);
-            File.Copy(filePath, work, true);
+            await Task.Run(async () =>
+            {
+                await using var input = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+                await using var output = new FileStream(work, FileMode.Create, FileAccess.Write, FileShare.None);
+                await input.CopyToAsync(output);
+            });
 
             var fileName = Path.GetFileName(filePath);
             var matchedRule = CustomRulesService.Instance.MatchRuleSetForTemplate(fileName);
@@ -770,6 +844,22 @@ public partial class CheckPage : ContentPage
             } else {
                 _status = null;
             }
+        }
+        catch (IOException ioEx)
+        {
+            System.Diagnostics.Debug.WriteLine("IOException: " + ioEx.Message);
+            await Dialogs.AlertAsync("Файл заблокирован",
+                "Файл занят другой программой (например, Microsoft Word). Закройте его и повторите попытку.", DialogKind.Danger);
+        }
+        catch (InvalidOperationException opEx)
+        {
+            System.Diagnostics.Debug.WriteLine("InvalidOperationException: " + opEx.Message);
+            await Dialogs.AlertAsync("Не удалось открыть документ", opEx.Message, DialogKind.Danger);
+        }
+        catch (InvalidDataException dataEx)
+        {
+            System.Diagnostics.Debug.WriteLine("InvalidDataException: " + dataEx.Message);
+            await Dialogs.AlertAsync("Файл повреждён", dataEx.Message, DialogKind.Danger);
         }
         catch (Exception ex)
         {

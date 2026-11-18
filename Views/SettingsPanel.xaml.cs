@@ -79,8 +79,8 @@ public partial class SettingsPanel : ContentView
 
         VersionLabel.Text = $"GosTek, версия {AppInfo.Current.VersionString}";
 
-        SettingsService.Changed += SyncAll;
-        ThemeService.Changed += SyncAll;
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
 
         // Окно изменили на ПК: подогнать ширину панели
         SizeChanged += (_, _) => {
@@ -89,6 +89,21 @@ public partial class SettingsPanel : ContentView
         };
 
         SyncAll();
+    }
+
+    private void OnLoaded(object? sender, EventArgs e)
+    {
+        SettingsService.Changed -= SyncAll;
+        SettingsService.Changed += SyncAll;
+        ThemeService.Changed -= SyncAll;
+        ThemeService.Changed += SyncAll;
+        SyncAll();
+    }
+
+    private void OnUnloaded(object? sender, EventArgs e)
+    {
+        SettingsService.Changed -= SyncAll;
+        ThemeService.Changed -= SyncAll;
     }
 
     // =====================================================================

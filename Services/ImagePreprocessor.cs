@@ -56,7 +56,8 @@ public class ImagePreprocessor : IImagePreprocessor
                 0.299f, 0.587f, 0.114f, 0, 0,
                 0,      0,      0,      1, 0
             };
-            paint.ColorFilter = SKColorFilter.CreateColorMatrix(matrix);
+            using var colorFilter = SKColorFilter.CreateColorMatrix(matrix);
+            paint.ColorFilter = colorFilter;
             canvas.DrawBitmap(original, 0, 0, SKSamplingOptions.Default, paint);
 
             using var skImage = SKImage.FromBitmap(grayBitmap);
@@ -175,7 +176,8 @@ public class ImagePreprocessor : IImagePreprocessor
                     0,                 0,                 0,                 1, 0
                 };
 
-                paint.ColorFilter = SKColorFilter.CreateColorMatrix(matrix);
+                using var colorFilter = SKColorFilter.CreateColorMatrix(matrix);
+                paint.ColorFilter = colorFilter;
                 canvas.DrawBitmap(original, new SKRect(0, 0, targetW, targetH), SKSamplingOptions.Default, paint);
 
                 using var skImage = SKImage.FromBitmap(processedBitmap);

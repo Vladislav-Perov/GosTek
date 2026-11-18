@@ -567,13 +567,33 @@ public partial class ScanPage : ContentPage
             {
                 cameraStatus = await Permissions.RequestAsync<Permissions.Camera>();
                 if (cameraStatus != PermissionStatus.Granted)
-                    throw new InvalidOperationException("Нет разрешения на использование камеры.");
+                {
+                    await MainThread.InvokeOnMainThreadAsync(async () =>
+                    {
+                        await Dialogs.AlertAsync("Доступ к камере отключён",
+                            "Для съёмки документа необходимо разрешение на использование камеры. Вы можете включить его в настройках устройства или выбрать готовый файл через «Галерею» или «Файл».",
+                            DialogKind.Info);
+                    });
+                    return null;
+                }
             }
 
-            var storageStatus = await Permissions.CheckStatusAsync<Permissions.StorageWrite>();
-            if (storageStatus != PermissionStatus.Granted)
+            try
             {
-                await Permissions.RequestAsync<Permissions.StorageWrite>();
+#if ANDROID
+                if (Android.OS.Build.VERSION.SdkInt < Android.OS.BuildVersionCodes.Tiramisu)
+                {
+                    var storageStatus = await Permissions.CheckStatusAsync<Permissions.StorageWrite>();
+                    if (storageStatus != PermissionStatus.Granted)
+                    {
+                        await Permissions.RequestAsync<Permissions.StorageWrite>();
+                    }
+                }
+#endif
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ScanPage] Storage permission check skipped: {ex.Message}");
             }
 
             SetLoading(true, "Открытие камеры...", "Съёмка документа с высоким разрешением");
@@ -644,11 +664,16 @@ public partial class ScanPage : ContentPage
                 return;
             }
 
-            if (stream is null || token.IsCancellationRequested)
+            if (stream is null)
                 return;   // закрыли камеру или окно выбора
 
             await using (stream)
+            {
+                if (token.IsCancellationRequested)
+                    return;
+
                 await ProcessStreamAsync(stream, token);
+            }
         } catch (OperationCanceledException) {
             // Прервано пользователем
         } finally {

@@ -34,7 +34,6 @@ public partial class TemplatesPage : ContentPage
         InitializeComponent();
 
         CategoryChips.SelectionChanged += OnCategoryChanged;
-        FavoritesService.Instance.Changed += OnFavoritesChanged;
     }
 
     private void OnFavoritesChanged()
@@ -45,6 +44,8 @@ public partial class TemplatesPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        FavoritesService.Instance.Changed -= OnFavoritesChanged;
+        FavoritesService.Instance.Changed += OnFavoritesChanged;
         StartWatching();
 
         if (_isFirstLoad)
@@ -68,6 +69,7 @@ public partial class TemplatesPage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        FavoritesService.Instance.Changed -= OnFavoritesChanged;
         SettingsOverlay.Dismiss();
         CatalogSkeleton.StopShimmer();
         StopWatching();

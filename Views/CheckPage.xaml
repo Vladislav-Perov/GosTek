@@ -14,6 +14,7 @@
              xmlns:vctrl="clr-namespace:GosTek.Views.Controls"
              x:Class="GosTek.Views.CheckPage"
              x:Name="Root"
+             x:DataType="views:CheckPage"
              Title="Проверка"
              BackgroundColor="{DynamicResource PageBg}"
              Shell.NavBarIsVisible="False">

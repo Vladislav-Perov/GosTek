@@ -32,5 +32,26 @@ namespace GosTek
 #endif
             return window;
         }
+
+        protected override void OnSleep()
+        {
+            base.OnSleep();
+            // При сворачивании приложения (особенно на Android) закрываем модальные оверлеи
+            Views.SettingsOverlay.Dismiss();
+        }
+
+        protected override void OnResume()
+        {
+            base.OnResume();
+            // При возвращении из фона восстанавливаем актуальное состояние темы
+            try
+            {
+                ThemeService.Init();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[App.OnResume] Error: {ex.Message}");
+            }
+        }
     }
 }

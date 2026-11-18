@@ -10,6 +10,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Microsoft.Maui.Networking;
 using GosTek;
 using GosTek.Models;
 
@@ -410,6 +411,22 @@ public class AiAssistantService
             memory: activeMemory,
             profile: profile);
 
+        try
+        {
+            if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
+            {
+                throw new AiAssistantException("Отсутствует подключение к интернету. Проверьте сеть и повторите попытку.");
+            }
+        }
+        catch (AiAssistantException)
+        {
+            throw;
+        }
+        catch
+        {
+            // На тестовом раннере или платформах без реализации Connectivity пропускаем предварительную проверку
+        }
+
         for (int attempt = 1; attempt <= MaxRetryAttempts; attempt++)
         {
             try
@@ -421,16 +438,21 @@ public class AiAssistantService
 
                 using var response = await _httpClient.SendAsync(request, cancellationToken);
 
-                // Обработка 503 (перегрузка сервера): до 3 попыток с задержкой 2 сек
-                if (response.StatusCode == HttpStatusCode.ServiceUnavailable)
+                // Обработка 5xx (500, 502, 503, 504 - временные сбои сервера): до MaxRetryAttempts попыток
+                if ((int)response.StatusCode >= 500)
                 {
                     if (attempt < MaxRetryAttempts)
                     {
-                        await Task.Delay(RetryDelay, cancellationToken);
+                        await Task.Delay(RetryDelay * attempt, cancellationToken);
                         continue;
                     }
 
-                    throw new AiAssistantException("Сервер ИИ временно перегружен (ошибка 503). Пожалуйста, повторите запрос через несколько секунд.");
+                    if (response.StatusCode == HttpStatusCode.ServiceUnavailable)
+                    {
+                        throw new AiAssistantException("Сервер ИИ временно перегружен (ошибка 503). Пожалуйста, повторите запрос через несколько секунд.");
+                    }
+
+                    throw new AiAssistantException($"Сервер ИИ временно недоступен (ошибка {(int)response.StatusCode}). Пожалуйста, повторите попытку позже.");
                 }
 
                 if (!response.IsSuccessStatusCode)
@@ -471,6 +493,11 @@ public class AiAssistantService
             }
             catch (HttpRequestException ex)
             {
+                if (attempt < MaxRetryAttempts && !cancellationToken.IsCancellationRequested)
+                {
+                    await Task.Delay(RetryDelay * attempt, cancellationToken);
+                    continue;
+                }
                 throw new AiAssistantException("Не удалось связаться с сервером ИИ. Проверьте подключение к сети.", ex);
             }
         }

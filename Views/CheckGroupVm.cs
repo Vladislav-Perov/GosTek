@@ -15,10 +15,53 @@ using GosTek.Models;
 namespace GosTek.Views;
 
 /// <summary>
+/// Коллекция с поддержкой пакетного добавления без лавины уведомлений CollectionChanged.
+/// </summary>
+public class BatchObservableCollection<T> : ObservableCollection<T>
+{
+    private bool _suppressNotification;
+
+    public void AddRange(IEnumerable<T> collection)
+    {
+        ArgumentNullException.ThrowIfNull(collection);
+
+        _suppressNotification = true;
+        try {
+            foreach (var item in collection) {
+                Add(item);
+            }
+        } finally {
+            _suppressNotification = false;
+            OnCollectionReset();
+        }
+    }
+
+    public void OnCollectionReset()
+    {
+        OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));
+        OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
+        OnCollectionChanged(new System.Collections.Specialized.NotifyCollectionChangedEventArgs(
+            System.Collections.Specialized.NotifyCollectionChangedAction.Reset));
+    }
+
+    protected override void OnCollectionChanged(System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        if (!_suppressNotification)
+            base.OnCollectionChanged(e);
+    }
+
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        if (!_suppressNotification)
+            base.OnPropertyChanged(e);
+    }
+}
+
+/// <summary>
 /// Представление группы замечания (карточки) в списке Проверки.
 /// Поддерживает свёрнутый и развёрнутый вид с точечными элементами.
 /// </summary>
-public sealed class CheckGroupVm : INotifyPropertyChanged
+public sealed class CheckGroupVm : INotifyPropertyChanged, IDisposable
 {
     public const int PageSize = 30;
 
@@ -30,22 +73,37 @@ public sealed class CheckGroupVm : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public CheckIssue Issue => _issue;
-    public ObservableCollection<CheckItemVm> Items { get; }
+    public BatchObservableCollection<CheckItemVm> Items { get; }
     public ICommand LoadMoreCommand { get; }
 
     public CheckGroupVm(CheckIssue issue)
     {
         _issue = issue ?? throw new ArgumentNullException(nameof(issue));
-        Items = new ObservableCollection<CheckItemVm>();
-        LoadMoreCommand = new Command(() => LoadMore(PageSize));
+        Items = new BatchObservableCollection<CheckItemVm>();
+        LoadMoreCommand = new Command(() =>
+        {
+            try
+            {
+                LoadMore(PageSize);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[CheckGroupVm.LoadMoreCommand] Error: {ex.Message}");
+            }
+        });
 
         if (issue.Items != null)
         {
             _allItems.AddRange(issue.Items);
             int take = Math.Min(PageSize, _allItems.Count);
-            for (int i = 0; i < take; i++)
+            if (take > 0)
             {
-                Items.Add(new CheckItemVm(_allItems[i], this));
+                var initial = new List<CheckItemVm>(take);
+                for (int i = 0; i < take; i++)
+                {
+                    initial.Add(new CheckItemVm(_allItems[i], this));
+                }
+                Items.AddRange(initial);
             }
             _displayedCount = Items.Count;
         }
@@ -53,74 +111,120 @@ public sealed class CheckGroupVm : INotifyPropertyChanged
 
     public void LoadMore(int count = PageSize)
     {
-        if (count <= 0) count = PageSize;
-        int current = Items.Count;
-        int toTake = Math.Min(count, _allItems.Count - current);
-        if (toTake <= 0) return;
-
-        for (int i = 0; i < toTake; i++)
+        if (!MainThread.IsMainThread)
         {
-            Items.Add(new CheckItemVm(_allItems[current + i], this));
+            MainThread.BeginInvokeOnMainThread(() => LoadMore(count));
+            return;
         }
 
-        _displayedCount = Items.Count;
-        OnPropertyChanged(nameof(HasItems));
-        OnPropertyChanged(nameof(HasMore));
-        OnPropertyChanged(nameof(HasMoreText));
-        OnPropertyChanged(nameof(MoreText));
+        try
+        {
+            if (count <= 0) count = PageSize;
+            int current = Items.Count;
+            int toTake = Math.Min(count, _allItems.Count - current);
+            if (toTake <= 0) return;
+
+            var batch = new List<CheckItemVm>(toTake);
+            for (int i = 0; i < toTake; i++)
+            {
+                batch.Add(new CheckItemVm(_allItems[current + i], this));
+            }
+            Items.AddRange(batch);
+
+            _displayedCount = Items.Count;
+            OnPropertyChanged(nameof(HasItems));
+            OnPropertyChanged(nameof(HasMore));
+            OnPropertyChanged(nameof(HasMoreText));
+            OnPropertyChanged(nameof(MoreText));
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[CheckGroupVm.LoadMore] Error: {ex.Message}");
+        }
     }
 
     public void UpdateIssue(CheckIssue newIssue)
     {
-        _issue = newIssue ?? throw new ArgumentNullException(nameof(newIssue));
-        _allItems.Clear();
-        if (newIssue.Items != null)
+        if (!MainThread.IsMainThread)
         {
-            _allItems.AddRange(newIssue.Items);
+            MainThread.BeginInvokeOnMainThread(() => UpdateIssue(newIssue));
+            return;
         }
 
-        // Сохраняем объём показанных строк (не меньше 30, но не больше доступных)
-        int targetCount = Math.Min(Math.Max(PageSize, Items.Count), _allItems.Count);
-
-        for (int i = 0; i < targetCount; i++)
+        try
         {
-            var item = _allItems[i];
-            if (i < Items.Count)
+            _issue = newIssue ?? throw new ArgumentNullException(nameof(newIssue));
+            _allItems.Clear();
+            if (newIssue.Items != null)
             {
-                if (Items[i].Item.Index != item.Index ||
-                    Items[i].Item.Text != item.Text ||
-                    Items[i].Item.Actual != item.Actual ||
-                    Items[i].Item.Expected != item.Expected)
+                _allItems.AddRange(newIssue.Items);
+            }
+
+            // Сохраняем объём показанных строк (не меньше 30, но не больше доступных)
+            int targetCount = Math.Min(Math.Max(PageSize, Items.Count), _allItems.Count);
+
+            for (int i = 0; i < targetCount; i++)
+            {
+                var item = _allItems[i];
+                if (i < Items.Count)
                 {
-                    Items[i] = new CheckItemVm(item, this);
+                    if (Items[i].Item.Index != item.Index ||
+                        Items[i].Item.Text != item.Text ||
+                        Items[i].Item.Actual != item.Actual ||
+                        Items[i].Item.Expected != item.Expected)
+                    {
+                        Items[i].Dispose();
+                        Items[i] = new CheckItemVm(item, this);
+                    }
+                }
+                else
+                {
+                    Items.Add(new CheckItemVm(item, this));
                 }
             }
-            else
+
+            while (Items.Count > targetCount)
             {
-                Items.Add(new CheckItemVm(item, this));
+                int lastIdx = Items.Count - 1;
+                Items[lastIdx].Dispose();
+                Items.RemoveAt(lastIdx);
             }
-        }
 
-        while (Items.Count > targetCount)
+            _displayedCount = Items.Count;
+
+            OnPropertyChanged(nameof(Issue));
+            OnPropertyChanged(nameof(Title));
+            OnPropertyChanged(nameof(WhereText));
+            OnPropertyChanged(nameof(DiffText));
+            OnPropertyChanged(nameof(HasDiff));
+            OnPropertyChanged(nameof(CanFix));
+            OnPropertyChanged(nameof(CannotFix));
+            OnPropertyChanged(nameof(FixAllHint));
+            OnPropertyChanged(nameof(HasItems));
+            OnPropertyChanged(nameof(HasMore));
+            OnPropertyChanged(nameof(HasMoreText));
+            OnPropertyChanged(nameof(MoreText));
+            OnPropertyChanged(nameof(ExpandButtonText));
+        }
+        catch (Exception ex)
         {
-            Items.RemoveAt(Items.Count - 1);
+            System.Diagnostics.Debug.WriteLine($"[CheckGroupVm.UpdateIssue] Error: {ex.Message}");
         }
+    }
 
-        _displayedCount = Items.Count;
+    public void Dispose()
+    {
+        Clear();
+    }
 
-        OnPropertyChanged(nameof(Issue));
-        OnPropertyChanged(nameof(Title));
-        OnPropertyChanged(nameof(WhereText));
-        OnPropertyChanged(nameof(DiffText));
-        OnPropertyChanged(nameof(HasDiff));
-        OnPropertyChanged(nameof(CanFix));
-        OnPropertyChanged(nameof(CannotFix));
-        OnPropertyChanged(nameof(FixAllHint));
-        OnPropertyChanged(nameof(HasItems));
-        OnPropertyChanged(nameof(HasMore));
-        OnPropertyChanged(nameof(HasMoreText));
-        OnPropertyChanged(nameof(MoreText));
-        OnPropertyChanged(nameof(ExpandButtonText));
+    public void Clear()
+    {
+        foreach (var item in Items)
+        {
+            item.Dispose();
+        }
+        Items.Clear();
+        _allItems.Clear();
     }
 
     public bool IsExpanded
@@ -224,17 +328,22 @@ public sealed class CheckGroupVm : INotifyPropertyChanged
 /// <summary>
 /// Представление строки конкретного элемента замечания в развёрнутой карточке.
 /// </summary>
-public sealed class CheckItemVm : INotifyPropertyChanged
+public sealed class CheckItemVm : INotifyPropertyChanged, IDisposable
 {
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public IssueItem Item { get; }
-    public CheckGroupVm Parent { get; }
+    public CheckGroupVm? Parent { get; private set; }
 
     public CheckItemVm(IssueItem item, CheckGroupVm parent)
     {
         Item = item ?? throw new ArgumentNullException(nameof(item));
         Parent = parent ?? throw new ArgumentNullException(nameof(parent));
+    }
+
+    public void Dispose()
+    {
+        Parent = null;
     }
 
     public int Index => Item.Index;
@@ -245,7 +354,7 @@ public sealed class CheckItemVm : INotifyPropertyChanged
         get
         {
             // Для полей страницы строки называются «Раздел N»
-            if (IsMarginKind(Parent.Issue.Kind))
+            if (Parent != null && IsMarginKind(Parent.Issue.Kind))
             {
                 return $"Раздел {Item.Index}";
             }
@@ -265,7 +374,7 @@ public sealed class CheckItemVm : INotifyPropertyChanged
         {
             string act = (Item.Actual ?? string.Empty).Trim();
             string exp = (Item.Expected ?? string.Empty).Trim();
-            if (Parent.Issue.Kind == IssueKind.LineSpacing)
+            if (Parent != null && Parent.Issue.Kind == IssueKind.LineSpacing)
             {
                 if (act.Length > 0 && char.IsDigit(act[^1])) act += " строки";
                 if (exp.Length > 0 && char.IsDigit(exp[^1])) exp += " строки";
@@ -278,7 +387,7 @@ public sealed class CheckItemVm : INotifyPropertyChanged
         }
     }
 
-    public bool CanFix => Parent.CanFix;
+    public bool CanFix => Parent?.CanFix ?? false;
 
     private void OnPropertyChanged([CallerMemberName] string? propName = null) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));

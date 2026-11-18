@@ -21,9 +21,23 @@ public partial class ThemeToggle : ContentView
         InitializeComponent();
 
         Sync(animated: false);
-        Loaded += (_, _) => Sync(animated: false);
-        ThemeService.Changed += () => Sync(animated: true);
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
     }
+
+    private void OnLoaded(object? sender, EventArgs e)
+    {
+        ThemeService.Changed -= OnThemeChanged;
+        ThemeService.Changed += OnThemeChanged;
+        Sync(animated: false);
+    }
+
+    private void OnUnloaded(object? sender, EventArgs e)
+    {
+        ThemeService.Changed -= OnThemeChanged;
+    }
+
+    private void OnThemeChanged() => Sync(animated: true);
 
     private void OnTapped(object? sender, TappedEventArgs e) => ThemeService.Toggle();
 

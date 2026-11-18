@@ -44,6 +44,38 @@ public static class DocumentChecker
         { "heading", "заголовок", "title", "toc", "оглавление", "содержание" };
 
     private static readonly Regex PageField = new(@"\bPAGE\b", RegexOptions.Compiled);
+    private static readonly Regex WhitespaceRegex = new(@"\s+", RegexOptions.Compiled);
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Regex> SectionRegexCache = new();
+
+    private static Regex GetSectionRegex(string pattern)
+        => SectionRegexCache.GetOrAdd(pattern, static p => new Regex(p, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled));
+
+    private static JustificationValues ParseJustification(string? alignment, JustificationValues? defaultVal = null)
+    {
+        var fallback = defaultVal ?? JustificationValues.Left;
+        if (string.IsNullOrEmpty(alignment))
+            return fallback;
+        if (alignment.Equals("center", StringComparison.OrdinalIgnoreCase))
+            return JustificationValues.Center;
+        if (alignment.Equals("right", StringComparison.OrdinalIgnoreCase))
+            return JustificationValues.Right;
+        if (alignment.Equals("both", StringComparison.OrdinalIgnoreCase) || alignment.Equals("justify", StringComparison.OrdinalIgnoreCase))
+            return JustificationValues.Both;
+        return fallback;
+    }
+
+    private static TKey? GetMaxKey<TKey>(Dictionary<TKey, int> dict) where TKey : notnull
+    {
+        TKey? bestKey = default;
+        int max = -1;
+        foreach (var (key, count) in dict) {
+            if (count > max) {
+                max = count;
+                bestKey = key;
+            }
+        }
+        return bestKey;
+    }
 
     // =====================================================================
     //  ПРОВЕРКА
@@ -108,9 +140,9 @@ public static class DocumentChecker
     private static bool MatchesText(string? actualText, string? expectedSample)
     {
         if (string.IsNullOrWhiteSpace(expectedSample)) return true;
-        string cleanExpected = expectedSample.TrimEnd('…').Trim();
-        if (cleanExpected.Length == 0) return true;
-        string cleanActual = (actualText ?? "").Trim();
+        var cleanExpected = expectedSample.AsSpan().TrimEnd('…').Trim();
+        if (cleanExpected.IsEmpty) return true;
+        var cleanActual = (actualText ?? "").AsSpan().Trim();
         return cleanActual.StartsWith(cleanExpected, StringComparison.Ordinal);
     }
 
@@ -120,26 +152,22 @@ public static class DocumentChecker
 
     public const int TableCaptionIndexBase = 10000;
 
-    private static List<(int Index, SectionProperties Section, PageMargin Margin)> GetMarginSections(Context ctx)
+    private static IEnumerable<(int Index, SectionProperties Section, PageMargin Margin)> GetMarginSections(Context ctx)
     {
-        var list = new List<(int Index, SectionProperties Section, PageMargin Margin)>();
         int idx = 1;
         foreach (var sec in ctx.Sections) {
             if (sec.GetFirstChild<PageMargin>() is { } margin) {
-                list.Add((idx++, sec, margin));
+                yield return (idx++, sec, margin);
             }
         }
-        return list;
     }
 
-    private static List<(int Index, Paragraph Paragraph, string StyleId)> GetAllParagraphEntries(Context ctx)
+    private static IEnumerable<(int Index, Paragraph Paragraph, string StyleId)> GetAllParagraphEntries(Context ctx)
     {
-        var list = new List<(int Index, Paragraph Paragraph, string StyleId)>();
         int idx = 0;
         foreach (var p in ctx.AllParagraphs()) {
-            list.Add((idx++, p, ctx.ParagraphStyleId(p) ?? ""));
+            yield return (idx++, p, ctx.ParagraphStyleId(p) ?? "");
         }
-        return list;
     }
 
     private static bool IsInTable(Paragraph p) =>
@@ -148,10 +176,10 @@ public static class DocumentChecker
     private static bool IsTableCaption(Paragraph p)
     {
         if (IsInTable(p)) return false;
-        string text = (p.InnerText ?? "").Trim();
-        if (string.IsNullOrEmpty(text)) return false;
-        return text.StartsWith("Таблица", StringComparison.OrdinalIgnoreCase) ||
-               text.StartsWith("Табл.", StringComparison.OrdinalIgnoreCase);
+        var text = (p.InnerText ?? "").AsSpan().Trim();
+        if (text.IsEmpty) return false;
+        return text.StartsWith("Таблица".AsSpan(), StringComparison.OrdinalIgnoreCase) ||
+               text.StartsWith("Табл.".AsSpan(), StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsTableCaption(Context ctx, Paragraph p) => IsTableCaption(p);
@@ -186,56 +214,48 @@ public static class DocumentChecker
 
     private static bool IsSpecialParagraph(Context ctx, Paragraph p) => IsSpecialParagraph(p);
 
-    private static List<(int Index, Paragraph Paragraph, string StyleId)> GetBodyParagraphEntries(Context ctx)
+    private static IEnumerable<(int Index, Paragraph Paragraph, string StyleId)> GetBodyParagraphEntries(Context ctx)
     {
-        var list = new List<(int Index, Paragraph Paragraph, string StyleId)>();
         int idx = 0;
         foreach (var p in ctx.BodyParagraphs()) {
             if (IsSpecialParagraph(p)) continue;
-            list.Add((idx++, p, ctx.ParagraphStyleId(p) ?? ""));
+            yield return (idx++, p, ctx.ParagraphStyleId(p) ?? "");
         }
-        return list;
     }
 
-    private static List<(int Index, Paragraph Paragraph)> GetTextBodyParagraphEntries(Context ctx)
+    private static IEnumerable<(int Index, Paragraph Paragraph)> GetTextBodyParagraphEntries(Context ctx)
     {
-        var list = new List<(int Index, Paragraph Paragraph)>();
         int idx = 0;
         foreach (var p in ctx.BodyParagraphs()) {
             if (IsSpecialParagraph(p)) continue;
             if (ctx.HasText(p)) {
-                list.Add((idx++, p));
+                yield return (idx++, p);
             }
         }
-        return list;
     }
 
-    private static List<(int Index, Paragraph Paragraph, Table Table, TableCell Cell)> GetTableCellParagraphEntries(Context ctx)
+    private static IEnumerable<(int Index, Paragraph Paragraph, Table Table, TableCell Cell)> GetTableCellParagraphEntries(Context ctx)
     {
-        var list = new List<(int Index, Paragraph Paragraph, Table Table, TableCell Cell)>();
         int cellIdx = 0;
         foreach (var p in ctx.Body.Descendants<Paragraph>()) {
             var cell = p.Ancestors<TableCell>().FirstOrDefault();
             if (cell != null) {
                 var table = cell.Ancestors<Table>().FirstOrDefault() ?? p.Ancestors<Table>().FirstOrDefault();
                 if (table != null) {
-                    list.Add((cellIdx++, p, table, cell));
+                    yield return (cellIdx++, p, table, cell);
                 }
             }
         }
-        return list;
     }
 
-    private static List<(int Index, Paragraph Paragraph)> GetTableCaptionEntries(Context ctx)
+    private static IEnumerable<(int Index, Paragraph Paragraph)> GetTableCaptionEntries(Context ctx)
     {
-        var list = new List<(int Index, Paragraph Paragraph)>();
         int capIdx = TableCaptionIndexBase;
         foreach (var p in ctx.AllParagraphs()) {
             if (IsTableCaption(p)) {
-                list.Add((capIdx++, p));
+                yield return (capIdx++, p);
             }
         }
-        return list;
     }
 
     private static bool IsFigureParagraph(Paragraph p) =>
@@ -244,22 +264,20 @@ public static class DocumentChecker
     private static bool IsFigureCaption(Paragraph p)
     {
         if (IsFigureParagraph(p)) return false;
-        string text = p.InnerText.Trim();
-        return text.StartsWith("Рисунок", StringComparison.OrdinalIgnoreCase) || text.StartsWith("Рис.", StringComparison.OrdinalIgnoreCase);
+        var text = (p.InnerText ?? "").AsSpan().Trim();
+        return text.StartsWith("Рисунок".AsSpan(), StringComparison.OrdinalIgnoreCase) || text.StartsWith("Рис.".AsSpan(), StringComparison.OrdinalIgnoreCase);
     }
 
-    private static List<(int Index, Paragraph Paragraph, bool IsFigure, bool IsCaption)> GetFigureEntries(Context ctx)
+    private static IEnumerable<(int Index, Paragraph Paragraph, bool IsFigure, bool IsCaption)> GetFigureEntries(Context ctx)
     {
-        var list = new List<(int Index, Paragraph Paragraph, bool IsFigure, bool IsCaption)>();
         int idx = 0;
         foreach (var p in ctx.AllParagraphs()) {
             bool isFig = IsFigureParagraph(p);
             bool isCap = IsFigureCaption(p);
             if (isFig || isCap) {
-                list.Add((idx++, p, isFig, isCap));
+                yield return (idx++, p, isFig, isCap);
             }
         }
-        return list;
     }
 
     private static bool IsCodeSnippetParagraph(Paragraph p, RuleSet? rules = null)
@@ -284,36 +302,32 @@ public static class DocumentChecker
         return isCodeStyle || isMonoFont;
     }
 
-    private static List<(int Index, Paragraph Paragraph)> GetCodeSnippetEntries(Context ctx, RuleSet rules)
+    private static IEnumerable<(int Index, Paragraph Paragraph)> GetCodeSnippetEntries(Context ctx, RuleSet rules)
     {
-        var list = new List<(int Index, Paragraph Paragraph)>();
         int idx = 0;
         foreach (var p in ctx.AllParagraphs()) {
             if (!ctx.HasText(p)) continue;
             if (IsCodeSnippetParagraph(p, rules)) {
-                list.Add((idx++, p));
+                yield return (idx++, p);
             }
         }
-        return list;
     }
 
-    private static List<(int Index, Paragraph Paragraph)> GetHeadingEntries(Context ctx)
+    private static IEnumerable<(int Index, Paragraph Paragraph)> GetHeadingEntries(Context ctx)
     {
-        var list = new List<(int Index, Paragraph Paragraph)>();
         int idx = 0;
         foreach (var p in ctx.AllParagraphs()) {
             if (!ctx.HasText(p)) continue;
             if (IsHeadingParagraph(p)) {
-                list.Add((idx++, p));
+                yield return (idx++, p);
             }
         }
-        return list;
     }
 
     // ----- Поля страницы -----
     private static void CheckMargins(Context ctx, RuleSet rules, List<CheckIssue> issues)
     {
-        var marginSections = GetMarginSections(ctx);
+        var marginSections = GetMarginSections(ctx).ToList();
         if (marginSections.Count == 0)
             return;
 
@@ -367,14 +381,14 @@ public static class DocumentChecker
     // ----- Шрифт (гарнитура) -----
     private static void CheckFontName(Context ctx, RuleSet rules, List<CheckIssue> issues)
     {
-        var bad = new Dictionary<string, int>(StringComparer.CurrentCultureIgnoreCase);
+        var bad = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var badParagraphs = new HashSet<Paragraph>();
-        var allEntries = GetAllParagraphEntries(ctx);
         var items = new List<IssueItem>();
         Paragraph? firstBad = null;
-        int allCount = allEntries.Count;
+        int allCount = 0;
 
-        foreach (var entry in allEntries) {
+        foreach (var entry in GetAllParagraphEntries(ctx)) {
+            allCount++;
             var p = entry.Paragraph;
             if (IsCodeSnippetParagraph(p, rules))
                 continue;
@@ -410,7 +424,7 @@ public static class DocumentChecker
         if (badParagraphs.Count == 0)
             return;
 
-        var worst = bad.OrderByDescending(kv => kv.Value).First().Key;
+        var worst = GetMaxKey(bad) ?? rules.FontName;
         issues.Add(new CheckIssue(IssueKind.FontName, IssueSeverity.Important,
             "Гарнитура шрифта",
             $"Затронуто абзацев: {badParagraphs.Count} из {allCount}",
@@ -423,20 +437,24 @@ public static class DocumentChecker
             Items: items.Count > 0 ? items : null));
     }
 
-    private static bool SameFont(string actual, string required)
-        => string.Equals(actual.Trim(), required.Trim(), StringComparison.CurrentCultureIgnoreCase);
+    private static bool SameFont(string? actual, string? required)
+    {
+        if (actual is null && required is null) return true;
+        if (actual is null || required is null) return false;
+        return actual.AsSpan().Trim().Equals(required.AsSpan().Trim(), StringComparison.OrdinalIgnoreCase);
+    }
 
     // ----- Размер шрифта -----
     private static void CheckFontSize(Context ctx, RuleSet rules, List<CheckIssue> issues)
     {
         var bad = new Dictionary<double, int>();
         var badParagraphs = new HashSet<Paragraph>();
-        var bodyEntries = GetBodyParagraphEntries(ctx);
         var items = new List<IssueItem>();
         Paragraph? firstBad = null;
-        int allCount = bodyEntries.Count;
+        int allCount = 0;
 
-        foreach (var entry in bodyEntries) {
+        foreach (var entry in GetBodyParagraphEntries(ctx)) {
+            allCount++;
             var p = entry.Paragraph;
             var styleId = entry.StyleId;
             bool pBad = false;
@@ -469,7 +487,7 @@ public static class DocumentChecker
         if (badParagraphs.Count == 0)
             return;
 
-        var worst = bad.OrderByDescending(kv => kv.Value).First().Key;
+        var worst = GetMaxKey(bad);
         issues.Add(new CheckIssue(IssueKind.FontSize, IssueSeverity.Important,
             "Размер шрифта",
             $"Затронуто абзацев: {badParagraphs.Count} из {allCount}",
@@ -485,21 +503,21 @@ public static class DocumentChecker
     // ----- Межстрочный интервал -----
     private static void CheckSpacing(Context ctx, RuleSet rules, List<CheckIssue> issues)
     {
-        var textBody = GetTextBodyParagraphEntries(ctx);
-        var badParagraphs = new List<Paragraph>();
         var badActuals = new Dictionary<string, int>();
         var items = new List<IssueItem>();
         int badCount = 0;
-        int total = textBody.Count;
+        int total = 0;
+        Paragraph? firstBad = null;
 
-        foreach (var entry in textBody) {
+        foreach (var entry in GetTextBodyParagraphEntries(ctx)) {
+            total++;
             var p = entry.Paragraph;
             var spacing = ctx.SpacingOf(p);
             if (SpacingOk(spacing, rules))
                 continue;
 
             badCount++;
-            badParagraphs.Add(p);
+            firstBad ??= p;
 
             string actualStr = spacing.IsAuto
                 ? $"{RuFormat.Number(spacing.Multiple)}"
@@ -514,8 +532,7 @@ public static class DocumentChecker
         if (badCount == 0)
             return;
 
-        var worstActual = badActuals.OrderByDescending(kv => kv.Value).First().Key;
-        var firstBad = badParagraphs.FirstOrDefault();
+        var worstActual = GetMaxKey(badActuals) ?? "";
         issues.Add(new CheckIssue(IssueKind.LineSpacing, IssueSeverity.Warning,
             "Межстрочный интервал",
             $"Затронуто абзацев: {badCount} из {total}",
@@ -566,9 +583,15 @@ public static class DocumentChecker
             .ToList();
 
         foreach (var section in rules.RequiredSections) {
-            var rx = new Regex(section.Pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-            if (titles.Any(title => rx.IsMatch(title)))
-                continue;
+            var rx = GetSectionRegex(section.Pattern);
+            bool found = false;
+            for (int i = 0; i < titles.Count; i++) {
+                if (rx.IsMatch(titles[i])) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found) continue;
 
             issues.Add(new CheckIssue(IssueKind.MissingSection, IssueSeverity.Important,
                 $"Не найден раздел «{section.Title}»", "Конец документа", CanFix: false,
@@ -577,7 +600,7 @@ public static class DocumentChecker
     }
 
     private static string NormalizeTitle(string text)
-        => Regex.Replace(text.Replace('ё', 'е').Replace('Ё', 'Е'), @"\s+", " ").Trim();
+        => WhitespaceRegex.Replace(text.Replace('ё', 'е').Replace('Ё', 'Е'), " ").Trim();
 
     // ----- Выравнивание -----
     private static void CheckAlignment(Context ctx, RuleSet rules, List<CheckIssue> issues)
@@ -585,17 +608,19 @@ public static class DocumentChecker
         if (string.IsNullOrWhiteSpace(rules.Alignment) || !rules.Alignment.Contains("Justify", StringComparison.OrdinalIgnoreCase)) 
             return;
 
-        var textBody = GetTextBodyParagraphEntries(ctx);
         var badParagraphs = new HashSet<Paragraph>();
         var badAlignments = new Dictionary<string, int>();
         var items = new List<IssueItem>();
-        int total = textBody.Count;
+        int total = 0;
+        Paragraph? firstBad = null;
 
-        foreach (var entry in textBody) {
+        foreach (var entry in GetTextBodyParagraphEntries(ctx)) {
+            total++;
             var p = entry.Paragraph;
             var jc = p.ParagraphProperties?.Justification?.Val?.Value;
             if (jc != JustificationValues.Both) {
                 badParagraphs.Add(p);
+                firstBad ??= p;
                 string alignStr = (jc == JustificationValues.Center) ? "По центру"
                     : (jc == JustificationValues.Right) ? "По правому краю"
                     : "По левому краю";
@@ -608,8 +633,7 @@ public static class DocumentChecker
         }
 
         if (badParagraphs.Count == 0) return;
-        var worstAlign = badAlignments.OrderByDescending(kv => kv.Value).First().Key;
-        var firstBad = badParagraphs.FirstOrDefault();
+        var worstAlign = GetMaxKey(badAlignments) ?? "По левому краю";
         issues.Add(new CheckIssue(IssueKind.Alignment, IssueSeverity.Important,
             "Выравнивание текста",
             $"Затронуто абзацев: {badParagraphs.Count} из {total}",
@@ -625,15 +649,16 @@ public static class DocumentChecker
     // ----- Абзацный отступ (Красная строка) -----
     private static void CheckIndent(Context ctx, RuleSet rules, List<CheckIssue> issues)
     {
-        var textBody = GetTextBodyParagraphEntries(ctx);
         var badParagraphs = new HashSet<Paragraph>();
         var badIndents = new Dictionary<double, int>();
         var items = new List<IssueItem>();
         double targetTwips = rules.FirstLineIndentCm * TwipsPerCm;
         double toleranceTwips = 0.1 * TwipsPerCm; // Допуск 1 мм
-        int total = textBody.Count;
+        int total = 0;
+        Paragraph? firstBad = null;
 
-        foreach (var entry in textBody) {
+        foreach (var entry in GetTextBodyParagraphEntries(ctx)) {
+            total++;
             var p = entry.Paragraph;
             double actualTwips = 0;
             var ind = p.ParagraphProperties?.Indentation;
@@ -643,6 +668,7 @@ public static class DocumentChecker
 
             if (Math.Abs(actualTwips - targetTwips) > toleranceTwips) {
                 badParagraphs.Add(p);
+                firstBad ??= p;
                 double actualCm = Math.Round(actualTwips / TwipsPerCm, 2);
                 badIndents[actualCm] = badIndents.GetValueOrDefault(actualCm) + 1;
                 string actualStr = actualCm <= 0.05 ? "0 см (нет отступа)" : $"{RuFormat.Number(actualCm)} см";
@@ -654,9 +680,8 @@ public static class DocumentChecker
         }
 
         if (badParagraphs.Count == 0) return;
-        var worstIndentCm = badIndents.OrderByDescending(kv => kv.Value).First().Key;
+        var worstIndentCm = GetMaxKey(badIndents);
         string actualIndentStr = worstIndentCm == 0 ? "0 см (нет отступа)" : $"{RuFormat.Number(worstIndentCm)} см";
-        var firstBad = badParagraphs.FirstOrDefault();
 
         issues.Add(new CheckIssue(IssueKind.FirstLineIndent, IssueSeverity.Important,
             "Абзацный отступ",
@@ -673,17 +698,19 @@ public static class DocumentChecker
     // ----- Интервалы До и После абзаца -----
     private static void CheckSpacingBeforeAfter(Context ctx, RuleSet rules, List<CheckIssue> issues)
     {
-        var textBody = GetTextBodyParagraphEntries(ctx);
         var bad = new HashSet<Paragraph>();
         var badSpacings = new Dictionary<string, int>();
         var items = new List<IssueItem>();
-        int total = textBody.Count;
+        int total = 0;
+        Paragraph? firstBad = null;
 
-        foreach (var entry in textBody) {
+        foreach (var entry in GetTextBodyParagraphEntries(ctx)) {
+            total++;
             var p = entry.Paragraph;
             var spacing = p.ParagraphProperties?.SpacingBetweenLines;
             if (spacing != null && ((spacing.Before != null && spacing.Before.Value != "0") || (spacing.After != null && spacing.After.Value != "0"))) {
                 bad.Add(p);
+                firstBad ??= p;
                 double beforePt = (spacing.Before?.Value != null && double.TryParse(spacing.Before.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var bVal)) ? bVal / 20.0 : 0;
                 double afterPt = (spacing.After?.Value != null && double.TryParse(spacing.After.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var aVal)) ? aVal / 20.0 : 0;
                 string spStr = (beforePt > 0 && afterPt > 0)
@@ -697,8 +724,7 @@ public static class DocumentChecker
             }
         }
         if (bad.Count > 0) {
-            var worstSp = badSpacings.OrderByDescending(kv => kv.Value).FirstOrDefault().Key ?? "Лишние отступы";
-            var firstBad = bad.FirstOrDefault();
+            var worstSp = GetMaxKey(badSpacings) ?? "Лишние отступы";
             issues.Add(new CheckIssue(IssueKind.SpacingBeforeAfter, IssueSeverity.Warning, 
                 "Отступы до/после абзаца",
                 $"Затронуто абзацев: {bad.Count} из {total}",
@@ -715,22 +741,23 @@ public static class DocumentChecker
     // ----- Запрет висячих строк -----
     private static void CheckWidowControl(Context ctx, RuleSet rules, List<CheckIssue> issues)
     {
-        var textBody = GetTextBodyParagraphEntries(ctx);
         var bad = new HashSet<Paragraph>();
         var items = new List<IssueItem>();
-        int total = textBody.Count;
+        int total = 0;
+        Paragraph? firstBad = null;
 
-        foreach (var entry in textBody) {
+        foreach (var entry in GetTextBodyParagraphEntries(ctx)) {
+            total++;
             var p = entry.Paragraph;
             if (p.ParagraphProperties?.WidowControl?.Val?.Value == false) {
                 bad.Add(p);
+                firstBad ??= p;
                 if (items.Count < 200) {
                     items.Add(new IssueItem(entry.Index, FormatItemText(p.InnerText), "Отключен", "Включен"));
                 }
             }
         }
         if (bad.Count > 0) {
-            var firstBad = bad.FirstOrDefault();
             issues.Add(new CheckIssue(IssueKind.WidowControl, IssueSeverity.Warning, 
                 "Запрет висячих строк",
                 $"Затронуто абзацев: {bad.Count} из {total}",
@@ -748,17 +775,15 @@ public static class DocumentChecker
     private static void CheckTableFormatting(Context ctx, RuleSet rules, List<CheckIssue> issues)
     {
         if (!rules.CheckTables) return;
-        var cellEntries = GetTableCellParagraphEntries(ctx);
-        var capEntries = GetTableCaptionEntries(ctx);
 
         int badCells = 0;
         int badCaptions = 0;
         var badCellFonts = new Dictionary<string, int>();
-        var badTableParagraphs = new List<Paragraph>();
+        Paragraph? firstBad = null;
         var items = new List<IssueItem>();
         string tableLineSpacingStr = Math.Round(rules.TableLineSpacing * 240).ToString(CultureInfo.InvariantCulture);
 
-        foreach (var entry in cellEntries) {
+        foreach (var entry in GetTableCellParagraphEntries(ctx)) {
             var p = entry.Paragraph;
             if (!ctx.HasText(p)) continue;
             
@@ -771,7 +796,7 @@ public static class DocumentChecker
                 curSize = ctx.SizeOf(run, styleId);
                 curFont = ctx.FontOf(run, styleId);
                 if (Math.Abs(curSize.Value - rules.TableFontSizePt) > 0.01) needsFix = true;
-                if (!string.IsNullOrEmpty(rules.TableFontFamily) && !curFont.Contains(rules.TableFontFamily)) needsFix = true;
+                if (!string.IsNullOrEmpty(rules.TableFontFamily) && !curFont.Contains(rules.TableFontFamily, StringComparison.OrdinalIgnoreCase)) needsFix = true;
                 if (needsFix) {
                     string key = $"{curFont}, {curSize:0.#} pt";
                     badCellFonts[key] = badCellFonts.GetValueOrDefault(key) + 1;
@@ -786,7 +811,7 @@ public static class DocumentChecker
             
             if (needsFix) {
                 badCells++;
-                badTableParagraphs.Add(p);
+                firstBad ??= p;
                 if (items.Count < 200) {
                     string cellActual = (curFont != null && curSize != null) ? $"{curFont}, {curSize:0.#} pt" : "Не по ГОСТ";
                     items.Add(new IssueItem(entry.Index, FormatItemText(p.InnerText), cellActual, $"{rules.TableFontFamily}, {rules.TableFontSizePt:0.#} pt"));
@@ -797,13 +822,9 @@ public static class DocumentChecker
         string capLineSpacingStr = Math.Round(rules.TableCaptionLineSpacing * 240).ToString(CultureInfo.InvariantCulture);
         string capBeforeStr = Math.Round(rules.TableCaptionSpacingBeforePt * 20).ToString(CultureInfo.InvariantCulture);
         string capAfterStr = Math.Round(rules.TableCaptionSpacingAfterPt * 20).ToString(CultureInfo.InvariantCulture);
-        var expectedJc = rules.TableCaptionAlignment.ToLowerInvariant() switch {
-            "center" => JustificationValues.Center,
-            "right" => JustificationValues.Right,
-            _ => JustificationValues.Left
-        };
+        var expectedJc = ParseJustification(rules.TableCaptionAlignment, JustificationValues.Left);
 
-        foreach (var entry in capEntries) {
+        foreach (var entry in GetTableCaptionEntries(ctx)) {
             var p = entry.Paragraph;
             bool needsFix = false;
             var jc = p.ParagraphProperties?.Justification?.Val?.Value;
@@ -819,7 +840,7 @@ public static class DocumentChecker
 
             if (needsFix) {
                 badCaptions++;
-                badTableParagraphs.Add(p);
+                firstBad ??= p;
                 if (items.Count < 200) {
                     string alignName = (jc == JustificationValues.Center) ? "По центру" : (jc == JustificationValues.Right ? "По правому краю" : "По левому краю");
                     items.Add(new IssueItem(entry.Index, FormatItemText(p.InnerText), $"Выравнивание: {alignName}", rules.TableCaptionAlignment));
@@ -829,9 +850,8 @@ public static class DocumentChecker
 
         if (badCells > 0 || badCaptions > 0) {
             string actual = badCellFonts.Count > 0 
-                ? badCellFonts.OrderByDescending(kv => kv.Value).First().Key 
+                ? GetMaxKey(badCellFonts) ?? "Не по ГОСТ"
                 : "Не по ГОСТ";
-            var firstBad = badTableParagraphs.FirstOrDefault();
             string whereDesc = (badCaptions > 0 && badCells > 0)
                 ? $"Затронуто элементов: {badCells + badCaptions}"
                 : (badCaptions > 0 ? $"Затронуто подписей: {badCaptions}" : $"Затронуто ячеек: {badCells}");
@@ -851,10 +871,9 @@ public static class DocumentChecker
     // ----- Форматирование рисунков и подписей (Динамическое) -----
     private static void CheckFigureFormatting(Context ctx, RuleSet rules, List<CheckIssue> issues)
     {
-        var entries = GetFigureEntries(ctx);
         var bad = new HashSet<Paragraph>();
         var items = new List<IssueItem>();
-        int total = entries.Count;
+        int total = 0;
         
         string figSpacingBeforeStr = Math.Round(rules.FigureSpacingBeforePt * 20).ToString(CultureInfo.InvariantCulture);
         string figSpacingAfterStr = Math.Round(rules.FigureSpacingAfterPt * 20).ToString(CultureInfo.InvariantCulture);
@@ -864,7 +883,8 @@ public static class DocumentChecker
 
         string? worstFigAlign = null;
 
-        foreach (var entry in entries) {
+        foreach (var entry in GetFigureEntries(ctx)) {
+            total++;
             var p = entry.Paragraph;
             bool needsFix = false;
 
@@ -927,14 +947,14 @@ public static class DocumentChecker
     // ----- Листинги кода (Динамическое) -----
     private static void CheckCodeSnippets(Context ctx, RuleSet rules, List<CheckIssue> issues)
     {
-        var entries = GetCodeSnippetEntries(ctx, rules);
         var bad = new HashSet<Paragraph>();
         var items = new List<IssueItem>();
-        int total = entries.Count;
+        int total = 0;
         string codeLineSpacingStr = Math.Round(rules.CodeLineSpacing * 240).ToString(CultureInfo.InvariantCulture);
         var badFonts = new Dictionary<string, int>();
 
-        foreach (var entry in entries) {
+        foreach (var entry in GetCodeSnippetEntries(ctx, rules)) {
+            total++;
             var p = entry.Paragraph;
             string? styleId = ctx.ParagraphStyleId(p);
             var run = p.Descendants<Run>().FirstOrDefault(r => r.Elements<Text>().Any(t => !string.IsNullOrWhiteSpace(t.Text)));
@@ -946,7 +966,7 @@ public static class DocumentChecker
                 curSize = ctx.SizeOf(run, styleId);
                 curFont = ctx.FontOf(run, styleId);
                 if (Math.Abs(curSize.Value - rules.CodeFontSizePt) > 0.01) needsFix = true;
-                if (curFont != rules.CodeFontFamily && !curFont.Contains(rules.CodeFontFamily)) needsFix = true;
+                if (curFont != null && !curFont.Equals(rules.CodeFontFamily, StringComparison.OrdinalIgnoreCase) && !curFont.Contains(rules.CodeFontFamily, StringComparison.OrdinalIgnoreCase)) needsFix = true;
                 if (needsFix) {
                     string key = $"{curFont}, {curSize:0.#} pt";
                     badFonts[key] = badFonts.GetValueOrDefault(key) + 1;
@@ -969,7 +989,7 @@ public static class DocumentChecker
         }
 
         if (bad.Count > 0) {
-            string actual = badFonts.Count > 0 ? badFonts.OrderByDescending(kv => kv.Value).First().Key : "Обычный шрифт";
+            string actual = badFonts.Count > 0 ? GetMaxKey(badFonts) ?? "Обычный шрифт" : "Обычный шрифт";
             var firstBad = bad.FirstOrDefault();
             issues.Add(new CheckIssue(IssueKind.CodeSnippetFormatting, IssueSeverity.Important,
                 "Листинг кода",
@@ -987,22 +1007,18 @@ public static class DocumentChecker
     // ----- Заголовки (Динамическое) -----
     private static void CheckHeadings(Context ctx, RuleSet rules, List<CheckIssue> issues)
     {
-        var entries = GetHeadingEntries(ctx);
         var bad = new HashSet<Paragraph>();
         var items = new List<IssueItem>();
-        int total = entries.Count;
+        int total = 0;
         var badHeadings = new Dictionary<string, int>();
 
         string headLineSpacingStr = Math.Round(rules.HeadingLineSpacing * 240).ToString(CultureInfo.InvariantCulture);
         string headBeforeStr = Math.Round(rules.HeadingSpacingBeforePt * 20).ToString(CultureInfo.InvariantCulture);
         string headAfterStr = Math.Round(rules.HeadingSpacingAfterPt * 20).ToString(CultureInfo.InvariantCulture);
-        var expectedJc = rules.HeadingAlignment.ToLowerInvariant() switch {
-            "center" => JustificationValues.Center,
-            "right" => JustificationValues.Right,
-            _ => JustificationValues.Left
-        };
+        var expectedJc = ParseJustification(rules.HeadingAlignment, JustificationValues.Left);
 
-        foreach (var entry in entries) {
+        foreach (var entry in GetHeadingEntries(ctx)) {
+            total++;
             var p = entry.Paragraph;
             string? styleId = ctx.ParagraphStyleId(p);
             bool needsFix = false;
@@ -1020,7 +1036,7 @@ public static class DocumentChecker
                     bool isBold = run?.RunProperties?.Bold != null && (run.RunProperties.Bold.Val == null || run.RunProperties.Bold.Val.Value);
                     if (!isBold) needsFix = true;
                 }
-                if (!string.IsNullOrEmpty(rules.HeadingFontFamily) && !curFont.Contains(rules.HeadingFontFamily)) needsFix = true;
+                if (!string.IsNullOrEmpty(rules.HeadingFontFamily) && !curFont.Contains(rules.HeadingFontFamily, StringComparison.OrdinalIgnoreCase)) needsFix = true;
                 if (rules.HeadingFontSizePt > 0 && Math.Abs(curSize.Value - rules.HeadingFontSizePt) > 0.01) needsFix = true;
                 if (needsFix) {
                     string key = $"{curFont}, {curSize:0.#} pt";
@@ -1036,8 +1052,7 @@ public static class DocumentChecker
             if (rules.HeadingSpacingBeforePt > 0 && spacing?.Before?.Value != headBeforeStr) needsFix = true;
             if (rules.HeadingSpacingAfterPt > 0 && spacing?.After?.Value != headAfterStr) needsFix = true;
 
-            string text = p.InnerText.TrimEnd();
-            if (rules.HeadingRemoveTrailingDot && text.EndsWith(".")) needsFix = true;
+            if (rules.HeadingRemoveTrailingDot && p.InnerText.AsSpan().TrimEnd().EndsWith('.')) needsFix = true;
 
             if (needsFix) {
                 bad.Add(p);
@@ -1049,7 +1064,7 @@ public static class DocumentChecker
         }
 
         if (bad.Count > 0) {
-            string actual = badHeadings.Count > 0 ? badHeadings.OrderByDescending(kv => kv.Value).First().Key : "Не по стандарту";
+            string actual = badHeadings.Count > 0 ? GetMaxKey(badHeadings) ?? "Не по стандарту" : "Не по стандарту";
             var firstBad = bad.FirstOrDefault();
             issues.Add(new CheckIssue(IssueKind.HeadingFormatting, IssueSeverity.Important,
                 "Заголовки разделов",
@@ -1224,7 +1239,7 @@ public static class DocumentChecker
                 continue;
 
             bool modified = false;
-            foreach (var run in ctx.TextRuns(entry.Paragraph).ToList()) {
+            foreach (var run in ctx.TextRuns(entry.Paragraph)) {
                 if (SameFont(ctx.FontOf(run, entry.StyleId), rules.FontName))
                     continue;
 
@@ -1256,7 +1271,7 @@ public static class DocumentChecker
                 continue;
 
             bool modified = false;
-            foreach (var run in ctx.TextRuns(entry.Paragraph).ToList()) {
+            foreach (var run in ctx.TextRuns(entry.Paragraph)) {
                 if (Math.Abs(ctx.SizeOf(run, entry.StyleId) - rules.FontSizePt) < 0.01)
                     continue;
 
@@ -1415,7 +1430,7 @@ public static class DocumentChecker
                 var curSize = ctx.SizeOf(run, styleId);
                 var curFont = ctx.FontOf(run, styleId);
                 if (Math.Abs(curSize - rules.TableFontSizePt) > 0.01) violates = true;
-                if (!string.IsNullOrEmpty(rules.TableFontFamily) && !curFont.Contains(rules.TableFontFamily)) violates = true;
+                if (!string.IsNullOrEmpty(rules.TableFontFamily) && !curFont.Contains(rules.TableFontFamily, StringComparison.OrdinalIgnoreCase)) violates = true;
             }
 
             var spacing = p.ParagraphProperties?.SpacingBetweenLines;
@@ -1452,11 +1467,7 @@ public static class DocumentChecker
         string capLineSpacingStr = Math.Round(rules.TableCaptionLineSpacing * 240).ToString(CultureInfo.InvariantCulture);
         string capBeforeStr = Math.Round(rules.TableCaptionSpacingBeforePt * 20).ToString(CultureInfo.InvariantCulture);
         string capAfterStr = Math.Round(rules.TableCaptionSpacingAfterPt * 20).ToString(CultureInfo.InvariantCulture);
-        var expectedJc = rules.TableCaptionAlignment.ToLowerInvariant() switch {
-            "center" => JustificationValues.Center,
-            "right" => JustificationValues.Right,
-            _ => JustificationValues.Left
-        };
+        var expectedJc = ParseJustification(rules.TableCaptionAlignment, JustificationValues.Left);
 
         foreach (var entry in GetTableCaptionEntries(ctx)) {
             if (!indices.Contains(entry.Index)) continue;
@@ -1508,16 +1519,8 @@ public static class DocumentChecker
         string capSpacingAfterStr = Math.Round(rules.CaptionSpacingAfterPt * 20).ToString(CultureInfo.InvariantCulture);
         string capLineSpacingStr = Math.Round(rules.CaptionLineSpacing * 240).ToString(CultureInfo.InvariantCulture);
 
-        var figJc = rules.FigureAlignment.ToLowerInvariant() switch {
-            "left" => JustificationValues.Left,
-            "right" => JustificationValues.Right,
-            _ => JustificationValues.Center
-        };
-        var capJc = rules.CaptionAlignment.ToLowerInvariant() switch {
-            "center" => JustificationValues.Center,
-            "right" => JustificationValues.Right,
-            _ => JustificationValues.Left
-        };
+        var figJc = ParseJustification(rules.FigureAlignment, JustificationValues.Center);
+        var capJc = ParseJustification(rules.CaptionAlignment, JustificationValues.Left);
 
         foreach (var entry in GetFigureEntries(ctx)) {
             if (!indices.Contains(entry.Index)) continue;
@@ -1598,7 +1601,7 @@ public static class DocumentChecker
                 var curSize = ctx.SizeOf(run, styleId);
                 var curFont = ctx.FontOf(run, styleId);
                 if (Math.Abs(curSize - rules.CodeFontSizePt) > 0.01) violates = true;
-                if (curFont != rules.CodeFontFamily && !curFont.Contains(rules.CodeFontFamily)) violates = true;
+                if (curFont != null && !curFont.Equals(rules.CodeFontFamily, StringComparison.OrdinalIgnoreCase) && !curFont.Contains(rules.CodeFontFamily, StringComparison.OrdinalIgnoreCase)) violates = true;
             }
 
             var indent = p.ParagraphProperties?.Indentation?.FirstLine?.Value;
@@ -1640,11 +1643,7 @@ public static class DocumentChecker
         string headAfterStr = Math.Round(rules.HeadingSpacingAfterPt * 20).ToString(CultureInfo.InvariantCulture);
         string headFontSizeHalfPt = Math.Round(rules.HeadingFontSizePt * 2).ToString(CultureInfo.InvariantCulture);
 
-        var expectedJc = rules.HeadingAlignment.ToLowerInvariant() switch {
-            "center" => JustificationValues.Center,
-            "right" => JustificationValues.Right,
-            _ => JustificationValues.Left
-        };
+        var expectedJc = ParseJustification(rules.HeadingAlignment, JustificationValues.Left);
 
         foreach (var entry in GetHeadingEntries(ctx)) {
             if (!indices.Contains(entry.Index)) continue;
@@ -1666,7 +1665,7 @@ public static class DocumentChecker
                     bool isBold = run?.RunProperties?.Bold != null && (run.RunProperties.Bold.Val == null || run.RunProperties.Bold.Val.Value);
                     if (!isBold) violates = true;
                 }
-                if (!string.IsNullOrEmpty(rules.HeadingFontFamily) && !curFont.Contains(rules.HeadingFontFamily)) violates = true;
+                if (!string.IsNullOrEmpty(rules.HeadingFontFamily) && !curFont.Contains(rules.HeadingFontFamily, StringComparison.OrdinalIgnoreCase)) violates = true;
                 if (rules.HeadingFontSizePt > 0 && Math.Abs(curSize - rules.HeadingFontSizePt) > 0.01) violates = true;
             }
 
@@ -1679,7 +1678,7 @@ public static class DocumentChecker
             if (rules.HeadingSpacingAfterPt > 0 && spacing?.After?.Value != headAfterStr) violates = true;
 
             string text = p.InnerText.TrimEnd();
-            if (rules.HeadingRemoveTrailingDot && text.EndsWith(".")) violates = true;
+            if (rules.HeadingRemoveTrailingDot && text.AsSpan().TrimEnd().EndsWith('.')) violates = true;
 
             if (!violates) continue;
 
@@ -1717,7 +1716,7 @@ public static class DocumentChecker
             if (rules.HeadingRemoveTrailingDot) {
                 var lastRun = p.Descendants<Run>().LastOrDefault(r => r.Elements<Text>().Any());
                 var lastText = lastRun?.Elements<Text>().LastOrDefault();
-                if (lastText != null && lastText.Text.EndsWith(".")) {
+                if (lastText != null && lastText.Text.EndsWith('.')) {
                     lastText.Text = lastText.Text.TrimEnd('.');
                 }
             }
@@ -1759,7 +1758,7 @@ public static class DocumentChecker
 
             var styleId = entry.StyleId;
             bool modified = false;
-            foreach (var run in ctx.TextRuns(p).ToList()) {
+            foreach (var run in ctx.TextRuns(p)) {
                 if (SameFont(ctx.FontOf(run, styleId), rules.FontName))
                     continue;
 
@@ -1788,7 +1787,7 @@ public static class DocumentChecker
             var p = entry.Paragraph;
             var styleId = entry.StyleId;
             bool modified = false;
-            foreach (var run in ctx.TextRuns(p).ToList()) {
+            foreach (var run in ctx.TextRuns(p)) {
                 if (Math.Abs(ctx.SizeOf(run, styleId) - rules.FontSizePt) < 0.01)
                     continue;
 
@@ -1918,7 +1917,7 @@ public static class DocumentChecker
                 var curSize = ctx.SizeOf(run, styleId);
                 var curFont = ctx.FontOf(run, styleId);
                 if (Math.Abs(curSize - rules.TableFontSizePt) > 0.01) violates = true;
-                if (!string.IsNullOrEmpty(rules.TableFontFamily) && !curFont.Contains(rules.TableFontFamily)) violates = true;
+                if (!string.IsNullOrEmpty(rules.TableFontFamily) && !curFont.Contains(rules.TableFontFamily, StringComparison.OrdinalIgnoreCase)) violates = true;
             }
 
             var spacing = p.ParagraphProperties?.SpacingBetweenLines;
@@ -1956,11 +1955,7 @@ public static class DocumentChecker
         string capLineSpacingStr = Math.Round(rules.TableCaptionLineSpacing * 240).ToString(CultureInfo.InvariantCulture);
         string capBeforeStr = Math.Round(rules.TableCaptionSpacingBeforePt * 20).ToString(CultureInfo.InvariantCulture);
         string capAfterStr = Math.Round(rules.TableCaptionSpacingAfterPt * 20).ToString(CultureInfo.InvariantCulture);
-        var expectedJc = rules.TableCaptionAlignment.ToLowerInvariant() switch {
-            "center" => JustificationValues.Center,
-            "right" => JustificationValues.Right,
-            _ => JustificationValues.Left
-        };
+        var expectedJc = ParseJustification(rules.TableCaptionAlignment, JustificationValues.Left);
 
         foreach (var entry in GetTableCaptionEntries(ctx)) {
             var p = entry.Paragraph;
@@ -2075,7 +2070,7 @@ public static class DocumentChecker
             if (firstRun != null) {
                 var curFont = ctx.FontOf(firstRun, styleId);
                 var curSize = ctx.SizeOf(firstRun, styleId);
-                if (!string.IsNullOrEmpty(rules.CodeFontFamily) && !curFont.Contains(rules.CodeFontFamily)) violates = true;
+                if (!string.IsNullOrEmpty(rules.CodeFontFamily) && !curFont.Contains(rules.CodeFontFamily, StringComparison.OrdinalIgnoreCase)) violates = true;
                 if (Math.Abs(curSize - rules.CodeFontSizePt) > 0.01) violates = true;
             }
 
@@ -2112,11 +2107,7 @@ public static class DocumentChecker
         string headAfterStr = Math.Round(rules.HeadingSpacingAfterPt * 20).ToString(CultureInfo.InvariantCulture);
         string headFontSizeHalfPt = Math.Round(rules.HeadingFontSizePt * 2).ToString(CultureInfo.InvariantCulture);
 
-        var expectedJc = rules.HeadingAlignment.ToLowerInvariant() switch {
-            "center" => JustificationValues.Center,
-            "right" => JustificationValues.Right,
-            _ => JustificationValues.Left
-        };
+        var expectedJc = ParseJustification(rules.HeadingAlignment, JustificationValues.Left);
 
         foreach (var entry in GetHeadingEntries(ctx)) {
             var p = entry.Paragraph;
@@ -2140,12 +2131,12 @@ public static class DocumentChecker
                     if (!isBold) violates = true;
                 }
                 var curFont = ctx.FontOf(firstRun, styleId);
-                if (!string.IsNullOrEmpty(rules.HeadingFontFamily) && !curFont.Contains(rules.HeadingFontFamily)) violates = true;
+                if (!string.IsNullOrEmpty(rules.HeadingFontFamily) && !curFont.Contains(rules.HeadingFontFamily, StringComparison.OrdinalIgnoreCase)) violates = true;
                 var curSize = ctx.SizeOf(firstRun, styleId);
                 if (rules.HeadingFontSizePt > 0 && Math.Abs(curSize - rules.HeadingFontSizePt) > 0.01) violates = true;
             }
 
-            if (rules.HeadingRemoveTrailingDot && p.InnerText.TrimEnd().EndsWith('.')) violates = true;
+            if (rules.HeadingRemoveTrailingDot && p.InnerText.AsSpan().TrimEnd().EndsWith('.')) violates = true;
 
             if (!violates) continue;
 
@@ -2181,16 +2172,10 @@ public static class DocumentChecker
             }
 
             if (rules.HeadingRemoveTrailingDot) {
-                var texts = p.Descendants<Text>().ToList();
-                for (int i = texts.Count - 1; i >= 0; i--) {
-                    var t = texts[i];
-                    if (string.IsNullOrWhiteSpace(t.Text)) continue;
-                    
-                    if (t.Text.TrimEnd().EndsWith(".")) {
-                        int dotIndex = t.Text.LastIndexOf('.');
-                        t.Text = t.Text.Remove(dotIndex, 1);
-                        break;
-                    }
+                var lastText = p.Descendants<Text>().LastOrDefault(t => !string.IsNullOrWhiteSpace(t.Text));
+                if (lastText != null && lastText.Text.AsSpan().TrimEnd().EndsWith('.')) {
+                    int dotIndex = lastText.Text.LastIndexOf('.');
+                    lastText.Text = lastText.Text.Remove(dotIndex, 1);
                 }
             }
             count++;
@@ -2255,8 +2240,7 @@ public static class DocumentChecker
             // Пустые абзацы колонтитула заменяем номером, чтобы не добавлять лишнюю строку
             var footer = part.Footer;
             if (footer.Elements<Paragraph>().All(p => string.IsNullOrWhiteSpace(p.InnerText)))
-                foreach (var empty in footer.Elements<Paragraph>().ToList())
-                    empty.Remove();
+                footer.RemoveAllChildren<Paragraph>();
 
             footer.AppendChild(BuildPageNumberParagraph(rules));
             footer.Save();
@@ -2328,12 +2312,35 @@ public static class DocumentChecker
     // Читаем с FileShare.ReadWrite: файл может быть открыт в Word
     private static MemoryStream CopyToMemory(string file)
     {
-        var ms = new MemoryStream();
-        using (var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+        using var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        if (fs.Length == 0)
+        {
+            throw new InvalidDataException("Файл пуст (размер 0 байт).");
+        }
+
+        var ms = new MemoryStream((int)Math.Min(fs.Length, int.MaxValue));
+        try {
             fs.CopyTo(ms);
-        ms.Position = 0;
-        ValidateZipArchive(ms);
-        return ms;
+            ms.Position = 0;
+
+            // Проверка на зашифрованный паролем документ Word (OLE CFB заголовок: D0 CF 11 E0)
+            if (ms.Length >= 8)
+            {
+                byte[] header = new byte[4];
+                int read = ms.Read(header, 0, 4);
+                ms.Position = 0;
+                if (read == 4 && header[0] == 0xD0 && header[1] == 0xCF && header[2] == 0x11 && header[3] == 0xE0)
+                {
+                    throw new InvalidOperationException("Документ защищён паролем или сохранён в старом формате .doc. Снимите защиту паролем в Microsoft Word перед проверкой.");
+                }
+            }
+
+            ValidateZipArchive(ms);
+            return ms;
+        } catch {
+            ms.Dispose();
+            throw;
+        }
     }
 
     // =====================================================================
@@ -2397,14 +2404,33 @@ public static class DocumentChecker
 
         public int CountTextParagraphs() => AllParagraphs().Count(HasText);
 
-        public bool HasText(Paragraph p) => TextRuns(p).Any();
+        public bool HasText(Paragraph p)
+        {
+            foreach (var r in p.Descendants<Run>()) {
+                if (ReferenceEquals(r.Ancestors<Paragraph>().FirstOrDefault(), p)) {
+                    foreach (var t in r.Elements<Text>()) {
+                        if (!string.IsNullOrWhiteSpace(t.Text))
+                            return true;
+                    }
+                }
+            }
+            return false;
+        }
 
         /// <summary>Run именно этого абзаца (без вложенных надписей) с непустым текстом.</summary>
         public IEnumerable<Run> TextRuns(Paragraph p)
-            => p.Descendants<Run>().Where(r => ReferenceEquals(r.Ancestors<Paragraph>().First(), p)
+            => p.Descendants<Run>().Where(r => ReferenceEquals(r.Ancestors<Paragraph>().FirstOrDefault(), p)
                                                && r.Elements<Text>().Any(t => !string.IsNullOrWhiteSpace(t.Text)));
 
-        public int CharCount(Run run) => run.Elements<Text>().Sum(t => (t.Text ?? "").Length);
+        public int CharCount(Run run)
+        {
+            int sum = 0;
+            foreach (var t in run.Elements<Text>()) {
+                if (t.Text is { Length: > 0 } str)
+                    sum += str.Length;
+            }
+            return sum;
+        }
 
         public string? ParagraphStyleId(Paragraph p)
             => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value ?? _defaultParagraphStyle;
@@ -2415,11 +2441,14 @@ public static class DocumentChecker
                 return true;
 
             foreach (var style in Chain(ParagraphStyleId(p))) {
-                var id = style.StyleId?.Value ?? "";
-                var name = style.StyleName?.Val?.Value ?? "";
-                if (StructuralStyleWords.Any(w => id.Contains(w, StringComparison.OrdinalIgnoreCase)
-                                               || name.Contains(w, StringComparison.OrdinalIgnoreCase)))
-                    return true;
+                var id = style.StyleId?.Value;
+                var name = style.StyleName?.Val?.Value;
+                for (int i = 0; i < StructuralStyleWords.Length; i++) {
+                    var w = StructuralStyleWords[i];
+                    if ((id != null && id.Contains(w, StringComparison.OrdinalIgnoreCase))
+                        || (name != null && name.Contains(w, StringComparison.OrdinalIgnoreCase)))
+                        return true;
+                }
             }
 
             return false;
@@ -2493,15 +2522,26 @@ public static class DocumentChecker
 
         // ----- Помощники -----
 
-        // Стиль и его предки (basedOn); от повторов в цепочке защищаемся
+        // Стиль и его предки (basedOn); от повторов в цепочке защищаемся без аллокации HashSet
         private IEnumerable<Style> Chain(string? styleId)
         {
-            var seen = new HashSet<string>();
-            var id = styleId;
+            if (styleId is null) yield break;
 
-            while (id is not null && seen.Add(id) && _styles.TryGetValue(id, out var style)) {
+            string? id = styleId;
+            int depth = 0;
+            string? id0 = null, id1 = null, id2 = null, id3 = null;
+
+            while (id is not null && depth < 16 && _styles.TryGetValue(id, out var style)) {
+                if (id == id0 || id == id1 || id == id2 || id == id3) break;
+                switch (depth) {
+                    case 0: id0 = id; break;
+                    case 1: id1 = id; break;
+                    case 2: id2 = id; break;
+                    case 3: id3 = id; break;
+                }
                 yield return style;
                 id = style.BasedOn?.Val?.Value;
+                depth++;
             }
         }
 

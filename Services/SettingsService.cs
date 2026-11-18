@@ -52,7 +52,7 @@ public static class SettingsService
                 Preferences.Default.Set(KeyFolder, value);
 
             try { Directory.CreateDirectory(TemplatesFolder); } catch { }
-            Changed?.Invoke();
+            NotifyChanged();
         }
     }
 
@@ -78,7 +78,7 @@ public static class SettingsService
                 Preferences.Default.Set(KeyTemplates, value);
 
             try { Directory.CreateDirectory(TemplatesFolder); } catch { }
-            Changed?.Invoke();
+            NotifyChanged();
         }
     }
 
@@ -117,7 +117,7 @@ public static class SettingsService
         set
         {
             Preferences.Default.Set(KeyAiConsent, value);
-            Changed?.Invoke();
+            NotifyChanged();
         }
     }
 
@@ -127,7 +127,7 @@ public static class SettingsService
         set
         {
             Preferences.Default.Set(KeyAiAutoApply, value);
-            Changed?.Invoke();
+            NotifyChanged();
         }
     }
 
@@ -148,7 +148,7 @@ public static class SettingsService
             Services.PrivacyMasker.MaskAmbiguousSilent = value;
             try { Preferences.Default.Set(KeyAiMaskSilent, value); }
             catch { }
-            Changed?.Invoke();
+            NotifyChanged();
         }
     }
 
@@ -162,6 +162,23 @@ public static class SettingsService
     private static void WriteEnum<T>(string key, T value) where T : struct, Enum
     {
         Preferences.Default.Set(key, Convert.ToInt32(value));
-        Changed?.Invoke();
+        NotifyChanged();
+    }
+
+    private static void NotifyChanged()
+    {
+        var handler = Changed;
+        if (handler == null) return;
+        foreach (var d in handler.GetInvocationList())
+        {
+            try
+            {
+                ((Action)d)();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SettingsService.Changed] Handler error: {ex.Message}");
+            }
+        }
     }
 }

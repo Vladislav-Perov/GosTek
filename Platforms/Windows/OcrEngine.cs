@@ -93,10 +93,10 @@ public static partial class OcrService
         using var data = image.Encode(SKEncodedImageFormat.Png, 100);
         using var stream = data.AsStream();
 
-        var randomAccessStream = new InMemoryRandomAccessStream();
+        using var randomAccessStream = new InMemoryRandomAccessStream();
         using (var output = randomAccessStream.GetOutputStreamAt(0))
         {
-            var writer = new DataWriter(output);
+            using var writer = new DataWriter(output);
             byte[] buffer = new byte[stream.Length];
             stream.Read(buffer, 0, buffer.Length);
             writer.WriteBytes(buffer);
