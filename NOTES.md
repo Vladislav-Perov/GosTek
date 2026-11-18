@@ -1,43 +1,59 @@
 # NOTES.md
 
-## План и статус реализации интерактивного UI карточек замечаний (Ветка: `night/check-ui`)
+## Анализ текущей системы правил и схема рефакторинга
 
-### 1. Проверка окружения и предусловий (Выполнено)
-- **Рабочая копия:** Подтверждено, что `Fix` и `FixItems` работают строго с временной копией в кэше (`_workPath`), оригинальный файл пользователя не модифицируется.
-- **DocumentChecker:** Логика не менялась, используются методы `Check`, `Fix`, `FixItems`, структуры `IssueItem` и `CheckIssue.Items`.
-- **Toast & Dialogs:** Используются существующие в проекте `Toast.Show(...)` и `Dialogs.AlertAsync(...)`.
+### 1. Где хранятся пользовательские правила
+- Пользовательские правила сериализуются в JSON-файл `custom_rules.json` через сервис `CustomRulesService`.
+- Путь по умолчанию: `Path.Combine(FileSystem.AppDataDirectory, "custom_rules.json")` (с fallback во временную папку `Path.GetTempPath()`).
+- В JSON хранятся объекты `CustomRuleDto`.
 
-### 2. Структура ViewModel (`Views/CheckGroupVm.cs`) (Выполнено)
-- `CheckGroupVm : INotifyPropertyChanged`:
-  - Представляет замечание `CheckIssue`.
-  - Свойства: `Issue`, `IsExpanded`, `Items` (список `CheckItemVm`), `HasItems`, `MoreText` («…ещё K»), `Title`, `WhereText` («N из M абзацев»), `DiffText` («Сейчас: X → Будет: Y» / с «строки» для межстрочного интервала), `HasDiff`, `CanFix`, `CannotFix`, `FixAllHint` («Принять: исправит все N»), `ExpandButtonText` («Подробнее ▾» / «Свернуть ▴»).
-- `CheckItemVm : INotifyPropertyChanged`:
-  - Представляет строку `IssueItem`.
-  - Свойства: `Item`, `Parent`, `DisplayText` (в кавычках «...» или «Раздел N» для полей страницы), `DiffSubtext` (`Actual → Expected`), `CanFix`.
-- `CheckIssueFilter`:
-  - Статический метод `FilterIssues(IEnumerable<CheckIssue> issues, IReadOnlySet<(IssueKind Kind, int Index, string Text)> rejected)` для чистой фильтрации отклонённых элементов и карточек без UI-зависимостей.
+### 2. Как выбирается активное правило
+- На вкладке «Проверка» (`CheckPage`) отображается `ChipBar RuleChips`.
+- `_allRules = CustomRulesService.Instance.GetAllRules().ToList()`.
+- Выбранный индекс чипа `RuleChips.SelectedIndex` определяет активное правило:
+  `CurrentRules => (i >= 0 && i < _allRules.Count) ? _allRules[i] : RuleSets.MasterRule`.
+- При выборе файла вызывается `CustomRulesService.Instance.MatchRuleSetForTemplate(fileName)`.
 
-### 3. Разметка (`Views/CheckPage.xaml`) (Выполнено)
-- Единый вертикальный `ScrollView` с `MaximumWidthRequest="950"`.
-- Список замечаний привязан к `ObservableCollection<CheckGroupVm> IssueGroups`.
-- Свёрнутая карточка (~90 px):
-  - Строка 1: `Title` (bold) слева, `WhereText` («N из M абзацев») справа.
-  - Строка 2: Крупная строка различий `DiffText` («Сейчас → Будет»).
-  - Строка 3: слева подпись мелким серым шрифтом «Принять: исправит все N», справа `FlexLayout` с переносом (адаптивность под 500 px): «Подробнее ▾» (при `HasItems`), «Отклонить», «Принять» (или тег «Вручную»).
-- Развёрнутая карточка:
-  - Список `Items`: слева `DisplayText` (одна строка с обрезкой) и под ним мелким шрифтом `DiffSubtext`, справа кнопки «Отклонить» и «Принять» для строки.
-  - При превышении лимита — строка `MoreText` («…ещё K»).
-- Шапка списка «Замечания к оформлению N» и «Принять все» видны только при `HasIssues` / `HasFixableIssues`. Без файла их нет.
+### 3. Где создавались «(копия)» и дубликаты
+- В старой логике `RuleEditorPage.BuildRuleFromForm()`:
+  `string id = _editingRule is { IsCustom: true } ? _editingRule.Id : Guid.NewGuid().ToString("N")[..8];`
+  При редактировании встроенного правила (например `Universal`) создавалось новое правило со случайным `Guid` вместо модификации по месту, а в прежних версиях к имени приписывалось ` (копия)`.
+- Дубликаты накапливались при каждом сохранении из-за генерации новых `Id`.
 
-### 4. Поведение и команды (`Views/CheckPage.xaml.cs`) (Выполнено)
-- `AcceptItemCommand`: точечный вызов `DocumentChecker.FixItems` на `_workPath` в `Task.Run` с индексом и текстом элемента, затем вызов `RecheckAsync()` (`DocumentChecker.Check`) с обновлением списка и сохранением раскрытия раскрытых карточек.
-- `AcceptGroupCommand`: вызов `FixItems` по индексам всех неотклонённых элементов карточки (или `Fix` для замечаний без `Items`), затем `RecheckAsync()`.
-- `AcceptAllCommand`: вызов `Fix` по всем неотклонённым исправимым типам, затем `RecheckAsync()`.
-- `RejectItemCommand` / `RejectGroupCommand`: добавление ключей `(Kind, Index, Text)` (или `(Kind, -1, Title)` для замечаний без `Items`) в `HashSet`, повторная фильтрация, тост «Скрыто, вернётся при повторной проверке». Сброс набора при выборе файла, смене правила или перепроверке.
-- `ToggleExpandCommand`: инвертирование `IsExpanded` у группы.
-- Блокировка от гонок через `_busy` и индикация через `Loader`. Ошибки обрабатываются через `Dialogs.AlertAsync`.
+### 4. Как удалить старые дубли «(копия)» вручную
+Пользователь может удалить дубликаты двумя способами:
+1. **Через UI:** Открыть чип дубликата на вкладке «Проверка», нажать «Настроить», в открывшемся редакторе нажать кнопку «Удалить» и подтвердить удаление в диалоговом окне.
+2. **Вручную через файл:** Открыть файл `%AppData%/custom_rules.json` (или `Android/data/.../files/custom_rules.json`) в текстовом редакторе и удалить ненужные объекты из массива JSON.
 
-### 5. Тестирование и верификация (Выполнено)
-- Юнит-тесты фильтрации в `GosTek.Tests/CheckFilterTests.cs` (8 новых тестов).
-- `dotnet build GosTek.sln`: 0 предупреждений, 0 ошибок.
-- `dotnet test GosTek.Tests/GosTek.Tests.csproj`: 332 теста пройдено, 0 упало (было 324).
+---
+
+## План реализации требований
+
+1. **`Models/CheckModels.cs` (`RuleSets`):**
+   - Константа `public const string MasterRuleId = "master-rule";`.
+   - Главное правило `MasterRule` («Основной ГОСТ», Id = `MasterRuleId`).
+   - `Universal => MasterRule` (алиас для совместимости).
+   - Удалить `StudyRules`, `ApplicationRules`, `ContractRules` из `RuleSets.Presets`. `Presets` содержит только `MasterRule`.
+
+2. **`Services/CustomRulesService.cs`:**
+   - Хранение `_masterRule` в сервисе. При загрузке `custom_rules.json`, если найдена запись с `Id == MasterRuleId` (или старый `universal`), её настройки загружаются в `_masterRule`.
+   - `GetAllRules()` возвращает `_masterRule` первым, затем пользовательские правила по порядку создания.
+   - `SaveRuleAsync(rule)`: сохраняет правки по `rule.Id`. Если `rule.Id == MasterRuleId`, обновляет `_masterRule` и сохраняет в JSON без создания копий.
+   - `DeleteRuleAsync(id)`: отклоняет удаление `MasterRuleId` (и старых системных Id), возвращая `false`.
+   - `NormalizeRuleId(id)`: миграция старых Id (`universal`, `study_bgtu`, `applications`, `contracts`) в `MasterRuleId`.
+   - Метод `CreateNewRule()`: генерирует правило со значениями ГОСТ по умолчанию, уникальным Id и именем «Новое правило» (или «Новое правило 2» и т.д.).
+
+3. **`Views/RuleEditorPage.xaml(.cs)`:**
+   - Если редактируется главное правило: поле названия заблокировано для ввода (`IsReadOnly = true`), кнопка «Удалить» скрыта.
+   - Если редактируется пользовательское правило: поле названия доступно, отображается кнопка «Удалить» с диалогом подтверждения `Dialogs.ConfirmAsync`.
+   - Кнопка «Создать на основе этого» в редакторе для явного клонирования.
+   - `OnSaveTapped` строго сохраняет правило с его текущим `_editingRule.Id` без суффиксов «(копия)» и без новых Id.
+
+4. **`Views/CheckPage.xaml(.cs)`:**
+   - Чипы: «Основной ГОСТ», затем пользовательские по порядку создания, последним — чип `+`.
+   - Клик по `+` вызывает создание нового правила через `CreateNewRule()`, сохраняет его и открывает редактор.
+   - Описание под чипами (`RuleNote`) обновляется при смене чипа.
+   - При удалении активного правила активным становится «Основной ГОСТ».
+
+5. **`GosTek.Tests/CustomRulesServiceTests.cs`:**
+   - Тесты на все 6 требуемых сценариев: сохранение дважды с одним Id, сохранение/чтение MasterRule, запрет удаления MasterRule, уникальные имена и разные Id для «+», миграция старых Id, переключение на главное при удалении.

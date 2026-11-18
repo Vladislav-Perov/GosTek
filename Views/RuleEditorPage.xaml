@@ -81,7 +81,32 @@
                                 StrokeShape="RoundRectangle 18"
                                 Padding="16">
                             <VerticalStackLayout Spacing="12">
-                                <Label Text="Основная информация" FontSize="16" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
+                                <Grid ColumnDefinitions="*, Auto" VerticalOptions="Center">
+                                    <Label Grid.Column="0"
+                                           Text="Основная информация"
+                                           FontSize="16"
+                                           FontAttributes="Bold"
+                                           TextColor="{DynamicResource TextPrimary}"
+                                           VerticalOptions="Center" />
+                                    <Border Grid.Column="1"
+                                            x:Name="CloneButton"
+                                            StyleClass="HoverCard"
+                                            StrokeThickness="1"
+                                            Stroke="{DynamicResource CardStroke}"
+                                            BackgroundColor="{DynamicResource CardHoverBg}"
+                                            StrokeShape="RoundRectangle 8"
+                                            Padding="10, 6"
+                                            VerticalOptions="Center">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="OnCreateBasedOnThisTapped" />
+                                        </Border.GestureRecognizers>
+                                        <Label Text="Создать на основе этого"
+                                               FontSize="11.5"
+                                               FontAttributes="Bold"
+                                               TextColor="{DynamicResource BrandGreen}"
+                                               VerticalOptions="Center" />
+                                    </Border>
+                                </Grid>
 
                                 <VerticalStackLayout Spacing="4">
                                     <Label Text="Название правила *" StyleClass="FieldLabel" />
@@ -806,12 +831,41 @@
             <VerticalStackLayout Grid.Row="2" Spacing="0">
                 <BoxView HeightRequest="1" Color="{DynamicResource Divider}" />
 
-                <Grid ColumnDefinitions="*"
+                <Grid x:Name="ActionBarGrid"
+                      ColumnDefinitions="Auto, *"
+                      ColumnSpacing="12"
                       Padding="20, 12, 20, 16"
                       MaximumWidthRequest="720">
 
+                    <!-- Кнопка Удалить (видна только для пользовательских правил) -->
+                    <Border x:Name="DeleteButton"
+                            Grid.Column="0"
+                            IsVisible="False"
+                            StyleClass="HoverCard"
+                            StrokeShape="RoundRectangle 14"
+                            StrokeThickness="1"
+                            Stroke="{DynamicResource CardStroke}"
+                            BackgroundColor="{DynamicResource CardBg}"
+                            Padding="16, 14">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnDeleteTapped" />
+                        </Border.GestureRecognizers>
+                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="6">
+                            <vctrl:IconView Icon="trash"
+                                            IconColor="BrandGreen"
+                                            Size="16"
+                                            VerticalOptions="Center" />
+                            <Label Text="Удалить"
+                                   FontSize="14.5"
+                                   FontAttributes="Bold"
+                                   TextColor="{DynamicResource TextSecondary}"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+
                     <!-- Кнопка Сохранить -->
-                    <Border Grid.Column="0"
+                    <Border x:Name="SaveButton"
+                            Grid.Column="1"
                             StyleClass="HoverGreen"
                             StrokeShape="RoundRectangle 14"
                             StrokeThickness="0"

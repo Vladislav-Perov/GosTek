@@ -203,7 +203,7 @@ public class CustomRulesServiceTests : IDisposable
     }
 
     [Fact]
-    public void MatchRuleSetForTemplate_BuiltInRuleMatchesCategory_ReturnsBuiltInRule()
+    public void MatchRuleSetForTemplate_BuiltInRuleMatchesCategory_ReturnsMasterRule()
     {
         // Arrange
         var service = new CustomRulesService(_tempFile);
@@ -213,10 +213,10 @@ public class CustomRulesServiceTests : IDisposable
         var matchContract = service.MatchRuleSetForTemplate("Договор - Оказание услуг.docx");
         var matchStudy = service.MatchRuleSetForTemplate("Учебная_Курсовая работа.docx");
 
-        // Assert
-        Assert.Equal("applications", matchApp.Id);
-        Assert.Equal("contracts", matchContract.Id);
-        Assert.Equal("study_bgtu", matchStudy.Id);
+        // Assert: готовых пресетов нет, автоподбор без кастомных правил возвращает MasterRule
+        Assert.Equal(RuleSets.MasterRuleId, matchApp.Id);
+        Assert.Equal(RuleSets.MasterRuleId, matchContract.Id);
+        Assert.Equal(RuleSets.MasterRuleId, matchStudy.Id);
     }
 
     [Fact]
@@ -246,5 +246,133 @@ public class CustomRulesServiceTests : IDisposable
         // Assert
         Assert.Equal(RuleSets.Presets.Count + 1, all.Count);
         Assert.Contains(all, r => r.Id == "custom_x");
+    }
+
+    [Fact]
+    public async Task SaveRuleAsync_TwiceWithSameId_ResultsInSingleEntryInList()
+    {
+        // Arrange
+        var service = new CustomRulesService(_tempFile);
+        var rule1 = RuleSets.MasterRule with { Id = "custom_id_1", Title = "Первая версия" };
+        var rule2 = rule1 with { Title = "Вторая версия", FontSizePt = 16.0 };
+
+        // Act
+        await service.SaveRuleAsync(rule1);
+        await service.SaveRuleAsync(rule2);
+
+        // Assert
+        var all = service.GetAllRules();
+        var matches = all.Where(r => r.Id == "custom_id_1").ToList();
+        Assert.Single(matches);
+        Assert.Equal("Вторая версия", matches[0].Title);
+        Assert.Equal(16.0, matches[0].FontSizePt);
+    }
+
+    [Fact]
+    public async Task SaveRuleAsync_MasterRule_PersistsAndReadsBack()
+    {
+        // Arrange
+        var service = new CustomRulesService(_tempFile);
+        var editedMaster = RuleSets.MasterRule with {
+            FontSizePt = 16.0,
+            LineSpacing = 2.0,
+            FontName = "Arial"
+        };
+
+        // Act
+        bool saved = await service.SaveRuleAsync(editedMaster);
+        Assert.True(saved);
+
+        var serviceAfterRestart = new CustomRulesService(_tempFile);
+        await serviceAfterRestart.LoadRulesAsync();
+        var masterAfter = serviceAfterRestart.MasterRule;
+
+        // Assert
+        Assert.Equal(RuleSets.MasterRuleId, masterAfter.Id);
+        Assert.Equal("Основной ГОСТ", masterAfter.Title);
+        Assert.Equal(16.0, masterAfter.FontSizePt);
+        Assert.Equal(2.0, masterAfter.LineSpacing);
+        Assert.Equal("Arial", masterAfter.FontName);
+    }
+
+    [Fact]
+    public async Task DeleteRuleAsync_MasterRule_IsRejected()
+    {
+        // Arrange
+        var service = new CustomRulesService(_tempFile);
+
+        // Act
+        bool deleted = await service.DeleteRuleAsync(RuleSets.MasterRuleId);
+        bool deletedUniversal = await service.DeleteRuleAsync("universal");
+
+        // Assert
+        Assert.False(deleted);
+        Assert.False(deletedUniversal);
+        var all = service.GetAllRules();
+        Assert.Contains(all, r => r.Id == RuleSets.MasterRuleId);
+    }
+
+    [Fact]
+    public async Task CreateRule_Plus_ProducesUniqueNamesAndDifferentIds()
+    {
+        // Arrange
+        var service = new CustomRulesService(_tempFile);
+
+        // Act
+        var rule1 = service.CreateNewRule();
+        await service.SaveRuleAsync(rule1);
+
+        var rule2 = service.CreateNewRule();
+        await service.SaveRuleAsync(rule2);
+
+        var rule3 = service.CreateNewRule();
+
+        // Assert
+        Assert.Equal("Новое правило", rule1.Title);
+        Assert.Equal("Новое правило 2", rule2.Title);
+        Assert.Equal("Новое правило 3", rule3.Title);
+
+        Assert.NotEqual(rule1.Id, rule2.Id);
+        Assert.NotEqual(rule2.Id, rule3.Id);
+        Assert.NotEqual(rule1.Id, rule3.Id);
+    }
+
+    [Theory]
+    [InlineData("universal", RuleSets.MasterRuleId)]
+    [InlineData("study_bgtu", RuleSets.MasterRuleId)]
+    [InlineData("applications", RuleSets.MasterRuleId)]
+    [InlineData("contracts", RuleSets.MasterRuleId)]
+    [InlineData(RuleSets.MasterRuleId, RuleSets.MasterRuleId)]
+    [InlineData(null, RuleSets.MasterRuleId)]
+    [InlineData("", RuleSets.MasterRuleId)]
+    public void MigrateOldId_ToMasterRule_MapsSilently(string? oldId, string expectedId)
+    {
+        // Act
+        string migrated = CustomRulesService.NormalizeRuleId(oldId);
+
+        // Assert
+        Assert.Equal(expectedId, migrated);
+    }
+
+    [Fact]
+    public async Task DeleteActiveRule_SwitchesToMasterRule()
+    {
+        // Arrange
+        var service = new CustomRulesService(_tempFile);
+        var customRule = service.CreateNewRule();
+        await service.SaveRuleAsync(customRule);
+
+        string activeId = customRule.Id;
+
+        // Act
+        bool deleted = await service.DeleteRuleAsync(activeId);
+        Assert.True(deleted);
+
+        // Assert: при удалении активного правила происходит переключение на MasterRule
+        var allRules = service.GetAllRules();
+        int targetIndex = allRules.ToList().FindIndex(r => r.Id.Equals(activeId, StringComparison.OrdinalIgnoreCase));
+        string resolvedActiveId = targetIndex >= 0 ? allRules[targetIndex].Id : RuleSets.MasterRuleId;
+
+        Assert.Equal(RuleSets.MasterRuleId, resolvedActiveId);
     }
 }

@@ -343,15 +343,16 @@ public sealed record RulePreset(string Title, RuleSet Rules);
 /// <summary>Наборы правил приложения.</summary>
 public static class RuleSets
 {
+    public const string MasterRuleId = "master-rule";
+
     /// <summary>
-    /// Универсальные правила (по макету): поля 3 / 1 / 2 / 2 см, Times New Roman 14 pt,
-    /// интервал 1,5, нумерация страниц и список литературы.
-    /// Раздел с литературой требуется только от больших документов (от SectionsMinParagraphs абзацев),
-    /// чтобы короткие заявления и бланки не получали ложное замечание.
+    /// Главное правило «Основной ГОСТ»: базовый государственный стандарт.
+    /// Постоянный Id, всегда первое в списке, удалить нельзя.
+    /// Правки сохраняются и переживают перезапуск приложения.
     /// </summary>
-    public static readonly RuleSet Universal = new(
-        Id: "universal",
-        Title: "Универсальные правила",
+    public static readonly RuleSet MasterRule = new(
+        Id: MasterRuleId,
+        Title: "Основной ГОСТ",
         Left: new MarginRule(3.0, Exact: true),
         Right: new MarginRule(1.0, Exact: false),
         Top: new MarginRule(2.0, Exact: false),
@@ -371,35 +372,14 @@ public static class RuleSets
         IsCustom: false,
         Description: "Стандартные требования ГОСТ 7.32 / ГОСТ 2.105");
 
-    public static readonly RuleSet StudyRules = Universal with {
-        Id = "study_bgtu",
-        Title = "Учебные работы, БГТУ",
-        Category = "Учебная",
-        Description = "Требования БГТУ к курсовым и дипломным проектам",
-    };
-
-    public static readonly RuleSet ApplicationRules = Universal with {
-        Id = "applications",
-        Title = "Заявления и бланки",
-        Category = "Заявление",
-        Description = "Требования к официальным заявлениям, служебным запискам и бланкам",
-    };
-
-    public static readonly RuleSet ContractRules = Universal with {
-        Id = "contracts",
-        Title = "Договоры",
-        Category = "Договор",
-        Description = "Требования к хозяйственным договорам и соглашениям",
-    };
+    /// <summary>Алиас для обратной совместимости с существующим кодом и тестами.</summary>
+    public static RuleSet Universal => MasterRule;
 
     /// <summary>
-    /// Чипы на экране «Проверка».
-    /// CODE-01: Пресет Universal намеренно используется как базовый государственный стандарт (ГОСТ)
-    /// для всех категорий документов, обеспечивая единые общепринятые требования оформления.
+    /// Чипы на экране «Проверка». Содержит только главное правило «Основной ГОСТ».
+    /// Готовых пресетов «Учебные работы», «Заявления и бланки», «Договоры» нет.
     /// </summary>
     public static readonly IReadOnlyList<RulePreset> Presets = new[] {
-        new RulePreset("Учебные работы, БГТУ", StudyRules),
-        new RulePreset("Заявления и бланки", ApplicationRules),
-        new RulePreset("Договоры", ContractRules),
+        new RulePreset("Основной ГОСТ", MasterRule),
     };
 }

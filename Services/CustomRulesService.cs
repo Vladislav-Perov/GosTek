@@ -17,6 +17,7 @@ namespace GosTek.Services;
 public interface ICustomRulesService
 {
     string? LastSavedRuleId { get; }
+    RuleSet MasterRule { get; }
     IReadOnlyList<RuleSet> GetAllRules();
     IReadOnlyList<RuleSet> GetCustomRules();
     Task<IReadOnlyList<RuleSet>> LoadRulesAsync();
@@ -24,6 +25,7 @@ public interface ICustomRulesService
     Task<bool> DeleteRuleAsync(string id);
     string ExtractCategoryFromFileName(string? fileName);
     RuleSet MatchRuleSetForTemplate(string? fileName);
+    RuleSet CreateNewRule();
 }
 
 /// <summary>
@@ -38,11 +40,23 @@ public class CustomRulesService : ICustomRulesService
     };
 
     private readonly string _storageFilePath;
+    private RuleSet _masterRule = RuleSets.MasterRule;
     private readonly List<RuleSet> _customRules = new();
     private readonly SemaphoreSlim _lock = new(1, 1);
     private bool _loaded;
 
     public string? LastSavedRuleId { get; private set; }
+
+    public RuleSet MasterRule
+    {
+        get
+        {
+            lock (_customRules)
+            {
+                return _masterRule;
+            }
+        }
+    }
 
     public static ICustomRulesService Instance { get; set; } = new CustomRulesService();
 
@@ -59,16 +73,27 @@ public class CustomRulesService : ICustomRulesService
         }
     }
 
+    public static string NormalizeRuleId(string? id)
+    {
+        if (string.IsNullOrWhiteSpace(id) ||
+            id.Equals(RuleSets.MasterRuleId, StringComparison.OrdinalIgnoreCase) ||
+            id.Equals("universal", StringComparison.OrdinalIgnoreCase) ||
+            id.Equals("study_bgtu", StringComparison.OrdinalIgnoreCase) ||
+            id.Equals("applications", StringComparison.OrdinalIgnoreCase) ||
+            id.Equals("contracts", StringComparison.OrdinalIgnoreCase))
+        {
+            return RuleSets.MasterRuleId;
+        }
+        return id;
+    }
+
     public IReadOnlyList<RuleSet> GetAllRules()
     {
-        var list = new List<RuleSet>();
-        foreach (var preset in RuleSets.Presets)
-            list.Add(preset.Rules);
-
         lock (_customRules) {
+            var list = new List<RuleSet> { _masterRule };
             list.AddRange(_customRules);
+            return list;
         }
-        return list;
     }
 
     public IReadOnlyList<RuleSet> GetCustomRules()
@@ -84,7 +109,7 @@ public class CustomRulesService : ICustomRulesService
         try {
             if (!File.Exists(_storageFilePath)) {
                 _loaded = true;
-                return Array.Empty<RuleSet>();
+                return GetCustomRules();
             }
 
             string json;
@@ -92,12 +117,12 @@ public class CustomRulesService : ICustomRulesService
                 json = await File.ReadAllTextAsync(_storageFilePath).ConfigureAwait(false);
             } catch (Exception ex) {
                 Debug.WriteLine($"[CustomRulesService] Ошибка чтения файла: {ex.Message}");
-                return Array.Empty<RuleSet>();
+                return GetCustomRules();
             }
 
             if (string.IsNullOrWhiteSpace(json)) {
                 _loaded = true;
-                return Array.Empty<RuleSet>();
+                return GetCustomRules();
             }
 
             try {
@@ -106,8 +131,22 @@ public class CustomRulesService : ICustomRulesService
                     _customRules.Clear();
                     if (dtos != null) {
                         foreach (var dto in dtos) {
-                            if (!string.IsNullOrWhiteSpace(dto.Title))
+                            if (string.IsNullOrWhiteSpace(dto.Title))
+                                continue;
+
+                            if (dto.Id.Equals(RuleSets.MasterRuleId, StringComparison.OrdinalIgnoreCase) ||
+                                dto.Id.Equals("universal", StringComparison.OrdinalIgnoreCase))
+                            {
+                                _masterRule = RuleSet.FromDto(dto) with {
+                                    Id = RuleSets.MasterRuleId,
+                                    Title = "Основной ГОСТ",
+                                    IsCustom = false
+                                };
+                            }
+                            else
+                            {
                                 _customRules.Add(RuleSet.FromDto(dto));
+                            }
                         }
                     }
                 }
@@ -146,8 +185,22 @@ public class CustomRulesService : ICustomRulesService
                         _customRules.Clear();
                         if (dtos != null) {
                             foreach (var d in dtos) {
-                                if (!string.IsNullOrWhiteSpace(d.Title))
+                                if (string.IsNullOrWhiteSpace(d.Title))
+                                    continue;
+
+                                if (d.Id.Equals(RuleSets.MasterRuleId, StringComparison.OrdinalIgnoreCase) ||
+                                    d.Id.Equals("universal", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    _masterRule = RuleSet.FromDto(d) with {
+                                        Id = RuleSets.MasterRuleId,
+                                        Title = "Основной ГОСТ",
+                                        IsCustom = false
+                                    };
+                                }
+                                else
+                                {
                                     _customRules.Add(RuleSet.FromDto(d));
+                                }
                             }
                         }
                     }
@@ -157,26 +210,47 @@ public class CustomRulesService : ICustomRulesService
                 _loaded = true;
             }
 
-            var id = string.IsNullOrWhiteSpace(rule.Id) ? Guid.NewGuid().ToString("N")[..8] : rule.Id;
-            var customRule = rule with { Id = id, IsCustom = true };
+            bool isMaster = rule.Id.Equals(RuleSets.MasterRuleId, StringComparison.OrdinalIgnoreCase) ||
+                            rule.Id.Equals("universal", StringComparison.OrdinalIgnoreCase);
 
-            lock (_customRules) {
-                int existingIdx = _customRules.FindIndex(r => r.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
-                if (existingIdx >= 0)
-                    _customRules[existingIdx] = customRule;
-                else
-                    _customRules.Add(customRule);
+            string targetId;
+            if (isMaster)
+            {
+                targetId = RuleSets.MasterRuleId;
+                var updatedMaster = rule with {
+                    Id = RuleSets.MasterRuleId,
+                    Title = "Основной ГОСТ",
+                    IsCustom = false
+                };
+                lock (_customRules)
+                {
+                    _masterRule = updatedMaster;
+                }
+            }
+            else
+            {
+                targetId = string.IsNullOrWhiteSpace(rule.Id) ? Guid.NewGuid().ToString("N")[..8] : rule.Id;
+                var customRule = rule with { Id = targetId, IsCustom = true };
+
+                lock (_customRules) {
+                    int existingIdx = _customRules.FindIndex(r => r.Id.Equals(targetId, StringComparison.OrdinalIgnoreCase));
+                    if (existingIdx >= 0)
+                        _customRules[existingIdx] = customRule;
+                    else
+                        _customRules.Add(customRule);
+                }
             }
 
-            LastSavedRuleId = id;
+            LastSavedRuleId = targetId;
 
             var dir = Path.GetDirectoryName(_storageFilePath);
             if (!string.IsNullOrWhiteSpace(dir) && !Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
 
-            List<CustomRuleDto> dtosToSave;
+            List<CustomRuleDto> dtosToSave = new();
             lock (_customRules) {
-                dtosToSave = _customRules.Select(r => r.ToDto()).ToList();
+                dtosToSave.Add(_masterRule.ToDto());
+                dtosToSave.AddRange(_customRules.Select(r => r.ToDto()));
             }
 
             var serialized = JsonSerializer.Serialize(dtosToSave, JsonOptions);
@@ -195,8 +269,9 @@ public class CustomRulesService : ICustomRulesService
         if (string.IsNullOrWhiteSpace(id))
             return false;
 
-        // Защита встроенных системных правил от удаления
-        if (id.Equals("universal", StringComparison.OrdinalIgnoreCase) ||
+        // Защита главного правила и системных Id от удаления
+        if (id.Equals(RuleSets.MasterRuleId, StringComparison.OrdinalIgnoreCase) ||
+            id.Equals("universal", StringComparison.OrdinalIgnoreCase) ||
             id.Equals("study_bgtu", StringComparison.OrdinalIgnoreCase) ||
             id.Equals("applications", StringComparison.OrdinalIgnoreCase) ||
             id.Equals("contracts", StringComparison.OrdinalIgnoreCase)) {
@@ -215,9 +290,10 @@ public class CustomRulesService : ICustomRulesService
             }
 
             if (removed) {
-                List<CustomRuleDto> dtosToSave;
+                List<CustomRuleDto> dtosToSave = new();
                 lock (_customRules) {
-                    dtosToSave = _customRules.Select(r => r.ToDto()).ToList();
+                    dtosToSave.Add(_masterRule.ToDto());
+                    dtosToSave.AddRange(_customRules.Select(r => r.ToDto()));
                 }
 
                 var serialized = JsonSerializer.Serialize(dtosToSave, JsonOptions);
@@ -230,6 +306,33 @@ public class CustomRulesService : ICustomRulesService
         } finally {
             _lock.Release();
         }
+    }
+
+    public RuleSet CreateNewRule()
+    {
+        string baseName = "Новое правило";
+        string candidate = baseName;
+        int counter = 2;
+        lock (_customRules)
+        {
+            var existingTitles = new HashSet<string>(_customRules.Select(r => r.Title), StringComparer.OrdinalIgnoreCase);
+            existingTitles.Add(_masterRule.Title);
+            while (existingTitles.Contains(candidate))
+            {
+                candidate = $"{baseName} {counter++}";
+            }
+        }
+
+        string newId = Guid.NewGuid().ToString("N")[..8];
+        var newRule = _masterRule with
+        {
+            Id = newId,
+            Title = candidate,
+            IsCustom = true,
+            Category = null,
+            Description = "Пользовательское правило"
+        };
+        return newRule;
     }
 
     public string ExtractCategoryFromFileName(string? fileName)
@@ -260,7 +363,7 @@ public class CustomRulesService : ICustomRulesService
     {
         var category = ExtractCategoryFromFileName(fileName);
         if (string.IsNullOrWhiteSpace(category))
-            return RuleSets.Universal;
+            return _masterRule;
 
         // 1. Поиск среди пользовательских правил
         lock (_customRules) {
@@ -271,17 +374,7 @@ public class CustomRulesService : ICustomRulesService
                 return customMatch;
         }
 
-        // 2. Поиск среди встроенных пресетов
-        foreach (var preset in RuleSets.Presets) {
-            if (!string.IsNullOrWhiteSpace(preset.Rules.Category) &&
-                preset.Rules.Category.Equals(category, StringComparison.OrdinalIgnoreCase))
-                return preset.Rules;
-
-            if (preset.Title.Contains(category, StringComparison.OrdinalIgnoreCase))
-                return preset.Rules;
-        }
-
-        // 3. Базовый ГОСТ по умолчанию
-        return RuleSets.Universal;
+        // 2. Главное правило «Основной ГОСТ» по умолчанию
+        return _masterRule;
     }
 }

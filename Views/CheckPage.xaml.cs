@@ -78,7 +78,9 @@ public partial class CheckPage : ContentPage
 
         RuleChips.ShowArrows = true;
         _allRules = CustomRulesService.Instance.GetAllRules().ToList();
-        RuleChips.SetItems(_allRules.Select(p => p.Title).ToList());
+        var chipTitles = _allRules.Select(p => p.Title).ToList();
+        chipTitles.Add("+");
+        RuleChips.SetItems(chipTitles);
         RuleChips.SelectionChanged += OnRuleChanged;
 
         UpdateUi();
@@ -88,7 +90,7 @@ public partial class CheckPage : ContentPage
     {
         get {
             int i = RuleChips.SelectedIndex;
-            return (i >= 0 && i < _allRules.Count) ? _allRules[i] : RuleSets.Universal;
+            return (i >= 0 && i < _allRules.Count) ? _allRules[i] : (_allRules.Count > 0 ? _allRules[0] : RuleSets.MasterRule);
         }
     }
 
@@ -134,25 +136,21 @@ public partial class CheckPage : ContentPage
 
         Dispatcher.Dispatch(() =>
         {
-            int prevIndex = RuleChips.SelectedIndex;
-            RuleChips.SetItems(_allRules.Select(r => r.Title).ToList());
+            string targetId = RuleEditorPage.LastSavedRuleId ?? Preferences.Get("active_rule_id", RuleSets.MasterRuleId);
+            RuleEditorPage.LastSavedRuleId = null;
 
-            if (!string.IsNullOrEmpty(RuleEditorPage.LastSavedRuleId))
-            {
-                int savedIndex = _allRules.FindIndex(r => r.Id == RuleEditorPage.LastSavedRuleId);
-                RuleEditorPage.LastSavedRuleId = null;
-                if (savedIndex >= 0)
-                {
-                    RuleChips.SelectedIndex = savedIndex;
-                    UpdateUi();
-                    return;
-                }
-            }
+            // Миграция старых Id в MasterRuleId
+            targetId = CustomRulesService.NormalizeRuleId(targetId);
 
-            if (prevIndex >= 0 && prevIndex < _allRules.Count)
-                RuleChips.SelectedIndex = prevIndex;
-            else
-                RuleChips.SelectedIndex = 0;
+            int targetIndex = _allRules.FindIndex(r => r.Id.Equals(targetId, StringComparison.OrdinalIgnoreCase));
+            if (targetIndex < 0)
+                targetIndex = 0; // Если правило было удалено, переключаем на «Основной ГОСТ»
+
+            var chipTitles = _allRules.Select(r => r.Title).ToList();
+            chipTitles.Add("+");
+
+            RuleChips.SetItems(chipTitles, targetIndex);
+            Preferences.Set("active_rule_id", CurrentRules.Id);
 
             UpdateUi();
         });
@@ -204,7 +202,10 @@ public partial class CheckPage : ContentPage
             var matchedRule = CustomRulesService.Instance.MatchRuleSetForTemplate(picked.FileName);
             int matchIdx = _allRules.FindIndex(r => r.Id.Equals(matchedRule.Id, StringComparison.OrdinalIgnoreCase));
             if (matchIdx >= 0)
+            {
                 RuleChips.SelectedIndex = matchIdx;
+                Preferences.Set("active_rule_id", matchedRule.Id);
+            }
 
             var rules = (matchIdx >= 0) ? _allRules[matchIdx] : CurrentRules;
             var issues = await Task.Run(() => DocumentChecker.Check(work, rules));
@@ -222,7 +223,7 @@ public partial class CheckPage : ContentPage
                 IssueGroups.Add(new CheckGroupVm(issue));
 
             var category = CustomRulesService.Instance.ExtractCategoryFromFileName(picked.FileName);
-            if (!string.IsNullOrWhiteSpace(category) && matchedRule.Id != RuleSets.Universal.Id) {
+            if (!string.IsNullOrWhiteSpace(category) && matchedRule.Id != RuleSets.MasterRuleId) {
                 _status = $"Автоматически применено правило «{matchedRule.Title}» для категории «{category}».";
             } else {
                 _status = null;
@@ -244,6 +245,19 @@ public partial class CheckPage : ContentPage
     // Выбран другой набор правил: перепроверяем текущую рабочую копию
     private async void OnRuleChanged(object? sender, int index)
     {
+        if (index == _allRules.Count)
+        {
+            // Нажат чип «+» — восстанавливаем выбор и открываем редактор с новым правилом
+            string activeId = Preferences.Get("active_rule_id", RuleSets.MasterRuleId);
+            int restoreIndex = _allRules.FindIndex(r => r.Id.Equals(activeId, StringComparison.OrdinalIgnoreCase));
+            if (restoreIndex < 0) restoreIndex = 0;
+            RuleChips.SelectedIndex = restoreIndex;
+
+            await CreateNewRuleAndOpenEditorAsync();
+            return;
+        }
+
+        Preferences.Set("active_rule_id", CurrentRules.Id);
         UpdateUi();
 
         if (_workPath is null || _busy)
@@ -270,11 +284,24 @@ public partial class CheckPage : ContentPage
         }
     }
 
+    private async Task CreateNewRuleAndOpenEditorAsync()
+    {
+        if (_busy)
+            return;
+
+        HapticHelper.Click();
+        var newRule = CustomRulesService.Instance.CreateNewRule();
+        await CustomRulesService.Instance.SaveRuleAsync(newRule);
+        RuleEditorPage.TargetRule = newRule;
+        RuleEditorPage.LastSavedRuleId = newRule.Id;
+        await Shell.Current.GoToAsync("RuleEditorPage");
+    }
+
     private async void OnEditCurrentRuleTapped(object? sender, EventArgs e)
     {
         var curr = CurrentRules;
         RuleEditorPage.TargetRule = curr;
-        RuleEditorPage.BaselineRule = RuleSets.Universal;
+        RuleEditorPage.BaselineRule = RuleSets.MasterRule;
         await Shell.Current.GoToAsync("RuleEditorPage");
     }
 
@@ -563,6 +590,9 @@ public partial class CheckPage : ContentPage
         OnPropertyChanged(nameof(NoIssues));
         OnPropertyChanged(nameof(HasFixableIssues));
 
+        RuleNote.Text = CurrentRules.Description;
+        RuleNote.IsVisible = !string.IsNullOrWhiteSpace(CurrentRules.Description);
+
         if (!hasFile) {
             FileNameLabel.Text = "Документ не выбран";
             FileInfoLabel.Text = "Подойдёт файл Word (.docx)";
@@ -626,7 +656,10 @@ public partial class CheckPage : ContentPage
             var matchedRule = CustomRulesService.Instance.MatchRuleSetForTemplate(fileName);
             int matchIdx = _allRules.FindIndex(r => r.Id.Equals(matchedRule.Id, StringComparison.OrdinalIgnoreCase));
             if (matchIdx >= 0)
+            {
                 RuleChips.SelectedIndex = matchIdx;
+                Preferences.Set("active_rule_id", matchedRule.Id);
+            }
 
             var rules = (matchIdx >= 0) ? _allRules[matchIdx] : CurrentRules;
             var issues = await Task.Run(() => DocumentChecker.Check(work, rules));
@@ -644,7 +677,7 @@ public partial class CheckPage : ContentPage
                 IssueGroups.Add(new CheckGroupVm(issue));
 
             var category = CustomRulesService.Instance.ExtractCategoryFromFileName(fileName);
-            if (!string.IsNullOrWhiteSpace(category) && matchedRule.Id != RuleSets.Universal.Id) {
+            if (!string.IsNullOrWhiteSpace(category) && matchedRule.Id != RuleSets.MasterRuleId) {
                 _status = $"Автоматически применено правило «{matchedRule.Title}» для категории «{category}».";
             } else {
                 _status = null;

@@ -7,6 +7,7 @@
  */
 using GosTek.Models;
 using GosTek.Services;
+using GosTek.Views.Controls;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace GosTek.Views;
@@ -167,10 +168,29 @@ public partial class RuleEditorPage : ContentPage
         _isInitializing = true;
         try
         {
-            var r = rule ?? RuleSets.Universal;
+            var r = rule ?? RuleSets.MasterRule;
+            bool isMaster = r.Id.Equals(RuleSets.MasterRuleId, StringComparison.OrdinalIgnoreCase) ||
+                            r.Id.Equals("universal", StringComparison.OrdinalIgnoreCase);
 
-            PageTitleLabel.Text = "Настройка профиля ГОСТ";
-            TitleEntry.Text = r.Title;
+            PageTitleLabel.Text = isMaster ? "Настройка «Основной ГОСТ»" : "Настройка профиля ГОСТ";
+            TitleEntry.Text = isMaster ? "Основной ГОСТ" : r.Title;
+            TitleEntry.IsReadOnly = isMaster;
+            TitleEntry.Opacity = isMaster ? 0.75 : 1.0;
+
+            if (DeleteButton != null && SaveButton != null)
+            {
+                DeleteButton.IsVisible = !isMaster;
+                if (isMaster)
+                {
+                    Grid.SetColumn(SaveButton, 0);
+                    Grid.SetColumnSpan(SaveButton, 2);
+                }
+                else
+                {
+                    Grid.SetColumn(SaveButton, 1);
+                    Grid.SetColumnSpan(SaveButton, 1);
+                }
+            }
 
             // Поля страницы
             LeftMarginEntry.Text = RuFormat.Double(r.Left.Cm);
@@ -308,11 +328,15 @@ public partial class RuleEditorPage : ContentPage
         double indent = RuFormat.ParseDouble(FirstLineIndentEntry?.Text, 1.25);
         string alignment = GetSelectedAlignment(AlignPicker, Alignments, "Justify");
 
-        string id = _editingRule is { IsCustom: true } ? _editingRule.Id : Guid.NewGuid().ToString("N")[..8];
-        string title = TitleEntry?.Text?.Trim() ?? "Новое правило";
-        if (string.IsNullOrWhiteSpace(title)) title = "Новое правило";
+        bool isMaster = _editingRule != null &&
+            (_editingRule.Id.Equals(RuleSets.MasterRuleId, StringComparison.OrdinalIgnoreCase) ||
+             _editingRule.Id.Equals("universal", StringComparison.OrdinalIgnoreCase));
+
+        string id = isMaster ? RuleSets.MasterRuleId : (_editingRule?.Id ?? Guid.NewGuid().ToString("N")[..8]);
+        string title = isMaster ? "Основной ГОСТ" : (TitleEntry?.Text?.Trim() ?? "Новое правило");
+        if (string.IsNullOrWhiteSpace(title)) title = isMaster ? "Основной ГОСТ" : "Новое правило";
         string? category = _editingRule?.Category;
-        string? description = _editingRule?.Description;
+        string? description = isMaster ? "Стандартные требования ГОСТ 7.32 / ГОСТ 2.105" : _editingRule?.Description;
 
         bool tables = FormatTablesSwitch?.IsToggled ?? true;
         string tableFont = GetSelectedFont(TableFontPicker, AvailableFonts, "Times New Roman");
@@ -370,7 +394,7 @@ public partial class RuleEditorPage : ContentPage
             FirstLineIndentCm: Math.Max(0.0, indent),
             Alignment: alignment,
             Category: category,
-            IsCustom: true,
+            IsCustom: !isMaster,
             Description: description)
         {
             FigureAlignment = figAlign,
@@ -734,7 +758,11 @@ public partial class RuleEditorPage : ContentPage
 
     private async void OnSaveTapped(object? sender, EventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(TitleEntry.Text)) {
+        bool isMaster = _editingRule != null &&
+            (_editingRule.Id.Equals(RuleSets.MasterRuleId, StringComparison.OrdinalIgnoreCase) ||
+             _editingRule.Id.Equals("universal", StringComparison.OrdinalIgnoreCase));
+
+        if (!isMaster && string.IsNullOrWhiteSpace(TitleEntry.Text)) {
             await Dialogs.AlertAsync("Укажите название", "Пожалуйста, введите название правила оформления.", DialogKind.Warning);
             TitleEntry.Focus();
             return;
@@ -744,7 +772,7 @@ public partial class RuleEditorPage : ContentPage
             var rule = BuildRuleFromForm();
             bool success = await CustomRulesService.Instance.SaveRuleAsync(rule);
             if (success) {
-                LastSavedRuleId = CustomRulesService.Instance.LastSavedRuleId ?? rule.Id;
+                LastSavedRuleId = rule.Id;
                 await Dialogs.AlertAsync("Правило сохранено", $"Правило «{rule.Title}» успешно сохранено.", DialogKind.Success);
                 await Shell.Current.GoToAsync("..");
             } else {
@@ -752,6 +780,63 @@ public partial class RuleEditorPage : ContentPage
             }
         } catch (Exception ex) {
             await Dialogs.AlertAsync("Ошибка сохранения", ex.Message, DialogKind.Danger);
+        }
+    }
+
+    private async void OnDeleteTapped(object? sender, EventArgs e)
+    {
+        if (_editingRule == null ||
+            _editingRule.Id.Equals(RuleSets.MasterRuleId, StringComparison.OrdinalIgnoreCase) ||
+            _editingRule.Id.Equals("universal", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        bool confirm = await Dialogs.ConfirmAsync(
+            "Удалить правило?",
+            $"Вы действительно хотите удалить правило «{_editingRule.Title}»? Это действие нельзя отменить.",
+            "Удалить",
+            DialogKind.Delete,
+            "Отмена",
+            danger: true);
+
+        if (!confirm)
+            return;
+
+        try {
+            bool success = await CustomRulesService.Instance.DeleteRuleAsync(_editingRule.Id);
+            if (success) {
+                LastSavedRuleId = RuleSets.MasterRuleId;
+                await Dialogs.AlertAsync("Правило удалено", $"Правило «{_editingRule.Title}» удалено.", DialogKind.Success);
+                await Shell.Current.GoToAsync("..");
+            } else {
+                await Dialogs.AlertAsync("Ошибка удаления", "Не удалось удалить правило.", DialogKind.Danger);
+            }
+        } catch (Exception ex) {
+            await Dialogs.AlertAsync("Ошибка удаления", ex.Message, DialogKind.Danger);
+        }
+    }
+
+    private async void OnCreateBasedOnThisTapped(object? sender, EventArgs e)
+    {
+        try {
+            var currentFormRule = BuildRuleFromForm();
+            var newRule = CustomRulesService.Instance.CreateNewRule();
+            var derivedRule = currentFormRule with {
+                Id = newRule.Id,
+                Title = newRule.Title,
+                IsCustom = true,
+                Description = "Пользовательское правило"
+            };
+
+            bool success = await CustomRulesService.Instance.SaveRuleAsync(derivedRule);
+            if (success) {
+                _editingRule = derivedRule;
+                LoadRuleData(_editingRule);
+                Toast.Show("Создано правило на основе текущего", "check");
+            }
+        } catch (Exception ex) {
+            await Dialogs.AlertAsync("Ошибка", ex.Message, DialogKind.Danger);
         }
     }
 
