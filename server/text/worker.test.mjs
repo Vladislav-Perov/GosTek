@@ -71,3 +71,14 @@ test("uses Workers-compatible manual redirects and rejects an upstream redirect"
   assert.equal(response.status, 503);
   assert.equal(upstream.mock.callCount(), 1);
 });
+
+test("falls back to Workers AI after Groq rejects the request", async t => {
+  t.mock.method(globalThis, "fetch", async () => new Response(null, { status: 403 }));
+  const backup = { ...env, AI: { run: async (_model, options) => {
+    assert.equal(options.response_format.type, "json_schema");
+    return { response: { text: "I was late due to a bus breakdown.", question: null } };
+  } } };
+  const response = await worker.fetch(request({ message: "My bus broke down", kind: "explanation" }), backup);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { text: "I was late due to a bus breakdown.", question: null });
+});

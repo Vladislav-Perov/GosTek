@@ -15,7 +15,7 @@ export default {
   async fetch(request, env) {
     if (new URL(request.url).pathname !== "/generate") return error(404, "not_found");
     if (request.method !== "POST") return error(405, "method_not_allowed", { Allow: "POST" });
-    if (!env.GROQ_API_KEY || !env.GENERATION_LIMIT) return error(503, "configuration");
+    if ((!env.GROQ_API_KEY && !env.AI) || !env.GENERATION_LIMIT) return error(503, "configuration");
 
     const ip = request.headers.get("CF-Connecting-IP") || "local";
     const { success } = await env.GENERATION_LIMIT.limit({ key: ip });
@@ -30,7 +30,15 @@ export default {
 
     if (!isValidRequest(payload)) return error(400, "invalid_request");
     const requestId = crypto.randomUUID();
-    const signal = AbortSignal.timeout(12000);
+    const messages = [
+      { role: "system", content: buildPrompt(payload.kind) },
+      { role: "user", content: JSON.stringify({
+        message: payload.message,
+        previousText: payload.previousText ?? null,
+      }) },
+    ];
+    const signal = AbortSignal.timeout(env.AI ? 6000 : 12000);
+    if (!env.GROQ_API_KEY) return generateWithWorkersAi(env, messages, requestId);
     try {
       const response = await fetch(groqUrl, {
         method: "POST",
@@ -42,13 +50,7 @@ export default {
           reasoning_effort: "low",
           temperature: 0.2,
           max_completion_tokens: 1800,
-          messages: [
-            { role: "system", content: buildPrompt(payload.kind) },
-            { role: "user", content: JSON.stringify({
-              message: payload.message,
-              previousText: payload.previousText ?? null,
-            }) },
-          ],
+          messages,
           response_format: {
             type: "json_schema",
             json_schema: { name: "document_text", strict: true, schema: outputSchema },
@@ -66,23 +68,62 @@ export default {
           requestId, category: "provider_http", status: response.status,
           colo: request.cf?.colo, providerCode,
         }));
-        return error(503, "provider_unavailable");
+        return env.AI ? generateWithWorkersAi(env, messages, requestId) : error(503, "provider_unavailable");
       }
 
       const providerResult = await response.json();
       const result = normalizeResult(JSON.parse(providerResult.choices?.[0]?.message?.content ?? "null"));
       if (!result) {
         console.warn(JSON.stringify({ requestId, category: "invalid_output" }));
-        return error(502, "invalid_output");
+        return env.AI ? generateWithWorkersAi(env, messages, requestId) : error(502, "invalid_output");
       }
 
       return Response.json(result, { headers: { "Cache-Control": "no-store" } });
     } catch {
       console.warn(JSON.stringify({ requestId, category: signal.aborted ? "timeout" : "provider_error" }));
-      return error(signal.aborted ? 504 : 502, signal.aborted ? "timeout" : "provider_error");
+      return env.AI ? generateWithWorkersAi(env, messages, requestId)
+        : error(signal.aborted ? 504 : 502, signal.aborted ? "timeout" : "provider_error");
     }
   },
 };
+
+async function generateWithWorkersAi(env, messages, requestId) {
+  const signal = AbortSignal.timeout(10000);
+  let onTimeout;
+  try {
+    const timeout = new Promise((_, reject) => {
+      onTimeout = () => reject(signal.reason);
+      signal.addEventListener("abort", onTimeout, { once: true });
+    });
+    const output = await Promise.race([
+      env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+        messages: [...messages, { role: "user", content: "JSON format: use an empty string for the unused text or question field instead of null." }],
+        max_tokens: 700,
+        temperature: 0.2,
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            ...outputSchema,
+            properties: { text: { type: "string" }, question: { type: "string" } },
+          },
+        },
+      }),
+      timeout,
+    ]);
+    const raw = typeof output?.response === "string" ? JSON.parse(output.response) : output?.response;
+    const result = normalizeResult(raw);
+    if (result) {
+      console.info(JSON.stringify({ requestId, category: "fallback_success" }));
+      return Response.json(result, { headers: { "Cache-Control": "no-store" } });
+    }
+  } catch {
+    if (signal.aborted) return error(504, "timeout");
+  } finally {
+    if (onTimeout) signal.removeEventListener("abort", onTimeout);
+  }
+  console.warn(JSON.stringify({ requestId, category: "fallback_failed" }));
+  return error(503, "provider_unavailable");
+}
 
 function error(status, code, headers = {}) {
   return Response.json({ code }, { status, headers: { ...headers, "Cache-Control": "no-store" } });
