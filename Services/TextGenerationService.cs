@@ -89,13 +89,15 @@ public sealed class TextGenerationService(HttpClient client, Uri? endpoint)
 
     private static HttpClient CreateClient()
     {
-        HttpMessageHandler handler = OperatingSystem.IsWindows()
-            ? new SocketsHttpHandler { AllowAutoRedirect = false, ConnectCallback = ConnectWindowsAsync }
-            : new HttpClientHandler { AllowAutoRedirect = false };
+        var handler = new SocketsHttpHandler
+        {
+            AllowAutoRedirect = false,
+            ConnectCallback = ConnectWithIpv4PreferenceAsync
+        };
         return new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(20) };
     }
 
-    private static async ValueTask<Stream> ConnectWindowsAsync(
+    private static async ValueTask<Stream> ConnectWithIpv4PreferenceAsync(
         SocketsHttpConnectionContext context, CancellationToken cancellationToken)
     {
         using var ipv4Timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
