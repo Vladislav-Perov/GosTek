@@ -11,7 +11,6 @@
 
 | # | Дата | Батч | ID | Затронутый файл / компонент | Статус | Проверено |
 |:---:|:---:|:---:|:---:|:---|:---:|:---|
-| **74** | 18.11.2026 | F14 | **ADAPT-ANDROID-UI-CHECK-AND-RULE-EDITOR** | Views/RuleEditorPage.xaml, Views/CheckPage.xaml, Views/CheckPage.xaml.cs | 🏆 Реализовано | Устранен баг расчета габаритов (схлопывание Grid.Row="Auto") на RuleEditorPage; устранен перехват touch-событий на Android (DropGestureRecognizer под #if WINDOWS); добавлены Safe Area отступы; 349/349 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
 | **73** | 18.11.2026 | F14 | **ANDROID-LAYOUT-AUDIT-AND-RULE-EDITOR-OVERHAUL** | Views/RuleEditorPage.*, Views/CheckPage.*, Views/SettingsPanel.*, Views/FieldsPage.*, Views/* | 🏆 Реализовано | Фаза 14: Комплексный аудит и исправление верстки Android без изменений Windows: 1) В RuleEditorPage устранен дефект зависания вложенного скролла и искажения листа А4 (внедрен селектор режимов [Параметры | Лист А4], RowDefinitions="*", адаптация ширины листа DocumentSheetBorder под экран screenW-56); 2) В CheckPage устранен перехват скролла (DropGestureRecognizer перенесен в Windows-only, Orientation=Vertical); 3) В SettingsPanel ширина адаптирована под экраны 360 dp (Margin справа 48 dp, MaximumWidthRequest=360); 4) В FieldsPage высота ИИ-шторки ограничена 75% экрана для клавиатуры; 5) Учтены safe area статус-бара (24 dp) и TabBar/жестов (24-80 dp); 6) Touch targets увеличены до 44+ dp; 349/349 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
 | **71** | 13.11.2026 | F12 | **GLOBAL-CODE-CLEANUP-AND-HUMAN-COMMENTS** | Services/*, Views/*, README.md | 🏆 Реализовано | Фаза 12: Глобальная чистка проекта, реструктуризация файлов и добавление человечных комментариев: 1) Перенос сервисов (FileSaveService, SettingsService, TemplateEngine, ThemeService) в каталог Services/; 2) Добавление понятных комментариев («Что делает», «С чем взаимодействует», «Зачем нужно») к ключевым сервисам (MrzParserService, MrzSanitizer, DocumentDataExtractor, SmartInputHelper, TransliterationHelper, ScanPage); 3) Обновление README.md (актуализация до 291 теста, структуры и инструкций); 291/291 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
 | **70** | 13.11.2026 | F11.5 | **WINDOWS-CAMERA-ZERO-SIZE-NPE-GUARD** | Views/ScanPage.xaml.cs | 🏆 Реализовано | Фаза 11.5: Устранен краш CommunityToolkit.Maui.Camera на Windows из-за преждевременной инициализации с нулевыми размерами: 1) Защитная задержка 100 мс перед обращением к визуальному дереву WinUI 3; 2) Ожидание ненулевых размеров контейнера видоискателя и страницы; 3) Инициализация CameraView со скрытой видимостью (IsVisible=false) и явными WidthRequest/HeightRequest; 4) Проверка фактических размеров перед StartCameraPreview; 291/291 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
@@ -89,18 +88,6 @@
 ---
 
 ## 2. Этапы комплексного аудита и финализации архитектуры (Этапы 2-8, Фаза 11, Фаза 12)
-
-## [18.11.2026] #74 - Адаптация Android UI (CheckPage & RuleEditorPage)
-**Затронутые файлы:** 
-- `Views/RuleEditorPage.xaml`
-- `Views/CheckPage.xaml` и `.cs`
-**Что сделано:** 
-1. Устранен баг расчета габаритов (схлопывание `Grid.Row="Auto"`) на `RuleEditorPage`. 
-2. Устранен перехват touch-событий на Android: `DropGestureRecognizer` вынесен в C# под директиву `#if WINDOWS`.
-3. Добавлены Safe Area отступы под статус-бар (`Padding="..., 24, ..., 80"`).
-**Проверка:** Ошибки XAML устранены. Windows-версия использует прежние значения (`OnPlatform WinUI`). Десктопный билд Release собирается без ошибок (0 warnings).
-
----
 
 ### [Запись #73] 2026-11-18 | Фаза 14 | ANDROID-LAYOUT-AUDIT-AND-RULE-EDITOR-OVERHAUL | Комплексный аудит мобильной верстки Android и исправление конструктора правил ГОСТ
 

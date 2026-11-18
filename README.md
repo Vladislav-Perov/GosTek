@@ -7,7 +7,7 @@
 [![Версия](https://img.shields.io/badge/версия-v0.45.0--stable-blue)](./GosTek.csproj)
 [![Платформа](https://img.shields.io/badge/платформа-.NET%2010%20MAUI-512BD4)](https://dotnet.microsoft.com/)
 [![Сборка](https://img.shields.io/badge/Windows%20%7C%20Android-green-success)](./GosTek.sln)
-[![Тесты](https://img.shields.io/badge/тесты-291%20passed-brightgreen)](./GosTek.Tests/)
+[![Тесты](https://img.shields.io/badge/тесты-349%20passed-brightgreen)](./GosTek.Tests/)
 [![Лицензия](https://img.shields.io/badge/лицензия-Proprietary-red)](#лицензия)
 
 </div>
@@ -60,7 +60,7 @@
 | **Камера видоискателя** | [CommunityToolkit.Maui.Camera 5.0.0](https://learn.microsoft.com/dotnet/communitytoolkit/maui/) |
 | **Локальная безопасность** | `Microsoft.Maui.Storage.SecureStorage` (Windows DPAPI / Android Keystore) |
 | **Облачный ИИ-прокси** | Cloudflare Workers (Edge JS, Zero-Text Logging, Model Cascade) |
-| **Тестирование** | [xUnit 2.9](https://xunit.net/) — 291 автоматизированный юнит-тест |
+| **Тестирование** | [xUnit 2.9](https://xunit.net/) — 349 автоматизированных юнит-тестов |
 
 ---
 
@@ -77,7 +77,7 @@
 ### Основные команды
 
 ```bash
-# 1. Запуск полного набора юнит-тестов (291 тест)
+# 1. Запуск полного набора юнит-тестов (349 тестов)
 dotnet test GosTek.Tests/GosTek.Tests.csproj
 
 # 2. Сборка приложения для Windows (Release)
@@ -126,7 +126,7 @@ GosTek/
 │   ├── SettingsPanel.xaml      # Боковая шторка настроек
 │   └── Controls/               # Специализированные элементы (DateInputField, IconView, Toast)
 ├── server/                     # Облачный прокси (Cloudflare Worker)
-└── GosTek.Tests/               # 291 модульный тест xUnit
+└── GosTek.Tests/               # 349 модульных тестов xUnit
 ```
 
 ---
