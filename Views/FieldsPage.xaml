@@ -167,6 +167,71 @@
                     <!-- Контейнер для динамических полей шаблона -->
                     <VerticalStackLayout x:Name="FieldsHost" Spacing="14" />
 
+                    <Button Text="Оформление документа" Clicked="OnFormattingClicked" />
+                    <Border x:Name="FormattingPanel" IsVisible="False" BackgroundColor="{DynamicResource CardBg}"
+                            Stroke="{DynamicResource CardStroke}" StrokeShape="RoundRectangle 12" Padding="14">
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="Показаны поля первой страницы и оформление первого абзаца с текстом. Изменения действуют только для текущего документа."
+                                   FontSize="14" TextColor="{DynamicResource TextSecondary}" />
+                            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,*" RowSpacing="8" ColumnSpacing="10">
+                                <VerticalStackLayout Grid.Row="0" Grid.Column="0">
+                                    <Label Text="Слева, мм" FontSize="14" TextColor="{DynamicResource TextSecondary}" />
+                                    <Border StyleClass="FieldBox">
+                                        <Entry x:Name="FormatLeft" Keyboard="Numeric" TextChanged="OnFormattingChanged" />
+                                    </Border>
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Row="0" Grid.Column="1">
+                                    <Label Text="Справа, мм" FontSize="14" TextColor="{DynamicResource TextSecondary}" />
+                                    <Border StyleClass="FieldBox">
+                                        <Entry x:Name="FormatRight" Keyboard="Numeric" TextChanged="OnFormattingChanged" />
+                                    </Border>
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Row="1" Grid.Column="0">
+                                    <Label Text="Сверху, мм" FontSize="14" TextColor="{DynamicResource TextSecondary}" />
+                                    <Border StyleClass="FieldBox">
+                                        <Entry x:Name="FormatTop" Keyboard="Numeric" TextChanged="OnFormattingChanged" />
+                                    </Border>
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Row="1" Grid.Column="1">
+                                    <Label Text="Снизу, мм" FontSize="14" TextColor="{DynamicResource TextSecondary}" />
+                                    <Border StyleClass="FieldBox">
+                                        <Entry x:Name="FormatBottom" Keyboard="Numeric" TextChanged="OnFormattingChanged" />
+                                    </Border>
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Row="2" Grid.Column="0">
+                                    <Label Text="Первая строка, мм" FontSize="14" TextColor="{DynamicResource TextSecondary}" />
+                                    <Border StyleClass="FieldBox">
+                                        <Entry x:Name="FormatIndent" Keyboard="Numeric" TextChanged="OnFormattingChanged" />
+                                    </Border>
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Row="2" Grid.Column="1">
+                                    <Label Text="Кегль, пт" FontSize="14" TextColor="{DynamicResource TextSecondary}" />
+                                    <Border StyleClass="FieldBox">
+                                        <Entry x:Name="FormatSize" Keyboard="Numeric" TextChanged="OnFormattingChanged" />
+                                    </Border>
+                                </VerticalStackLayout>
+                            </Grid>
+                            <Border StyleClass="FieldBox">
+                                <Picker x:Name="FormatFont" Title="{OnPlatform Android=Шрифт, Default={x:Null}}"
+                                        SemanticProperties.Description="Шрифт" FontSize="16" MinimumHeightRequest="44"
+                                        VerticalOptions="Center" SelectedIndexChanged="OnFormattingChanged" />
+                            </Border>
+                            <Border StyleClass="FieldBox">
+                                <Picker x:Name="FormatSpacing" Title="{OnPlatform Android='Межстрочный интервал', Default={x:Null}}"
+                                        SemanticProperties.Description="Межстрочный интервал" FontSize="16" MinimumHeightRequest="44"
+                                        VerticalOptions="Center" SelectedIndexChanged="OnFormattingChanged" />
+                            </Border>
+                            <Border StyleClass="FieldBox">
+                                <Picker x:Name="FormatAlignment" Title="{OnPlatform Android=Выравнивание, Default={x:Null}}"
+                                        SemanticProperties.Description="Выравнивание" FontSize="16" MinimumHeightRequest="44"
+                                        VerticalOptions="Center" SelectedIndexChanged="OnFormattingChanged" />
+                            </Border>
+                            <Label x:Name="FormattingError" IsVisible="False" FontSize="14" TextColor="{DynamicResource BadColor}"
+                                   Text="Введите поля от 0 до 60 мм, отступ до 30 мм и кегль от 8 до 32 пт." />
+                            <Button Text="Сбросить оформление" Clicked="OnFormattingResetClicked" />
+                        </VerticalStackLayout>
+                    </Border>
+
                     <!-- Предпросмотр сразу под полями (виден только на узком экране смартфона) -->
                     <VerticalStackLayout x:Name="InlinePreview" Spacing="12" Margin="0, 16, 0, 0">
                         <Grid ColumnDefinitions="*, Auto" Margin="2, 0" VerticalOptions="Center">

@@ -85,13 +85,17 @@ public partial class FieldsPage : ContentPage
     private double _font = 13;
 
     private string _templateId = "";
+    private DocumentFormatting? _formatting;
+    private DocumentFormatting? _templateFormatting;
+    private string? _templateAlignmentLabel;
+    private bool _loadingFormatting;
 
     // Эффективный шрифт документа с учётом ГОСТ-правила и платформы
     private string EffectiveFont
     {
         get
         {
-            var font = _activeRule?.FontName;
+            var font = _formatting?.FontFamily ?? _activeRule?.FontName;
             if (DeviceInfo.Platform == DevicePlatform.Android)
             {
                 if (string.IsNullOrWhiteSpace(font) || font.Contains("Times", StringComparison.OrdinalIgnoreCase))
@@ -179,12 +183,34 @@ public partial class FieldsPage : ContentPage
         if (_template is null)
             return;
 
+        FormattingPanel.IsVisible = false;
         TitleLabel.Text = _template.Title;
 
         // Подбираем правило ГОСТ для шаблона
         _activeRule = !string.IsNullOrWhiteSpace(_template.FilePath)
             ? CustomRulesService.Instance.MatchRuleSetForTemplate(System.IO.Path.GetFileName(_template.FilePath))
             : null;
+
+        _templateFormatting = null;
+        _templateAlignmentLabel = null;
+        try
+        {
+            (_templateFormatting, _templateAlignmentLabel) = TemplateEngine.ReadFormatting(_template.FilePath);
+            _templateFormatting = _templateFormatting with
+            {
+                LeftMm = _templateFormatting.LeftMm ?? (_activeRule?.Left.Cm ?? 3) * 10,
+                RightMm = _templateFormatting.RightMm ?? (_activeRule?.Right.Cm ?? 1.5) * 10,
+                TopMm = _templateFormatting.TopMm ?? (_activeRule?.Top.Cm ?? 2) * 10,
+                BottomMm = _templateFormatting.BottomMm ?? (_activeRule?.Bottom.Cm ?? 2) * 10,
+                FontFamily = _templateFormatting.FontFamily ?? _activeRule?.FontName ?? SerifFont,
+                FontSize = _templateFormatting.FontSize ?? 14,
+            };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex);
+        }
+        ResetFormatting();
 
         var draft = DraftStore.For(_template.Id);
         _values = draft;
@@ -816,6 +842,12 @@ public partial class FieldsPage : ContentPage
             return;
         }
 
+        if (FormattingError.IsVisible)
+        {
+            await ShowFormattingAsync();
+            return;
+        }
+
         // Все поля заполнены: открываем шторку экспорта
         FileNameEntry.Text = ExportService.DefaultFileName(_template);
         ExportOverlay.IsVisible = true;
@@ -824,6 +856,104 @@ public partial class FieldsPage : ContentPage
     // =====================================================================
     //  ЭКСПОРТ
     // =====================================================================
+
+    private async void OnFormattingClicked(object? sender, EventArgs e)
+    {
+        if (FormattingPanel.IsVisible)
+            FormattingPanel.IsVisible = false;
+        else
+            await ShowFormattingAsync();
+    }
+
+    private async Task ShowFormattingAsync()
+    {
+        FormattingPanel.IsVisible = true;
+        // Дождаться пересчёта размеров прокручиваемой формы после раскрытия панели.
+        await Task.Delay(100);
+        if (FormattingPanel.IsVisible)
+            await FormScroll.ScrollToAsync(FormattingPanel, ScrollToPosition.Start, true);
+    }
+
+    private void OnFormattingResetClicked(object? sender, EventArgs e) => ResetFormatting();
+
+    private void ResetFormatting()
+    {
+        var original = _templateFormatting;
+        _loadingFormatting = true;
+        try
+        {
+            FormatFont.ItemsSource = new[] { original?.FontFamily is { } font ? $"{font} (шаблон)" : "Шрифт шаблона", "Times New Roman", "Arial" };
+            FormatSpacing.ItemsSource = new[] { original?.LineSpacing is { } spacing ? $"{FormatNumber(spacing)} (шаблон)" : "Интервал шаблона", "Одинарный", "1,15", "Полуторный", "Двойной" };
+            string alignment = _templateAlignmentLabel ?? (original?.Alignment switch
+            {
+                TextAlignment.Center => "По центру",
+                TextAlignment.End => "Вправо",
+                TextAlignment.Start => "Влево",
+                _ => "Выравнивание шаблона",
+            });
+            FormatAlignment.ItemsSource = new[] { $"{alignment} (исходное)", "Влево", "По центру", "Вправо" };
+            FormatLeft.Text = FormatNumber(original?.LeftMm);
+            FormatRight.Text = FormatNumber(original?.RightMm);
+            FormatTop.Text = FormatNumber(original?.TopMm);
+            FormatBottom.Text = FormatNumber(original?.BottomMm);
+            FormatIndent.Text = FormatNumber(original?.FirstLineMm);
+            FormatSize.Text = FormatNumber(original?.FontSize);
+            FormatFont.SelectedIndex = FormatSpacing.SelectedIndex = FormatAlignment.SelectedIndex = 0;
+        }
+        finally
+        {
+            _loadingFormatting = false;
+        }
+        UpdateFormatting();
+    }
+
+    private static string FormatNumber(double? value) => value?.ToString("0.##", System.Globalization.CultureInfo.CurrentCulture) ?? "";
+
+    private void OnFormattingChanged(object? sender, EventArgs e)
+    {
+        if (!_loadingFormatting && FormattingError is not null)
+            UpdateFormatting();
+    }
+
+    private void UpdateFormatting()
+    {
+        bool invalid = false;
+        double? Read(Entry input, double? original, double min, double max)
+        {
+            if (string.IsNullOrWhiteSpace(input.Text))
+                return null;
+            if (double.TryParse(input.Text.Trim().Replace(',', '.'),
+                    System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowDecimalPoint,
+                    System.Globalization.CultureInfo.InvariantCulture, out double value))
+            {
+                if (original is { } baseline && Math.Abs(value - Math.Round(baseline, 2)) < 0.00001)
+                    return null;
+                if (value >= min && value <= max)
+                    return value;
+            }
+
+            invalid = true;
+            return null;
+        }
+
+        var initial = _templateFormatting;
+        var formatting = new DocumentFormatting(
+            Read(FormatLeft, initial?.LeftMm, 0, 60), Read(FormatRight, initial?.RightMm, 0, 60),
+            Read(FormatTop, initial?.TopMm, 0, 60), Read(FormatBottom, initial?.BottomMm, 0, 60),
+            FormatFont.SelectedIndex > 0 ? FormatFont.SelectedItem as string : null,
+            Read(FormatSize, initial?.FontSize, 8, 32),
+            FormatSpacing.SelectedIndex switch { 1 => 1, 2 => 1.15, 3 => 1.5, 4 => 2, _ => null },
+            Read(FormatIndent, initial?.FirstLineMm, 0, 30),
+            FormatAlignment.SelectedIndex switch { 1 => TextAlignment.Start, 2 => TextAlignment.Center, 3 => TextAlignment.End, _ => null });
+
+        FormattingError.IsVisible = invalid;
+        if (invalid)
+            return;
+
+        _formatting = formatting == new DocumentFormatting(null, null, null, null, null, null, null, null, null)
+            ? null : formatting;
+        QueueRender();
+    }
 
     private void CloseExport() => ExportOverlay.IsVisible = false;
 
@@ -843,7 +973,7 @@ public partial class FieldsPage : ContentPage
 
         try
         {
-            var result = await ExportService.SaveDocxAsync(_template, _values, ExportName());
+            var result = await ExportService.SaveDocxAsync(_template, _values, ExportName(), _formatting);
             if (result is null)
                 return;
 
@@ -866,7 +996,7 @@ public partial class FieldsPage : ContentPage
 
         try
         {
-            var result = await ExportService.SaveDocxAsync(_template, _values, ExportName());
+            var result = await ExportService.SaveDocxAsync(_template, _values, ExportName(), _formatting);
             if (result is null)
                 return;
 
@@ -889,7 +1019,7 @@ public partial class FieldsPage : ContentPage
 
         try
         {
-            var result = await ExportService.SavePdfAsync(_template, _values, ExportName());
+            var result = await ExportService.SavePdfAsync(_template, _values, ExportName(), _formatting);
             if (result is null)
                 return;
 
@@ -951,16 +1081,16 @@ public partial class FieldsPage : ContentPage
 
         // Масштаб: ширина листа w соответствует 21.0 см листа А4
         double cmScale = w / 21.0;
-        double leftCm = _activeRule?.Left.Cm ?? 3.0;
-        double rightCm = _activeRule?.Right.Cm ?? 1.5;
-        double topCm = _activeRule?.Top.Cm ?? 2.0;
-        double bottomCm = _activeRule?.Bottom.Cm ?? 2.0;
+        double leftCm = _formatting?.LeftMm / 10 ?? _activeRule?.Left.Cm ?? 3.0;
+        double rightCm = _formatting?.RightMm / 10 ?? _activeRule?.Right.Cm ?? 1.5;
+        double topCm = _formatting?.TopMm / 10 ?? _activeRule?.Top.Cm ?? 2.0;
+        double bottomCm = _formatting?.BottomMm / 10 ?? _activeRule?.Bottom.Cm ?? 2.0;
 
         sheet.Padding = new Thickness(
-            Math.Max(12, leftCm * cmScale),
-            Math.Max(12, topCm * cmScale),
-            Math.Max(10, rightCm * cmScale),
-            Math.Max(12, bottomCm * cmScale));
+            leftCm * cmScale,
+            topCm * cmScale,
+            rightCm * cmScale,
+            bottomCm * cmScale);
 
         sheet.Content = BuildSheet(w);
     }
@@ -988,8 +1118,18 @@ public partial class FieldsPage : ContentPage
                 .Select(part => part.FieldId is null ? T(part.Text) : Val(part.FieldId))
                 .ToArray();
 
-            var label = Para(para.Align, spans);
-            label.FontSize = Math.Clamp(_font * para.Pt / 14, 8, 26);
+            double fontSize = Math.Clamp(_font * (_formatting?.FontSize ?? para.Pt) / 14, 6, 42);
+            if (_formatting?.FirstLineMm is > 0 and var indent)
+            {
+                int spaces = (int)Math.Round(indent * w / 210 / (fontSize / 4));
+                if (spaces > 0)
+                    spans = [T(new string('\u00a0', spaces)), ..spans];
+            }
+
+            var label = Para(_formatting?.Alignment ?? para.Align, spans);
+            label.FontSize = fontSize;
+            if (_formatting?.LineSpacing is { } lineSpacing)
+                label.LineHeight = lineSpacing;
             if (para.Bold)
                 label.FontAttributes |= FontAttributes.Bold;
             if (para.Italic)

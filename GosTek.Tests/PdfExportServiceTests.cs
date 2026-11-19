@@ -156,7 +156,8 @@ public class PdfExportServiceTests
         };
 
         using var ms = new MemoryStream();
-        PdfExportService.GeneratePdf("Тестовый документ", paras, values, ms);
+        var formatting = new DocumentFormatting(25, 20, 18, 22, "Arial", 15, 1.5, 12.5, Microsoft.Maui.TextAlignment.Start);
+        PdfExportService.GeneratePdf("Тестовый документ", paras, values, ms, formatting);
 
         Assert.True(ms.Length > 0);
         var bytes = ms.ToArray();

@@ -55,10 +55,10 @@ public partial class AppTabBar : ContentView
     private readonly List<(string Key, Border Border, IconView Icon, Label Label, bool IsRail)> _tabViews = new();
     private string? _hoveredKey;
 
-    private const string PrefRailCollapsed = "rail_collapsed";
+    private const string PrefRailCollapsed = "office_rail_collapsed";
     private const int CompactRailWidth = 104;
-    private const int ExpandedRailWidth = 220;
-    private static bool s_isRailCollapsed = Preferences.Get(PrefRailCollapsed, true);
+    private const int ExpandedRailWidth = 176;
+    private static bool s_isRailCollapsed = Preferences.Get(PrefRailCollapsed, false);
 
     internal static int WindowsRailWidth => s_isRailCollapsed ? CompactRailWidth : ExpandedRailWidth;
 
@@ -224,7 +224,7 @@ public partial class AppTabBar : ContentView
         {
             StrokeThickness = 0,
             StrokeShape = new RoundRectangle { CornerRadius = 12 },
-            Padding = new Thickness(12, 10),
+            Padding = new Thickness(7, 10),
             Content = grid,
         };
 
@@ -342,7 +342,7 @@ public partial class AppTabBar : ContentView
         label.FontSize = compact ? 13 : 16;
         label.HorizontalTextAlignment = compact ? TextAlignment.Center : TextAlignment.Start;
 
-        border.Padding = compact ? new Thickness(4, 8) : new Thickness(12, 10);
+        border.Padding = compact ? new Thickness(4, 8) : new Thickness(7, 10);
         border.WidthRequest = compact ? 90 : -1;
         border.HorizontalOptions = compact ? LayoutOptions.Center : LayoutOptions.Fill;
     }
@@ -385,7 +385,7 @@ public partial class AppTabBar : ContentView
             Grid.SetColumnSpan(RailToggleBtn, 1);
             RailToggleBtn.HorizontalOptions = LayoutOptions.End;
 
-            WindowsHeaderGrid.Padding = new Thickness(14, 20, 14, 16);
+            WindowsHeaderGrid.Padding = new Thickness(9, 20, 9, 16);
             WindowsTabsStack.Padding = new Thickness(10, 6);
             WindowsFooterStack.Padding = new Thickness(10, 12, 10, 18);
 

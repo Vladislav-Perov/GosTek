@@ -71,26 +71,26 @@ public static class FileSaveService
 
     /// <summary>Собирает .docx и сохраняет. overwrite = true: заменить существующий файл.</summary>
     public static SaveResult Save(TemplateDef template, IReadOnlyDictionary<string, string> values,
-                                  string fileName, bool overwrite)
+                                  string fileName, bool overwrite, DocumentFormatting? formatting = null)
     {
 #if ANDROID
-        return SaveAndroid(template, values, fileName, overwrite);
+        return SaveAndroid(template, values, fileName, overwrite, formatting);
 #else
         var path = Path.Combine(ResolveFolder(), fileName);
-        TemplateEngine.FillTo(template, values, path);
+        TemplateEngine.FillTo(template, values, path, formatting);
         return new SaveResult(path, path);
 #endif
     }
 
     /// <summary>Собирает PDF и сохраняет. overwrite = true: заменить существующий файл.</summary>
     public static SaveResult SavePdf(TemplateDef template, IReadOnlyDictionary<string, string> values,
-                                     string fileName, bool overwrite)
+                                     string fileName, bool overwrite, DocumentFormatting? formatting = null)
     {
 #if ANDROID
-        return SaveAndroidPdf(template, values, fileName, overwrite);
+        return SaveAndroidPdf(template, values, fileName, overwrite, formatting);
 #else
         var path = Path.Combine(ResolveFolder(), fileName);
-        Services.PdfExportService.GeneratePdf(template, values, path);
+        Services.PdfExportService.GeneratePdf(template, values, path, formatting);
         return new SaveResult(path, path);
 #endif
     }
@@ -204,19 +204,19 @@ public static class FileSaveService
     }
 
     private static SaveResult SaveAndroid(TemplateDef template, IReadOnlyDictionary<string, string> values,
-                                          string fileName, bool overwrite)
+                                          string fileName, bool overwrite, DocumentFormatting? formatting)
     {
         // Копия в кэше: из неё потом открываем и отправляем файл
         var temp = Path.Combine(FileSystem.CacheDirectory, fileName);
-        TemplateEngine.FillTo(template, values, temp);
+        TemplateEngine.FillTo(template, values, temp, formatting);
         return SaveAndroidFile(temp, fileName, overwrite, DocxMime);
     }
 
     private static SaveResult SaveAndroidPdf(TemplateDef template, IReadOnlyDictionary<string, string> values,
-                                             string fileName, bool overwrite)
+                                             string fileName, bool overwrite, DocumentFormatting? formatting)
     {
         var temp = Path.Combine(FileSystem.CacheDirectory, fileName);
-        Services.PdfExportService.GeneratePdf(template, values, temp);
+        Services.PdfExportService.GeneratePdf(template, values, temp, formatting);
         return SaveAndroidFile(temp, fileName, overwrite, PdfMime);
     }
 

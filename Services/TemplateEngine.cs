@@ -374,8 +374,12 @@ public static class TemplateEngine
     // ===================================================================
 
     /// <summary>Копирует шаблон в path и подставляет значения. Исходный шаблон не меняется.</summary>
-    public static void FillTo(TemplateDef template, IReadOnlyDictionary<string, string> values, string path)
+    public static void FillTo(TemplateDef template, IReadOnlyDictionary<string, string> values, string path,
+        DocumentFormatting? formatting = null)
     {
+        if (string.Equals(Path.GetFullPath(template.FilePath), Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase))
+            throw new IOException("Выберите другое имя для готового документа. Этот путь ведёт к исходному шаблону.");
+
         string Value(string label)
         {
             var id = FieldId(label);
@@ -392,6 +396,9 @@ public static class TemplateEngine
                     foreach (var p in root.Descendants<Paragraph>().ToList())
                         FillParagraph(p, Value);
 
+                if (formatting is not null && doc.MainDocumentPart?.Document?.Body is { } body)
+                    ApplyFormatting(body, formatting);
+
                 doc.MainDocumentPart?.Document?.Save();
                 foreach (var h in doc.MainDocumentPart?.HeaderParts ?? Enumerable.Empty<HeaderPart>())
                     h.Header?.Save();
@@ -400,6 +407,75 @@ public static class TemplateEngine
             }
 
             File.WriteAllBytes(path, ms.ToArray());
+        }
+    }
+
+    private static int Twips(double millimetres) => (int)Math.Round(millimetres * 1440 / 25.4);
+
+    private static void ApplyFormatting(Body body, DocumentFormatting options)
+    {
+        if (options.LeftMm.HasValue || options.RightMm.HasValue || options.TopMm.HasValue || options.BottomMm.HasValue)
+        {
+            if (body.GetFirstChild<SectionProperties>() is null)
+                body.AppendChild(new SectionProperties());
+
+            foreach (var section in body.Descendants<SectionProperties>())
+            {
+                var margin = section.GetFirstChild<PageMargin>();
+                if (margin is null)
+                {
+                    margin = new PageMargin { Left = 1701, Right = 850, Top = 1134, Bottom = 1134, Header = 720, Footer = 720, Gutter = 0 };
+                    section.AddChild(margin);
+                }
+                if (options.LeftMm is { } left) margin.Left = (uint)Twips(left);
+                if (options.RightMm is { } right) margin.Right = (uint)Twips(right);
+                if (options.TopMm is { } top) margin.Top = Twips(top);
+                if (options.BottomMm is { } bottom) margin.Bottom = Twips(bottom);
+            }
+        }
+
+        foreach (var paragraph in body.Descendants<Paragraph>())
+        {
+            if (options.Alignment.HasValue || options.LineSpacing.HasValue || options.FirstLineMm.HasValue)
+            {
+                var props = paragraph.ParagraphProperties ??= new ParagraphProperties();
+                if (options.Alignment is { } align)
+                    props.Justification = new Justification
+                    {
+                        Val = align == TextAlignment.Center ? JustificationValues.Center
+                            : align == TextAlignment.End ? JustificationValues.Right : JustificationValues.Left
+                    };
+                if (options.LineSpacing is { } line)
+                {
+                    var spacing = props.SpacingBetweenLines ??= new SpacingBetweenLines();
+                    spacing.Line = ((int)Math.Round(line * 240)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    spacing.LineRule = LineSpacingRuleValues.Auto;
+                }
+                if (options.FirstLineMm is { } first)
+                {
+                    var indent = props.Indentation ??= new Indentation();
+                    indent.Hanging = null;
+                    indent.HangingChars = null;
+                    indent.FirstLineChars = null;
+                    indent.FirstLine = Twips(first).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                }
+            }
+
+            if (options.FontFamily is null && !options.FontSize.HasValue)
+                continue;
+
+            foreach (var run in paragraph.Descendants<Run>().Where(run => run.Ancestors<Paragraph>().First() == paragraph))
+            {
+                var props = run.RunProperties ??= new RunProperties();
+                if (options.FontFamily is { } font)
+                    props.RunFonts = new RunFonts { Ascii = font, HighAnsi = font, EastAsia = font, ComplexScript = font };
+                if (options.FontSize is { } size)
+                {
+                    var halfPoints = ((int)Math.Round(size * 2)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    props.FontSize = new DocumentFormat.OpenXml.Wordprocessing.FontSize { Val = halfPoints };
+                    props.FontSizeComplexScript = new FontSizeComplexScript { Val = halfPoints };
+                }
+            }
         }
     }
 
@@ -474,6 +550,83 @@ public static class TemplateEngine
     // ===================================================================
     //  ПРЕДПРОСМОТР
     // ===================================================================
+
+    public static (DocumentFormatting Values, string? AlignmentLabel) ReadFormatting(string file)
+    {
+        static double? Number(string? value) => double.TryParse(value,
+            System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var parsed) ? parsed : null;
+
+        static double? Millimetres(double? twips) => twips * 25.4 / 1440;
+
+        using var stream = CopyToMemory(file);
+        using var document = WordprocessingDocument.Open(stream, false);
+        var main = document.MainDocumentPart;
+        var body = main?.Document?.Body;
+        var styles = main?.StyleDefinitionsPart?.Styles;
+        var defaults = styles?.GetFirstChild<DocDefaults>();
+        var margin = body?.Descendants<SectionProperties>().FirstOrDefault()?.GetFirstChild<PageMargin>();
+        var paragraph = body?.Descendants<Paragraph>().FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.InnerText));
+        var run = paragraph?.Descendants<Run>().FirstOrDefault(r => !string.IsNullOrWhiteSpace(r.InnerText));
+
+        IEnumerable<DocumentFormat.OpenXml.Wordprocessing.Style> StyleChain(string? id)
+        {
+            var visited = new HashSet<string>();
+            while (id is not null && visited.Add(id))
+            {
+                var style = styles?.Elements<DocumentFormat.OpenXml.Wordprocessing.Style>().FirstOrDefault(s => s.StyleId?.Value == id);
+                if (style is null)
+                    yield break;
+                yield return style;
+                id = style.BasedOn?.Val?.Value;
+            }
+        }
+
+        var defaultStyle = styles?.Elements<DocumentFormat.OpenXml.Wordprocessing.Style>().FirstOrDefault(s =>
+            s.Type?.Value == StyleValues.Paragraph && s.Default?.Value == true);
+        var paragraphStyles = StyleChain(paragraph?.ParagraphProperties?.ParagraphStyleId?.Val?.Value
+            ?? defaultStyle?.StyleId?.Value).ToArray();
+        var paragraphProperties = new OpenXmlElement?[] { paragraph?.ParagraphProperties }
+            .Concat(paragraphStyles.Select(s => s.StyleParagraphProperties))
+            .Append(defaults?.ParagraphPropertiesDefault?.ParagraphPropertiesBaseStyle).OfType<OpenXmlElement>().ToArray();
+        var runProperties = new OpenXmlElement?[] { run?.RunProperties, paragraph?.ParagraphProperties?.ParagraphMarkRunProperties }
+            .Concat(StyleChain(run?.RunProperties?.RunStyle?.Val?.Value).Select(s => s.StyleRunProperties))
+            .Concat(paragraphStyles.Select(s => s.StyleRunProperties))
+            .Append(defaults?.RunPropertiesDefault?.RunPropertiesBaseStyle).OfType<OpenXmlElement>().ToArray();
+
+        var fontScheme = main?.ThemePart?.Theme?.ThemeElements?.FontScheme;
+        string? FontName(RunFonts? fonts)
+        {
+            var theme = (fonts?.AsciiTheme?.Value ?? fonts?.HighAnsiTheme?.Value)?.ToString();
+            var themedName = theme?.StartsWith("major", StringComparison.OrdinalIgnoreCase) == true
+                ? fontScheme?.MajorFont?.GetFirstChild<DocumentFormat.OpenXml.Drawing.LatinFont>()?.Typeface?.Value
+                : theme?.StartsWith("minor", StringComparison.OrdinalIgnoreCase) == true
+                    ? fontScheme?.MinorFont?.GetFirstChild<DocumentFormat.OpenXml.Drawing.LatinFont>()?.Typeface?.Value
+                    : null;
+            return themedName ?? fonts?.Ascii?.Value ?? fonts?.HighAnsi?.Value;
+        }
+
+        var font = runProperties.Select(p => FontName(p.GetFirstChild<RunFonts>()))
+            .FirstOrDefault(name => !string.IsNullOrWhiteSpace(name));
+        var size = runProperties.Select(p => Number(p.GetFirstChild<DocumentFormat.OpenXml.Wordprocessing.FontSize>()?.Val?.Value))
+            .FirstOrDefault(n => n.HasValue) / 2;
+        var spacing = paragraphProperties.Select(p => p.GetFirstChild<SpacingBetweenLines>())
+            .FirstOrDefault(s => s?.Line is not null);
+        double? line = spacing?.LineRule?.Value is { } rule && rule != LineSpacingRuleValues.Auto
+            ? null : Number(spacing?.Line?.Value) / 240 ?? 1;
+        var indent = paragraphProperties.Select(p => p.GetFirstChild<Indentation>())
+            .FirstOrDefault(i => i?.FirstLine is not null || i?.Hanging is not null);
+        var alignment = paragraphProperties.Select(p => p.GetFirstChild<Justification>()?.Val?.Value)
+            .FirstOrDefault(a => a.HasValue);
+        var align = alignment == JustificationValues.Center ? TextAlignment.Center
+            : alignment == JustificationValues.Right ? TextAlignment.End : TextAlignment.Start;
+        var alignmentLabel = alignment == JustificationValues.Both ? "По ширине" : null;
+
+        return (new DocumentFormatting(
+            Millimetres(margin?.Left?.Value), Millimetres(margin?.Right?.Value),
+            Millimetres(margin?.Top?.Value), Millimetres(margin?.Bottom?.Value),
+            font, size, line, Millimetres(Number(indent?.FirstLine?.Value) ?? -Number(indent?.Hanging?.Value)) ?? 0, align),
+            alignmentLabel);
+    }
 
     public static List<PreviewPara> ReadPreview(string file)
     {

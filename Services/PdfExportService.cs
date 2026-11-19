@@ -38,7 +38,7 @@ public static class PdfExportService
     /// <summary>
     /// Генерирует PDF-документ из шаблона и переданных значений в указанный выходной поток.
     /// </summary>
-    public static void GeneratePdf(TemplateDef template, IReadOnlyDictionary<string, string> values, Stream outputStream)
+    public static void GeneratePdf(TemplateDef template, IReadOnlyDictionary<string, string> values, Stream outputStream, DocumentFormatting? formatting = null)
     {
         List<PreviewPara> paras = new();
         if (!string.IsNullOrEmpty(template.FilePath) && File.Exists(template.FilePath))
@@ -46,24 +46,24 @@ public static class PdfExportService
             paras = TemplateEngine.ReadPreview(template.FilePath);
         }
 
-        GeneratePdfCore(template.Title, template.Fields, paras, values, outputStream);
+        GeneratePdfCore(template.Title, template.Fields, paras, values, outputStream, formatting);
     }
 
     /// <summary>
     /// Генерирует PDF-документ из шаблона и сохраняет его в файл по указанному пути.
     /// </summary>
-    public static void GeneratePdf(TemplateDef template, IReadOnlyDictionary<string, string> values, string outputPath)
+    public static void GeneratePdf(TemplateDef template, IReadOnlyDictionary<string, string> values, string outputPath, DocumentFormatting? formatting = null)
     {
         using var stream = File.Create(outputPath);
-        GeneratePdf(template, values, stream);
+        GeneratePdf(template, values, stream, formatting);
     }
 
     /// <summary>
     /// Генерирует PDF напрямую из списка параграфов разметки предпросмотра (PreviewPara).
     /// </summary>
-    public static void GeneratePdf(string title, IReadOnlyList<PreviewPara> paragraphs, IReadOnlyDictionary<string, string> values, Stream outputStream)
+    public static void GeneratePdf(string title, IReadOnlyList<PreviewPara> paragraphs, IReadOnlyDictionary<string, string> values, Stream outputStream, DocumentFormatting? formatting = null)
     {
-        GeneratePdfCore(title, Array.Empty<TemplateField>(), paragraphs, values, outputStream);
+        GeneratePdfCore(title, Array.Empty<TemplateField>(), paragraphs, values, outputStream, formatting);
     }
 
     private static void GeneratePdfCore(
@@ -71,7 +71,7 @@ public static class PdfExportService
         IReadOnlyList<TemplateField> fields,
         IReadOnlyList<PreviewPara> paragraphs,
         IReadOnlyDictionary<string, string> values,
-        Stream outputStream)
+        Stream outputStream, DocumentFormatting? formatting)
     {
         string GetValue(string fieldId)
         {
@@ -81,7 +81,7 @@ public static class PdfExportService
         }
 
 #if ANDROID
-        Platforms.Android.AndroidPdfWriter.Write(title, fields, paragraphs, GetValue, outputStream);
+        Platforms.Android.AndroidPdfWriter.Write(title, fields, paragraphs, GetValue, outputStream, formatting);
 #else
         var doc = Document.Create(container =>
         {
@@ -90,13 +90,14 @@ public static class PdfExportService
                 page.Size(PageSizes.A4);
 
                 // Стандартные поля страницы (ГОСТ: Левое 30 мм, Правое 15 мм, Верхнее 20 мм, Нижнее 20 мм)
-                page.MarginLeft(30, Unit.Millimetre);
-                page.MarginRight(15, Unit.Millimetre);
-                page.MarginTop(20, Unit.Millimetre);
-                page.MarginBottom(20, Unit.Millimetre);
+                page.MarginLeft((float)(formatting?.LeftMm ?? 30), Unit.Millimetre);
+                page.MarginRight((float)(formatting?.RightMm ?? 15), Unit.Millimetre);
+                page.MarginTop((float)(formatting?.TopMm ?? 20), Unit.Millimetre);
+                page.MarginBottom((float)(formatting?.BottomMm ?? 20), Unit.Millimetre);
 
                 page.PageColor(QuestColors.White);
-                page.DefaultTextStyle(x => x.FontFamily("PT Sans", "Times New Roman").FontSize(14).FontColor(QuestColors.Black));
+                page.DefaultTextStyle(x => x.FontFamily(formatting?.FontFamily ?? "PT Sans", "Times New Roman", "Lato")
+                    .FontSize((float)(formatting?.FontSize ?? 14)).LineHeight((float?)formatting?.LineSpacing).FontColor(QuestColors.Black));
 
                 page.Content().Column(col =>
                 {
@@ -112,9 +113,11 @@ public static class PdfExportService
 
                             col.Item().PaddingBottom(4).Text(text =>
                             {
-                                if (para.Align == Microsoft.Maui.TextAlignment.Center)
+                                if (formatting?.FirstLineMm is { } firstLine)
+                                    text.ParagraphFirstLineIndentation((float)firstLine, Unit.Millimetre);
+                                if ((formatting?.Alignment ?? para.Align) == Microsoft.Maui.TextAlignment.Center)
                                     text.AlignCenter();
-                                else if (para.Align == Microsoft.Maui.TextAlignment.End)
+                                else if ((formatting?.Alignment ?? para.Align) == Microsoft.Maui.TextAlignment.End)
                                     text.AlignRight();
                                 else
                                     text.AlignLeft();
@@ -131,7 +134,7 @@ public static class PdfExportService
                                     var span = text.Span(content);
                                     if (para.Bold) span.Bold();
                                     if (para.Italic) span.Italic();
-                                    if (para.Pt > 0) span.FontSize((float)para.Pt);
+                                    if ((formatting?.FontSize ?? para.Pt) > 0) span.FontSize((float)(formatting?.FontSize ?? para.Pt));
                                 }
                             });
                         }
