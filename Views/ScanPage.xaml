@@ -72,49 +72,45 @@
         <Grid Grid.Row="1" Margin="20, 4" ColumnSpacing="16"
               ColumnDefinitions="{OnPlatform WinUI='*,1.15*', Default='*'}">
 
-            <Border x:Name="DesktopDropZone" IsVisible="{OnPlatform WinUI=True, Default=False}"
+            <Border x:Name="DesktopDropZone" Grid.ColumnSpan="{OnPlatform WinUI=2, Default=1}"
+                    IsVisible="{OnPlatform WinUI=True, Default=False}"
                     BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}"
-                    StrokeShape="RoundRectangle 12" Padding="16" HeightRequest="260" VerticalOptions="Start">
-                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
+                    StrokeShape="RoundRectangle 12" Padding="16" MaximumWidthRequest="680"
+                    VerticalOptions="Start">
+                <VerticalStackLayout Spacing="12">
                     <Label Text="Исходное изображение" FontAttributes="Bold" FontSize="17"
                            TextColor="{DynamicResource TextPrimary}" />
-                    <Image x:Name="DesktopImage" Grid.Row="1" Aspect="AspectFit" IsVisible="False"
-                           SemanticProperties.Description="Открыть исходное изображение в крупном размере">
-                        <Image.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnDesktopImageTapped" />
-                        </Image.GestureRecognizers>
-                    </Image>
-                    <VerticalStackLayout x:Name="DesktopDropHint" Grid.Row="1" Spacing="12"
-                                         VerticalOptions="Center" HorizontalOptions="Center">
-                        <vctrl:IconView Icon="image" Size="40" IconColor="TextSecondary" />
-                        <Label Text="Перетащите фото или скан сюда" HorizontalTextAlignment="Center"
-                               TextColor="{DynamicResource TextSecondary}" />
-                        <Label Text="JPG или PNG" HorizontalTextAlignment="Center"
-                               TextColor="{DynamicResource TextSecondary}" />
-                        <Button Text="Выбрать изображение" Clicked="OnChooseDesktopImageClicked"
-                                HorizontalOptions="Center" BackgroundColor="{DynamicResource ActionBg}" TextColor="White" />
-                    </VerticalStackLayout>
-                    <Button x:Name="DesktopZoomButton" Grid.Row="2" Text="Увеличить фото" IsVisible="False"
-                            HorizontalOptions="Start" Clicked="OnDesktopZoomClicked" />
-                </Grid>
-            </Border>
-
-            <VerticalStackLayout x:Name="DesktopInputPanel" Grid.Column="{OnPlatform WinUI=1, Default=0}"
-                                 IsVisible="{OnPlatform WinUI=True, Default=False}"
-                                 VerticalOptions="Start" Spacing="12" Padding="12,16">
-                <Label Text="Оцифровка изображения" FontSize="22" FontAttributes="Bold"
-                       TextColor="{DynamicResource TextPrimary}" />
-                <Label Text="Загрузите фото документа, распознайте текст и проверьте его по оригиналу."
-                       TextColor="{DynamicResource TextSecondary}" />
-                <Label x:Name="DesktopFileName" IsVisible="False" LineBreakMode="MiddleTruncation"
-                       TextColor="{DynamicResource TextPrimary}" />
-                <FlexLayout x:Name="DesktopImageActions" IsVisible="False" Wrap="Wrap">
-                    <Button Text="Распознать текст" Clicked="OnRecognizeDesktopClicked" Margin="0,0,8,8"
+                    <Grid x:Name="DesktopImageArea" HeightRequest="200" BackgroundColor="{DynamicResource PageBg}">
+                        <Image x:Name="DesktopImage" Aspect="AspectFit" IsVisible="False"
+                               SemanticProperties.Description="Открыть исходное изображение в крупном размере">
+                            <Image.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnDesktopImageTapped" />
+                            </Image.GestureRecognizers>
+                        </Image>
+                        <VerticalStackLayout x:Name="DesktopDropHint" Spacing="12"
+                                             VerticalOptions="Center" HorizontalOptions="Center">
+                            <vctrl:IconView Icon="image" Size="40" IconColor="TextSecondary" />
+                            <Label Text="Перетащите фото или скан сюда" HorizontalTextAlignment="Center"
+                                   TextColor="{DynamicResource TextSecondary}" />
+                            <Label Text="JPG или PNG" HorizontalTextAlignment="Center"
+                                   TextColor="{DynamicResource TextSecondary}" />
+                        </VerticalStackLayout>
+                    </Grid>
+                    <Label x:Name="DesktopFileName" IsVisible="False" LineBreakMode="MiddleTruncation"
+                           TextColor="{DynamicResource TextPrimary}" />
+                    <Button x:Name="DesktopChooseButton" Text="Выбрать изображение"
+                            Clicked="OnChooseDesktopImageClicked" HorizontalOptions="Start"
                             BackgroundColor="{DynamicResource ActionBg}" TextColor="White" />
-                    <Button Text="Другое изображение" Clicked="OnChooseDesktopImageClicked" Margin="0,0,0,8" />
-                </FlexLayout>
-                <Label x:Name="DesktopError" IsVisible="False" TextColor="{DynamicResource BadColor}" />
-            </VerticalStackLayout>
+                    <FlexLayout x:Name="DesktopImageActions" IsVisible="False" Wrap="Wrap">
+                        <Button x:Name="DesktopRecognizeButton" Text="Распознать текст"
+                                Clicked="OnRecognizeDesktopClicked" Margin="0,0,8,6"
+                                BackgroundColor="{DynamicResource ActionBg}" TextColor="White" />
+                        <Button Text="Другое изображение" Clicked="OnChooseDesktopImageClicked" Margin="0,0,8,6" />
+                        <Button Text="Увеличить фото" Clicked="OnDesktopZoomClicked" Margin="0,0,0,6" />
+                    </FlexLayout>
+                    <Label x:Name="DesktopError" IsVisible="False" TextColor="{DynamicResource BadColor}" />
+                </VerticalStackLayout>
+            </Border>
 
             <!-- Рамка видоискателя с акцентными уголками и подсказкой -->
             <Grid x:Name="FramePanel" IsVisible="{OnPlatform Android=True, Default=False}"

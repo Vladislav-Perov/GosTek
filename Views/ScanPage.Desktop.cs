@@ -58,9 +58,9 @@ public partial class ScanPage
         _desktopImage = bytes;
         DesktopImage.Source = ImageSource.FromStream(() => new MemoryStream(bytes, writable: false));
         DesktopImage.IsVisible = true;
-        DesktopDropZone.HeightRequest = 360;
-        DesktopZoomButton.IsVisible = true;
+        DesktopImageArea.HeightRequest = 300;
         DesktopDropHint.IsVisible = false;
+        DesktopChooseButton.IsVisible = false;
         DesktopFileName.Text = file.Name;
         DesktopFileName.IsVisible = true;
         DesktopImageActions.IsVisible = true;

@@ -508,10 +508,12 @@ public partial class ScanPage : ContentPage
     {
         ResultPanel.IsVisible = on;
         FramePanel.IsVisible = !IsDesktop && !on;
-        DesktopInputPanel.IsVisible = IsDesktop && !on;
-
         if (IsDesktop)
+        {
+            Grid.SetColumnSpan(DesktopDropZone, on ? 1 : 2);
+            DesktopRecognizeButton.IsVisible = !on;
             return;
+        }
 
         if (on)
 
