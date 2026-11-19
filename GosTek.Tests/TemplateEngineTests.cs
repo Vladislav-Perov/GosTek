@@ -45,6 +45,14 @@ public class TemplateEngineTests
             Assert.Throws<IOException>(() => TemplateEngine.FillTo(template, values, source, formatting));
             Assert.Equal(original, File.ReadAllBytes(source));
 
+            var (read, _) = TemplateEngine.ReadFormatting(output);
+            Assert.Equal(25.4, read.LeftMm);
+            Assert.Equal("Arial", read.FontFamily);
+            Assert.Equal(16, read.FontSize);
+            Assert.Equal(1.5, read.LineSpacing);
+            Assert.Equal(12.7, read.FirstLineMm);
+            Assert.Equal(Microsoft.Maui.TextAlignment.Center, read.Alignment);
+
             using var result = WordprocessingDocument.Open(output, false);
             var body = result.MainDocumentPart!.Document.Body!;
             var paragraph = Assert.Single(body.Elements<Paragraph>());

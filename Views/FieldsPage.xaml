@@ -171,7 +171,7 @@
                     <Border x:Name="FormattingPanel" IsVisible="False" BackgroundColor="{DynamicResource CardBg}"
                             Stroke="{DynamicResource CardStroke}" StrokeShape="RoundRectangle 12" Padding="14">
                         <VerticalStackLayout Spacing="12">
-                            <Label Text="Настройки действуют только для текущего документа. Пустые поля сохраняют исходные значения."
+                            <Label Text="Показаны поля первой страницы и оформление первого абзаца с текстом. Изменения действуют только для текущего документа."
                                    FontSize="14" TextColor="{DynamicResource TextSecondary}" />
                             <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,*" RowSpacing="8" ColumnSpacing="10">
                                 <VerticalStackLayout Grid.Row="0" Grid.Column="0">

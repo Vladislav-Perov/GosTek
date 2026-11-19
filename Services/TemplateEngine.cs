@@ -489,6 +489,83 @@ public static class TemplateEngine
     //  ПРЕДПРОСМОТР
     // ===================================================================
 
+    public static (DocumentFormatting Values, string? AlignmentLabel) ReadFormatting(string file)
+    {
+        static double? Number(string? value) => double.TryParse(value,
+            System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var parsed) ? parsed : null;
+
+        static double? Millimetres(double? twips) => twips * 25.4 / 1440;
+
+        using var stream = CopyToMemory(file);
+        using var document = WordprocessingDocument.Open(stream, false);
+        var main = document.MainDocumentPart;
+        var body = main?.Document?.Body;
+        var styles = main?.StyleDefinitionsPart?.Styles;
+        var defaults = styles?.GetFirstChild<DocDefaults>();
+        var margin = body?.Descendants<SectionProperties>().FirstOrDefault()?.GetFirstChild<PageMargin>();
+        var paragraph = body?.Descendants<Paragraph>().FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.InnerText));
+        var run = paragraph?.Descendants<Run>().FirstOrDefault(r => !string.IsNullOrWhiteSpace(r.InnerText));
+
+        IEnumerable<DocumentFormat.OpenXml.Wordprocessing.Style> StyleChain(string? id)
+        {
+            var visited = new HashSet<string>();
+            while (id is not null && visited.Add(id))
+            {
+                var style = styles?.Elements<DocumentFormat.OpenXml.Wordprocessing.Style>().FirstOrDefault(s => s.StyleId?.Value == id);
+                if (style is null)
+                    yield break;
+                yield return style;
+                id = style.BasedOn?.Val?.Value;
+            }
+        }
+
+        var defaultStyle = styles?.Elements<DocumentFormat.OpenXml.Wordprocessing.Style>().FirstOrDefault(s =>
+            s.Type?.Value == StyleValues.Paragraph && s.Default?.Value == true);
+        var paragraphStyles = StyleChain(paragraph?.ParagraphProperties?.ParagraphStyleId?.Val?.Value
+            ?? defaultStyle?.StyleId?.Value).ToArray();
+        var paragraphProperties = new OpenXmlElement?[] { paragraph?.ParagraphProperties }
+            .Concat(paragraphStyles.Select(s => s.StyleParagraphProperties))
+            .Append(defaults?.ParagraphPropertiesDefault?.ParagraphPropertiesBaseStyle).OfType<OpenXmlElement>().ToArray();
+        var runProperties = new OpenXmlElement?[] { run?.RunProperties, paragraph?.ParagraphProperties?.ParagraphMarkRunProperties }
+            .Concat(StyleChain(run?.RunProperties?.RunStyle?.Val?.Value).Select(s => s.StyleRunProperties))
+            .Concat(paragraphStyles.Select(s => s.StyleRunProperties))
+            .Append(defaults?.RunPropertiesDefault?.RunPropertiesBaseStyle).OfType<OpenXmlElement>().ToArray();
+
+        var fontScheme = main?.ThemePart?.Theme?.ThemeElements?.FontScheme;
+        string? FontName(RunFonts? fonts)
+        {
+            var theme = (fonts?.AsciiTheme?.Value ?? fonts?.HighAnsiTheme?.Value)?.ToString();
+            var themedName = theme?.StartsWith("major", StringComparison.OrdinalIgnoreCase) == true
+                ? fontScheme?.MajorFont?.GetFirstChild<DocumentFormat.OpenXml.Drawing.LatinFont>()?.Typeface?.Value
+                : theme?.StartsWith("minor", StringComparison.OrdinalIgnoreCase) == true
+                    ? fontScheme?.MinorFont?.GetFirstChild<DocumentFormat.OpenXml.Drawing.LatinFont>()?.Typeface?.Value
+                    : null;
+            return themedName ?? fonts?.Ascii?.Value ?? fonts?.HighAnsi?.Value;
+        }
+
+        var font = runProperties.Select(p => FontName(p.GetFirstChild<RunFonts>()))
+            .FirstOrDefault(name => !string.IsNullOrWhiteSpace(name));
+        var size = runProperties.Select(p => Number(p.GetFirstChild<DocumentFormat.OpenXml.Wordprocessing.FontSize>()?.Val?.Value))
+            .FirstOrDefault(n => n.HasValue) / 2;
+        var spacing = paragraphProperties.Select(p => p.GetFirstChild<SpacingBetweenLines>())
+            .FirstOrDefault(s => s?.Line is not null);
+        var line = spacing?.LineRule?.Value is { } rule && rule != LineSpacingRuleValues.Auto
+            ? null : Number(spacing?.Line?.Value) / 240 ?? 1;
+        var indent = paragraphProperties.Select(p => p.GetFirstChild<Indentation>())
+            .FirstOrDefault(i => i?.FirstLine is not null || i?.Hanging is not null);
+        var alignment = paragraphProperties.Select(p => p.GetFirstChild<Justification>()?.Val?.Value)
+            .FirstOrDefault(a => a.HasValue);
+        var align = alignment == JustificationValues.Center ? TextAlignment.Center
+            : alignment == JustificationValues.Right ? TextAlignment.End : TextAlignment.Start;
+        var alignmentLabel = alignment == JustificationValues.Both ? "По ширине" : null;
+
+        return (new DocumentFormatting(
+            Millimetres(margin?.Left?.Value), Millimetres(margin?.Right?.Value),
+            Millimetres(margin?.Top?.Value), Millimetres(margin?.Bottom?.Value),
+            font, size, line, Millimetres(Number(indent?.FirstLine?.Value) ?? -Number(indent?.Hanging?.Value)) ?? 0, align),
+            alignmentLabel);
+    }
+
     public static List<PreviewPara> ReadPreview(string file)
     {
         var result = new List<PreviewPara>();

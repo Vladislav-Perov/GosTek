@@ -86,6 +86,9 @@ public partial class FieldsPage : ContentPage
 
     private string _templateId = "";
     private DocumentFormatting? _formatting;
+    private DocumentFormatting? _templateFormatting;
+    private string? _templateAlignmentLabel;
+    private bool _loadingFormatting;
 
     // Эффективный шрифт документа с учётом ГОСТ-правила и платформы
     private string EffectiveFont
@@ -180,7 +183,6 @@ public partial class FieldsPage : ContentPage
         if (_template is null)
             return;
 
-        ResetFormatting();
         FormattingPanel.IsVisible = false;
         TitleLabel.Text = _template.Title;
 
@@ -188,6 +190,27 @@ public partial class FieldsPage : ContentPage
         _activeRule = !string.IsNullOrWhiteSpace(_template.FilePath)
             ? CustomRulesService.Instance.MatchRuleSetForTemplate(System.IO.Path.GetFileName(_template.FilePath))
             : null;
+
+        _templateFormatting = null;
+        _templateAlignmentLabel = null;
+        try
+        {
+            (_templateFormatting, _templateAlignmentLabel) = TemplateEngine.ReadFormatting(_template.FilePath);
+            _templateFormatting = _templateFormatting with
+            {
+                LeftMm = _templateFormatting.LeftMm ?? (_activeRule?.Left.Cm ?? 3) * 10,
+                RightMm = _templateFormatting.RightMm ?? (_activeRule?.Right.Cm ?? 1.5) * 10,
+                TopMm = _templateFormatting.TopMm ?? (_activeRule?.Top.Cm ?? 2) * 10,
+                BottomMm = _templateFormatting.BottomMm ?? (_activeRule?.Bottom.Cm ?? 2) * 10,
+                FontFamily = _templateFormatting.FontFamily ?? _activeRule?.FontName ?? SerifFont,
+                FontSize = _templateFormatting.FontSize ?? 14,
+            };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex);
+        }
+        ResetFormatting();
 
         var draft = DraftStore.For(_template.Id);
         _values = draft;
@@ -855,42 +878,72 @@ public partial class FieldsPage : ContentPage
 
     private void ResetFormatting()
     {
-        FormatFont.ItemsSource = new[] { "Шрифт шаблона", "Times New Roman", "Arial" };
-        FormatSpacing.ItemsSource = new[] { "Интервал шаблона", "Одинарный", "1,15", "Полуторный", "Двойной" };
-        FormatAlignment.ItemsSource = new[] { "Выравнивание шаблона", "Влево", "По центру", "Вправо" };
-        FormatLeft.Text = FormatRight.Text = FormatTop.Text = FormatBottom.Text = FormatIndent.Text = FormatSize.Text = "";
-        FormatFont.SelectedIndex = FormatSpacing.SelectedIndex = FormatAlignment.SelectedIndex = 0;
+        var original = _templateFormatting;
+        _loadingFormatting = true;
+        try
+        {
+            FormatFont.ItemsSource = new[] { original?.FontFamily is { } font ? $"{font} (шаблон)" : "Шрифт шаблона", "Times New Roman", "Arial" };
+            FormatSpacing.ItemsSource = new[] { original?.LineSpacing is { } spacing ? $"{FormatNumber(spacing)} (шаблон)" : "Интервал шаблона", "Одинарный", "1,15", "Полуторный", "Двойной" };
+            string alignment = _templateAlignmentLabel ?? (original?.Alignment switch
+            {
+                TextAlignment.Center => "По центру",
+                TextAlignment.End => "Вправо",
+                TextAlignment.Start => "Влево",
+                _ => "Выравнивание шаблона",
+            });
+            FormatAlignment.ItemsSource = new[] { $"{alignment} (исходное)", "Влево", "По центру", "Вправо" };
+            FormatLeft.Text = FormatNumber(original?.LeftMm);
+            FormatRight.Text = FormatNumber(original?.RightMm);
+            FormatTop.Text = FormatNumber(original?.TopMm);
+            FormatBottom.Text = FormatNumber(original?.BottomMm);
+            FormatIndent.Text = FormatNumber(original?.FirstLineMm);
+            FormatSize.Text = FormatNumber(original?.FontSize);
+            FormatFont.SelectedIndex = FormatSpacing.SelectedIndex = FormatAlignment.SelectedIndex = 0;
+        }
+        finally
+        {
+            _loadingFormatting = false;
+        }
         UpdateFormatting();
     }
 
+    private static string FormatNumber(double? value) => value?.ToString("0.##", System.Globalization.CultureInfo.CurrentCulture) ?? "";
+
     private void OnFormattingChanged(object? sender, EventArgs e)
     {
-        if (FormattingError is not null)
+        if (!_loadingFormatting && FormattingError is not null)
             UpdateFormatting();
     }
 
     private void UpdateFormatting()
     {
         bool invalid = false;
-        double? Read(Entry input, double min, double max)
+        double? Read(Entry input, double? original, double min, double max)
         {
             if (string.IsNullOrWhiteSpace(input.Text))
                 return null;
             if (double.TryParse(input.Text.Trim().Replace(',', '.'),
-                    System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out double value)
-                && value >= min && value <= max)
-                return value;
+                    System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowDecimalPoint,
+                    System.Globalization.CultureInfo.InvariantCulture, out double value))
+            {
+                if (original is { } baseline && Math.Abs(value - Math.Round(baseline, 2)) < 0.00001)
+                    return null;
+                if (value >= min && value <= max)
+                    return value;
+            }
 
             invalid = true;
             return null;
         }
 
+        var initial = _templateFormatting;
         var formatting = new DocumentFormatting(
-            Read(FormatLeft, 0, 60), Read(FormatRight, 0, 60), Read(FormatTop, 0, 60), Read(FormatBottom, 0, 60),
+            Read(FormatLeft, initial?.LeftMm, 0, 60), Read(FormatRight, initial?.RightMm, 0, 60),
+            Read(FormatTop, initial?.TopMm, 0, 60), Read(FormatBottom, initial?.BottomMm, 0, 60),
             FormatFont.SelectedIndex > 0 ? FormatFont.SelectedItem as string : null,
-            Read(FormatSize, 8, 32),
+            Read(FormatSize, initial?.FontSize, 8, 32),
             FormatSpacing.SelectedIndex switch { 1 => 1, 2 => 1.15, 3 => 1.5, 4 => 2, _ => null },
-            Read(FormatIndent, 0, 30),
+            Read(FormatIndent, initial?.FirstLineMm, 0, 30),
             FormatAlignment.SelectedIndex switch { 1 => TextAlignment.Start, 2 => TextAlignment.Center, 3 => TextAlignment.End, _ => null });
 
         FormattingError.IsVisible = invalid;
