@@ -74,8 +74,17 @@ public partial class MainPage : ContentPage, IQueryAttributable
         base.OnAppearing();
         ShowRandomSubtitle();
 
-        // «Быстрый старт»: первые три шаблона из папки шаблонов
-        TemplateCatalog.Refresh();
+        // 1. Мгновенное отображение из уже готового каталога (0 мс задержки)
+        if (TemplateCatalog.Items.Length > 0)
+        {
+            var cachedQuick = TemplateCatalog.Items.Take(3).ToList();
+            BindableLayout.SetItemsSource(QuickStartList, cachedQuick);
+            QuickStartSection.IsVisible = true;
+            QuickStartDivider.IsVisible = true;
+        }
+
+        // 2. Фоновое обновление каталога шаблонов без зависания UI-потока
+        await Task.Run(TemplateCatalog.Refresh);
         var quick = TemplateCatalog.Items.Take(3).ToList();
         BindableLayout.SetItemsSource(QuickStartList, quick);
         QuickStartSection.IsVisible = quick.Count > 0;   // нет шаблонов — нет и блока
@@ -86,7 +95,7 @@ public partial class MainPage : ContentPage, IQueryAttributable
             {
                 var rows = QuickStartList.Children.OfType<VisualElement>().ToList();
                 if (rows.Count > 0)
-                    await AnimationHelper.AnimateStaggeredEntranceAsync(rows);
+                    await AnimationHelper.AnimateStaggeredEntranceAsync(rows, maxAnimatedCount: 3);
             });
         }
         await RefreshProfileCardAsync();

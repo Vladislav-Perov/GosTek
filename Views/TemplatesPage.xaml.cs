@@ -28,6 +28,7 @@ public partial class TemplatesPage : ContentPage
     private string _signature = "";
     private bool _isFirstLoad = true;
     private bool _isUpdatingFavorite;
+    private CancellationTokenSource? _searchDebounceCts;
 
     public TemplatesPage()
     {
@@ -55,29 +56,36 @@ public partial class TemplatesPage : ContentPage
             ResultsList.IsVisible = false;
             RecentSection.IsVisible = false;
 
-            await Task.Delay(250);   // реалистичная скелетон-анимация при открытии каталога
-            ReloadTemplates();
+            // Фоновое сканирование каталога без блокировки UI-потока
+            await Task.Run(TemplateCatalog.Refresh);
+            _signature = TemplateCatalog.FolderSignature();
+            RebuildChips();
+            ApplyFilter();
+
             CatalogSkeleton.StopShimmer();
             ResultsList.IsVisible = true;
         }
         else
         {
-            ReloadTemplates();
+            await ReloadTemplatesAsync();
         }
     }
 
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        _searchDebounceCts?.Cancel();
         FavoritesService.Instance.Changed -= OnFavoritesChanged;
         SettingsOverlay.Dismiss();
         CatalogSkeleton.StopShimmer();
         StopWatching();
     }
 
-    private void ReloadTemplates()
+    private void ReloadTemplates() => _ = ReloadTemplatesAsync();
+
+    private async Task ReloadTemplatesAsync()
     {
-        TemplateCatalog.Refresh();   // подхватить новые/удалённые файлы в папке шаблонов
+        await Task.Run(TemplateCatalog.Refresh);   // подхватить новые/удалённые файлы в папке шаблонов
         _signature = TemplateCatalog.FolderSignature();
         RebuildChips();
         ApplyFilter();
@@ -87,7 +95,7 @@ public partial class TemplatesPage : ContentPage
     private void StartWatching()
     {
         _watchTimer ??= Dispatcher.CreateTimer();
-        _watchTimer.Interval = TimeSpan.FromSeconds(1.5);
+        _watchTimer.Interval = TimeSpan.FromSeconds(3.0);
         _watchTimer.Tick -= OnWatchTick;
         _watchTimer.Tick += OnWatchTick;
         _watchTimer.Start();
@@ -104,7 +112,7 @@ public partial class TemplatesPage : ContentPage
             if (sig != _signature)
             {
                 await Task.Delay(500);   // дать файлу докопироваться
-                MainThread.BeginInvokeOnMainThread(ReloadTemplates);
+                await ReloadTemplatesAsync();
             }
         }
         catch (Exception ex)
@@ -118,11 +126,33 @@ public partial class TemplatesPage : ContentPage
         }
     }
 
-    // ===== Поиск =====
+    // ===== Поиск с Debounce 180 мс =====
     private void OnSearchChanged(object? sender, TextChangedEventArgs e)
     {
-        _query = (e.NewTextValue ?? "").Trim();
-        ApplyFilter();
+        var text = (e.NewTextValue ?? "").Trim();
+        _searchDebounceCts?.Cancel();
+        _searchDebounceCts = new CancellationTokenSource();
+        var token = _searchDebounceCts.Token;
+
+        Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(180, token);
+                if (token.IsCancellationRequested) return;
+
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    if (token.IsCancellationRequested) return;
+                    _query = text;
+                    ApplyFilter();
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                // Пользователь продолжает вводить запрос
+            }
+        });
     }
 
     // ===== Категории (берутся из имён файлов) =====
@@ -202,9 +232,11 @@ public partial class TemplatesPage : ContentPage
                 || t.Description.Contains(_query, StringComparison.CurrentCultureIgnoreCase));
         }
 
-        var results = queryable.ToList();
+        var results = queryable
+            .Select(t => t with { IsFavorite = favIds.Contains(t.Id) })
+            .ToList();
 
-        BindableLayout.SetItemsSource(ResultsList, results);
+        ResultsList.ItemsSource = results;
         EmptyLabel.IsVisible = results.Count == 0;
         EmptyCard.IsVisible = results.Count == 0;
         if (TemplateCatalog.Items.Length == 0)
@@ -218,32 +250,11 @@ public partial class TemplatesPage : ContentPage
 
         // «Недавние» — только когда нет поиска, не включён фильтр избранного и выбрано «Все»
         var recent = LoadRecent();
-        BindableLayout.SetItemsSource(RecentList, recent);
+        var recentWithFav = recent
+            .Select(t => t with { IsFavorite = favIds.Contains(t.Id) })
+            .ToList();
+        BindableLayout.SetItemsSource(RecentList, recentWithFav);
         RecentSection.IsVisible = _query.Length == 0 && !_isFavoriteFilter && _category is null && recent.Count > 0;
-
-        // Синхронизация состояния строк (звёздочки избранного и подсветка совпадений)
-        Dispatcher.Dispatch(async () =>
-        {
-            UpdateRowsState(RecentList, favIds, "");
-            UpdateRowsState(ResultsList, favIds, _query);
-
-            var rows = ResultsList.Children.OfType<VisualElement>().ToList();
-            if (rows.Count > 0)
-                await AnimationHelper.AnimateStaggeredEntranceAsync(rows);
-        });
-    }
-
-    private void UpdateRowsState(Layout layout, IReadOnlyList<string> favIds, string query)
-    {
-        var highlightColor = ThemeService.IsDark ? Color.FromArgb("#3FC3A1") : Color.FromArgb("#0D6B57");
-        foreach (var child in layout.Children)
-        {
-            if (child is ListRow row && row.BindingContext is TemplateItem item)
-            {
-                row.IsFavorite = favIds.Contains(item.Id);
-                row.SetHighlightedTitle(item.Title, query, highlightColor);
-            }
-        }
     }
 
     private async void OnFavoriteTapped(object? sender, EventArgs e)

@@ -28,7 +28,7 @@
                     VerticalScrollBarVisibility="Default">
             <VerticalStackLayout MaximumWidthRequest="950"
                                  HorizontalOptions="Fill"
-                                 Padding="20, 20, 20, 24"
+                                 Padding="{OnPlatform Android='20, 20, 20, 80', WinUI='20, 20, 20, 24'}"
                                  Spacing="16">
 
                 <!-- Шапка страницы -->

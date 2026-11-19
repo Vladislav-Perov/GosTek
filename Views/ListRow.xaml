@@ -14,15 +14,12 @@
 
     <!-- Строка-карточка: векторная иконка в плашке, заголовок, подпись, избранное, стрелка перехода -->
     <Border StyleClass="HoverCard"
-            StrokeShape="RoundRectangle 18"
+            StrokeShape="RoundRectangle 16"
             Stroke="{DynamicResource CardStroke}"
             BackgroundColor="{DynamicResource CardBg}"
             StrokeThickness="1"
-            Padding="16, 14"
+            Padding="16, 12"
             HorizontalOptions="Fill">
-        <Border.Shadow>
-            <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.08" />
-        </Border.Shadow>
         <Border.GestureRecognizers>
             <TapGestureRecognizer Tapped="OnTapped" />
         </Border.GestureRecognizers>

@@ -19,15 +19,18 @@ public static class AnimationHelper
 
     /// <summary>
     /// Каскадное появление коллекции визуальных элементов (плавный выезд снизу с нарастанием прозрачности).
+    /// Ограничено первыми maxAnimatedCount элементами, чтобы в длинных списках элементы ниже экрана не оставались скрытыми при быстром скролле.
     /// </summary>
     /// <param name="elements">Коллекция элементов для анимации.</param>
-    /// <param name="duration">Длительность анимации каждого элемента в миллисекундах (по умолчанию 300 мс).</param>
-    /// <param name="delayMs">Задержка между стартом анимации соседних элементов (по умолчанию 50 мс).</param>
+    /// <param name="duration">Длительность анимации каждого элемента в миллисекундах (по умолчанию 250 мс).</param>
+    /// <param name="delayMs">Задержка между стартом анимации соседних элементов (по умолчанию 35 мс).</param>
+    /// <param name="maxAnimatedCount">Максимум анимируемых карточек в поле видимости экрана (по умолчанию 8).</param>
     /// <param name="cancellationToken">Токен отмены.</param>
     public static async Task AnimateStaggeredEntranceAsync(
         IEnumerable<VisualElement?>? elements,
-        uint duration = 300,
-        uint delayMs = 50,
+        uint duration = 250,
+        uint delayMs = 35,
+        int maxAnimatedCount = 8,
         CancellationToken cancellationToken = default)
     {
         if (elements is null)
@@ -47,24 +50,42 @@ public static class AnimationHelper
             return;
         }
 
-        // 1. Предварительная установка начального скрытого состояния
-        foreach (var element in list)
+        // 1. Для элементов дальше границы первого экрана сразу гарантируем видимость,
+        // чтобы при быстром скролле вниз пользователь не видел пустые серые пробелы.
+        for (int i = maxAnimatedCount; i < list.Count; i++)
         {
-            element.Opacity = 0;
-            element.TranslationY = 20;
+            list[i].Opacity = 1.0;
+            list[i].TranslationY = 0;
         }
 
-        // 2. Последовательный каскадный запуск анимаций
-        foreach (var element in list)
+        // 2. Для первых элементов (в пределах экрана) задаем стартовую позицию для плавного выезда
+        int animCount = Math.Min(list.Count, maxAnimatedCount);
+        for (int i = 0; i < animCount; i++)
+        {
+            list[i].Opacity = 0;
+            list[i].TranslationY = 16;
+        }
+
+        // 3. Последовательный быстрый каскадный запуск анимаций
+        for (int i = 0; i < animCount; i++)
         {
             if (cancellationToken.IsCancellationRequested)
+            {
+                // При отмене мгновенно возвращаем нормальную видимость оставшимся карточкам
+                for (int j = i; j < animCount; j++)
+                {
+                    list[j].Opacity = 1.0;
+                    list[j].TranslationY = 0;
+                }
                 break;
+            }
 
+            var element = list[i];
             _ = Task.WhenAll(
                 element.FadeToAsync(1.0, duration, Easing.CubicOut),
                 element.TranslateToAsync(0, 0, duration, Easing.CubicOut));
 
-            if (delayMs > 0)
+            if (delayMs > 0 && i < animCount - 1)
             {
                 try
                 {
@@ -72,6 +93,11 @@ public static class AnimationHelper
                 }
                 catch (OperationCanceledException)
                 {
+                    for (int j = i + 1; j < animCount; j++)
+                    {
+                        list[j].Opacity = 1.0;
+                        list[j].TranslationY = 0;
+                    }
                     break;
                 }
             }

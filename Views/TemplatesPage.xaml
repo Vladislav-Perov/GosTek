@@ -24,6 +24,7 @@
             <views:ListRow Icon="file"
                            Title="{Binding Title}"
                            Subtitle="{Binding Description}"
+                           IsFavorite="{Binding IsFavorite}"
                            ShowFavorite="True"
                            Tapped="OnTemplateTapped"
                            FavoriteTapped="OnFavoriteTapped" />
@@ -32,151 +33,173 @@
 
     <Grid RowDefinitions="*">
 
-        <!-- ==================== ОСНОВНОЙ КОНТЕНТ ==================== -->
-        <ScrollView Grid.Row="0"
-                    VerticalScrollBarVisibility="Never">
-            <VerticalStackLayout MaximumWidthRequest="950"
-                                 HorizontalOptions="Fill"
-                                 Padding="20, 20, 20, 24"
-                                 Spacing="16">
+        <!-- ==================== ВИРТУАЛИЗИРОВАННЫЙ КАТАЛОГ ШАБЛОНОВ ==================== -->
+        <CollectionView x:Name="ResultsList"
+                        Grid.Row="0"
+                        ItemSizingStrategy="MeasureFirstItem"
+                        SelectionMode="None"
+                        MaximumWidthRequest="950"
+                        HorizontalOptions="Fill"
+                        VerticalScrollBarVisibility="Never">
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
+            </CollectionView.ItemsLayout>
 
-                <!-- Заголовок страницы -->
-                <VerticalStackLayout Spacing="2" VerticalOptions="Center">
-                    <Label Text="Шаблоны"
-                           FontSize="26"
-                           FontAttributes="Bold"
-                           TextColor="{DynamicResource TextPrimary}" />
-                    <Label Text="Каталог официальных бланков и студенческих документов по ГОСТ"
-                           FontSize="13"
-                           TextColor="{DynamicResource TextSecondary}" />
-                </VerticalStackLayout>
+            <!-- Шапка: заголовок, поиск, категории, недавние (скроллится вместе со списком) -->
+            <CollectionView.Header>
+                <VerticalStackLayout Spacing="16"
+                                     HorizontalOptions="Fill"
+                                     Padding="20, 20, 20, 6">
 
-                <!-- Поисковая строка с векторной иконкой -->
-                <Border BackgroundColor="{DynamicResource CardBg}"
-                        Stroke="{DynamicResource CardStroke}"
-                        StrokeThickness="1"
-                        StrokeShape="RoundRectangle 16"
-                        Padding="16,0"
-                        HeightRequest="48">
-                    <Border.Shadow>
-                        <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.06" />
-                    </Border.Shadow>
+                    <!-- Заголовок страницы -->
+                    <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                        <Label Text="Шаблоны"
+                               FontSize="26"
+                               FontAttributes="Bold"
+                               TextColor="{DynamicResource TextPrimary}" />
+                        <Label Text="Каталог официальных бланков и студенческих документов по ГОСТ"
+                               FontSize="13"
+                               TextColor="{DynamicResource TextSecondary}" />
+                    </VerticalStackLayout>
 
-                    <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10" VerticalOptions="Center">
-                        <Entry x:Name="SearchEntry"
-                               Grid.Column="0"
-                               Placeholder="Найти шаблон по названию..."
-                               PlaceholderColor="{DynamicResource TextSecondary}"
-                               TextColor="{DynamicResource TextPrimary}"
-                               BackgroundColor="Transparent"
-                               FontSize="14.5"
-                               VerticalOptions="Center"
-                               ClearButtonVisibility="WhileEditing"
-                               ReturnType="Search"
-                               TextChanged="OnSearchChanged" />
+                    <!-- Поисковая строка с векторной иконкой -->
+                    <Border BackgroundColor="{DynamicResource CardBg}"
+                            Stroke="{DynamicResource CardStroke}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="16,0"
+                            HeightRequest="48">
+                        <Border.Shadow>
+                            <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.06" />
+                        </Border.Shadow>
 
-                        <!-- Векторная иконка лупы справа -->
-                        <Path Grid.Column="1"
-                              Data="M10.5,2.5 A8,8 0 1,1 2.5,10.5 A8,8 0 0,1 10.5,2.5 M16.5,16.5 L21.5,21.5"
-                              Stroke="{DynamicResource TextSecondary}"
-                              StrokeThickness="2"
-                              StrokeLineCap="Round"
-                              StrokeLineJoin="Round"
-                              WidthRequest="16"
-                              HeightRequest="16"
-                              Aspect="Uniform"
-                              HorizontalOptions="End"
-                              VerticalOptions="Center" />
-                    </Grid>
-                </Border>
+                        <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10" VerticalOptions="Center">
+                            <Entry x:Name="SearchEntry"
+                                   Grid.Column="0"
+                                   Placeholder="Найти шаблон по названию..."
+                                   PlaceholderColor="{DynamicResource TextSecondary}"
+                                   TextColor="{DynamicResource TextPrimary}"
+                                   BackgroundColor="Transparent"
+                                   FontSize="14.5"
+                                   VerticalOptions="Center"
+                                   ClearButtonVisibility="WhileEditing"
+                                   ReturnType="Search"
+                                   TextChanged="OnSearchChanged" />
 
-                <!-- Фильтр категорий (включая чип ⭐ Избранное) -->
-                <controls:ChipBar x:Name="CategoryChips" ShowArrows="True" Margin="0, 2, 0, 2" />
+                            <!-- Векторная иконка лупы справа -->
+                            <Path Grid.Column="1"
+                                  Data="M10.5,2.5 A8,8 0 1,1 2.5,10.5 A8,8 0 0,1 10.5,2.5 M16.5,16.5 L21.5,21.5"
+                                  Stroke="{DynamicResource TextSecondary}"
+                                  StrokeThickness="2"
+                                  StrokeLineCap="Round"
+                                  StrokeLineJoin="Round"
+                                  WidthRequest="16"
+                                  HeightRequest="16"
+                                  Aspect="Uniform"
+                                  HorizontalOptions="End"
+                                  VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
 
-                <!-- Скелетон загрузки каталога (Shimmer Effect) -->
-                <vctrl:LoadingSkeleton x:Name="CatalogSkeleton" Margin="0, 4, 0, 8" />
+                    <!-- Фильтр категорий (включая чип ⭐ Избранное) -->
+                    <controls:ChipBar x:Name="CategoryChips" ShowArrows="True" Margin="0, 2, 0, 2" />
 
-                <!-- Недавние (показываются, когда нет поиска и выбран фильтр «Все») -->
-                <VerticalStackLayout x:Name="RecentSection" IsVisible="False" Spacing="10">
-                    <Grid ColumnDefinitions="*, Auto" Margin="2, 4, 2, 0" VerticalOptions="Center">
-                        <Label Text="НЕДАВНИЕ ШАБЛОНЫ"
+                    <!-- Скелетон загрузки каталога (Shimmer Effect) -->
+                    <vctrl:LoadingSkeleton x:Name="CatalogSkeleton" Margin="0, 4, 0, 8" />
+
+                    <!-- Недавние (показываются, когда нет поиска и выбран фильтр «Все») -->
+                    <VerticalStackLayout x:Name="RecentSection" IsVisible="False" Spacing="10">
+                        <Grid ColumnDefinitions="*, Auto" Margin="2, 4, 2, 0" VerticalOptions="Center">
+                            <Label Text="НЕДАВНИЕ ШАБЛОНЫ"
+                                   FontSize="12"
+                                   FontAttributes="Bold"
+                                   CharacterSpacing="0.8"
+                                   TextColor="{DynamicResource TextSecondary}"
+                                   VerticalOptions="Center" />
+                            <vctrl:IconView Grid.Column="1"
+                                            Icon="calendar"
+                                            IconColor="TextSecondary"
+                                            Size="14"
+                                            VerticalOptions="Center" />
+                        </Grid>
+
+                        <VerticalStackLayout x:Name="RecentList"
+                                             Spacing="10"
+                                             BindableLayout.ItemTemplate="{StaticResource TemplateRow}" />
+
+                        <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 8, 0, 4" />
+
+                        <Label Text="ВСЕ ШАБЛОНЫ"
                                FontSize="12"
                                FontAttributes="Bold"
                                CharacterSpacing="0.8"
                                TextColor="{DynamicResource TextSecondary}"
-                               VerticalOptions="Center" />
-                        <vctrl:IconView Grid.Column="1"
-                                        Icon="calendar"
-                                        IconColor="TextSecondary"
-                                        Size="14"
-                                        VerticalOptions="Center" />
-                    </Grid>
-
-                    <VerticalStackLayout x:Name="RecentList"
-                                         Spacing="10"
-                                         BindableLayout.ItemTemplate="{StaticResource TemplateRow}" />
-
-                    <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 8, 0, 4" />
-
-                    <Label Text="ВСЕ ШАБЛОНЫ"
-                           FontSize="12"
-                           FontAttributes="Bold"
-                           CharacterSpacing="0.8"
-                           TextColor="{DynamicResource TextSecondary}"
-                           Margin="2, 4, 2, 0" />
-                </VerticalStackLayout>
-
-                <!-- Основной список результатов -->
-                <VerticalStackLayout x:Name="ResultsList"
-                                     Spacing="10"
-                                     BindableLayout.ItemTemplate="{StaticResource TemplateRow}" />
-
-                <!-- Состояние: ничего не найдено -->
-                <Border x:Name="EmptyCard"
-                        IsVisible="False"
-                        BackgroundColor="{DynamicResource CardBg}"
-                        Stroke="{DynamicResource CardStroke}"
-                        StrokeThickness="1"
-                        StrokeShape="RoundRectangle 18"
-                        Padding="24, 32"
-                        Margin="0, 24, 0, 0"
-                        HorizontalOptions="Fill">
-                    <Border.Shadow>
-                        <Shadow Brush="Black" Offset="0,2" Radius="8" Opacity="0.06" />
-                    </Border.Shadow>
-
-                    <VerticalStackLayout Spacing="12" HorizontalOptions="Center">
-                        <Border BackgroundColor="{DynamicResource IconBoxBg}"
-                                StrokeThickness="0"
-                                StrokeShape="RoundRectangle 24"
-                                WidthRequest="56"
-                                HeightRequest="56"
-                                HorizontalOptions="Center">
-                            <vctrl:IconView Icon="file"
-                                            IconColor="BrandGreen"
-                                            Size="26"
-                                            HorizontalOptions="Center"
-                                            VerticalOptions="Center" />
-                        </Border>
-
-                        <Label x:Name="EmptyLabel"
-                               Text="Ничего не найдено"
-                               FontSize="16"
-                               FontAttributes="Bold"
-                               HorizontalTextAlignment="Center"
-                               LineBreakMode="WordWrap"
-                               TextColor="{DynamicResource TextPrimary}" />
-
-                        <Label Text="Попробуйте изменить поисковый запрос или выбрать другую категорию"
-                               FontSize="13"
-                               HorizontalTextAlignment="Center"
-                               LineBreakMode="WordWrap"
-                               TextColor="{DynamicResource TextSecondary}" />
+                               Margin="2, 4, 2, 0" />
                     </VerticalStackLayout>
-                </Border>
 
-            </VerticalStackLayout>
-        </ScrollView>
+                </VerticalStackLayout>
+            </CollectionView.Header>
+
+            <!-- Виртуализированный шаблон строки с скомпилированными привязками x:DataType -->
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:TemplateItem">
+                    <Grid Padding="20, 0, 20, 0">
+                        <views:ListRow Icon="file"
+                                       Title="{Binding Title}"
+                                       Subtitle="{Binding Description}"
+                                       IsFavorite="{Binding IsFavorite}"
+                                       ShowFavorite="True"
+                                       Tapped="OnTemplateTapped"
+                                       FavoriteTapped="OnFavoriteTapped" />
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+
+            <!-- Подвал: карточка «Ничего не найдено» и нижний отступ -->
+            <CollectionView.Footer>
+                <VerticalStackLayout Padding="{OnPlatform Android='20, 4, 20, 80', WinUI='20, 4, 20, 24'}" HorizontalOptions="Fill">
+                    <Border x:Name="EmptyCard"
+                            IsVisible="False"
+                            BackgroundColor="{DynamicResource CardBg}"
+                            Stroke="{DynamicResource CardStroke}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 18"
+                            Padding="24, 32"
+                            Margin="0, 16, 0, 0"
+                            HorizontalOptions="Fill">
+                        <VerticalStackLayout Spacing="12" HorizontalOptions="Center">
+                            <Border BackgroundColor="{DynamicResource IconBoxBg}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 24"
+                                    WidthRequest="56"
+                                    HeightRequest="56"
+                                    HorizontalOptions="Center">
+                                <vctrl:IconView Icon="file"
+                                                IconColor="BrandGreen"
+                                                Size="26"
+                                                HorizontalOptions="Center"
+                                                VerticalOptions="Center" />
+                            </Border>
+
+                            <Label x:Name="EmptyLabel"
+                                   Text="Ничего не найдено"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   HorizontalTextAlignment="Center"
+                                   LineBreakMode="WordWrap"
+                                   TextColor="{DynamicResource TextPrimary}" />
+
+                            <Label Text="Попробуйте изменить поисковый запрос или выбрать другую категорию"
+                                   FontSize="13"
+                                   HorizontalTextAlignment="Center"
+                                   LineBreakMode="WordWrap"
+                                   TextColor="{DynamicResource TextSecondary}" />
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+            </CollectionView.Footer>
+
+        </CollectionView>
 
     </Grid>
 </ContentPage>

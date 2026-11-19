@@ -5,9 +5,11 @@
  * ЗАВИСИМОСТИ: DocumentFormat.OpenXml, GosTek.Models
  * ==============================================================================
  */
+using System.Collections.Concurrent;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
@@ -50,7 +52,53 @@ public static class TemplateEngine
         { "текст", "описание", "причина", "содержание", "обстоятельств", "пояснение", "примечани", "комментари", "reason", "description", "details", "график", "schedule" };
 
     // Кэш полей: чтобы не открывать неизменившиеся файлы при каждом обновлении списка
-    private static readonly Dictionary<string, (DateTime Time, long Size, TemplateField[] Fields)> Cache = new();
+    public sealed record TemplateFieldCacheEntry(DateTime Time, long Size, TemplateField[] Fields);
+    private static readonly ConcurrentDictionary<string, TemplateFieldCacheEntry> Cache = new();
+    private static bool _cacheLoaded = false;
+    private static readonly object _cacheLock = new();
+
+    private static string GetCacheFilePath()
+    {
+        try {
+            string dir = FileSystem.CacheDirectory;
+            if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
+                return Path.Combine(dir, "template_fields_cache.json");
+        } catch { }
+        return Path.Combine(Path.GetTempPath(), "gostek_template_fields_cache.json");
+    }
+
+    private static void EnsureCacheLoaded()
+    {
+        if (_cacheLoaded) return;
+        lock (_cacheLock)
+        {
+            if (_cacheLoaded) return;
+            try {
+                var path = GetCacheFilePath();
+                if (File.Exists(path))
+                {
+                    var json = File.ReadAllText(path, Encoding.UTF8);
+                    var dict = JsonSerializer.Deserialize<Dictionary<string, TemplateFieldCacheEntry>>(json);
+                    if (dict != null)
+                    {
+                        foreach (var kvp in dict)
+                            Cache[kvp.Key] = kvp.Value;
+                    }
+                }
+            } catch { }
+            _cacheLoaded = true;
+        }
+    }
+
+    private static void SaveDiskCache()
+    {
+        try {
+            var path = GetCacheFilePath();
+            var dict = new Dictionary<string, TemplateFieldCacheEntry>(Cache);
+            var json = JsonSerializer.Serialize(dict);
+            File.WriteAllText(path, json, Encoding.UTF8);
+        } catch { }
+    }
 
     // ===================================================================
     //  СКАНИРОВАНИЕ ПАПКИ
@@ -58,23 +106,28 @@ public static class TemplateEngine
 
     public static List<TemplateDef> Scan(string folder)
     {
-        var result = new List<TemplateDef>();
+        var result = new ConcurrentBag<TemplateDef>();
+        EnsureCacheLoaded();
+        bool cacheDirty = false;
 
         try {
             if (!Directory.Exists(folder)) {
                 if (SettingsService.IsDefaultTemplatesFolder)
                     Directory.CreateDirectory(folder);
                 else
-                    return result;
+                    return new List<TemplateDef>();
             }
 
-            foreach (var file in Directory.EnumerateFiles(folder, "*.docx", SearchOption.AllDirectories)) {
-                var name = Path.GetFileName(file);
-                if (name.StartsWith("~$"))   // временный файл Word
-                    continue;
+            var files = Directory.EnumerateFiles(folder, "*.docx", SearchOption.AllDirectories)
+                .Where(f => !Path.GetFileName(f).StartsWith("~$"))
+                .ToList();
 
+            Parallel.ForEach(files, file =>
+            {
                 try {
-                    var fields = ReadFieldsCached(file);
+                    var fields = ReadFieldsCached(file, out bool isNew);
+                    if (isNew) cacheDirty = true;
+
                     var sub = Path.GetRelativePath(folder, Path.GetDirectoryName(file)!);
                     var (category, title) = ParseName(Path.GetFileNameWithoutExtension(file), sub == "." ? null : sub);
                     var rel = Path.GetRelativePath(folder, file).ToLowerInvariant();
@@ -85,7 +138,10 @@ public static class TemplateEngine
                     // Битый или заблокированный файл пропускаем
                     System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
                 }
-            }
+            });
+
+            if (cacheDirty)
+                Task.Run(SaveDiskCache);
         } catch (Exception ex) {
             // Папка недоступна
             System.Diagnostics.Debug.WriteLine("Ошибка: " + ex.Message);
@@ -180,14 +236,20 @@ public static class TemplateEngine
         return ParseTokenDetails(inner);
     }
 
-    private static TemplateField[] ReadFieldsCached(string file)
+    private static TemplateField[] ReadFieldsCached(string file) => ReadFieldsCached(file, out _);
+
+    private static TemplateField[] ReadFieldsCached(string file, out bool isNew)
     {
         var info = new FileInfo(file);
         if (Cache.TryGetValue(file, out var c) && c.Time == info.LastWriteTimeUtc && c.Size == info.Length)
+        {
+            isNew = false;
             return c.Fields;
+        }
 
         var fields = ReadFields(file);
-        Cache[file] = (info.LastWriteTimeUtc, info.Length, fields);
+        Cache[file] = new TemplateFieldCacheEntry(info.LastWriteTimeUtc, info.Length, fields);
+        isNew = true;
         return fields;
     }
 

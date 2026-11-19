@@ -71,7 +71,7 @@ public class AiAssistantServiceTests
         using var client = new HttpClient(handler);
         var service = new AiAssistantService(client);
 
-        var result = await service.ProcessRequestAsync("Плановый ремонт", ["Причина"], fieldIds: ["field_1"]);
+        var result = await service.ProcessRequestAsync("Плановый ремонт", ["Причина"], fieldIds: new[] { "field_1" });
 
         Assert.Equal("Плановый ремонт", Assert.Single(result.Fields).Value);
         Assert.Equal("field_1", Assert.Single(result.Fields).Key);

@@ -51,6 +51,16 @@ public partial class ListRow : ContentView
         nameof(IsFavorite), typeof(bool), typeof(ListRow), false,
         propertyChanged: (b, _, v) => ((ListRow)b).UpdateFavoriteState((bool)v));
 
+    public static readonly BindableProperty HighlightQueryProperty = BindableProperty.Create(
+        nameof(HighlightQuery), typeof(string), typeof(ListRow), "",
+        propertyChanged: (b, _, _) => ((ListRow)b).RefreshHighlight());
+
+    public string HighlightQuery
+    {
+        get => (string)GetValue(HighlightQueryProperty);
+        set => SetValue(HighlightQueryProperty, value);
+    }
+
     public string Icon
     {
         get => (string)GetValue(IconProperty);
@@ -105,8 +115,21 @@ public partial class ListRow : ContentView
 
     private void UpdateTitle(string title)
     {
-        TitleLabel.FormattedText = null;
-        TitleLabel.Text = title;
+        if (string.IsNullOrEmpty(HighlightQuery))
+        {
+            TitleLabel.FormattedText = null;
+            TitleLabel.Text = title;
+        }
+        else
+        {
+            RefreshHighlight();
+        }
+    }
+
+    private void RefreshHighlight()
+    {
+        var highlightColor = ThemeService.IsDark ? Color.FromArgb("#3FC3A1") : Color.FromArgb("#0D6B57");
+        SetHighlightedTitle(Title, HighlightQuery, highlightColor);
     }
 
     private void UpdateFavoriteState(bool isFav)

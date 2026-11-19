@@ -53,8 +53,73 @@ public static class TemplateSeeder
         (DormitoryRawAsset, DormitoryTargetName),
         (AcademicLeaveRawAsset, AcademicLeaveTargetName),
         (StudentExplanationRawAsset, StudentExplanationTargetName),
-        (IndividualScheduleRawAsset, IndividualScheduleTargetName)
+        (IndividualScheduleRawAsset, IndividualScheduleTargetName),
+
+        // Дополнительные шаблоны (из библиотеки примеров)
+        ("tpl_it_dogovor_na_razrabotku_programmnogo_obespecheniya.docx", "IT_Договор_на_разработку_программного_обеспечения.docx"),
+        ("tpl_it_tehnicheskoe_zadanie.docx", "IT_Техническое_задание.docx"),
+        ("tpl_avto_dogovor_kupli_prodazhi_avtomobilya.docx", "Авто_Договор_купли-продажи_автомобиля.docx"),
+        ("tpl_biznes_kommercheskoe_predlozhenie.docx", "Бизнес_Коммерческое_предложение.docx"),
+        ("tpl_biznes_protokol_obschego_sobraniya_uchastnikov.docx", "Бизнес_Протокол_общего_собрания_участников.docx"),
+        ("tpl_biznes_soglashenie_o_nerazglashenii.docx", "Бизнес_Соглашение_о_неразглашении.docx"),
+        ("tpl_grazhdanin_doverennost_na_predstavlenie_interesov.docx", "Гражданин_Доверенность_на_представление_интересов.docx"),
+        ("tpl_grazhdanin_zhaloba.docx", "Гражданин_Жалоба.docx"),
+        ("tpl_grazhdanin_zayavlenie_o_vydache_spravki.docx", "Гражданин_Заявление_о_выдаче_справки.docx"),
+        ("tpl_grazhdanin_obraschenie_v_gosudarstvennyy_organ.docx", "Гражданин_Обращение_в_государственный_орган.docx"),
+        ("tpl_grazhdanin_raspiska_o_poluchenii_deneg.docx", "Гражданин_Расписка_о_получении_денег.docx"),
+        ("tpl_kadry_avansovyy_otchyot.docx", "Кадры_Авансовый_отчёт.docx"),
+        ("tpl_kadry_grafik_otpuskov.docx", "Кадры_График_отпусков.docx"),
+        ("tpl_kadry_dolzhnostnaya_instruktsiya.docx", "Кадры_Должностная_инструкция.docx"),
+        ("tpl_kadry_trudovoy_dogovor.docx", "Кадры_Трудовой_договор.docx"),
+        ("tpl_nedvizhimost_akt_priyoma_peredachi.docx", "Недвижимость_Акт_приёма-передачи.docx"),
+        ("tpl_nedvizhimost_dogovor_arendy_zhilogo_pomescheniya.docx", "Недвижимость_Договор_аренды_жилого_помещения.docx"),
+        ("tpl_organizatsiya_doverennost.docx", "Организация_Доверенность.docx"),
+        ("tpl_organizatsiya_obyasnitelnaya_zapiska.docx", "Организация_Объяснительная_записка.docx"),
+        ("tpl_organizatsiya_prikaz_o_predostavlenii_otpuska.docx", "Организация_Приказ_о_предоставлении_отпуска.docx"),
+        ("tpl_organizatsiya_prikaz_o_priyome_na_rabotu.docx", "Организация_Приказ_о_приёме_на_работу.docx"),
+        ("tpl_organizatsiya_prikaz_ob_uvolnenii.docx", "Организация_Приказ_об_увольнении.docx"),
+        ("tpl_organizatsiya_sluzhebnaya_zapiska.docx", "Организация_Служебная_записка.docx"),
+        ("tpl_organizatsiya_spravka_s_mesta_raboty.docx", "Организация_Справка_с_места_работы.docx"),
+        ("tpl_predprinimatel_akt_vypolnennyh_rabot.docx", "Предприниматель_Акт_выполненных_работ.docx"),
+        ("tpl_predprinimatel_dogovor_okazaniya_uslug.docx", "Предприниматель_Договор_оказания_услуг.docx"),
+        ("tpl_predprinimatel_zayavlenie_o_prekraschenii_deyatelnosti_ip.docx", "Предприниматель_Заявление_о_прекращении_деятельности_ИП.docx"),
+        ("tpl_predprinimatel_zayavlenie_o_priostanovlenii_deyatelnosti.docx", "Предприниматель_Заявление_о_приостановлении_деятельности.docx"),
+        ("tpl_predprinimatel_zayavlenie_o_registratsii_ip.docx", "Предприниматель_Заявление_о_регистрации_ИП.docx"),
+        ("tpl_predprinimatel_zayavlenie_ob_izmenenii_svedeniy_ob_ip.docx", "Предприниматель_Заявление_об_изменении_сведений_об_ИП.docx"),
+        ("tpl_predprinimatel_schyot_na_oplatu.docx", "Предприниматель_Счёт_на_оплату.docx"),
+        ("tpl_prepodavatel_zayavlenie_o_napravlenii_na_povyshenie_kvalifikatsii.docx", "Преподаватель_Заявление_о_направлении_на_повышение_квалификации.docx"),
+        ("tpl_prepodavatel_kalendarno_tematicheskiy_plan.docx", "Преподаватель_Календарно-тематический_план.docx"),
+        ("tpl_prepodavatel_otzyv_na_kursovuyu_rabotu.docx", "Преподаватель_Отзыв_на_курсовую_работу.docx"),
+        ("tpl_prepodavatel_otzyv_rukovoditelya_na_diplomnuyu_rabotu.docx", "Преподаватель_Отзыв_руководителя_на_дипломную_работу.docx"),
+        ("tpl_prepodavatel_raport_o_perenose_zanyatiya.docx", "Преподаватель_Рапорт_о_переносе_занятия.docx"),
+        ("tpl_prepodavatel_harakteristika_na_studenta.docx", "Преподаватель_Характеристика_на_студента.docx"),
+        ("tpl_prepodavatel_ekzamenatsionnaya_vedomost.docx", "Преподаватель_Экзаменационная_ведомость.docx"),
+        ("tpl_rabotnik_zayavlenie_na_otpusk.docx", "Работник_Заявление_на_отпуск.docx"),
+        ("tpl_rabotnik_zayavlenie_na_otpusk_bez_sohraneniya_zarabotnoy_platy.docx", "Работник_Заявление_на_отпуск_без_сохранения_заработной_платы.docx"),
+        ("tpl_rabotnik_zayavlenie_o_priyome_na_rabotu.docx", "Работник_Заявление_о_приёме_на_работу.docx"),
+        ("tpl_rabotnik_zayavlenie_ob_uvolnenii_po_sobstvennomu_zhelaniyu.docx", "Работник_Заявление_об_увольнении_по_собственному_желанию.docx"),
+        ("tpl_semya_dogovor_dareniya.docx", "Семья_Договор_дарения.docx"),
+        ("tpl_semya_soglasie_na_vyezd_nesovershennoletnego_za_granitsu.docx", "Семья_Согласие_на_выезд_несовершеннолетнего_за_границу.docx"),
+        ("tpl_stroitelstvo_dogovor_podryada_na_remont.docx", "Строительство_Договор_подряда_на_ремонт.docx"),
+        ("tpl_stroitelstvo_smeta_na_remont.docx", "Строительство_Смета_на_ремонт.docx"),
+        ("tpl_student_zayavlenie_na_materialnuyu_pomosch.docx", "Студент_Заявление_на_материальную_помощь.docx"),
+        ("tpl_student_zayavlenie_na_mesto_v_obschezhitii.docx", "Студент_Заявление_на_место_в_общежитии.docx"),
+        ("tpl_student_zayavlenie_o_vosstanovlenii.docx", "Студент_Заявление_о_восстановлении.docx"),
+        ("tpl_student_zayavlenie_o_vydache_spravki_ob_obuchenii.docx", "Студент_Заявление_о_выдаче_справки_об_обучении.docx"),
+        ("tpl_student_zayavlenie_o_perevode_na_druguyu_spetsialnost.docx", "Студент_Заявление_о_переводе_на_другую_специальность.docx"),
+        ("tpl_student_zayavlenie_o_peresdache_ekzamena.docx", "Студент_Заявление_о_пересдаче_экзамена.docx"),
+        ("tpl_student_zayavlenie_o_predostavlenii_akademicheskogo_otpuska.docx", "Студент_Заявление_о_предоставлении_академического_отпуска.docx"),
+        ("tpl_student_zayavlenie_ob_otchislenii_po_sobstvennomu_zhelaniyu.docx", "Студент_Заявление_об_отчислении_по_собственному_желанию.docx"),
+        ("tpl_student_obyasnitelnaya_zapiska_o_propuske_zanyatiy.docx", "Студент_Объяснительная_записка_о_пропуске_занятий.docx"),
+        ("tpl_student_titulnyy_list_kursovoy_raboty.docx", "Студент_Титульный_лист_курсовой_работы.docx"),
+        ("tpl_torgovlya_akt_sverki_vzaimoraschyotov.docx", "Торговля_Акт_сверки_взаиморасчётов.docx"),
+        ("tpl_torgovlya_dogovor_postavki.docx", "Торговля_Договор_поставки.docx"),
+        ("tpl_torgovlya_schyot_na_oplatu.docx", "Торговля_Счёт_на_оплату.docx"),
+        ("tpl_torgovlya_tovarnaya_nakladnaya.docx", "Торговля_Товарная_накладная.docx")
     };
+
+    public const int TemplatesSeedVersion = 1;
+    private const string SeedVersionKey = "templates_seed_version";
 
     /// <summary>
     /// Проверяет наличие шаблонов в рабочей папке и при необходимости копирует или генерирует отсутствующие эталонные файлы.
@@ -63,6 +128,14 @@ public static class TemplateSeeder
     {
         try {
             string folder = SettingsService.TemplatesFolder;
+            int currentVersion = Preferences.Default.Get(SeedVersionKey, 0);
+
+            // Если версия шаблонов актуальна и в папке уже есть шаблоны — пропускаем повторную проверку 60+ файлов
+            if (currentVersion >= TemplatesSeedVersion && Directory.Exists(folder) && Directory.EnumerateFiles(folder, "*.docx").Any())
+            {
+                return;
+            }
+
             Directory.CreateDirectory(folder);
 
             bool anyAdded = false;
@@ -89,6 +162,8 @@ public static class TemplateSeeder
 
                 anyAdded = true;
             }
+
+            Preferences.Default.Set(SeedVersionKey, TemplatesSeedVersion);
 
             if (anyAdded)
                 TemplateCatalog.Refresh();

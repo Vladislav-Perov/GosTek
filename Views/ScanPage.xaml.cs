@@ -727,7 +727,9 @@ public partial class ScanPage : ContentPage
     {
         RawTextEditor.Text = text;
 
-        bool isPassport = string.Equals(_mode, "passport", StringComparison.OrdinalIgnoreCase);
+        var data = DocumentDataExtractor.Extract(text);
+        bool hasExtractedData = data.IsMrz || !string.IsNullOrWhiteSpace(data.Passport) || !string.IsNullOrWhiteSpace(data.PersonalNumber);
+        bool isPassport = string.Equals(_mode, "passport", StringComparison.OrdinalIgnoreCase) || hasExtractedData;
         ExtractedSection.IsVisible = isPassport;
 
         if (isPassport) {
@@ -737,7 +739,6 @@ public partial class ScanPage : ContentPage
             profile.CustomFields.TryGetValue("Идентификационный номер", out var oldPersonal);
             OldPersonalLabel.Text = string.IsNullOrWhiteSpace(oldPersonal) ? "Было: —" : $"Было: {oldPersonal}";
 
-            var data = DocumentDataExtractor.Extract(text);
             NameEntry.Text = data.FullName ?? "";
             PassportEntry.Text = data.Passport ?? "";
             PersonalEntry.Text = data.PersonalNumber ?? "";

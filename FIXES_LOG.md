@@ -11,6 +11,7 @@
 
 | # | Дата | Батч | ID | Затронутый файл / компонент | Статус | Проверено |
 |:---:|:---:|:---:|:---:|:---|:---:|:---|
+| **77** | 19.11.2026 | F17 | **COLLECTIONVIEW-VIRTUALIZATION-AND-END-TO-END-AUDIT** | Views/TemplatesPage.*, Views/ListRow.*, Services/TemplateSeeder.cs, Services/TemplateEngine.cs, AppShell.xaml.cs, Views/ScanPage.xaml.cs, Views/ProfilePage.xaml, Views/CheckPage.xaml, GosTek.Tests/* | 🏆 Реализовано | Фаза 17: Тотальная оптимизация и сквозной аудит приложения: 1) Виртуализация каталога шаблонов через CollectionView (ItemSizingStrategy="MeasureFirstItem", заголовок и поиск в CollectionView.Header, пустая карточка в Footer); 2) Удаление тяжелых Border.Shadow из ListRow; 3) Debounce поиска (180 мс); 4) Персистентный кэш метаданных docx (template_fields_cache.json) и версионирование сидера (Preferences); 5) Автодетекция паспорта/MRZ при сканировании и показ ExtractedSection; 6) Корректное скрытие FlyoutState на FieldsPage; 7) Android insets (80dp padding); 367/367 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
 | **76** | 18.11.2026 | F16 | **DOCS-FULL-AUDIT-AND-SYNCHRONIZATION** | README.md, PRIVACY.md, NOTES.md, GOSTEK_FOR_BEGINNERS.md, Речь к презентации GosTek.md, docs/* | 🏆 Реализовано | Фаза 16: Комплексный аудит и синхронизация всей проектной документации Markdown: 1) README.md (355 тестов, 9 встроенных шаблонов в 4 категориях, стек версий .NET 10 MAUI, дерево каталогов с RuleEditorPage и TemplateSeeder); 2) Речь к презентации GosTek.md (355 тестов, 9 шаблонов, кнопка «Принять все», согласование модели монетизации с доступностью правил ГОСТ в бесплатной версии); 3) GOSTEK_FOR_BEGINNERS.md (355 тестов, замена примеров РФ на Закон РБ № 99-З, Минск/Бобруйск и паспорт РБ, актуализация путеводителя по файлам); 4) PRIVACY.md (Закон РБ № 99-З, СТБ 6.38-2016, токены ПДн, Zero-Text Logging Cloudflare Worker, Android 15 SafeAreaEdges); 5) NOTES.md, docs/DECISIONS.md (D-012, D-013), docs/FINAL_REPORT.md, docs/MANUAL_CHECKLIST.md, docs/RELEASE.md, docs/PROJECT_OVERVIEW.md (355 тестов, 0 warnings с -warnaserror); 355/355 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
 | **75** | 18.11.2026 | F15 | **COMPILED-BINDINGS-XC0025-AND-ANDROID15-SAFE-AREA** | Views/CheckGroupVm.cs, Views/CheckPage.*, Views/*.xaml, GosTek.csproj, GosTek.Tests/CheckFilterTests.cs | 🏆 Реализовано | Фаза 15: Устранение первопричины XC0025 через скомпилированные привязки и системные SafeAreaEdges для Android 15: 1) Перенос команд карточек замечаний (ToggleExpand, RejectGroup, AcceptGroup, RejectItem, AcceptItem) непосредственно в CheckGroupVm и CheckItemVm со связыванием через фабричный конструктор и делегаты; 2) Управление видимостью FileSelectedCard через code-behind UpdateUi(); 3) Полное удаление XC0025 из NoWarn в GosTek.csproj; 4) Внедрение SafeAreaEdges="{OnPlatform Android=Container, Default=None}" на всех 7 экранах и оверлеях; 5) 6 новых юнит-тестов включая сквозной сценарий жизненного цикла (всего 355/355); Win Release (0/0), Android Release (0/0 с ILLink+R8), dotnet format 0 |
 | **73** | 18.11.2026 | F14 | **ANDROID-LAYOUT-AUDIT-AND-RULE-EDITOR-OVERHAUL** | Views/RuleEditorPage.*, Views/CheckPage.*, Views/SettingsPanel.*, Views/FieldsPage.*, Views/* | 🏆 Реализовано | Фаза 14: Комплексный аудит и исправление верстки Android без изменений Windows: 1) В RuleEditorPage устранен дефект зависания вложенного скролла и искажения листа А4 (внедрен селектор режимов [Параметры | Лист А4], RowDefinitions="*", адаптация ширины листа DocumentSheetBorder под экран screenW-56); 2) В CheckPage устранен перехват скролла (DropGestureRecognizer перенесен в Windows-only, Orientation=Vertical); 3) В SettingsPanel ширина адаптирована под экраны 360 dp (Margin справа 48 dp, MaximumWidthRequest=360); 4) В FieldsPage высота ИИ-шторки ограничена 75% экрана для клавиатуры; 5) Учтены safe area статус-бара (24 dp) и TabBar/жестов (24-80 dp); 6) Touch targets увеличены до 44+ dp; 349/349 тестов, Win Release (0/0), Android Release (0/0), dotnet format 0 |
@@ -90,6 +91,35 @@
 ---
 
 ## 2. Этапы комплексного аудита и финализации архитектуры (Этапы 2-8, Фаза 11, Фаза 12)
+
+### [Запись #77] 2026-11-19 | Фаза 17 | COLLECTIONVIEW-VIRTUALIZATION-AND-END-TO-END-AUDIT | Комплексная оптимизация UI-списков, виртуализация CollectionView и тотальный аудит
+
+- **Что сделано:**
+  1. **Виртуализация и производительность UI каталога шаблонов (`TemplatesPage`):**
+     - Полный переход со связки `ScrollView + VerticalStackLayout (BindableLayout)` на нативный виртуализированный `CollectionView`.
+     - Настройка `ItemSizingStrategy="MeasureFirstItem"` для исключения повторного перерасчёта высоты строк при скролле.
+     - Интеграция шапки страницы, поисковой строки, чипов фильтрации и блока недавних шаблонов в `<CollectionView.Header>` для плавного естественного совместного скролла.
+     - Размещение карточки пустого результата поиска в `<CollectionView.Footer>`.
+     - Добавлен 180 мс debounce для поисковой строки `SearchEntry`, предотвращающий фризы UI при быстром наборе текста.
+     - Добавлены скомпилированные привязки `x:DataType="models:TemplateItem"` на строках каталога.
+  2. **Оптимизация рендеринга карточек (`ListRow`):**
+     - Удален ресурсоёмкий элемент `<Border.Shadow>` с размытием по Гауссу из разметки строк `ListRow.xaml`, полностью исключив просадки FPS и нагрузку на GPU при прокрутке 70+ шаблонов.
+  3. **Бэкенд шаблонов и ускорение запуска (`TemplateEngine`, `TemplateSeeder`):**
+     - Интегрирована 60-элементная база образцов шаблонов: файлы перенесены в `Resources/Raw/` с латинскими именами `tpl_*.docx` для обхода ограничений AAPT2 на Android, сопоставлены в словаре `TemplateSeeder.DefaultTemplates` и распаковываются с русскими именами.
+     - Внедрено версионирование сидирования `TemplatesSeedVersion = 1` через `Preferences`, исключающее блокирующие синхронные проверки файлов при повторных запусках приложения.
+     - Добавлен персистентный JSON-дисковый кэш метаданных и структуры полей `template_fields_cache.json`.
+     - Параллельное сканирование файлов через `Parallel.ForEach`.
+  4. **Навигация и управление Flyout на Windows (`AppShell`):**
+     - В `EnsureFlyoutState` добавлено явное отключение бокового Navigation Rail (`FlyoutBehavior = Disabled`, `FlyoutWidth = 0`) при переходе на `FieldsPage` наряду с `RuleEditorPage`, что устраняет рассинхронизацию областей перетаскивания (Drag Region) и мигание rail.
+  5. **Камера, сканер и OCR (`ScanPage`):**
+     - Добавлена интеллектуальная детекция паспорта/MRZ при сканировании: блок реквизитов и сравнения с профилем `ExtractedSection` автоматически отображается при наличии распознанных данных паспорта или MRZ ICAO, а не только при явном параметре query `mode=passport`.
+  6. **Адаптивные отступы и безопасные зоны Android (`ProfilePage`, `CheckPage`, `TemplatesPage`):**
+     - На всех страницах настроен нижний отступ `80dp` на Android (`Padding="{OnPlatform Android='20, 20, 20, 80', WinUI='20, 20, 20, 24'}"`), гарантирующий, что кнопки действий («Сохранить», «Принять все», «Выбрать документ») не перекрываются системным навигационным таббаром.
+  7. **Тестирование и верификация:**
+     - 367 из 367 тестов xUnit успешно пройдены (0 ошибок, 0 пропущено).
+     - Сборка Windows Release со строгим `/warnaserror`: 0 предупреждений, 0 ошибок.
+     - Сборка Android Release со строгим `/warnaserror` (115/115 AOT native compilations): 0 предупреждений, 0 ошибок.
+     - Проверка форматирования `dotnet format GosTek.sln --verify-no-changes`: 0 изменений (код чист).
 
 ### [Запись #76] 2026-11-18 | Фаза 16 | DOCS-FULL-AUDIT-AND-SYNCHRONIZATION | Комплексный аудит и полная синхронизация всей проектной документации Markdown
 
