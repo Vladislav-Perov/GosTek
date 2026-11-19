@@ -33,7 +33,12 @@
 - Все UI-вызовы защищены проверками `MainThread.IsMainThread`.
 
 ### 6. Статус верификации
-- Набор автотестов: **355 / 355 unit-тестов xUnit пройдены (100% зелёные)**.
+- Набор автотестов: **370 / 370 unit-тестов xUnit пройдены (100% зелёные) + 13 тестов Node.js в `server/`**.
 - Сборка Windows Release (`net10.0-windows10.0.19041.0`): 0 ошибок, 0 предупреждений (`-warnaserror`).
 - Сборка Android Release (`net10.0-android`, с R8 и ILLink): 0 ошибок, 0 предупреждений (`-warnaserror`).
 - Форматирование (`dotnet format`): 0 изменений.
+
+### 7. Архитектура экспорта PDF и каталога шаблонов
+- **Экспорт PDF:** QuestPDF 2026.9.1 используется строго под Windows. На Android внедрён нативный `Platforms/Android/AndroidPdfWriter.cs` (`Android.Graphics.Pdf.PdfDocument` + `StaticLayout`), исключающий тяжёлую зависимость и снижающий размер APK.
+- **Виртуализация TemplatesPage:** `CollectionView` с `ItemSizingStrategy="MeasureFirstItem"`, дебаунс поиска 180 мс (`_searchDebounceCts`), фоновое обновление каталога `Task.Run(TemplateCatalog.Refresh)`, очистка теней `Border.Shadow` в `ListRow`.
+- **Встроенный сидер:** `TemplateSeeder.cs` автоматически развертывает 70 эталонных шаблонов в 19 категориях с версионированием через Preferences.

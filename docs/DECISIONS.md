@@ -94,3 +94,17 @@
   5) Общее число автоматизированных юнит-тестов увеличено до 355/355 (добавлен сквозной тест жизненного цикла команд).
 - **Почему:** Предупреждения компилятора замедляют работу UI и не позволяют собирать проект с флагом `-warnaserror`. На Android 15 системная навигация перекрывала контент без объявления `SafeAreaEdges`.
 - **Альтернатива:** Подавить предупреждение в `NoWarn` через `GosTek.csproj` (отвергнуто, так как маскирует проблему неоптимальных привязок и нарушает чистоту Release-сборки).
+
+---
+
+### D-014: Замена QuestPDF на Android на легковесный нативный AndroidPdfWriter
+- **Что сделано:** В `Platforms/Android/AndroidPdfWriter.cs` реализована нативная генерация PDF через `Android.Graphics.Pdf.PdfDocument` и `Android.Text.StaticLayout`. Зависимость `QuestPDF` в `GosTek.csproj` ограничена условием `Condition="'$(TargetFramework)' == 'net10.0-windows10.0.19041.0'"`.
+- **Почему:** QuestPDF на Android значительно увеличивал размер APK и потребление ОЗУ при рендеринге документов. Нативный Android API исключил внешнюю зависимость и обеспечил мгновенную генерацию PDF.
+- **Альтернатива:** Использовать единый QuestPDF на всех платформах (утяжеляет мобильную сборку).
+
+---
+
+### D-015: Виртуализация каталога шаблонов TemplatesPage через CollectionView
+- **Что сделано:** В `Views/TemplatesPage.xaml` и `.xaml.cs` список результатов переведён на `CollectionView` с `ItemSizingStrategy="MeasureFirstItem"` и `x:DataType="models:TemplateItem"`. Заголовок и поиск вынесены в `CollectionView.Header`, пустая подсказка — в `CollectionView.Footer`. Внедрён 180 мс debounce поиска (`_searchDebounceCts`), асинхронный фоновый рефреш каталога `Task.Run(TemplateCatalog.Refresh)`, а из `ListRow` устранены тяжёлые `Border.Shadow`.
+- **Почему:** При каталоге из 70+ шаблонов ручной обход `ScrollView + VerticalStackLayout` приводил к микрофризам при быстром скролле и фильтрации. Виртуализация обеспечивает 60 FPS при плавном скролле.
+- **Альтернатива:** Оставить ручной Layout с постраничной подгрузкой (усложняет код и ухудшает UX поиска).

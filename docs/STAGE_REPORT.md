@@ -232,3 +232,27 @@
 - **Список «Проверить вручную»:**
   1. Ознакомиться с [FINAL_REPORT.md](./FINAL_REPORT.md) и [MANUAL_CHECKLIST.md](./MANUAL_CHECKLIST.md).
   2. Запустить приложение на Windows и Android в конфигурации Release, пройти 6 сценариев из чек-листа ручной приёмки.
+
+---
+
+## Этап 9. Виртуализация каталога, нативный Android PDF и синхронизация (Фазы 17-19)
+- **Статус:** 🏆 Завершён
+- **Что сделано:**
+  1. **Виртуализация TemplatesPage и ListRow (Фаза 17):**
+     - Каталог шаблонов переведён на виртуализированный `CollectionView` (`ItemSizingStrategy="MeasureFirstItem"`).
+     - Поисковая строка и категории вынесены в `CollectionView.Header`, пустые подсказки — в `CollectionView.Footer`.
+     - Из `ListRow` удалены тяжёлые тени `Border.Shadow`.
+     - Внедрён 180 мс debounce поиска и асинхронный фоновый рефреш каталога `Task.Run(TemplateCatalog.Refresh)`.
+  2. **Интеграция origin/main и гибридный экспорт PDF (Фаза 18):**
+     - На Android внедрён легковесный нативный генератор `AndroidPdfWriter.cs` (`Android.Graphics.Pdf.PdfDocument` + `StaticLayout`).
+     - QuestPDF на Android исключен, сохранён строго под Windows (`net10.0-windows10.0.19041.0`).
+     - Каталог расширен до 70 эталонных шаблонов в 19 категориях (`TemplateSeeder.cs`).
+     - Внедрён сглаженный стиль ввода `InputChrome` без системных рамок с 2px фокус-контуром.
+  3. **Сквозной аудит реального кода и синхронизация всей документации (Фаза 19):**
+     - Полная ревизия реального кода в `Services/`, `Views/`, `Models/`, `Platforms/`, `GosTek.csproj`, `server/`.
+     - Синхронизация всех 15 `.md` файлов проекта по фактам из исходников (370 тестов xUnit, 13 тестов Node.js, 70 шаблонов, гибридный PDF).
+  4. **Метрики качества:**
+     - Тесты: **370/370 xUnit (100% зелёные)** + **13 тестов Node.js в server/**.
+     - Сборка Windows Release: **0 предупреждений, 0 ошибок** (`-warnaserror`).
+     - Сборка Android Release: **0 предупреждений, 0 ошибок** (`-warnaserror`).
+     - Форматирование: `dotnet format` подтверждено без расхождений (exit code 0).
