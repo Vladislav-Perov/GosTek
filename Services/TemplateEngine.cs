@@ -549,7 +549,7 @@ public static class TemplateEngine
             .FirstOrDefault(n => n.HasValue) / 2;
         var spacing = paragraphProperties.Select(p => p.GetFirstChild<SpacingBetweenLines>())
             .FirstOrDefault(s => s?.Line is not null);
-        var line = spacing?.LineRule?.Value is { } rule && rule != LineSpacingRuleValues.Auto
+        double? line = spacing?.LineRule?.Value is { } rule && rule != LineSpacingRuleValues.Auto
             ? null : Number(spacing?.Line?.Value) / 240 ?? 1;
         var indent = paragraphProperties.Select(p => p.GetFirstChild<Indentation>())
             .FirstOrDefault(i => i?.FirstLine is not null || i?.Hanging is not null);
