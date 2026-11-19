@@ -14,7 +14,14 @@
 
     <maui:MauiWinUIApplication.Resources>
         <ResourceDictionary>
-            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#56728C" />
+            <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
+            <SolidColorBrush x:Key="TextControlBorderBrushDisabled" Color="Transparent" />
+            <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
+            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
+            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />
+            <SolidColorBrush x:Key="TextControlBackgroundDisabled" Color="Transparent" />
             <!-- Принудительное обнуление системных фонов WinUI 3 NavigationView для бесшовного левого rail -->
             <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="Transparent" />
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="Transparent" />

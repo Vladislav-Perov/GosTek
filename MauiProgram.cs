@@ -28,6 +28,8 @@ namespace GosTek
                     fonts.AddFont("PTSans-Bold.ttf", "PTSansBold");
                 });
 
+            Views.Controls.InputChrome.Configure();
+
 #if WINDOWS
             Microsoft.Maui.Controls.Handlers.ShellHandler.Mapper.AppendToMapping("FixTopLeftCorner", (handler, view) =>
             {
