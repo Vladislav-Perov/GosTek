@@ -179,6 +179,7 @@ public partial class ScanPage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        TryCloseDesktopImage();
         SettingsOverlay.Dismiss();
         _isPageVisible = false;
         ++_visibilityToken;
@@ -1027,7 +1028,7 @@ public partial class ScanPage : ContentPage
     }
 
     // ===== Экспорт оцифрованного текста в настраиваемый ГОСТ DOCX =====
-    private async void OnExportGostDocxTapped(object? sender, TappedEventArgs e)
+    private async void OnExportGostDocxTapped(object? sender, EventArgs e)
     {
         if (IsDesktop)
         {

@@ -58,11 +58,40 @@ public partial class ScanPage
         _desktopImage = bytes;
         DesktopImage.Source = ImageSource.FromStream(() => new MemoryStream(bytes, writable: false));
         DesktopImage.IsVisible = true;
+        DesktopDropZone.HeightRequest = 360;
+        DesktopZoomButton.IsVisible = true;
         DesktopDropHint.IsVisible = false;
         DesktopFileName.Text = file.Name;
+        DesktopFileName.IsVisible = true;
+        DesktopImageActions.IsVisible = true;
         DesktopError.IsVisible = false;
-        RecognizeDesktopButton.IsEnabled = true;
         ShowResult(false);
+    }
+
+    private void OnDesktopImageTapped(object? sender, TappedEventArgs e) => ShowDesktopImage();
+
+    private void OnDesktopZoomClicked(object? sender, EventArgs e) => ShowDesktopImage();
+
+    private void ShowDesktopImage()
+    {
+        if (_desktopImage is null)
+            return;
+
+        DesktopLargeImage.Source = DesktopImage.Source;
+        DesktopImageOverlay.IsVisible = true;
+        DesktopZoomCloseButton.Focus();
+    }
+
+    private void OnCloseDesktopZoomClicked(object? sender, EventArgs e) => TryCloseDesktopImage();
+
+    internal bool TryCloseDesktopImage()
+    {
+        if (!DesktopImageOverlay.IsVisible)
+            return false;
+
+        DesktopImageOverlay.IsVisible = false;
+        DesktopLargeImage.Source = null;
+        return true;
     }
 
     private async void OnRecognizeDesktopClicked(object? sender, EventArgs e)

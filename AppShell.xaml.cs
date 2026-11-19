@@ -64,6 +64,9 @@ namespace GosTek
         /// </summary>
         public static async Task<bool> HandleGlobalEscapeAsync()
         {
+            if (Shell.Current?.CurrentPage is Views.ScanPage scanPage && scanPage.TryCloseDesktopImage())
+                return true;
+
 #if WINDOWS
             if (Application.Current?.Windows.FirstOrDefault()?.Handler?.PlatformView is Microsoft.UI.Xaml.Window win
                 && win.Content?.XamlRoot != null)

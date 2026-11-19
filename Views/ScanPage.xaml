@@ -74,11 +74,16 @@
 
             <Border x:Name="DesktopDropZone" IsVisible="{OnPlatform WinUI=True, Default=False}"
                     BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}"
-                    StrokeShape="RoundRectangle 12" Padding="16">
+                    StrokeShape="RoundRectangle 12" Padding="16" HeightRequest="260" VerticalOptions="Start">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
                     <Label Text="Исходное изображение" FontAttributes="Bold" FontSize="17"
                            TextColor="{DynamicResource TextPrimary}" />
-                    <Image x:Name="DesktopImage" Grid.Row="1" Aspect="AspectFit" IsVisible="False" />
+                    <Image x:Name="DesktopImage" Grid.Row="1" Aspect="AspectFit" IsVisible="False"
+                           SemanticProperties.Description="Открыть исходное изображение в крупном размере">
+                        <Image.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnDesktopImageTapped" />
+                        </Image.GestureRecognizers>
+                    </Image>
                     <VerticalStackLayout x:Name="DesktopDropHint" Grid.Row="1" Spacing="12"
                                          VerticalOptions="Center" HorizontalOptions="Center">
                         <vctrl:IconView Icon="image" Size="40" IconColor="TextSecondary" />
@@ -86,23 +91,28 @@
                                TextColor="{DynamicResource TextSecondary}" />
                         <Label Text="JPG или PNG" HorizontalTextAlignment="Center"
                                TextColor="{DynamicResource TextSecondary}" />
+                        <Button Text="Выбрать изображение" Clicked="OnChooseDesktopImageClicked"
+                                HorizontalOptions="Center" BackgroundColor="{DynamicResource ActionBg}" TextColor="White" />
                     </VerticalStackLayout>
-                    <Label x:Name="DesktopFileName" Grid.Row="2" LineBreakMode="MiddleTruncation"
-                           TextColor="{DynamicResource TextSecondary}" />
+                    <Button x:Name="DesktopZoomButton" Grid.Row="2" Text="Увеличить фото" IsVisible="False"
+                            HorizontalOptions="Start" Clicked="OnDesktopZoomClicked" />
                 </Grid>
             </Border>
 
             <VerticalStackLayout x:Name="DesktopInputPanel" Grid.Column="{OnPlatform WinUI=1, Default=0}"
                                  IsVisible="{OnPlatform WinUI=True, Default=False}"
-                                 VerticalOptions="Center" Spacing="12" Padding="12">
+                                 VerticalOptions="Start" Spacing="12" Padding="12,16">
                 <Label Text="Оцифровка изображения" FontSize="22" FontAttributes="Bold"
                        TextColor="{DynamicResource TextPrimary}" />
                 <Label Text="Загрузите фото документа, распознайте текст и проверьте его по оригиналу."
                        TextColor="{DynamicResource TextSecondary}" />
-                <Button Text="Выбрать изображение" Clicked="OnChooseDesktopImageClicked" />
-                <Button x:Name="RecognizeDesktopButton" Text="Распознать текст"
-                        Clicked="OnRecognizeDesktopClicked" IsEnabled="False"
-                        BackgroundColor="{DynamicResource ActionBg}" TextColor="White" />
+                <Label x:Name="DesktopFileName" IsVisible="False" LineBreakMode="MiddleTruncation"
+                       TextColor="{DynamicResource TextPrimary}" />
+                <FlexLayout x:Name="DesktopImageActions" IsVisible="False" Wrap="Wrap">
+                    <Button Text="Распознать текст" Clicked="OnRecognizeDesktopClicked" Margin="0,0,8,8"
+                            BackgroundColor="{DynamicResource ActionBg}" TextColor="White" />
+                    <Button Text="Другое изображение" Clicked="OnChooseDesktopImageClicked" Margin="0,0,0,8" />
+                </FlexLayout>
                 <Label x:Name="DesktopError" IsVisible="False" TextColor="{DynamicResource BadColor}" />
             </VerticalStackLayout>
 
@@ -635,6 +645,7 @@
 
                             <!-- Главная кнопка: Сохранить и экспортировать в DOCX по ГОСТ -->
                             <Border StyleClass="HoverCard"
+                                    IsVisible="{OnPlatform Android=True, Default=False}"
                                     StrokeThickness="0"
                                     StrokeShape="RoundRectangle 14"
                                     BackgroundColor="{DynamicResource ActionBg}"
@@ -659,8 +670,11 @@
                                 </HorizontalStackLayout>
                             </Border>
 
-                            <Button Text="Экспортировать PDF" IsVisible="{OnPlatform WinUI=True, Default=False}"
-                                    Clicked="OnExportGostPdfClicked" />
+                            <FlexLayout IsVisible="{OnPlatform WinUI=True, Default=False}" Wrap="Wrap">
+                                <Button Text="Сохранить Word" Clicked="OnExportGostDocxTapped" Margin="0,0,8,6"
+                                        BackgroundColor="{DynamicResource ActionBg}" TextColor="White" />
+                                <Button Text="Сохранить PDF" Clicked="OnExportGostPdfClicked" Margin="0,0,0,6" />
+                            </FlexLayout>
 
                             <!-- Кнопка: Создать ГОСТ-шаблон из этого текста -->
                             <Border StyleClass="HoverCard"
@@ -669,7 +683,7 @@
                                     StrokeShape="RoundRectangle 12"
                                     BackgroundColor="{DynamicResource CardBg}"
                                     Padding="12, 10"
-                                    HorizontalOptions="Fill">
+                                    HorizontalOptions="{OnPlatform WinUI=Start, Default=Fill}">
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Tapped="OnCreateTemplateFromOcrTapped" />
                                 </Border.GestureRecognizers>
@@ -693,7 +707,7 @@
                                     StrokeShape="RoundRectangle 12"
                                     BackgroundColor="{DynamicResource CardBg}"
                                     Padding="12, 10"
-                                    HorizontalOptions="Fill">
+                                    HorizontalOptions="{OnPlatform WinUI=Start, Default=Fill}">
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Tapped="OnApplyToTemplateTapped" />
                                 </Border.GestureRecognizers>
@@ -824,6 +838,22 @@
                        HorizontalOptions="Center"
                        TextColor="{DynamicResource TextSecondary}" />
             </VerticalStackLayout>
+        </Grid>
+
+        <Grid x:Name="DesktopImageOverlay" Grid.RowSpan="3" IsVisible="False"
+              BackgroundColor="#A0000000" Padding="24">
+            <Border StrokeThickness="0" StrokeShape="RoundRectangle 12"
+                    BackgroundColor="{DynamicResource CardBg}" Padding="16">
+                <Grid RowDefinitions="Auto,*" RowSpacing="12">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <Label Text="Исходное изображение" FontSize="18" FontAttributes="Bold"
+                               TextColor="{DynamicResource TextPrimary}" VerticalOptions="Center" />
+                        <Button x:Name="DesktopZoomCloseButton" Grid.Column="1" Text="Закрыть"
+                                Clicked="OnCloseDesktopZoomClicked" />
+                    </Grid>
+                    <Image x:Name="DesktopLargeImage" Grid.Row="1" Aspect="AspectFit" />
+                </Grid>
+            </Border>
         </Grid>
 
         <!-- Полноэкранный оверлей индикации процесса (захват, улучшение, OCR) -->
