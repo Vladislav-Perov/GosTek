@@ -18,8 +18,6 @@ namespace GosTek.Views;
 /// </summary>
 public partial class AppTabBar : ContentView
 {
-    private const double HoverScale = 1.05;
-
     private sealed record Tab(string Key, string IconKey, string Title, string? Route);
 
     private static readonly Tab[] TabList =
@@ -303,7 +301,6 @@ public partial class AppTabBar : ContentView
                 label.SetDynamicResource(Label.TextColorProperty, "TextSecondary");
             }
 
-            border.Scale = hover ? HoverScale : 1.0;
         }
     }
 
