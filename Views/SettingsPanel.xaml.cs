@@ -20,7 +20,6 @@ public partial class SettingsPanel : ContentView
 {
     private static readonly FilePickerFileType DocxFiles = new(new Dictionary<DevicePlatform, IEnumerable<string>>
     {
-        [DevicePlatform.WinUI] = [".docx"],
         [DevicePlatform.Android] = ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
     });
 
@@ -67,7 +66,6 @@ public partial class SettingsPanel : ContentView
         AndroidFolderBlock.IsVisible = !IsWindows;
         OpenTemplatesButton.IsVisible = IsWindows;   // на Android папка во внутренней памяти приложения
         TemplatesFolderInfo.IsVisible = IsWindows;
-        TemplateFolderActions.IsVisible = IsWindows;
 
         BuildSegment(NameHost,
             new[] { "Название шаблона", "Название + дата" },
@@ -287,7 +285,6 @@ public partial class SettingsPanel : ContentView
             FolderPathLabel.Text = SettingsService.SaveFolder;
             ResetFolderButton.IsVisible = !SettingsService.IsDefaultFolder;
             TemplatesPathLabel.Text = SettingsService.TemplatesFolder;
-            ResetTemplatesButton.IsVisible = !SettingsService.IsDefaultTemplatesFolder;
         }
         AiConsentSwitch.IsToggled = SettingsService.TextGenerationConsentAccepted;
         AiMaskSilentSwitch.IsToggled = SettingsService.AiMaskAmbiguousSilent;
@@ -351,13 +348,6 @@ public partial class SettingsPanel : ContentView
     }
 
     // ===== Папка шаблонов =====
-    private async void OnPickTemplatesTapped(object? sender, TappedEventArgs e)
-    {
-        var path = await PickFolderAsync();
-        if (path is not null)
-            SettingsService.TemplatesFolder = path;
-    }
-
     private async void OnOpenTemplatesTapped(object? sender, TappedEventArgs e)
     {
 #if WINDOWS
@@ -372,9 +362,6 @@ public partial class SettingsPanel : ContentView
         await Task.CompletedTask;
 #endif
     }
-
-    private void OnResetTemplatesTapped(object? sender, TappedEventArgs e)
-        => SettingsService.TemplatesFolder = SettingsService.DefaultTemplatesFolder;
 
     // Выбор папки (только Windows)
     private async Task<string?> PickFolderAsync()

@@ -1,6 +1,6 @@
 /*
  * ==============================================================================
- * НАЗНАЧЕНИЕ: Нативная блочная генерация документов PDF по правилам ГОСТ на базе QuestPDF (Community License)
+ * НАЗНАЧЕНИЕ: Локальная генерация документов PDF на Windows и Android
  * СОДЕРЖИМОЕ: PdfExportService
  * ЗАВИСИМОСТИ: QuestPDF, GosTek.Models, GosTek.TemplateEngine
  * ==============================================================================
@@ -8,15 +8,17 @@
 using System.Diagnostics;
 using GosTek.Models;
 using GosTek.Views;
+#if !ANDROID
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using QuestColors = QuestPDF.Helpers.Colors;
+#endif
 
 namespace GosTek.Services;
 
 /// <summary>
-/// Сервис нативной генерации и экспорта документов в формат PDF на базе движка QuestPDF (Community License).
+/// Сервис локальной генерации и экспорта документов в PDF.
 /// Документы формируются локально на устройстве без передачи во внешние сети,
 /// с соблюдением пропорций листа А4 и стандартных полей оформления по ГОСТ.
 /// </summary>
@@ -24,12 +26,14 @@ public static class PdfExportService
 {
     private const string BlankPlaceholder = "__________";
 
+#if !ANDROID
     static PdfExportService()
     {
         QuestPDF.Settings.License = LicenseType.Community;
         QuestPDF.Settings.UseSystemFonts = true;
         QuestPDF.Settings.ThrowOnMissingFontFamilies = false;
     }
+#endif
 
     /// <summary>
     /// Генерирует PDF-документ из шаблона и переданных значений в указанный выходной поток.
@@ -76,6 +80,9 @@ public static class PdfExportService
             return BlankPlaceholder;
         }
 
+#if ANDROID
+        Platforms.Android.AndroidPdfWriter.Write(title, fields, paragraphs, GetValue, outputStream);
+#else
         var doc = Document.Create(container =>
         {
             container.Page(page =>
@@ -157,6 +164,7 @@ public static class PdfExportService
         });
 
         doc.GeneratePdf(outputStream);
+#endif
     }
 
     /// <summary>

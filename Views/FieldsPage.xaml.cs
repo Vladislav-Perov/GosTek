@@ -881,7 +881,7 @@ public partial class FieldsPage : ContentPage
         }
     }
 
-    // PDF: нативное сохранение документа в PDF через QuestPDF
+    // PDF: локальный экспорт через движок текущей платформы.
     private async void OnExportPdfTapped(object? sender, EventArgs e)
     {
         if (_template is null)

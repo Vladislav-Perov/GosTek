@@ -159,7 +159,7 @@
                                         </VerticalStackLayout>
                                     </Grid>
 
-                                    <Button x:Name="ImportButton" Text="Добавить DOCX" Clicked="OnImportClicked" />
+                                    <Button x:Name="ImportButton" Text="Добавить DOCX" IsVisible="{OnPlatform Android=True, Default=False}" Clicked="OnImportClicked" />
 
                                     <!-- Кнопка открыть папку (только Windows) -->
                                     <Border x:Name="OpenTemplatesButton"
@@ -188,45 +188,10 @@
                                         </HorizontalStackLayout>
                                     </Border>
 
-                                    <Grid x:Name="TemplateFolderActions" ColumnDefinitions="*, Auto" ColumnSpacing="8">
-                                        <Border Grid.Column="0"
-                                                StyleClass="HoverCard"
-                                                StrokeThickness="1"
-                                                Stroke="{DynamicResource CardStroke}"
-                                                BackgroundColor="{DynamicResource CardBg}"
-                                                StrokeShape="RoundRectangle 12"
-                                                Padding="12, 9"
-                                                InputTransparent="False">
-                                            <Border.GestureRecognizers>
-                                                <TapGestureRecognizer Tapped="OnPickTemplatesTapped" />
-                                            </Border.GestureRecognizers>
-                                            <Label Text="Выбрать папку…"
-                                                   FontSize="15"
-                                                   FontAttributes="Bold"
-                                                   TextColor="{DynamicResource TextPrimary}"
-                                                   HorizontalOptions="Center"
-                                                   InputTransparent="True" />
-                                        </Border>
-
-                                        <Border x:Name="ResetTemplatesButton"
-                                                Grid.Column="1"
-                                                StyleClass="HoverCard"
-                                                StrokeThickness="1"
-                                                Stroke="{DynamicResource CardStroke}"
-                                                BackgroundColor="{DynamicResource CardBg}"
-                                                StrokeShape="RoundRectangle 12"
-                                                Padding="12, 9"
-                                                InputTransparent="False">
-                                            <Border.GestureRecognizers>
-                                                <TapGestureRecognizer Tapped="OnResetTemplatesTapped" />
-                                            </Border.GestureRecognizers>
-                                            <Label Text="Сброс"
-                                                   FontSize="15"
-                                                   TextColor="{DynamicResource TextSecondary}"
-                                                   HorizontalOptions="Center"
-                                                   InputTransparent="True" />
-                                        </Border>
-                                    </Grid>
+                                    <Label IsVisible="{OnPlatform WinUI=True, Default=False}"
+                                           FontSize="15"
+                                           TextColor="{DynamicResource TextSecondary}"
+                                           Text="Чтобы добавить шаблон, скопируйте DOCX в открывшуюся папку." />
 
                                     <Label FontSize="13"
                                            LineBreakMode="WordWrap"
