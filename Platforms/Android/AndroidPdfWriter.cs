@@ -14,19 +14,22 @@ internal static class AndroidPdfWriter
     // A4, с полями 30/15 мм по горизонтали и 20 мм сверху и снизу (в пунктах).
     private const int PageWidth = 595;
     private const int PageHeight = 842;
-    private const int Left = 85;
-    private const int Right = 43;
-    private const int Top = 57;
-    private const int Bottom = 57;
     private const int FooterHeight = 16;
-    private const int ContentWidth = PageWidth - Left - Right;
-    private const int ContentEnd = PageHeight - Bottom - FooterHeight;
 
     public static void Write(string title, IReadOnlyList<TemplateField> fields, IReadOnlyList<PreviewPara> paragraphs,
-        Func<string, string> getValue, Stream output)
+        Func<string, string> getValue, Stream output, DocumentFormatting? formatting)
     {
+        static int Points(double mm) => (int)Math.Round(mm * 72 / 25.4);
+        int left = Points(formatting?.LeftMm ?? 30);
+        int right = Points(formatting?.RightMm ?? 15);
+        int top = Points(formatting?.TopMm ?? 20);
+        int bottom = Points(formatting?.BottomMm ?? 20);
+        int contentWidth = PageWidth - left - right;
+        int contentEnd = PageHeight - bottom - FooterHeight;
+        int firstLine = Points(formatting?.FirstLineMm ?? 0);
+
         using var document = new PdfDocument();
-        using var font = Typeface.Create("serif", TypefaceStyle.Normal);
+        using var font = Typeface.Create(formatting?.FontFamily == "Arial" ? "sans-serif" : "serif", TypefaceStyle.Normal);
         using var textPaint = new TextPaint(PaintFlags.AntiAlias) { Color = global::Android.Graphics.Color.Black };
         textPaint.SetTypeface(font);
         using var footer = new Paint(PaintFlags.AntiAlias)
@@ -37,7 +40,7 @@ internal static class AndroidPdfWriter
         };
         PdfDocument.Page? page = null;
         int pageNumber = 0;
-        int y = Top;
+        int y = top;
 
         void FinishPage()
         {
@@ -48,7 +51,7 @@ internal static class AndroidPdfWriter
             try
             {
                 current.Canvas.DrawText(pageNumber.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                    PageWidth / 2f, PageHeight - Bottom, footer);
+                    PageWidth / 2f, PageHeight - bottom, footer);
             }
             finally
             {
@@ -62,7 +65,7 @@ internal static class AndroidPdfWriter
             FinishPage();
             using var info = new PdfDocument.PageInfo.Builder(PageWidth, PageHeight, ++pageNumber).Create();
             page = document.StartPage(info);
-            y = Top;
+            y = top;
         }
 
         void Draw(string content, TextAlignment alignment, double size, TypefaceStyle style, int spacing, int emphasizedLength = 0)
@@ -74,14 +77,20 @@ internal static class AndroidPdfWriter
             }
 
             // Ограничение защищает перенос страниц от аномальных размеров шрифта в пользовательском DOCX.
-            textPaint.TextSize = size > 0 ? (float)Math.Clamp(size, 1, 200) : 14;
+            textPaint.TextSize = size > 0 ? (float)Math.Clamp(formatting?.FontSize ?? size, 1, 200) : 14;
             using var text = new SpannableString(content);
             using var emphasis = new StyleSpan(emphasizedLength > 0 ? TypefaceStyle.Bold : style);
             if (emphasizedLength > 0 || style != TypefaceStyle.Normal)
                 text.SetSpan(emphasis, 0, emphasizedLength > 0 ? emphasizedLength : text.Length(), SpanTypes.ExclusiveExclusive);
 
-            using var builder = StaticLayout.Builder.Obtain(text, 0, text.Length(), textPaint, ContentWidth);
-            builder.SetAlignment(alignment switch
+            using var indent = new LeadingMarginSpanStandard(firstLine, 0);
+            if (firstLine > 0)
+                text.SetSpan(indent, 0, text.Length(), SpanTypes.ExclusiveExclusive);
+
+            using var builder = StaticLayout.Builder.Obtain(text, 0, text.Length(), textPaint, contentWidth);
+            if (formatting?.LineSpacing is { } lineSpacing)
+                builder.SetLineSpacing(0, (float)lineSpacing);
+            builder.SetAlignment((formatting?.Alignment ?? alignment) switch
             {
                 TextAlignment.Center => Alignment.AlignCenter,
                 TextAlignment.End => Alignment.AlignOpposite,
@@ -92,11 +101,11 @@ internal static class AndroidPdfWriter
             for (int line = 0; line < layout.LineCount;)
             {
                 int firstTop = layout.GetLineTop(line);
-                if (y + layout.GetLineTop(line + 1) - firstTop > ContentEnd)
+                if (y + layout.GetLineTop(line + 1) - firstTop > contentEnd)
                     StartPage();
 
                 int next = line + 1;
-                while (next < layout.LineCount && y + layout.GetLineTop(next + 1) - firstTop <= ContentEnd)
+                while (next < layout.LineCount && y + layout.GetLineTop(next + 1) - firstTop <= contentEnd)
                     next++;
 
                 int height = layout.GetLineTop(next) - firstTop;
@@ -104,8 +113,8 @@ internal static class AndroidPdfWriter
                 int state = canvas.Save();
                 try
                 {
-                    canvas.ClipRect(Left, y, Left + ContentWidth, y + height);
-                    canvas.Translate(Left, y - firstTop);
+                    canvas.ClipRect(left, y, left + contentWidth, y + height);
+                    canvas.Translate(left, y - firstTop);
                     layout.Draw(canvas);
                 }
                 finally

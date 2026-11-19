@@ -85,13 +85,14 @@ public partial class FieldsPage : ContentPage
     private double _font = 13;
 
     private string _templateId = "";
+    private DocumentFormatting? _formatting;
 
     // Эффективный шрифт документа с учётом ГОСТ-правила и платформы
     private string EffectiveFont
     {
         get
         {
-            var font = _activeRule?.FontName;
+            var font = _formatting?.FontFamily ?? _activeRule?.FontName;
             if (DeviceInfo.Platform == DevicePlatform.Android)
             {
                 if (string.IsNullOrWhiteSpace(font) || font.Contains("Times", StringComparison.OrdinalIgnoreCase))
@@ -179,6 +180,8 @@ public partial class FieldsPage : ContentPage
         if (_template is null)
             return;
 
+        ResetFormatting();
+        FormattingPanel.IsVisible = false;
         TitleLabel.Text = _template.Title;
 
         // Подбираем правило ГОСТ для шаблона
@@ -816,6 +819,13 @@ public partial class FieldsPage : ContentPage
             return;
         }
 
+        if (FormattingError.IsVisible)
+        {
+            FormattingPanel.IsVisible = true;
+            await FormScroll.ScrollToAsync(FormattingPanel, ScrollToPosition.Start, true);
+            return;
+        }
+
         // Все поля заполнены: открываем шторку экспорта
         FileNameEntry.Text = ExportService.DefaultFileName(_template);
         ExportOverlay.IsVisible = true;
@@ -824,6 +834,64 @@ public partial class FieldsPage : ContentPage
     // =====================================================================
     //  ЭКСПОРТ
     // =====================================================================
+
+    private async void OnFormattingClicked(object? sender, EventArgs e)
+    {
+        FormattingPanel.IsVisible = !FormattingPanel.IsVisible;
+        if (FormattingPanel.IsVisible)
+            await FormScroll.ScrollToAsync(FormattingPanel, ScrollToPosition.Start, true);
+    }
+
+    private void OnFormattingResetClicked(object? sender, EventArgs e) => ResetFormatting();
+
+    private void ResetFormatting()
+    {
+        FormatFont.ItemsSource = new[] { "Шрифт шаблона", "Times New Roman", "Arial" };
+        FormatSpacing.ItemsSource = new[] { "Интервал шаблона", "Одинарный", "1,15", "Полуторный", "Двойной" };
+        FormatAlignment.ItemsSource = new[] { "Выравнивание шаблона", "Влево", "По центру", "Вправо" };
+        FormatLeft.Text = FormatRight.Text = FormatTop.Text = FormatBottom.Text = FormatIndent.Text = FormatSize.Text = "";
+        FormatFont.SelectedIndex = FormatSpacing.SelectedIndex = FormatAlignment.SelectedIndex = 0;
+        UpdateFormatting();
+    }
+
+    private void OnFormattingChanged(object? sender, EventArgs e)
+    {
+        if (FormattingError is not null)
+            UpdateFormatting();
+    }
+
+    private void UpdateFormatting()
+    {
+        bool invalid = false;
+        double? Read(Entry input, double min, double max)
+        {
+            if (string.IsNullOrWhiteSpace(input.Text))
+                return null;
+            if (double.TryParse(input.Text.Trim().Replace(',', '.'),
+                    System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out double value)
+                && value >= min && value <= max)
+                return value;
+
+            invalid = true;
+            return null;
+        }
+
+        var formatting = new DocumentFormatting(
+            Read(FormatLeft, 0, 60), Read(FormatRight, 0, 60), Read(FormatTop, 0, 60), Read(FormatBottom, 0, 60),
+            FormatFont.SelectedIndex > 0 ? FormatFont.SelectedItem as string : null,
+            Read(FormatSize, 8, 32),
+            FormatSpacing.SelectedIndex switch { 1 => 1, 2 => 1.15, 3 => 1.5, 4 => 2, _ => null },
+            Read(FormatIndent, 0, 30),
+            FormatAlignment.SelectedIndex switch { 1 => TextAlignment.Start, 2 => TextAlignment.Center, 3 => TextAlignment.End, _ => null });
+
+        FormattingError.IsVisible = invalid;
+        if (invalid)
+            return;
+
+        _formatting = formatting == new DocumentFormatting(null, null, null, null, null, null, null, null, null)
+            ? null : formatting;
+        QueueRender();
+    }
 
     private void CloseExport() => ExportOverlay.IsVisible = false;
 
@@ -843,7 +911,7 @@ public partial class FieldsPage : ContentPage
 
         try
         {
-            var result = await ExportService.SaveDocxAsync(_template, _values, ExportName());
+            var result = await ExportService.SaveDocxAsync(_template, _values, ExportName(), _formatting);
             if (result is null)
                 return;
 
@@ -866,7 +934,7 @@ public partial class FieldsPage : ContentPage
 
         try
         {
-            var result = await ExportService.SaveDocxAsync(_template, _values, ExportName());
+            var result = await ExportService.SaveDocxAsync(_template, _values, ExportName(), _formatting);
             if (result is null)
                 return;
 
@@ -889,7 +957,7 @@ public partial class FieldsPage : ContentPage
 
         try
         {
-            var result = await ExportService.SavePdfAsync(_template, _values, ExportName());
+            var result = await ExportService.SavePdfAsync(_template, _values, ExportName(), _formatting);
             if (result is null)
                 return;
 
@@ -951,16 +1019,16 @@ public partial class FieldsPage : ContentPage
 
         // Масштаб: ширина листа w соответствует 21.0 см листа А4
         double cmScale = w / 21.0;
-        double leftCm = _activeRule?.Left.Cm ?? 3.0;
-        double rightCm = _activeRule?.Right.Cm ?? 1.5;
-        double topCm = _activeRule?.Top.Cm ?? 2.0;
-        double bottomCm = _activeRule?.Bottom.Cm ?? 2.0;
+        double leftCm = _formatting?.LeftMm / 10 ?? _activeRule?.Left.Cm ?? 3.0;
+        double rightCm = _formatting?.RightMm / 10 ?? _activeRule?.Right.Cm ?? 1.5;
+        double topCm = _formatting?.TopMm / 10 ?? _activeRule?.Top.Cm ?? 2.0;
+        double bottomCm = _formatting?.BottomMm / 10 ?? _activeRule?.Bottom.Cm ?? 2.0;
 
         sheet.Padding = new Thickness(
-            Math.Max(12, leftCm * cmScale),
-            Math.Max(12, topCm * cmScale),
-            Math.Max(10, rightCm * cmScale),
-            Math.Max(12, bottomCm * cmScale));
+            leftCm * cmScale,
+            topCm * cmScale,
+            rightCm * cmScale,
+            bottomCm * cmScale);
 
         sheet.Content = BuildSheet(w);
     }
@@ -988,8 +1056,18 @@ public partial class FieldsPage : ContentPage
                 .Select(part => part.FieldId is null ? T(part.Text) : Val(part.FieldId))
                 .ToArray();
 
-            var label = Para(para.Align, spans);
-            label.FontSize = Math.Clamp(_font * para.Pt / 14, 8, 26);
+            double fontSize = Math.Clamp(_font * (_formatting?.FontSize ?? para.Pt) / 14, 6, 42);
+            if (_formatting?.FirstLineMm is > 0 and var indent)
+            {
+                int spaces = (int)Math.Round(indent * w / 210 / (fontSize / 4));
+                if (spaces > 0)
+                    spans = [T(new string('\u00a0', spaces)), ..spans];
+            }
+
+            var label = Para(_formatting?.Alignment ?? para.Align, spans);
+            label.FontSize = fontSize;
+            if (_formatting?.LineSpacing is { } lineSpacing)
+                label.LineHeight = lineSpacing;
             if (para.Bold)
                 label.FontAttributes |= FontAttributes.Bold;
             if (para.Italic)

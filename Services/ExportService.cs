@@ -34,11 +34,11 @@ public static class ExportService
         return string.IsNullOrWhiteSpace(name) ? fallback : name;
     }
 
-    public static Task<SaveResult?> SaveDocxAsync(TemplateDef template, IReadOnlyDictionary<string, string> values, string name)
-        => SaveAsync(name + ".docx", (fileName, overwrite) => FileSaveService.Save(template, values, fileName, overwrite));
+    public static Task<SaveResult?> SaveDocxAsync(TemplateDef template, IReadOnlyDictionary<string, string> values, string name, DocumentFormatting? formatting = null)
+        => SaveAsync(name + ".docx", (fileName, overwrite) => FileSaveService.Save(template, values, fileName, overwrite, formatting));
 
-    public static Task<SaveResult?> SavePdfAsync(TemplateDef template, IReadOnlyDictionary<string, string> values, string name)
-        => SaveAsync(name + ".pdf", (fileName, overwrite) => FileSaveService.SavePdf(template, values, fileName, overwrite));
+    public static Task<SaveResult?> SavePdfAsync(TemplateDef template, IReadOnlyDictionary<string, string> values, string name, DocumentFormatting? formatting = null)
+        => SaveAsync(name + ".pdf", (fileName, overwrite) => FileSaveService.SavePdf(template, values, fileName, overwrite, formatting));
 
     public static Task<SaveResult?> SaveCopyAsync(string sourcePath, string name)
         => SaveAsync(name + ".docx", (fileName, overwrite) => FileSaveService.SaveCopy(sourcePath, fileName, overwrite));

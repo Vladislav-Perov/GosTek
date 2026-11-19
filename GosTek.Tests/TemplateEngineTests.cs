@@ -29,6 +29,42 @@ public class TemplateEngineTests
     }
 
     [Fact]
+    public void FillTo_AppliesExportFormattingWithoutChangingTemplate()
+    {
+        var source = CreateTestDocument(body => body.AppendChild(new Paragraph(new Run(new Text("{Текст}")))));
+        var output = Path.ChangeExtension(source, ".result.docx");
+        try
+        {
+            var template = new TemplateDef("demo", "Демо", "", source, []);
+            var original = File.ReadAllBytes(source);
+            var values = new Dictionary<string, string> { ["текст"] = "Текст для документа" };
+            var formatting = new DocumentFormatting(25.4, null, null, null, "Arial", 16, 1.5, 12.7,
+                Microsoft.Maui.TextAlignment.Center);
+
+            TemplateEngine.FillTo(template, values, output, formatting);
+            Assert.Throws<IOException>(() => TemplateEngine.FillTo(template, values, source, formatting));
+            Assert.Equal(original, File.ReadAllBytes(source));
+
+            using var result = WordprocessingDocument.Open(output, false);
+            var body = result.MainDocumentPart!.Document.Body!;
+            var paragraph = Assert.Single(body.Elements<Paragraph>());
+            Assert.Equal("Текст для документа", paragraph.InnerText);
+            Assert.Equal(1440u, body.GetFirstChild<SectionProperties>()!.GetFirstChild<PageMargin>()!.Left!.Value);
+            Assert.Equal(JustificationValues.Center, paragraph.ParagraphProperties!.Justification!.Val!.Value);
+            Assert.Equal("360", paragraph.ParagraphProperties.SpacingBetweenLines!.Line!.Value);
+            Assert.Equal("720", paragraph.ParagraphProperties.Indentation!.FirstLine!.Value);
+            var run = Assert.Single(paragraph.Elements<Run>());
+            Assert.Equal("Arial", run.RunProperties!.RunFonts!.Ascii!.Value);
+            Assert.Equal("32", run.RunProperties.FontSize!.Val!.Value);
+        }
+        finally
+        {
+            File.Delete(source);
+            File.Delete(output);
+        }
+    }
+
+    [Fact]
     public async Task Import_PreservesExistingTemplateAndEnablesTextField()
     {
         var source = CreateTestDocument(body => body.AppendChild(new Paragraph(

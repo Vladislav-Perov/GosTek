@@ -312,8 +312,12 @@ public static class TemplateEngine
     // ===================================================================
 
     /// <summary>Копирует шаблон в path и подставляет значения. Исходный шаблон не меняется.</summary>
-    public static void FillTo(TemplateDef template, IReadOnlyDictionary<string, string> values, string path)
+    public static void FillTo(TemplateDef template, IReadOnlyDictionary<string, string> values, string path,
+        DocumentFormatting? formatting = null)
     {
+        if (string.Equals(Path.GetFullPath(template.FilePath), Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase))
+            throw new IOException("Выберите другое имя для готового документа. Этот путь ведёт к исходному шаблону.");
+
         string Value(string label)
         {
             var id = FieldId(label);
@@ -330,6 +334,9 @@ public static class TemplateEngine
                     foreach (var p in root.Descendants<Paragraph>().ToList())
                         FillParagraph(p, Value);
 
+                if (formatting is not null && doc.MainDocumentPart?.Document?.Body is { } body)
+                    ApplyFormatting(body, formatting);
+
                 doc.MainDocumentPart?.Document?.Save();
                 foreach (var h in doc.MainDocumentPart?.HeaderParts ?? Enumerable.Empty<HeaderPart>())
                     h.Header?.Save();
@@ -338,6 +345,75 @@ public static class TemplateEngine
             }
 
             File.WriteAllBytes(path, ms.ToArray());
+        }
+    }
+
+    private static int Twips(double millimetres) => (int)Math.Round(millimetres * 1440 / 25.4);
+
+    private static void ApplyFormatting(Body body, DocumentFormatting options)
+    {
+        if (options.LeftMm.HasValue || options.RightMm.HasValue || options.TopMm.HasValue || options.BottomMm.HasValue)
+        {
+            if (body.GetFirstChild<SectionProperties>() is null)
+                body.AppendChild(new SectionProperties());
+
+            foreach (var section in body.Descendants<SectionProperties>())
+            {
+                var margin = section.GetFirstChild<PageMargin>();
+                if (margin is null)
+                {
+                    margin = new PageMargin { Left = 1701, Right = 850, Top = 1134, Bottom = 1134, Header = 720, Footer = 720, Gutter = 0 };
+                    section.AddChild(margin);
+                }
+                if (options.LeftMm is { } left) margin.Left = (uint)Twips(left);
+                if (options.RightMm is { } right) margin.Right = (uint)Twips(right);
+                if (options.TopMm is { } top) margin.Top = Twips(top);
+                if (options.BottomMm is { } bottom) margin.Bottom = Twips(bottom);
+            }
+        }
+
+        foreach (var paragraph in body.Descendants<Paragraph>())
+        {
+            if (options.Alignment.HasValue || options.LineSpacing.HasValue || options.FirstLineMm.HasValue)
+            {
+                var props = paragraph.ParagraphProperties ??= new ParagraphProperties();
+                if (options.Alignment is { } align)
+                    props.Justification = new Justification
+                    {
+                        Val = align == TextAlignment.Center ? JustificationValues.Center
+                            : align == TextAlignment.End ? JustificationValues.Right : JustificationValues.Left
+                    };
+                if (options.LineSpacing is { } line)
+                {
+                    var spacing = props.SpacingBetweenLines ??= new SpacingBetweenLines();
+                    spacing.Line = ((int)Math.Round(line * 240)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    spacing.LineRule = LineSpacingRuleValues.Auto;
+                }
+                if (options.FirstLineMm is { } first)
+                {
+                    var indent = props.Indentation ??= new Indentation();
+                    indent.Hanging = null;
+                    indent.HangingChars = null;
+                    indent.FirstLineChars = null;
+                    indent.FirstLine = Twips(first).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                }
+            }
+
+            if (options.FontFamily is null && !options.FontSize.HasValue)
+                continue;
+
+            foreach (var run in paragraph.Descendants<Run>().Where(run => run.Ancestors<Paragraph>().First() == paragraph))
+            {
+                var props = run.RunProperties ??= new RunProperties();
+                if (options.FontFamily is { } font)
+                    props.RunFonts = new RunFonts { Ascii = font, HighAnsi = font, EastAsia = font, ComplexScript = font };
+                if (options.FontSize is { } size)
+                {
+                    var halfPoints = ((int)Math.Round(size * 2)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    props.FontSize = new FontSize { Val = halfPoints };
+                    props.FontSizeComplexScript = new FontSizeComplexScript { Val = halfPoints };
+                }
+            }
         }
     }
 
