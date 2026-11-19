@@ -122,7 +122,7 @@ public static class Dialogs
         Grid overlay = null!;
 
         // ----- затемнение -----
-        var scrim = new BoxView { Color = Color.FromArgb("#8A000000"), Opacity = 0 };
+        var scrim = new BoxView { Color = Color.FromArgb(SettingsOverlay.IsOpen ? "#40000000" : "#8A000000"), Opacity = 0 };
 
         // ----- содержимое карточки -----
         var content = new VerticalStackLayout { Spacing = 0 };

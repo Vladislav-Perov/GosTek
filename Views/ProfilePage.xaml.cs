@@ -591,6 +591,8 @@ public partial class ProfilePage : ContentPage
         => FieldValidationHelper.Apply(f.Box, f.Error, ProfileRules.Validate(f.Field, f.Entry.Text));
 
     // ===== Прогресс заполнения =====
+    private bool? _completedBadgeStyle;
+
     private void UpdateProgress(bool animated)
     {
         var summary = ProfileRules.Summarize(ReadForm(normalize: false));
@@ -598,20 +600,28 @@ public partial class ProfilePage : ContentPage
 
         void ApplyBadgeStyle(int percent)
         {
-            if (percent >= 100)
+            bool isComplete = percent >= 100;
+            string title = isComplete ? "Профиль заполнен ✓" : $"Заполнено на {percent}%";
+            string value = $"{percent}%";
+            if (ProgressTitle.Text != title)
+                ProgressTitle.Text = title;
+            if (ProgressBadgeLabel.Text != value)
+                ProgressBadgeLabel.Text = value;
+            if (_completedBadgeStyle == isComplete)
+                return;
+
+            _completedBadgeStyle = isComplete;
+            if (isComplete)
             {
-                ProgressTitle.Text = "Профиль заполнен ✓";
-                ProgressBadgeLabel.Text = "100%";
                 ProgressBadgeLabel.TextColor = Colors.White;
-                ProgressBadgeBorder.Background = (Brush)Application.Current!.Resources["BrandGreenGradient"];
+                ProgressBadgeBorder.SetDynamicResource(VisualElement.BackgroundProperty, "BrandGreenGradient");
                 ProgressBadgeBorder.StrokeThickness = 0;
             }
             else
             {
-                ProgressTitle.Text = $"Заполнено на {percent}%";
-                ProgressBadgeLabel.Text = $"{percent}%";
                 ProgressBadgeLabel.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
-                ProgressBadgeBorder.Background = null;
+                ProgressBadgeBorder.RemoveDynamicResource(VisualElement.BackgroundProperty);
+                ProgressBadgeBorder.ClearValue(VisualElement.BackgroundProperty);
                 ProgressBadgeBorder.SetDynamicResource(VisualElement.BackgroundColorProperty, "IconBoxBg");
                 ProgressBadgeBorder.SetDynamicResource(Border.StrokeProperty, "BrandGreen");
                 ProgressBadgeBorder.StrokeThickness = 1;

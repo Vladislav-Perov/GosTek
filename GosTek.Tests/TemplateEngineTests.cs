@@ -29,6 +29,37 @@ public class TemplateEngineTests
     }
 
     [Fact]
+    public async Task Import_PreservesExistingTemplateAndEnablesTextField()
+    {
+        var source = CreateTestDocument(body => body.AppendChild(new Paragraph(
+            new Run(new Text("{Текст}")))));
+        var folder = Directory.CreateTempSubdirectory("gostek-import-");
+        try
+        {
+            await using var first = File.OpenRead(source);
+            var original = await GosTek.Services.TemplateImport.SaveAsync(folder.FullName, "Мой_шаблон.docx", first);
+            await using var second = File.OpenRead(source);
+            var duplicate = await GosTek.Services.TemplateImport.SaveAsync(folder.FullName, "Мой_шаблон.docx", second);
+            Assert.NotEqual(original, duplicate);
+
+            using var invalid = new MemoryStream(new byte[] { 1, 2, 3 });
+            await Assert.ThrowsAnyAsync<Exception>(() =>
+                GosTek.Services.TemplateImport.SaveAsync(folder.FullName, "Битый.docx", invalid));
+
+            var templates = TemplateEngine.Scan(folder.FullName);
+            Assert.Equal(2, templates.Count);
+            Assert.All(templates, template =>
+                Assert.Equal(TextGenerationKind.DocumentText, Assert.Single(template.Fields).TextGeneration));
+            Assert.Empty(folder.EnumerateFiles("*.tmp", SearchOption.AllDirectories));
+        }
+        finally
+        {
+            File.Delete(source);
+            folder.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public void Scan_EnablesGenerationOnlyForTextMarkerAndBuiltInExplanation()
     {
         var custom = CreateTestDocument(body => body.AppendChild(new Paragraph(

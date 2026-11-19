@@ -1178,7 +1178,7 @@ public partial class ScanPage : ContentPage
 
             // Ищем созданный шаблон в обновленном каталоге и сразу открываем его
             var createdTemplate = TemplateCatalog.Items.FirstOrDefault(t =>
-                string.Equals(t.Title, result.Title, StringComparison.OrdinalIgnoreCase));
+                string.Equals(TemplateCatalog.Find(t.Id)?.FilePath, result.FilePath, StringComparison.Ordinal));
             if (createdTemplate != null)
             {
                 await TemplatesPage.OpenAsync(createdTemplate);

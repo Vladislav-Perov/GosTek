@@ -249,9 +249,14 @@ public partial class SettingsPanel : ContentView
             items.Add((box, text));
         }
 
+        int? previous = null;
         void Refresh()
         {
             int current = get();
+            if (current == previous)
+                return;
+
+            previous = current;
 
             for (int i = 0; i < items.Count; i++) {
                 bool on = i == current;
@@ -282,12 +287,14 @@ public partial class SettingsPanel : ContentView
 
     private void OnAiConsentToggled(object? sender, ToggledEventArgs e)
     {
-        SettingsService.TextGenerationConsentAccepted = e.Value;
+        if (SettingsService.TextGenerationConsentAccepted != e.Value)
+            SettingsService.TextGenerationConsentAccepted = e.Value;
     }
 
     private void OnAiMaskSilentToggled(object? sender, ToggledEventArgs e)
     {
-        SettingsService.AiMaskAmbiguousSilent = e.Value;
+        if (SettingsService.AiMaskAmbiguousSilent != e.Value)
+            SettingsService.AiMaskAmbiguousSilent = e.Value;
     }
 
     // =====================================================================
@@ -409,13 +416,30 @@ public partial class SettingsPanel : ContentView
     //  О ПРИЛОЖЕНИИ
     // =====================================================================
 
+    private async void OnSectionClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button button)
+            return;
+
+        var section = (button.CommandParameter as string) switch
+        {
+            "templates" => TemplatesSection,
+            "save" => SaveSection,
+            "theme" => ThemeSection,
+            "about" => AboutSection,
+            _ => null
+        };
+        if (section is not null)
+            await SettingsScroll.ScrollToAsync(section, ScrollToPosition.Start, animated: true);
+    }
+
     private async void OnHelpTapped(object? sender, TappedEventArgs e)
     {
-        await Alert("Как пользоваться",
+        await Alert($"GosTek · {AppInfo.Current.VersionString}",
             "1. Заполните «Мой профиль»: данные подставятся в документы.\n" +
             "2. Выберите шаблон и заполните поля.\n" +
             "3. Нажмите «Собрать документ» и сохраните файл Word.\n\n" +
-            "Всё хранится только на вашем устройстве.");
+            "Генерация текста отправляет сообщение из чата в облако с вашего согласия.");
     }
 
     // =====================================================================

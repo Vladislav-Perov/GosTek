@@ -41,6 +41,7 @@
                                  Spacing="16">
 
                 <!-- Заголовок страницы -->
+                <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12">
                 <VerticalStackLayout Spacing="2" VerticalOptions="Center">
                     <Label Text="Шаблоны"
                            FontSize="26"
@@ -50,6 +51,10 @@
                            FontSize="13"
                            TextColor="{DynamicResource TextSecondary}" />
                 </VerticalStackLayout>
+
+                    <Button x:Name="ImportButton" Grid.Column="1" Text="Добавить DOCX"
+                            Clicked="OnImportClicked" VerticalOptions="Center" />
+                </Grid>
 
                 <!-- Поисковая строка с векторной иконкой -->
                 <Border BackgroundColor="{DynamicResource CardBg}"
@@ -93,21 +98,10 @@
 
                 <!-- Недавние (показываются, когда нет поиска и выбран фильтр «Все») -->
                 <VerticalStackLayout x:Name="RecentSection" IsVisible="False" Spacing="10">
-                    <Grid ColumnDefinitions="*, Auto" Margin="2, 4, 2, 0" VerticalOptions="Center">
-                        <Label Text="НЕДАВНИЕ ШАБЛОНЫ"
-                               FontSize="12"
-                               FontAttributes="Bold"
-                               CharacterSpacing="0.8"
-                               TextColor="{DynamicResource TextSecondary}"
-                               VerticalOptions="Center" />
-                        <vctrl:IconView Grid.Column="1"
-                                        Icon="calendar"
-                                        IconColor="TextSecondary"
-                                        Size="14"
-                                        VerticalOptions="Center" />
-                    </Grid>
+                    <Button x:Name="RecentToggle" Text="Показать недавние"
+                            Clicked="OnRecentToggleClicked" HorizontalOptions="Start" />
 
-                    <VerticalStackLayout x:Name="RecentList"
+                    <VerticalStackLayout x:Name="RecentList" IsVisible="False"
                                          Spacing="10"
                                          BindableLayout.ItemTemplate="{StaticResource TemplateRow}" />
 

@@ -17,6 +17,12 @@ public partial class TemplatesPage : ContentPage
     private const string RecentKey = "recent_templates";
     private const int RecentMax = 3;
 
+    private static readonly FilePickerFileType DocxFiles = new(new Dictionary<DevicePlatform, IEnumerable<string>>
+    {
+        [DevicePlatform.WinUI] = [".docx"],
+        [DevicePlatform.Android] = ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+    });
+
     private const string FavoritesChipTitle = "⭐ Избранное";
     private bool _isFavoriteFilter;
 
@@ -34,6 +40,49 @@ public partial class TemplatesPage : ContentPage
         InitializeComponent();
 
         CategoryChips.SelectionChanged += OnCategoryChanged;
+    }
+
+    private void OnRecentToggleClicked(object? sender, EventArgs e)
+    {
+        RecentList.IsVisible = !RecentList.IsVisible;
+        RecentToggle.Text = RecentList.IsVisible ? "Скрыть недавние" : "Показать недавние";
+    }
+
+    private async void OnImportClicked(object? sender, EventArgs e)
+    {
+        ImportButton.IsEnabled = false;
+        try
+        {
+            var file = await FilePicker.Default.PickAsync(new PickOptions
+            {
+                PickerTitle = "Добавить шаблон Word",
+                FileTypes = DocxFiles
+            });
+            if (file is null)
+                return;
+
+            await using var source = await file.OpenReadAsync();
+            var imported = await TemplateImport.SaveAsync(SettingsService.TemplatesFolder, file.FileName, source);
+            ReloadTemplates();
+
+            var item = TemplateCatalog.Items.FirstOrDefault(candidate =>
+                TemplateCatalog.Find(candidate.Id)?.FilePath == imported);
+            if (item is not null && Shell.Current?.CurrentPage == this)
+                await OpenAsync(item);
+            else
+                Toast.Show("Шаблон добавлен", "templates");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex);
+            await Dialogs.AlertAsync("Не удалось добавить шаблон",
+                "Выберите доступный файл Word (.docx). Проверьте, что в папку шаблонов можно сохранять файлы.",
+                DialogKind.Danger);
+        }
+        finally
+        {
+            ImportButton.IsEnabled = true;
+        }
     }
 
     private void OnFavoritesChanged()
@@ -213,7 +262,7 @@ public partial class TemplatesPage : ContentPage
                 EmptyLabel.Text = "В папке шаблонов нет файлов .docx";
                 EmptyHint.Text = DeviceInfo.Platform == DevicePlatform.WinUI
                     ? $"{SettingsService.TemplatesFolder}\nИзменить папку можно в настройках."
-                    : "Новый шаблон можно создать из распознанного текста на вкладке «Скан».";
+                    : "Нажмите «Добавить DOCX», чтобы импортировать свой шаблон.";
             }
             else if (_isFavoriteFilter && !TemplateCatalog.Items.Any(t => favIds.Contains(t.Id)))
             {

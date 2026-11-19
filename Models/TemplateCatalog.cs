@@ -61,7 +61,7 @@ public static class TemplateCatalog
 
             return new TemplateItem(
                 d.Id,
-                d.Title,
+                d.Title.Replace('_', ' '),
                 subtitle,
                 d.Category,
                 modifiedText);
