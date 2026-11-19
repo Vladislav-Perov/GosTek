@@ -6,6 +6,7 @@
  * ==============================================================================
  */
 using GosTek.Models;
+using GosTek.Services;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace GosTek.Views;
@@ -17,6 +18,12 @@ namespace GosTek.Views;
 /// </summary>
 public partial class SettingsPanel : ContentView
 {
+    private static readonly FilePickerFileType DocxFiles = new(new Dictionary<DevicePlatform, IEnumerable<string>>
+    {
+        [DevicePlatform.WinUI] = [".docx"],
+        [DevicePlatform.Android] = ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+    });
+
     private const uint OpenMs = 200;
     private const uint CloseMs = 180;
 
@@ -59,7 +66,8 @@ public partial class SettingsPanel : ContentView
         FolderBlock.IsVisible = IsWindows;
         AndroidFolderBlock.IsVisible = !IsWindows;
         OpenTemplatesButton.IsVisible = IsWindows;   // на Android папка во внутренней памяти приложения
-        PickTemplatesButton.IsVisible = IsWindows;
+        TemplatesFolderInfo.IsVisible = IsWindows;
+        TemplateFolderActions.IsVisible = IsWindows;
 
         BuildSegment(NameHost,
             new[] { "Название шаблона", "Название + дата" },
@@ -278,9 +286,9 @@ public partial class SettingsPanel : ContentView
         {
             FolderPathLabel.Text = SettingsService.SaveFolder;
             ResetFolderButton.IsVisible = !SettingsService.IsDefaultFolder;
+            TemplatesPathLabel.Text = SettingsService.TemplatesFolder;
+            ResetTemplatesButton.IsVisible = !SettingsService.IsDefaultTemplatesFolder;
         }
-        TemplatesPathLabel.Text = SettingsService.TemplatesFolder;
-        ResetTemplatesButton.IsVisible = !SettingsService.IsDefaultTemplatesFolder;
         AiConsentSwitch.IsToggled = SettingsService.TextGenerationConsentAccepted;
         AiMaskSilentSwitch.IsToggled = SettingsService.AiMaskAmbiguousSilent;
     }
@@ -310,6 +318,37 @@ public partial class SettingsPanel : ContentView
 
     private void OnResetFolderTapped(object? sender, TappedEventArgs e)
         => SettingsService.SaveFolder = SettingsService.DefaultFolder;
+
+    private async void OnImportClicked(object? sender, EventArgs e)
+    {
+        ImportButton.IsEnabled = false;
+        try
+        {
+            var file = await FilePicker.Default.PickAsync(new PickOptions
+            {
+                PickerTitle = "Добавить шаблон Word",
+                FileTypes = DocxFiles
+            });
+            if (file is null)
+                return;
+
+            await using var source = await file.OpenReadAsync();
+            await TemplateImport.SaveAsync(SettingsService.TemplatesFolder, file.FileName, source);
+            TemplateCatalog.Refresh();
+            await Alert("Шаблон добавлен", "Документ доступен в разделе «Шаблоны».", DialogKind.Success);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex);
+            await Dialogs.AlertAsync("Не удалось добавить шаблон",
+                "Выберите доступный файл Word (.docx). Проверьте, что в папку шаблонов можно сохранять файлы.",
+                DialogKind.Danger);
+        }
+        finally
+        {
+            ImportButton.IsEnabled = true;
+        }
+    }
 
     // ===== Папка шаблонов =====
     private async void OnPickTemplatesTapped(object? sender, TappedEventArgs e)

@@ -17,12 +17,6 @@ public partial class TemplatesPage : ContentPage
     private const string RecentKey = "recent_templates";
     private const int RecentMax = 3;
 
-    private static readonly FilePickerFileType DocxFiles = new(new Dictionary<DevicePlatform, IEnumerable<string>>
-    {
-        [DevicePlatform.WinUI] = [".docx"],
-        [DevicePlatform.Android] = ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
-    });
-
     private const string FavoritesChipTitle = "⭐ Избранное";
     private bool _isFavoriteFilter;
 
@@ -46,43 +40,6 @@ public partial class TemplatesPage : ContentPage
     {
         RecentList.IsVisible = !RecentList.IsVisible;
         RecentToggle.Text = RecentList.IsVisible ? "Скрыть недавние" : "Показать недавние";
-    }
-
-    private async void OnImportClicked(object? sender, EventArgs e)
-    {
-        ImportButton.IsEnabled = false;
-        try
-        {
-            var file = await FilePicker.Default.PickAsync(new PickOptions
-            {
-                PickerTitle = "Добавить шаблон Word",
-                FileTypes = DocxFiles
-            });
-            if (file is null)
-                return;
-
-            await using var source = await file.OpenReadAsync();
-            var imported = await TemplateImport.SaveAsync(SettingsService.TemplatesFolder, file.FileName, source);
-            ReloadTemplates();
-
-            var item = TemplateCatalog.Items.FirstOrDefault(candidate =>
-                TemplateCatalog.Find(candidate.Id)?.FilePath == imported);
-            if (item is not null && Shell.Current?.CurrentPage == this)
-                await OpenAsync(item);
-            else
-                Toast.Show("Шаблон добавлен", "templates");
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine(ex);
-            await Dialogs.AlertAsync("Не удалось добавить шаблон",
-                "Выберите доступный файл Word (.docx). Проверьте, что в папку шаблонов можно сохранять файлы.",
-                DialogKind.Danger);
-        }
-        finally
-        {
-            ImportButton.IsEnabled = true;
-        }
     }
 
     private void OnFavoritesChanged()

@@ -139,7 +139,7 @@
                                 </Border.Shadow>
 
                                 <VerticalStackLayout Spacing="10">
-                                    <Grid ColumnDefinitions="Auto, *" ColumnSpacing="10" VerticalOptions="Center">
+                                    <Grid x:Name="TemplatesFolderInfo" ColumnDefinitions="Auto, *" ColumnSpacing="10" VerticalOptions="Center">
                                         <Border BackgroundColor="{DynamicResource IconBoxBg}"
                                                 StrokeThickness="0"
                                                 StrokeShape="RoundRectangle 10"
@@ -164,6 +164,8 @@
                                                    LineBreakMode="MiddleTruncation" />
                                         </VerticalStackLayout>
                                     </Grid>
+
+                                    <Button x:Name="ImportButton" Text="Добавить DOCX" Clicked="OnImportClicked" />
 
                                     <!-- Кнопка открыть папку (только Windows) -->
                                     <Border x:Name="OpenTemplatesButton"
@@ -192,9 +194,8 @@
                                         </HorizontalStackLayout>
                                     </Border>
 
-                                    <Grid ColumnDefinitions="*, Auto" ColumnSpacing="8">
-                                        <Border x:Name="PickTemplatesButton"
-                                                Grid.Column="0"
+                                    <Grid x:Name="TemplateFolderActions" ColumnDefinitions="*, Auto" ColumnSpacing="8">
+                                        <Border Grid.Column="0"
                                                 StyleClass="HoverCard"
                                                 StrokeThickness="1"
                                                 Stroke="{DynamicResource CardStroke}"
@@ -236,7 +237,7 @@
                                     <Label FontSize="11.5"
                                            LineBreakMode="WordWrap"
                                            TextColor="{DynamicResource TextSecondary}"
-                                           Text="Шаблоны — файлы .docx с именами «Категория_Название.docx». Поля выделяются квадратными [Поле-Пример] или {фигурными} скобками." />
+                                           Text="Сохраните файл как «Категория_Название.docx». Для обычных полей используйте {ФИО} или [Город-Минск]. Для генерации ИИ напишите {Текст} отдельным абзацем в нужном месте. В форме нажмите «Сгенерировать текст» и опишите ситуацию в чате. Результат появится в поле «Текст», остальные поля заполняются отдельно." />
                                 </VerticalStackLayout>
                             </Border>
                         </VerticalStackLayout>

@@ -41,8 +41,7 @@
                                  Spacing="16">
 
                 <!-- Заголовок страницы -->
-                <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12">
-                <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                <VerticalStackLayout Spacing="2">
                     <Label Text="Шаблоны"
                            FontSize="26"
                            FontAttributes="Bold"
@@ -51,10 +50,6 @@
                            FontSize="13"
                            TextColor="{DynamicResource TextSecondary}" />
                 </VerticalStackLayout>
-
-                    <Button x:Name="ImportButton" Grid.Column="1" Text="Добавить DOCX"
-                            Clicked="OnImportClicked" VerticalOptions="Center" />
-                </Grid>
 
                 <!-- Поисковая строка с векторной иконкой -->
                 <Border BackgroundColor="{DynamicResource CardBg}"
