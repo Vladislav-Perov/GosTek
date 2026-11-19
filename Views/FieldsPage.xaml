@@ -212,13 +212,19 @@
                                 </VerticalStackLayout>
                             </Grid>
                             <Border StyleClass="FieldBox">
-                                <Picker x:Name="FormatFont" Title="Шрифт" SelectedIndexChanged="OnFormattingChanged" />
+                                <Picker x:Name="FormatFont" Title="{OnPlatform Android=Шрифт, Default={x:Null}}"
+                                        SemanticProperties.Description="Шрифт" FontSize="16" MinimumHeightRequest="44"
+                                        VerticalOptions="Center" SelectedIndexChanged="OnFormattingChanged" />
                             </Border>
                             <Border StyleClass="FieldBox">
-                                <Picker x:Name="FormatSpacing" Title="Межстрочный интервал" SelectedIndexChanged="OnFormattingChanged" />
+                                <Picker x:Name="FormatSpacing" Title="{OnPlatform Android='Межстрочный интервал', Default={x:Null}}"
+                                        SemanticProperties.Description="Межстрочный интервал" FontSize="16" MinimumHeightRequest="44"
+                                        VerticalOptions="Center" SelectedIndexChanged="OnFormattingChanged" />
                             </Border>
                             <Border StyleClass="FieldBox">
-                                <Picker x:Name="FormatAlignment" Title="Выравнивание" SelectedIndexChanged="OnFormattingChanged" />
+                                <Picker x:Name="FormatAlignment" Title="{OnPlatform Android=Выравнивание, Default={x:Null}}"
+                                        SemanticProperties.Description="Выравнивание" FontSize="16" MinimumHeightRequest="44"
+                                        VerticalOptions="Center" SelectedIndexChanged="OnFormattingChanged" />
                             </Border>
                             <Label x:Name="FormattingError" IsVisible="False" FontSize="14" TextColor="{DynamicResource BadColor}"
                                    Text="Введите поля от 0 до 60 мм, отступ до 30 мм и кегль от 8 до 32 пт." />
