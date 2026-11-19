@@ -33,6 +33,7 @@ public partial class AppTabBar : ContentView
     {
         new("home",      "home",      "Главная",  "//MainPage"),
         new("templates", "templates", "Шаблоны",  "//TemplatesPage"),
+        new("scan",      "scan",      "Оцифровка", "//ScanPage"),
         new("check",     "check",     "Проверка", "//CheckPage"),
         new("profile",   "profile",   "Профиль",  "//ProfilePage"),
     };
@@ -81,7 +82,7 @@ public partial class AppTabBar : ContentView
         {
             shell.Navigated -= OnShellNavigated;
             shell.Navigated += OnShellNavigated;
-            SyncActiveTabFromRoute(shell.CurrentState?.Location?.OriginalString);
+            SyncActiveTabFromRoute(shell.CurrentItem?.CurrentItem?.Route ?? shell.CurrentState?.Location?.OriginalString);
 
             // Гарантируем установку ширины Flyout при загрузке
             shell.FlyoutWidth = WindowsRailWidth;
@@ -99,7 +100,7 @@ public partial class AppTabBar : ContentView
         SyncActiveTabFromRoute(e.Current?.Location?.OriginalString);
     }
 
-    private void SyncActiveTabFromRoute(string? route)
+    internal void SyncActiveTabFromRoute(string? route)
     {
         if (string.IsNullOrEmpty(route))
             return;
@@ -281,9 +282,19 @@ public partial class AppTabBar : ContentView
             bool active = key == ActiveTab;
             bool hover = key == _hoveredKey;
 
+            if (isRail)
+            {
+                border.SetDynamicResource(VisualElement.BackgroundProperty,
+                    active ? "RailSelectedBrush" : hover ? "RailHoverBrush" : "RailIdleBrush");
+                var railText = active ? "RailSelectedText" : hover ? "TextPrimary" : "TextSecondary";
+                icon.IconColor = railText;
+                label.SetDynamicResource(Label.TextColorProperty, railText);
+                continue;
+            }
+
             if (active)
             {
-                border.SetDynamicResource(VisualElement.BackgroundColorProperty, isRail ? "IconBoxBg" : "TabActiveBg");
+                border.SetDynamicResource(VisualElement.BackgroundColorProperty, "TabActiveBg");
                 icon.IconColor = "BrandGreen";
                 label.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
             }

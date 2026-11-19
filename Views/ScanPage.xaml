@@ -26,7 +26,7 @@
     </ContentPage.Resources>
 
     <Grid RowDefinitions="Auto, *, Auto"
-          MaximumWidthRequest="700"
+          MaximumWidthRequest="{OnPlatform Android=700, Default=1250}"
           HorizontalOptions="Fill">
 
         <!-- ==================== ШАПКА ==================== -->
@@ -69,10 +69,52 @@
         </Grid>
 
         <!-- ==================== ЦЕНТР: ВИДОИСКАТЕЛЬ ИЛИ РЕЗУЛЬТАТ ==================== -->
-        <Grid Grid.Row="1" Margin="20, 4">
+        <Grid Grid.Row="1" Margin="20, 4" ColumnSpacing="16"
+              ColumnDefinitions="{OnPlatform WinUI='*,1.15*', Default='*'}">
+
+            <Border x:Name="DesktopDropZone" Grid.ColumnSpan="{OnPlatform WinUI=2, Default=1}"
+                    IsVisible="{OnPlatform WinUI=True, Default=False}"
+                    BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}"
+                    StrokeShape="RoundRectangle 12" Padding="16" MaximumWidthRequest="680"
+                    VerticalOptions="Start">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Исходное изображение" FontAttributes="Bold" FontSize="17"
+                           TextColor="{DynamicResource TextPrimary}" />
+                    <Grid x:Name="DesktopImageArea" HeightRequest="200" BackgroundColor="{DynamicResource PageBg}">
+                        <Image x:Name="DesktopImage" Aspect="AspectFit" IsVisible="False"
+                               SemanticProperties.Description="Открыть исходное изображение в крупном размере">
+                            <Image.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnDesktopImageTapped" />
+                            </Image.GestureRecognizers>
+                        </Image>
+                        <VerticalStackLayout x:Name="DesktopDropHint" Spacing="12"
+                                             VerticalOptions="Center" HorizontalOptions="Center">
+                            <vctrl:IconView Icon="image" Size="40" IconColor="TextSecondary" />
+                            <Label Text="Перетащите фото или скан сюда" HorizontalTextAlignment="Center"
+                                   TextColor="{DynamicResource TextSecondary}" />
+                            <Label Text="JPG или PNG" HorizontalTextAlignment="Center"
+                                   TextColor="{DynamicResource TextSecondary}" />
+                        </VerticalStackLayout>
+                    </Grid>
+                    <Label x:Name="DesktopFileName" IsVisible="False" LineBreakMode="MiddleTruncation"
+                           TextColor="{DynamicResource TextPrimary}" />
+                    <Button x:Name="DesktopChooseButton" Text="Выбрать изображение"
+                            Clicked="OnChooseDesktopImageClicked" HorizontalOptions="Start"
+                            BackgroundColor="{DynamicResource ActionBg}" TextColor="White" />
+                    <FlexLayout x:Name="DesktopImageActions" IsVisible="False" Wrap="Wrap">
+                        <Button x:Name="DesktopRecognizeButton" Text="Распознать текст"
+                                Clicked="OnRecognizeDesktopClicked" Margin="0,0,8,6"
+                                BackgroundColor="{DynamicResource ActionBg}" TextColor="White" />
+                        <Button Text="Другое изображение" Clicked="OnChooseDesktopImageClicked" Margin="0,0,8,6" />
+                        <Button Text="Увеличить фото" Clicked="OnDesktopZoomClicked" Margin="0,0,0,6" />
+                    </FlexLayout>
+                    <Label x:Name="DesktopError" IsVisible="False" TextColor="{DynamicResource BadColor}" />
+                </VerticalStackLayout>
+            </Border>
 
             <!-- Рамка видоискателя с акцентными уголками и подсказкой -->
-            <Grid x:Name="FramePanel" RowDefinitions="*, Auto, Auto" RowSpacing="12">
+            <Grid x:Name="FramePanel" IsVisible="{OnPlatform Android=True, Default=False}"
+                  RowDefinitions="*, Auto, Auto" RowSpacing="12">
 
                 <!-- Область камеры/видоискателя -->
                 <Grid x:Name="ViewfinderArea" Grid.Row="0" HorizontalOptions="Fill" VerticalOptions="Fill">
@@ -186,7 +228,8 @@
             </Grid>
 
             <!-- Результат распознавания (панель скролла) -->
-            <ScrollView x:Name="ResultPanel" IsVisible="False" VerticalScrollBarVisibility="Never">
+            <ScrollView x:Name="ResultPanel" Grid.Column="{OnPlatform WinUI=1, Default=0}"
+                        IsVisible="False" VerticalScrollBarVisibility="Never">
                 <VerticalStackLayout Spacing="14" Padding="{OnPlatform Android='0, 4, 0, 36', WinUI='0, 4, 0, 16'}">
 
                     <!-- Кнопка «Снять заново» в виде аккуратного чипа -->
@@ -202,7 +245,7 @@
                             </Border.GestureRecognizers>
                             <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
                                 <Label Text="↩" FontSize="16" FontAttributes="Bold" TextColor="{DynamicResource BrandGreen}" VerticalOptions="Center" />
-                                <Label Text="Снять заново" FontSize="15" FontAttributes="Bold" TextColor="{DynamicResource BrandGreen}" VerticalOptions="Center" />
+                                <Label Text="{OnPlatform WinUI='Другое изображение', Default='Снять заново'}" FontSize="15" FontAttributes="Bold" TextColor="{DynamicResource BrandGreen}" VerticalOptions="Center" />
                             </HorizontalStackLayout>
                         </Border>
                     </HorizontalStackLayout>
@@ -598,6 +641,7 @@
 
                             <!-- Главная кнопка: Сохранить и экспортировать в DOCX по ГОСТ -->
                             <Border StyleClass="HoverCard"
+                                    IsVisible="{OnPlatform Android=True, Default=False}"
                                     StrokeThickness="0"
                                     StrokeShape="RoundRectangle 14"
                                     BackgroundColor="{DynamicResource ActionBg}"
@@ -622,6 +666,12 @@
                                 </HorizontalStackLayout>
                             </Border>
 
+                            <FlexLayout IsVisible="{OnPlatform WinUI=True, Default=False}" Wrap="Wrap">
+                                <Button Text="Сохранить Word" Clicked="OnExportGostDocxTapped" Margin="0,0,8,6"
+                                        BackgroundColor="{DynamicResource ActionBg}" TextColor="White" />
+                                <Button Text="Сохранить PDF" Clicked="OnExportGostPdfClicked" Margin="0,0,0,6" />
+                            </FlexLayout>
+
                             <!-- Кнопка: Создать ГОСТ-шаблон из этого текста -->
                             <Border StyleClass="HoverCard"
                                     Stroke="{DynamicResource BrandGreen}"
@@ -629,7 +679,7 @@
                                     StrokeShape="RoundRectangle 12"
                                     BackgroundColor="{DynamicResource CardBg}"
                                     Padding="12, 10"
-                                    HorizontalOptions="Fill">
+                                    HorizontalOptions="{OnPlatform WinUI=Start, Default=Fill}">
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Tapped="OnCreateTemplateFromOcrTapped" />
                                 </Border.GestureRecognizers>
@@ -653,7 +703,7 @@
                                     StrokeShape="RoundRectangle 12"
                                     BackgroundColor="{DynamicResource CardBg}"
                                     Padding="12, 10"
-                                    HorizontalOptions="Fill">
+                                    HorizontalOptions="{OnPlatform WinUI=Start, Default=Fill}">
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Tapped="OnApplyToTemplateTapped" />
                                 </Border.GestureRecognizers>
@@ -684,6 +734,7 @@
 
         <!-- ==================== ПАНЕЛЬ ДЕЙСТВИЙ (ГАЛЕРЕЯ, ЗАТВОР, ФАЙЛ) ==================== -->
         <Grid Grid.Row="2"
+              IsVisible="{OnPlatform Android=True, Default=False}"
               ColumnDefinitions="*, Auto, *"
               VerticalOptions="End">
             <Grid.Padding>
@@ -783,6 +834,22 @@
                        HorizontalOptions="Center"
                        TextColor="{DynamicResource TextSecondary}" />
             </VerticalStackLayout>
+        </Grid>
+
+        <Grid x:Name="DesktopImageOverlay" Grid.RowSpan="3" IsVisible="False"
+              BackgroundColor="#A0000000" Padding="24">
+            <Border StrokeThickness="0" StrokeShape="RoundRectangle 12"
+                    BackgroundColor="{DynamicResource CardBg}" Padding="16">
+                <Grid RowDefinitions="Auto,*" RowSpacing="12">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <Label Text="Исходное изображение" FontSize="18" FontAttributes="Bold"
+                               TextColor="{DynamicResource TextPrimary}" VerticalOptions="Center" />
+                        <Button x:Name="DesktopZoomCloseButton" Grid.Column="1" Text="Закрыть"
+                                Clicked="OnCloseDesktopZoomClicked" />
+                    </Grid>
+                    <Image x:Name="DesktopLargeImage" Grid.Row="1" Aspect="AspectFit" />
+                </Grid>
+            </Border>
         </Grid>
 
         <!-- Полноэкранный оверлей индикации процесса (захват, улучшение, OCR) -->

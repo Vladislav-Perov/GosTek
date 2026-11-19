@@ -88,6 +88,10 @@ public partial class ScanPage : ContentPage
         ScanLoading.CancelRequested += (_, _) => CancelProcessing();
         ViewfinderArea.SizeChanged += (_, _) => UpdateViewfinderGeometry();
         this.Loaded += (_, _) => UpdateViewfinderGeometry();
+#if WINDOWS
+        DesktopDropZone.HandlerChanged += (_, _) => EnableDesktopDrop();
+        EnableDesktopDrop();
+#endif
     }
 
     private void UpdateModeUi()
@@ -95,7 +99,7 @@ public partial class ScanPage : ContentPage
         bool isPassport = string.Equals(_mode, "passport", StringComparison.OrdinalIgnoreCase);
 
         if (PageTitleLabel != null)
-            PageTitleLabel.Text = isPassport ? "Сканирование паспорта" : "Сканер документов";
+            PageTitleLabel.Text = IsDesktop ? "Оцифровка документов" : isPassport ? "Сканирование паспорта" : "Сканер документов";
 
         if (ViewfinderHintLabel != null)
             ViewfinderHintLabel.Text = isPassport
@@ -159,19 +163,12 @@ public partial class ScanPage : ContentPage
     {
         base.OnAppearing();
 
-        // На Windows сканер камеры не поддерживается (используется только на Android)
-        if (DeviceInfo.Platform == DevicePlatform.WinUI)
-        {
-            await Shell.Current.GoToAsync("//MainPage");
-            return;
-        }
-
         _isPageVisible = true;
         int token = ++_visibilityToken;
 
         UpdateModeUi();
 
-        if (!ResultPanel.IsVisible)
+        if (!IsDesktop && !ResultPanel.IsVisible)
         {
             await StartPreviewAsync(token);
             if (_isPageVisible && _visibilityToken == token)
@@ -182,6 +179,7 @@ public partial class ScanPage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        TryCloseDesktopImage();
         SettingsOverlay.Dismiss();
         _isPageVisible = false;
         ++_visibilityToken;
@@ -488,7 +486,7 @@ public partial class ScanPage : ContentPage
         SetLoading(false);
         _busy = false;
 
-        if (!ResultPanel.IsVisible)
+        if (!IsDesktop && !ResultPanel.IsVisible)
         {
             StartLaserAnimation();
             _ = StartPreviewAsync();
@@ -509,7 +507,13 @@ public partial class ScanPage : ContentPage
     private void ShowResult(bool on)
     {
         ResultPanel.IsVisible = on;
-        FramePanel.IsVisible = !on;
+        FramePanel.IsVisible = !IsDesktop && !on;
+        if (IsDesktop)
+        {
+            Grid.SetColumnSpan(DesktopDropZone, on ? 1 : 2);
+            DesktopRecognizeButton.IsVisible = !on;
+            return;
+        }
 
         if (on)
 
@@ -527,6 +531,13 @@ public partial class ScanPage : ContentPage
     private void ShowError(string text)
     {
         ShowResult(false);
+
+        if (IsDesktop)
+        {
+            DesktopError.Text = text;
+            DesktopError.IsVisible = true;
+            return;
+        }
 
         _cameraNoteShown = false;
         ErrorLabel.Text = text;
@@ -551,7 +562,13 @@ public partial class ScanPage : ContentPage
         await Shell.Current.GoToAsync(route);
     }
 
-    private void OnRetakeTapped(object? sender, TappedEventArgs e) => ShowResult(false);
+    private async void OnRetakeTapped(object? sender, TappedEventArgs e)
+    {
+        if (IsDesktop)
+            await ChooseDesktopImageAsync();
+        else
+            ShowResult(false);
+    }
 
     // Затвор: съемка через системную камеру устройства для максимального оптического качества и автофокуса
     private async void OnShutterTapped(object? sender, TappedEventArgs e)
@@ -598,6 +615,7 @@ public partial class ScanPage : ContentPage
 
             SetLoading(true, "Открытие камеры...", "Съёмка документа с высоким разрешением");
             var photo = await MediaPicker.Default.CapturePhotoAsync();
+            RegisterTempFile(photo?.FullPath);
             return await OpenAsync(photo);
         }, pausePreview: true);
     }
@@ -622,9 +640,6 @@ public partial class ScanPage : ContentPage
     {
         if (file is null)
             return null;
-
-        if (!string.IsNullOrWhiteSpace(file.FullPath))
-            RegisterTempFile(file.FullPath);
 
         return await file.OpenReadAsync();
     }
@@ -682,7 +697,7 @@ public partial class ScanPage : ContentPage
 
             CleanupTempFiles();
             // Вернулись без результата (отмена, ошибка): камера в рамке снова работает
-            if (!ResultPanel.IsVisible)
+            if (!IsDesktop && !ResultPanel.IsVisible)
             {
             StartLaserAnimation();
             _ = StartPreviewAsync();
@@ -693,6 +708,7 @@ public partial class ScanPage : ContentPage
     private async Task ProcessStreamAsync(Stream stream, CancellationToken token)
     {
         ErrorLabel.IsVisible = false;
+        DesktopError.IsVisible = false;
         _cameraNoteShown = false;
         SetLoading(true, "Улучшаем изображение...", "Выравнивание наклона и бинаризация");
 
@@ -702,11 +718,17 @@ public partial class ScanPage : ContentPage
 
             ScanLoading.UpdateStatus("Распознаем текст...", "Распознавание символов OCR");
             token.ThrowIfCancellationRequested();
+#if WINDOWS
+            string text = await OcrService.RecognizeDocumentAsync(stream, token);
+#else
             string text = await OcrService.RecognizeTextAsync(stream, token);
+#endif
             token.ThrowIfCancellationRequested();
 
             if (string.IsNullOrWhiteSpace(text)) {
-                ShowError("Текст на фото не распознан. Попробуйте снять при лучшем освещении, ровнее и ближе.");
+                ShowError(IsDesktop
+                    ? "Текст не распознан. Выберите более чёткое изображение, на котором документ виден целиком."
+                    : "Текст на фото не распознан. Попробуйте снять при лучшем освещении, ровнее и ближе.");
                 return;
             }
 
@@ -770,7 +792,10 @@ public partial class ScanPage : ContentPage
         }
 
         // Обновляем визуальный предпросмотр А4 по ГОСТ
-        UpdateA4Preview();
+        if (IsDesktop)
+            ShowTextEditor();
+        else
+            UpdateA4Preview();
     }
 
     // ===== Переключение табов: Предпросмотр А4 / Редактирование =====
@@ -794,6 +819,11 @@ public partial class ScanPage : ContentPage
     private void OnTabEditTapped(object? sender, TappedEventArgs e)
     {
         HapticHelper.Click();
+        ShowTextEditor();
+    }
+
+    private void ShowTextEditor()
+    {
         A4PreviewSheet.IsVisible = false;
         TextEditorContainer.IsVisible = true;
 
@@ -1001,8 +1031,14 @@ public partial class ScanPage : ContentPage
     }
 
     // ===== Экспорт оцифрованного текста в настраиваемый ГОСТ DOCX =====
-    private async void OnExportGostDocxTapped(object? sender, TappedEventArgs e)
+    private async void OnExportGostDocxTapped(object? sender, EventArgs e)
     {
+        if (IsDesktop)
+        {
+            await ExportDesktopScanAsync(pdf: false);
+            return;
+        }
+
         HapticHelper.Click();
         string text = RawTextEditor.Text?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(text))

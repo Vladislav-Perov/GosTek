@@ -393,20 +393,23 @@ public static class TemplateSeeder
     {
         var p = body.AppendChild(new Paragraph());
         var pPr = p.AppendChild(new ParagraphProperties());
-        pPr.AppendChild(new Justification { Val = align });
         pPr.AppendChild(new SpacingBetweenLines {
-            Line = "360", // 1.5 интервал по ГОСТ
+            Before = "0",
+            After = "0",
+            Line = "240",
             LineRule = LineSpacingRuleValues.Auto,
-            After = "120" // 6 pt
         });
+        pPr.AppendChild(new Justification { Val = align });
 
         var run = p.AppendChild(new Run());
         var rPr = run.AppendChild(new RunProperties());
-        rPr.AppendChild(new RunFonts { Ascii = "Times New Roman", HighAnsi = "Times New Roman", ComplexScript = "Times New Roman" });
-        rPr.AppendChild(new FontSize { Val = "28" }); // 14 pt
+        rPr.AppendChild(new RunFonts { Ascii = "Times New Roman", HighAnsi = "Times New Roman",
+            EastAsia = "Times New Roman", ComplexScript = "Times New Roman" });
         if (isBold) {
             rPr.AppendChild(new Bold());
         }
+        rPr.AppendChild(new FontSize { Val = "28" }); // 14 pt
+        rPr.AppendChild(new FontSizeComplexScript { Val = "28" });
         run.AppendChild(new Text(text) { Space = SpaceProcessingModeValues.Preserve });
     }
 }

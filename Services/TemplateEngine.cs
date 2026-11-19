@@ -25,7 +25,13 @@ namespace GosTek;
 public sealed record PreviewPart(string Text, string? FieldId);
 
 /// <summary>Абзац шаблона для предпросмотра.</summary>
-public sealed record PreviewPara(List<PreviewPart> Parts, TextAlignment Align, bool Bold, bool Italic, double Pt, bool Blank);
+public sealed record PreviewPara(List<PreviewPart> Parts, TextAlignment Align, bool Bold, bool Italic, double Pt, bool Blank)
+{
+    public double LeftIndentMm { get; init; }
+    public double FirstLineMm { get; init; }
+    public double? LineSpacing { get; init; }
+    public bool Justify { get; init; }
+}
 
 /// <summary>
 /// Работа с шаблонами .docx.
@@ -628,7 +634,7 @@ public static class TemplateEngine
             alignmentLabel);
     }
 
-    public static List<PreviewPara> ReadPreview(string file)
+    public static List<PreviewPara> ReadPreview(string file, bool literalLayout = false)
     {
         var result = new List<PreviewPara>();
 
@@ -639,7 +645,8 @@ public static class TemplateEngine
             if (body is null)
                 return result;
 
-            foreach (var p in body.Descendants<Paragraph>().Take(300)) {
+            var paragraphs = body.Descendants<Paragraph>();
+            foreach (var p in literalLayout ? paragraphs : paragraphs.Take(300)) {
                 var sb = new StringBuilder();
                 foreach (var el in p.Descendants()) {
                     if (el.Ancestors<Paragraph>().First() != p)
@@ -664,6 +671,20 @@ public static class TemplateEngine
 
                 if (string.IsNullOrWhiteSpace(text)) {
                     result.Add(new PreviewPara(new(), align, bold, italic, pt, true));
+                    continue;
+                }
+
+                if (literalLayout)
+                {
+                    static double Parse(string? value) => double.TryParse(value, out var number) ? number : 0;
+                    var line = Parse(props?.SpacingBetweenLines?.Line?.Value);
+                    result.Add(new PreviewPara([new PreviewPart(text, null)], align, bold, italic, pt, false)
+                    {
+                        LeftIndentMm = Math.Max(0, Parse(props?.Indentation?.Left?.Value) * 25.4 / 1440),
+                        FirstLineMm = Math.Max(0, Parse(props?.Indentation?.FirstLine?.Value) * 25.4 / 1440),
+                        LineSpacing = line > 0 ? line / 240 : null,
+                        Justify = jc == JustificationValues.Both,
+                    });
                     continue;
                 }
 
