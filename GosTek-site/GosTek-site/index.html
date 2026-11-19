@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GosTek — Генерация, оцифровка и аудит документов по ГОСТ</title>
+  <meta name="description" content="Официальный сайт GosTek: кроссплатформенное приложение для Windows и Android. Создание заявлений, договоров и документов по ГОСТ Р 7.0.97-2016 с автозаполнением, OCR и ИИ.">
+  <link rel="icon" type="image/png" href="assets/appicon.png">
+  
+  <!-- Шрифты -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  
+  <!-- Стили -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="bg-grid"></div>
+
+  <!-- ХЕДЕР -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#" class="logo-link">
+        <div class="logo-icon-box">
+          <img src="assets/appicon.png" alt="GosTek Logo">
+        </div>
+        <div class="logo-text-group">
+          <span class="logo-title">GosTek</span>
+          <span class="logo-tag">Документы по ГОСТ</span>
+        </div>
+      </a>
+
+      <nav class="nav-menu">
+        <a href="#features" class="nav-link">Возможности</a>
+        <a href="#screenshots" class="nav-link">Скриншоты</a>
+        <a href="#playground" class="nav-link">Шаблоны</a>
+        <a href="#gost" class="nav-link">Стандарты ГОСТ</a>
+        <a href="presentation.html" class="nav-link" target="_blank">Презентация</a>
+        <a href="#faq" class="nav-link">FAQ</a>
+        <a href="#download" class="nav-link">Скачать</a>
+      </nav>
+
+      <div class="header-actions">
+        <a href="#download" class="btn btn-primary btn-sm">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Скачать</span>
+        </a>
+        <button class="mobile-toggle" aria-label="Открыть меню">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="hero-section">
+    <div class="hero-glow-sphere"></div>
+    <div class="container">
+      
+      <div class="hero-badge-wrap">
+        <span class="status-beacon"></span>
+        <span class="hero-badge-text">Версия 1.0 · Полная поддержка ГОСТ Р 7.0.97-2016</span>
+      </div>
+
+      <h1 class="hero-title">
+        Генерация, оцифровка и аудит документов <span class="gradient-text">по ГОСТ</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        Единое кроссплатформенное приложение для Windows и Android. Создавайте юридически выверенные заявления, договоры и объяснительные за 30 секунд с автозаполнением реквизитов, OCR-распознаванием и встроенным ИИ.
+      </p>
+
+      <div class="hero-cta-group">
+        <a id="hero-cta-primary" href="downloads/GosTek-Windows-x64.zip" class="btn btn-primary btn-lg" download="GosTek-Windows-x64.zip">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <span>Скачать для Windows (x64)</span>
+        </a>
+
+        <a id="hero-cta-secondary" href="downloads/GosTek.apk" class="btn btn-secondary btn-lg" download="GosTek.apk">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h8.5a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2Z"/><path d="M12 18h.01"/></svg>
+          <span>Скачать для Android (.apk)</span>
+        </a>
+      </div>
+
+      <div class="hero-meta-badges">
+        <div class="meta-badge-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>100% Офлайн и приватность (Zero-Text Logging)</span>
+        </div>
+        <div class="meta-badge-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Экспорт в .DOCX и .PDF</span>
+        </div>
+        <div class="meta-badge-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>370 автоматических тестов (xUnit)</span>
+        </div>
+      </div>
+
+      <!-- ИНТЕРАКТИВНЫЙ МАКЕТ УСТРОЙСТВ -->
+      <div class="showcase-wrapper">
+        <div class="mockup-container">
+          
+          <!-- ДЕСКТОП ОКНО (WINDOWS) -->
+          <div class="desktop-window">
+            <div class="window-titlebar">
+              <div class="window-dots">
+                <span class="dot dot-red"></span>
+                <span class="dot dot-yellow"></span>
+                <span class="dot dot-green"></span>
+              </div>
+              <div class="window-tab">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span>GosTek · Генератор документов</span>
+              </div>
+              <div class="window-actions">
+                <span>—</span>
+                <span>□</span>
+                <span>✕</span>
+              </div>
+            </div>
+
+            <div class="window-body">
+              <!-- Сайдбар макета -->
+              <div class="mock-sidebar">
+                <div class="mock-side-item active" data-tab="templates">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <span>Шаблоны</span>
+                </div>
+                <div class="mock-side-item" data-tab="scan">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <span>Оцифровка</span>
+                </div>
+                <div class="mock-side-item" data-tab="rules">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                  <span>Проверка ГОСТ</span>
+                </div>
+                <div class="mock-side-item" data-tab="profile">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <span>Мой профиль</span>
+                </div>
+              </div>
+
+              <!-- Контент макета -->
+              <div class="mock-content-area">
+                <div class="mock-doc-sheet">
+                  <div class="mock-doc-header">
+                    Декану факультета информационных технологий<br>
+                    проф. Соколову Д. А.<br>
+                    студента гр. ИВТ-401<br>
+                    Перова Владислава Сергеевича
+                  </div>
+                  <div class="mock-doc-title">ЗАЯВЛЕНИЕ НА ОТПУСК</div>
+                  <div class="mock-doc-body">
+                    Прошу предоставить очередной академический отпуск в соответствии с учебным регламентом... Документы и справка установленного образца прилагаются.
+                  </div>
+                  <div class="mock-doc-footer">
+                    <span>19.11.2026 г.</span>
+                    <span>_________ / В. С. Перов</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- СМАРТФОН МАКЕТ (ANDROID) -->
+          <div class="phone-frame">
+            <div class="phone-island"></div>
+            <div class="phone-screen">
+              <div class="phone-header">
+                <span class="phone-app-title">GosTek Mobile</span>
+                <span style="color:#10B981; font-size:0.7rem; font-weight:700;">● ОФЛАЙН</span>
+              </div>
+              <div class="phone-card">
+                <span style="color:#60A5FA; font-weight:700; font-size:0.75rem;">БЫСТРЫЙ ВЫБОР</span>
+                <div style="margin-top:6px; font-weight:600; color:#fff;">Заявление на отпуск</div>
+                <div style="color:#94A3B8; font-size:0.7rem;">ГОСТ Р 7.0.97-2016 · 14 пт</div>
+              </div>
+              <div class="phone-card" style="background:rgba(37,99,235,0.15); border-color:#2563EB;">
+                <span style="color:#38BDF8; font-weight:700; font-size:0.75rem;">ПРОФИЛЬ: 100%</span>
+                <div style="margin-top:4px; color:#fff; font-size:0.72rem;">Перов В. С. (ИВТ-401)</div>
+              </div>
+              <div class="phone-btn">
+                Собрать документ (DOCX / PDF)
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- МЕТРИКИ И НАДЕЖНОСТЬ -->
+  <section class="trust-section">
+    <div class="container">
+      <div class="trust-grid">
+        <div class="trust-card">
+          <div class="trust-number">370</div>
+          <div class="trust-label">xUnit автотестов пройдено</div>
+        </div>
+        <div class="trust-card">
+          <div class="trust-number">0 байт</div>
+          <div class="trust-label">Утечек (Zero-Text Logging)</div>
+        </div>
+        <div class="trust-card">
+          <div class="trust-number">&lt; 30 сек</div>
+          <div class="trust-label">На оформление документа</div>
+        </div>
+        <div class="trust-card">
+          <div class="trust-number">2 в 1</div>
+          <div class="trust-label">Windows (x64) и Android (APK)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- СЕКЦИЯ ВОЗМОЖНОСТЕЙ -->
+  <section id="features" class="section">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-tag">Возможности платформы</span>
+        <h2 class="section-title">Все инструменты делопроизводства в одном окне</h2>
+        <p class="section-desc">Больше никаких съехавших отступов, неправильных шрифтов и ручного переписывания реквизитов.</p>
+      </div>
+
+      <div class="features-grid">
+        <!-- Фича 1 -->
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
+          <h3 class="feature-title">Умные шаблоны по ГОСТ</h3>
+          <p class="feature-text">Встроенная библиотека официальных бланков: академические отпуска, материальная помощь, служебные записки, договоры и объяснительные. Возможность импортировать собственные .docx файлы.</p>
+          <div class="feature-highlight">
+            <span>10+ готовых бланков</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+          </div>
+        </div>
+
+        <!-- Фича 2 -->
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
+          <h3 class="feature-title">Оцифровка и OCR</h3>
+          <p class="feature-text">Сфотографируйте бумажный документ камерой смартфона или загрузите скан на ПК. Оптический движок (Tesseract / ML Kit) мгновенно распознает текст и преобразует его в редактируемый формат.</p>
+          <div class="feature-highlight">
+            <span>Камера и галерея</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+          </div>
+        </div>
+
+        <!-- Фича 3 -->
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 2a10 10 0 0 1 10 10h-10V2z"/></svg>
+          </div>
+          <h3 class="feature-title">ИИ-ассистент формулировок</h3>
+          <p class="feature-text">Испытываете сложности с деловым стилем? Встроенный ИИ-помощник (Groq / Cloudflare Workers AI) поможет сформулировать обоснование строго с вашего согласия.</p>
+          <div class="feature-highlight">
+            <span>Строго по согласию</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+          </div>
+        </div>
+
+        <!-- Фича 4 -->
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <h3 class="feature-title">Профиль и автозаполнение</h3>
+          <p class="feature-text">Заполните свои данные один раз (ФИО, должность, факультет, контакты). GosTek автоматически подставит их во все реквизиты, шапки и подписи создаваемых документов.</p>
+          <div class="feature-highlight">
+            <span>Экономия 90% времени</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+          </div>
+        </div>
+
+        <!-- Фича 5 -->
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <h3 class="feature-title">Гибкое форматирование</h3>
+          <p class="feature-text">Настройка шрифта (Times New Roman 14), полей (30/15/20/20 мм), красной строки (1.25 см) и интервалов прямо перед экспортом в DOCX или PDF без повреждения оригинала.</p>
+          <div class="feature-highlight">
+            <span>ГОСТ Р 7.0.97-2016</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+          </div>
+        </div>
+
+        <!-- Фича 6 -->
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3 class="feature-title">Безопасность и Zero-Logging</h3>
+          <p class="feature-text">Принцип Zero-Text Logging: текст ваших документов не логируется, не уходит на сторонние серверы и обрабатывается локально в памяти вашего устройства.</p>
+          <div class="feature-highlight">
+            <span>Шифрование SecureStorage</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ГАЛЕРЕЯ СКРИНШОТОВ ИНТЕРФЕЙСА -->
+  <section id="screenshots" class="section" style="background: rgba(11, 21, 40, 0.4);">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-tag">Интерфейс приложения</span>
+        <h2 class="section-title">Реальные экраны GosTek</h2>
+        <p class="section-desc">Официальный дизайн Office Blue: строгая геометрия, чистая контрастная типографика и удобное управление на ПК и смартфонах.</p>
+      </div>
+
+      <!-- Переключатель платформы -->
+      <div class="gallery-tabs">
+        <button class="gallery-tab-btn active" data-platform="windows">Windows (Десктоп)</button>
+        <button class="gallery-tab-btn" data-platform="android">Android (Мобильный)</button>
+      </div>
+
+      <!-- Скриншоты Windows -->
+      <div id="gallery-windows" class="screenshot-grid">
+        <div class="screenshot-card">
+          <div class="screenshot-media-wrap">
+            <img src="assets/screen-win-main.png" onerror="this.src='assets/appiconfg.png'; this.classList.add('fallback-img')" alt="Главный экран Windows">
+          </div>
+          <div class="screenshot-meta">
+            <h4>Каталог шаблонов</h4>
+            <p>Выбор бланка, быстрый поиск и мгновенный доступ к избранным документам.</p>
+          </div>
+        </div>
+
+        <div class="screenshot-card">
+          <div class="screenshot-media-wrap">
+            <img src="assets/screen-win-fields.png" onerror="this.src='assets/appiconfg.png'; this.classList.add('fallback-img')" alt="Заполнение полей и сборка">
+          </div>
+          <div class="screenshot-meta">
+            <h4>Заполнение и форматирование</h4>
+            <p>Автоподстановка из профиля, настройка шрифта, полей и интервалов по ГОСТ.</p>
+          </div>
+        </div>
+
+        <div class="screenshot-card">
+          <div class="screenshot-media-wrap">
+            <img src="assets/screen-win-scan.png" onerror="this.src='assets/appiconfg.png'; this.classList.add('fallback-img')" alt="Оцифровка сканов на Windows">
+          </div>
+          <div class="screenshot-meta">
+            <h4>Оцифровка и OCR</h4>
+            <p>Выбор скана документа, предпросмотр и распознавание текста в компактном виде.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Скриншоты Android -->
+      <div id="gallery-android" class="screenshot-grid" style="display:none;">
+        <div class="screenshot-card phone-shot">
+          <div class="screenshot-media-wrap">
+            <img src="assets/screen-android-main.png" onerror="this.src='assets/appiconfg.png'; this.classList.add('fallback-img')" alt="Главный экран Android">
+          </div>
+          <div class="screenshot-meta">
+            <h4>Мобильный каталог</h4>
+            <p>Быстрая навигация и карточки документов для управления одной рукой.</p>
+          </div>
+        </div>
+
+        <div class="screenshot-card phone-shot">
+          <div class="screenshot-media-wrap">
+            <img src="assets/screen-android-editor.png" onerror="this.src='assets/appiconfg.png'; this.classList.add('fallback-img')" alt="Редактор документа на Android">
+          </div>
+          <div class="screenshot-meta">
+            <h4>Сборка DOCX и PDF</h4>
+            <p>Формирование документа и нативный экспорт в PDF через мобильный движок.</p>
+          </div>
+        </div>
+
+        <div class="screenshot-card phone-shot">
+          <div class="screenshot-media-wrap">
+            <img src="assets/screen-android-settings.png" onerror="this.src='assets/appiconfg.png'; this.classList.add('fallback-img')" alt="Шторка настроек">
+          </div>
+          <div class="screenshot-meta">
+            <h4>Настройки и темы</h4>
+            <p>Тёмная и светлая тема, импорт пользовательских шаблонов и очистка данных.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ИНТЕРАКТИВНЫЙ СИМУЛЯТОР ШАБЛОНОВ -->
+  <section id="playground" class="section">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-tag">Интерактивный предпросмотр</span>
+        <h2 class="section-title">Попробуйте генерацию прямо сейчас</h2>
+        <p class="section-desc">Выберите тип документа и введите имя — посмотрите, как автоматически формируется лист по ГОСТу.</p>
+      </div>
+
+      <div class="playground-box">
+        <!-- Левая панель: элементы управления -->
+        <div class="playground-controls">
+          <div class="control-group">
+            <span class="control-label">1. Выберите шаблон</span>
+            <div class="template-pill-list">
+              <div class="template-pill active" data-template="academic">
+                <span>Академический отпуск</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <div class="template-pill" data-template="explanation">
+                <span>Объяснительная записка</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <div class="template-pill" data-template="contract">
+                <span>Договор на оказание услуг</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <span class="control-label">2. Ваше ФИО (в родительном падеже)</span>
+            <input type="text" id="playground-name-input" class="input-field" placeholder="Перова Владислава Сергеевича" value="Перова Владислава Сергеевича">
+          </div>
+
+          <div style="margin-top: auto; padding: 16px; background: rgba(37,99,235,0.1); border-radius: 12px; border: 1px solid rgba(56,189,248,0.2);">
+            <div style="font-size:0.85rem; color:#60A5FA; font-weight:700; margin-bottom:4px;">Параметры ГОСТ Р 7.0.97:</div>
+            <div style="font-size:0.8rem; color:#94A3B8;">Шрифт: Times New Roman 14 пт<br>Интервал: Полуторный (1.5)<br>Красная строка: 1.25 см</div>
+          </div>
+        </div>
+
+        <!-- Правая панель: лист документа -->
+        <div class="playground-preview">
+          <div class="paper-sheet">
+            <div id="paper-header" class="paper-header">
+              <!-- Заполняется динамически -->
+            </div>
+            <div id="paper-title" class="paper-title">
+              <!-- Заполняется динамически -->
+            </div>
+            <div id="paper-text" class="paper-text">
+              <!-- Заполняется динамически -->
+            </div>
+            <div class="paper-footer">
+              <span id="paper-sign-left">19 ноября 2026 г.</span>
+              <span id="paper-sign-right">_________ / В. С. Перов</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- СТАНДАРТЫ ГОСТ -->
+  <section id="gost" class="section" style="background: rgba(11, 21, 40, 0.3);">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-tag">Стандарты делопроизводства</span>
+        <h2 class="section-title">Строгое соответствие ГОСТ Р 7.0.97-2016</h2>
+        <p class="section-desc">Каждый сгенерированный файл проходит верификацию по 6 ключевым параметрам стандартов оформления организационно-распорядительной документации.</p>
+      </div>
+
+      <div class="gost-checklist">
+        <div class="gost-item">
+          <svg class="gost-check-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <div>
+            <div class="gost-item-title">Поля страницы</div>
+            <div class="gost-item-desc">Левое поле — 30 мм (для подшивки), правое — 15 мм, верхнее и нижнее — по 20 мм.</div>
+          </div>
+        </div>
+
+        <div class="gost-item">
+          <svg class="gost-check-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <div>
+            <div class="gost-item-title">Типографика и кегль</div>
+            <div class="gost-item-desc">Гарнитура Times New Roman, размер 14 пт (12 пт для табличных блоков и сносок).</div>
+          </div>
+        </div>
+
+        <div class="gost-item">
+          <svg class="gost-check-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <div>
+            <div class="gost-item-title">Абзацный отступ (красная строка)</div>
+            <div class="gost-item-desc">Равен ровно 1.25 см по всему основному тексту документа без разрывов.</div>
+          </div>
+        </div>
+
+        <div class="gost-item">
+          <svg class="gost-check-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <div>
+            <div class="gost-item-title">Межстрочный интервал</div>
+            <div class="gost-item-desc">Стандартный полуторный интервал (1.5 строки), выравнивание по ширине страницы.</div>
+          </div>
+        </div>
+
+        <div class="gost-item">
+          <svg class="gost-check-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <div>
+            <div class="gost-item-title">Блок адресата и подписи</div>
+            <div class="gost-item-desc">Шапка адресата в правом верхнем углу, разделение должности, личной подписи и расшифровки.</div>
+          </div>
+        </div>
+
+        <div class="gost-item">
+          <svg class="gost-check-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <div>
+            <div class="gost-item-title">Автоматическая нумерация</div>
+            <div class="gost-item-desc">По центру верхнего или нижнего колонтитула на расстоянии 10 мм от края.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- СЕКЦИЯ СКАЧИВАНИЯ -->
+  <section id="download" class="download-section">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-tag">Загрузка и установка</span>
+        <h2 class="section-title">Скачайте GosTek для вашей системы</h2>
+        <p class="section-desc">Полностью бесплатное приложение с открытым исходным кодом. Без скрытых платежей, подписок и рекламы.</p>
+      </div>
+
+      <div class="download-grid">
+        <!-- КАРТОЧКА WINDOWS -->
+        <div id="card-windows" class="download-card highlight">
+          <div class="download-header">
+            <div class="download-os-icon">
+              <!-- Иконка Windows -->
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.949-1.801"/>
+              </svg>
+            </div>
+            <div class="download-os-info">
+              <h3>Windows (x64)</h3>
+              <p>Портативная сборка без установки</p>
+            </div>
+          </div>
+
+          <div class="download-specs">
+            <div class="spec-row">
+              <span class="spec-name">Версия:</span>
+              <span class="spec-val">1.0.0 (Release)</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-name">Требования:</span>
+              <span class="spec-val">Windows 10 / 11 (64-bit)</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-name">Размер архива:</span>
+              <span class="spec-val">128.7 МБ</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-name">Формат:</span>
+              <span class="spec-val">ZIP (автономный GosTek.exe)</span>
+            </div>
+          </div>
+
+          <div class="download-btn-wrap">
+            <a href="downloads/GosTek-Windows-x64.zip" class="btn btn-primary btn-lg" download="GosTek-Windows-x64.zip">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Скачать для Windows (.zip)</span>
+            </a>
+            <div style="font-size:0.8rem; color:var(--text-muted); text-align:center;">
+              Инструкция: Распакуйте архив и запустите <code>GosTek.exe</code>
+            </div>
+          </div>
+        </div>
+
+        <!-- КАРТОЧКА ANDROID -->
+        <div id="card-android" class="download-card">
+          <div class="download-header">
+            <div class="download-os-icon">
+              <!-- Иконка Android -->
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993.0001.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.4128 13.8563 8.0833 12 8.0833s-3.5902.3295-5.1368.8664L4.8409 5.4467a.4161.4161 0 00-.5677-.1521.4157.4157 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3432-4.1021-2.6889-7.5743-6.1185-9.4396"/>
+              </svg>
+            </div>
+            <div class="download-os-info">
+              <h3>Android (.apk)</h3>
+              <p>Универсальный подписанный пакет</p>
+            </div>
+          </div>
+
+          <div class="download-specs">
+            <div class="spec-row">
+              <span class="spec-name">Версия:</span>
+              <span class="spec-val">1.0.0 (Signed Release)</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-name">Требования:</span>
+              <span class="spec-val">Android 8.0 (API 26) и новее</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-name">Размер файла:</span>
+              <span class="spec-val">97.6 МБ</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-name">Архитектура:</span>
+              <span class="spec-val">ARM64, x86_64, armeabi-v7a</span>
+            </div>
+          </div>
+
+          <div class="download-btn-wrap">
+            <a href="downloads/GosTek.apk" class="btn btn-primary btn-lg" download="GosTek.apk">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Скачать APK-файл</span>
+            </a>
+            
+            <div class="qr-code-box">
+              <!-- Генерация QR-кода SVG -->
+              <svg class="qr-image" viewBox="0 0 29 29" shape-rendering="crispEdges">
+                <path fill="#ffffff" d="M0 0h29v29H0z"/>
+                <path fill="#000000" d="M0 0h7v7H0zm1 1v5h5V1zm1 1h3v3H2zm6-2h1v1H8zm2 0h1v1h-1zm2 0h2v1h-2zm3 0h1v1h-1zm2 0h7v7h-7zm1 1v5h5V1zm1 1h3v3h-3zm-9 6h1v1H9zm-8 1h1v1H1zm2 0h2v1H3zm3 0h1v1H6zm3 0h1v1H9zm2 0h3v1h-3zm5 0h1v1h-1zm2 0h1v1h-1zm3 0h1v1h-1zm3 0h1v1h-1zm-21 2h1v1H1zm2 0h1v1H3zm2 0h1v1H5zm2 0h2v1H7zm4 0h1v1h-1zm2 0h1v1h-1zm2 0h1v1h-1zm2 0h2v1h-2zm3 0h1v1h-1zm2 0h1v1h-1zm-21 1h1v1H1zm2 0h1v1H3zm3 0h1v1H6zm2 0h2v1H8zm3 0h1v1h-1zm3 0h1v1h-1zm2 0h1v1h-1zm2 0h1v1h-1zm3 0h1v1h-1zm-20 2h1v1H2zm3 0h2v1H5zm4 0h1v1H9zm1 0h1v1h-1zm2 0h2v1h-2zm3 0h1v1h-1zm2 0h1v1h-1zm3 0h1v1h-1zm-19 2h1v1H3zm2 0h2v1H5zm3 0h2v1H8zm3 0h1v1h-1zm2 0h1v1h-1zm2 0h1v1h-1zm2 0h1v1h-1zm3 0h1v1h-1zm-20 2h7v7H0zm1 1v5h5v-5zm1 1h3v3H2zm6 2h1v1H8zm2 0h1v1h-1zm3 0h1v1h-1zm2 0h1v1h-1zm2 0h1v1h-1zm2 0h1v1h-1zm-7 2h1v1H9zm3 0h1v1h-1zm2 0h2v1h-2zm3 0h1v1h-1z"/>
+              </svg>
+              <div class="qr-text">
+                <strong>Наведите камеру смартфона</strong><br>
+                Чтобы мгновенно загрузить APK на телефон
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Контрольные суммы SHA-256 -->
+      <div style="background:rgba(16,30,54,0.6); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:20px; max-width:840px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <div style="font-size:0.85rem;">
+            <strong style="color:var(--text-main);">SHA-256 (Windows ZIP):</strong>
+            <span id="sha-hash-text" style="color:var(--text-secondary); font-family:var(--font-mono); word-break:break-all;">F073546AB47064F737233F196CEF55BE65B2C707920121F434660F4B7AE02978</span>
+          </div>
+        </div>
+        <button id="copy-hash-btn" class="btn btn-secondary btn-sm">Копировать хеш</button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ЧАСТО ЗАДАВАЕМЫЕ ВОПРОСЫ (FAQ) -->
+  <section id="faq" class="section">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-tag">Вопросы и ответы</span>
+        <h2 class="section-title">Часто задаваемые вопросы</h2>
+        <p class="section-desc">Всё, что вам нужно знать перед началом работы с GosTek.</p>
+      </div>
+
+      <div class="faq-grid">
+        <div class="faq-item active">
+          <div class="faq-question">
+            <span>Нужно ли подключение к интернету для создания документов?</span>
+            <span class="faq-arrow">▼</span>
+          </div>
+          <div class="faq-answer">
+            Нет! GosTek спроектирован по принципу Offline-First. Все шаблоны, движок генерации DOCX, расчет параметров по ГОСТ, распознавание текста OCR и экспорт в PDF работают полностью автономно без подключения к сети. Интернет требуется только в случае, если вы явно запросите помощь облачного ИИ для формулировки текста.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Как установить приложение на Windows?</span>
+            <span class="faq-arrow">▼</span>
+          </div>
+          <div class="faq-answer">
+            Сборка для Windows поставляется в виде готового автономного архива. Просто скачайте ZIP-архив, распакуйте его в любую удобную папку и запустите <code>GosTek.exe</code>. Установка системных драйверов или сторонних утилит не требуется.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Как установить APK на Android-смартфон?</span>
+            <span class="faq-arrow">▼</span>
+          </div>
+          <div class="faq-answer">
+            1. Нажмите кнопку «Скачать APK-файл» или отсканируйте QR-код.<br>
+            2. После загрузки откройте файл <code>GosTek.apk</code>.<br>
+            3. Если система запросит подтверждение, разрешите установку приложений из доверенного браузера/проводника.<br>
+            4. Нажмите «Установить» — иконка GosTek появится на рабочем столе.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Безопасны ли мои персональные данные?</span>
+            <span class="faq-arrow">▼</span>
+          </div>
+          <div class="faq-answer">
+            Абсолютно. В GosTek действует строжайшая политика Zero-Text Logging: текст ваших документов, паспортные данные, контакты и реквизиты никогда не сохраняются во внешних базах данных и не передаются аналитическим системам. Профиль шифруется аппаратно через KeyStore (Android) или DPAPI (Windows) и хранится строго локально на вашем устройстве.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Можно ли добавить свой собственный шаблон документа?</span>
+            <span class="faq-arrow">▼</span>
+          </div>
+          <div class="faq-answer">
+            Да! В приложении предусмотрен раздел настроек «Импорт шаблонов DOCX». Вы можете загрузить свой файл Word с метками подстановки (например, <code>{{FullName}}</code>, <code>{{Date}}</code>), и GosTek автоматически создаст для него поля ввода.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>В каких форматах можно сохранить готовый документ?</span>
+            <span class="faq-arrow">▼</span>
+          </div>
+          <div class="faq-answer">
+            Приложение поддерживает экспорт в форматы <strong>Microsoft Word (.docx)</strong> и <strong>Adobe PDF (.pdf)</strong>. Также доступна прямая отправка файла через системное меню «Поделиться».
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ФУТЕР -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="#" class="logo-link">
+            <div class="logo-icon-box">
+              <img src="assets/appicon.png" alt="GosTek Logo">
+            </div>
+            <div class="logo-text-group">
+              <span class="logo-title">GosTek</span>
+              <span class="logo-tag">Документы по ГОСТ</span>
+            </div>
+          </a>
+          <p>Кроссплатформенный генератор и аудитор документов в строгом соответствии с ГОСТ Р 7.0.97-2016.</p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Приложение</h4>
+          <ul class="footer-links">
+            <li><a href="#download">Скачать для Windows</a></li>
+            <li><a href="#download">Скачать для Android</a></li>
+            <li><a href="presentation.html" target="_blank">Слайды презентации</a></li>
+            <li><a href="GosTek-Presentation-Fixed.pptx" download="GosTek-Presentation.pptx">Скачать презентацию (.PPTX)</a></li>
+            <li><a href="#screenshots">Скриншоты</a></li>
+            <li><a href="#features">Возможности</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Стандарты</h4>
+          <ul class="footer-links">
+            <li><a href="#gost">ГОСТ Р 7.0.97-2016</a></li>
+            <li><a href="#gost">Типографика 14 пт</a></li>
+            <li><a href="#gost">Красная строка 1.25 см</a></li>
+            <li><a href="#gost">Поля 30/15/20/20 мм</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Репозиторий</h4>
+          <ul class="footer-links">
+            <li><a href="https://github.com/Vladislav-Perov/GosTek" target="_blank" rel="noopener">GitHub Репозиторий</a></li>
+            <li><a href="https://github.com/Vladislav-Perov/GosTek/releases" target="_blank" rel="noopener">Релизы</a></li>
+            <li><a href="https://github.com/Vladislav-Perov/GosTek/issues" target="_blank" rel="noopener">Сообщить об ошибке</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>© 2026 GosTek. Разработано Владиславом Перовым. Лицензия Open Source.</div>
+        <div style="color:var(--text-muted); font-size:0.85rem;">Office Blue Design System · Собрано с .NET 10 MAUI</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Скрипты -->
+  <script src="script.js"></script>
+</body>
+</html>
