@@ -821,8 +821,7 @@ public partial class FieldsPage : ContentPage
 
         if (FormattingError.IsVisible)
         {
-            FormattingPanel.IsVisible = true;
-            await FormScroll.ScrollToAsync(FormattingPanel, ScrollToPosition.Start, true);
+            await ShowFormattingAsync();
             return;
         }
 
@@ -837,7 +836,17 @@ public partial class FieldsPage : ContentPage
 
     private async void OnFormattingClicked(object? sender, EventArgs e)
     {
-        FormattingPanel.IsVisible = !FormattingPanel.IsVisible;
+        if (FormattingPanel.IsVisible)
+            FormattingPanel.IsVisible = false;
+        else
+            await ShowFormattingAsync();
+    }
+
+    private async Task ShowFormattingAsync()
+    {
+        FormattingPanel.IsVisible = true;
+        // Дождаться пересчёта размеров прокручиваемой формы после раскрытия панели.
+        await Task.Delay(100);
         if (FormattingPanel.IsVisible)
             await FormScroll.ScrollToAsync(FormattingPanel, ScrollToPosition.Start, true);
     }

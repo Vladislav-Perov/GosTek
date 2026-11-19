@@ -410,7 +410,7 @@ public static class TemplateEngine
                 if (options.FontSize is { } size)
                 {
                     var halfPoints = ((int)Math.Round(size * 2)).ToString(System.Globalization.CultureInfo.InvariantCulture);
-                    props.FontSize = new FontSize { Val = halfPoints };
+                    props.FontSize = new DocumentFormat.OpenXml.Wordprocessing.FontSize { Val = halfPoints };
                     props.FontSizeComplexScript = new FontSizeComplexScript { Val = halfPoints };
                 }
             }
