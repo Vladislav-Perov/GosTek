@@ -93,12 +93,24 @@
 
                 <!-- Недавние (показываются, когда нет поиска и выбран фильтр «Все») -->
                 <VerticalStackLayout x:Name="RecentSection" IsVisible="False" Spacing="10">
-                    <Button x:Name="RecentToggle" Text="Показать недавние"
-                            Clicked="OnRecentToggleClicked" HorizontalOptions="Start" />
+                    <Border StyleClass="HoverCard" Padding="14,10" StrokeShape="RoundRectangle 8"
+                            x:Name="RecentToggle" SemanticProperties.Description="Недавние, свёрнуто">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnRecentToggleClicked" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                            <vctrl:IconView Icon="file" Size="22" IconColor="TextSecondary" />
+                            <Label Grid.Column="1" Text="Недавние" FontAttributes="Bold"
+                                   TextColor="{DynamicResource TextPrimary}" VerticalOptions="Center" />
+                            <vctrl:IconView x:Name="RecentArrow" Grid.Column="2" Icon="chevrondown" Size="20"
+                                            IconColor="TextSecondary" />
+                        </Grid>
+                    </Border>
 
-                    <VerticalStackLayout x:Name="RecentList" IsVisible="False"
-                                         Spacing="10"
-                                         BindableLayout.ItemTemplate="{StaticResource TemplateRow}" />
+                    <Grid x:Name="RecentViewport" IsVisible="False" IsClippedToBounds="True">
+                        <VerticalStackLayout x:Name="RecentList" Spacing="10" VerticalOptions="Start"
+                                             BindableLayout.ItemTemplate="{StaticResource TemplateRow}" />
+                    </Grid>
 
                     <BoxView HeightRequest="1" Color="{DynamicResource Divider}" Margin="0, 8, 0, 4" />
 

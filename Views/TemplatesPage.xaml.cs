@@ -36,10 +36,40 @@ public partial class TemplatesPage : ContentPage
         CategoryChips.SelectionChanged += OnCategoryChanged;
     }
 
-    private void OnRecentToggleClicked(object? sender, EventArgs e)
+    private bool _recentExpanded;
+
+    private void OnRecentToggleClicked(object? sender, TappedEventArgs e)
     {
-        RecentList.IsVisible = !RecentList.IsVisible;
-        RecentToggle.Text = RecentList.IsVisible ? "Скрыть недавние" : "Показать недавние";
+        const string animation = "RecentDisclosure";
+        this.AbortAnimation(animation);
+        _recentExpanded = !_recentExpanded;
+        RecentArrow.Icon = _recentExpanded ? "chevronup" : "chevrondown";
+        SemanticProperties.SetDescription(RecentToggle, _recentExpanded ? "Недавние, развёрнуто" : "Недавние, свёрнуто");
+
+        var from = RecentViewport.IsVisible
+            ? Math.Max(0, RecentViewport.HeightRequest >= 0 ? RecentViewport.HeightRequest : RecentViewport.Height)
+            : 0;
+        var target = _recentExpanded ? RecentList.Measure(Math.Max(1, RecentToggle.Width), double.PositiveInfinity).Height : 0;
+        var opacity = RecentViewport.IsVisible ? RecentList.Opacity : 0;
+        RecentViewport.HeightRequest = from;
+        RecentViewport.IsVisible = true;
+        RecentViewport.InputTransparent = true;
+        RecentList.Opacity = opacity;
+
+        var transition = new Animation(progress =>
+        {
+            RecentViewport.HeightRequest = from + (target - from) * progress;
+            RecentList.Opacity = opacity + ((_recentExpanded ? 1 : 0) - opacity) * progress;
+        });
+        transition.Commit(this, animation, length: 220, easing: Easing.CubicInOut, finished: (_, cancelled) =>
+        {
+            if (cancelled)
+                return;
+
+            RecentViewport.IsVisible = _recentExpanded;
+            RecentViewport.HeightRequest = -1;
+            RecentViewport.InputTransparent = false;
+        });
     }
 
     private void OnFavoritesChanged()

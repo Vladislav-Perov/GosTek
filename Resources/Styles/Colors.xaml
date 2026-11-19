@@ -44,6 +44,8 @@
     <Color x:Key="IconBoxBg">#E4EBF4</Color>
     <Color x:Key="TabBarBg">#FFFFFF</Color>
     <Color x:Key="TabActiveBg">#E4EBF4</Color>
+    <Color x:Key="RailSelectedBg">#203C62</Color>
+    <Color x:Key="RailSelectedText">#FFFFFF</Color>
     <Color x:Key="ToggleTrackBg">#C4CFDA</Color>
     <Color x:Key="BadColor">#B42318</Color>
     <Color x:Key="BadSoftBg">#FBE5E2</Color>

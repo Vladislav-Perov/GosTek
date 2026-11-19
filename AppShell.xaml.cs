@@ -32,6 +32,7 @@ namespace GosTek
         protected override void OnNavigated(ShellNavigatedEventArgs args)
         {
             base.OnNavigated(args);
+            FlyoutRail?.SyncActiveTabFromRoute(CurrentItem?.CurrentItem?.Route ?? args.Current?.Location?.OriginalString);
             Views.SettingsOverlay.Dismiss();
         }
 

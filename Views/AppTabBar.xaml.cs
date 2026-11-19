@@ -81,7 +81,7 @@ public partial class AppTabBar : ContentView
         {
             shell.Navigated -= OnShellNavigated;
             shell.Navigated += OnShellNavigated;
-            SyncActiveTabFromRoute(shell.CurrentState?.Location?.OriginalString);
+            SyncActiveTabFromRoute(shell.CurrentItem?.CurrentItem?.Route ?? shell.CurrentState?.Location?.OriginalString);
 
             // Гарантируем установку ширины Flyout при загрузке
             shell.FlyoutWidth = WindowsRailWidth;
@@ -99,7 +99,7 @@ public partial class AppTabBar : ContentView
         SyncActiveTabFromRoute(e.Current?.Location?.OriginalString);
     }
 
-    private void SyncActiveTabFromRoute(string? route)
+    internal void SyncActiveTabFromRoute(string? route)
     {
         if (string.IsNullOrEmpty(route))
             return;
@@ -283,9 +283,10 @@ public partial class AppTabBar : ContentView
 
             if (active)
             {
-                border.SetDynamicResource(VisualElement.BackgroundColorProperty, isRail ? "IconBoxBg" : "TabActiveBg");
-                icon.IconColor = "BrandGreen";
-                label.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
+                border.SetDynamicResource(VisualElement.BackgroundColorProperty, isRail ? "RailSelectedBg" : "TabActiveBg");
+                var foreground = isRail ? "RailSelectedText" : "BrandGreen";
+                icon.IconColor = foreground;
+                label.SetDynamicResource(Label.TextColorProperty, foreground);
             }
             else if (hover)
             {

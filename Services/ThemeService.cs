@@ -29,6 +29,8 @@ public static class ThemeService
 
     // Ключ ресурса, цвет в тёмной теме, цвет в светлой
     private static readonly (string Key, string Dark, string Light)[] Palette = {
+        ("RailSelectedBg", "#A9C4E8", "#203C62"),
+        ("RailSelectedText", "#132940", "#FFFFFF"),
         ("PageBg",        "#161F2C", "#F2F5F8"),
         ("CardBg",        "#202C3B", "#FFFFFF"),
         ("CardHoverBg",   "#405066", "#EDF1F4"),
