@@ -12,7 +12,7 @@
              x:Class="GosTek.Views.AppTabBar">
 
     <Grid>
-        <!-- На Windows: Вертикальный левый Navigation Rail (220 px / 84 px) -->
+        <!-- На Windows: Вертикальный левый Navigation Rail (220 px / 104 px) -->
         <Border x:Name="WindowsRail"
                 IsVisible="{OnPlatform WinUI=True, Android=False, Default=True}"
                 HorizontalOptions="Fill"
@@ -49,8 +49,8 @@
                             Stroke="{DynamicResource CardStroke}"
                             BackgroundColor="{DynamicResource CardBg}"
                             StrokeShape="RoundRectangle 10"
-                            WidthRequest="32"
-                            HeightRequest="32"
+                            WidthRequest="36"
+                            HeightRequest="36"
                             Padding="0"
                             HorizontalOptions="End"
                             VerticalOptions="Center"
@@ -60,7 +60,7 @@
                         </Border.GestureRecognizers>
                         <vctrl:IconView x:Name="RailToggleIcon"
                                         Icon="chevronleft"
-                                        Size="16"
+                                        Size="20"
                                         IconColor="TextSecondary"
                                         HorizontalOptions="Center"
                                         VerticalOptions="Center" />
@@ -95,14 +95,14 @@
                         <Grid x:Name="WindowsSettingsGrid" ColumnDefinitions="Auto, *" ColumnSpacing="10" VerticalOptions="Center">
                             <vctrl:IconView x:Name="WindowsSettingsIcon"
                                             Icon="sliders"
-                                            Size="18"
+                                            Size="25"
                                             IconColor="TextPrimary"
                                             HorizontalOptions="Center"
                                             VerticalOptions="Center" />
                             <Label x:Name="WindowsSettingsLabel"
                                    Grid.Column="1"
                                    Text="Настройки"
-                                   FontSize="13.5"
+                                   FontSize="15"
                                    FontAttributes="Bold"
                                    TextColor="{DynamicResource TextPrimary}"
                                    VerticalOptions="Center" />

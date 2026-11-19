@@ -53,7 +53,7 @@
                 <!-- Основной статус процесса -->
                 <Label x:Name="StatusLabel"
                        Text="Загрузка..."
-                       FontSize="15"
+                       FontSize="17"
                        FontAttributes="Bold"
                        HorizontalTextAlignment="Center"
                        TextColor="{DynamicResource TextPrimary}" />
@@ -61,7 +61,7 @@
                 <!-- Дополнительный поясняющий подстатус -->
                 <Label x:Name="SubstatusLabel"
                        Text=""
-                       FontSize="12"
+                       FontSize="14"
                        HorizontalTextAlignment="Center"
                        TextColor="{DynamicResource TextSecondary}"
                        IsVisible="False" />
@@ -81,7 +81,7 @@
                         <TapGestureRecognizer Tapped="OnCancelTapped" />
                     </Border.GestureRecognizers>
                     <Label Text="Отменить"
-                           FontSize="13"
+                           FontSize="15"
                            FontAttributes="Bold"
                            TextColor="{DynamicResource BadColor}"
                            HorizontalOptions="Center" />

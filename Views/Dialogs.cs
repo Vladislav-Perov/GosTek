@@ -157,8 +157,8 @@ public static class Dialogs
                 StrokeLineCap = PenLineCap.Round,
                 StrokeLineJoin = PenLineJoin.Round,
                 Aspect = Stretch.Uniform,
-                WidthRequest = 22,
-                HeightRequest = 22,
+                WidthRequest = 26,
+                HeightRequest = 26,
                 HorizontalOptions = LayoutOptions.Center,
                 VerticalOptions = LayoutOptions.Center,
             },
@@ -179,7 +179,7 @@ public static class Dialogs
             {
                 Text = text,
                 TextColor = textSecondary,
-                FontSize = 14,
+                FontSize = 16,
                 LineHeight = 1.25,
             });
         }
@@ -370,7 +370,7 @@ public static class Dialogs
             {
                 Text = button.Text,
                 TextColor = fg,
-                FontSize = 15,
+                FontSize = 17,
                 FontAttributes = FontAttributes.Bold,
                 HorizontalTextAlignment = TextAlignment.Center,
                 VerticalTextAlignment = TextAlignment.Center,

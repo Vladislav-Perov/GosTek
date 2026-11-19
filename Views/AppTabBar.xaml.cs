@@ -56,7 +56,7 @@ public partial class AppTabBar : ContentView
     private string? _hoveredKey;
 
     private const string PrefRailCollapsed = "rail_collapsed";
-    private const int CompactRailWidth = 84;
+    private const int CompactRailWidth = 104;
     private const int ExpandedRailWidth = 220;
     private static bool s_isRailCollapsed = Preferences.Get(PrefRailCollapsed, true);
 
@@ -151,7 +151,7 @@ public partial class AppTabBar : ContentView
         var icon = new IconView
         {
             Icon = tab.IconKey,
-            Size = 18,
+            Size = 24,
             IconColor = "TextSecondary",
             HorizontalOptions = LayoutOptions.Center,
             VerticalOptions = LayoutOptions.Center,
@@ -160,7 +160,7 @@ public partial class AppTabBar : ContentView
         var label = new Label
         {
             Text = tab.Title,
-            FontSize = 10,
+            FontSize = 12,
             LineBreakMode = LineBreakMode.NoWrap,
             HorizontalOptions = LayoutOptions.Center,
         };
@@ -189,7 +189,7 @@ public partial class AppTabBar : ContentView
         var icon = new IconView
         {
             Icon = tab.IconKey,
-            Size = 20,
+            Size = 27,
             IconColor = "TextSecondary",
             HorizontalOptions = LayoutOptions.Center,
             VerticalOptions = LayoutOptions.Center,
@@ -198,7 +198,7 @@ public partial class AppTabBar : ContentView
         var label = new Label
         {
             Text = tab.Title,
-            FontSize = 13.5,
+            FontSize = 16,
             FontAttributes = FontAttributes.Bold,
             VerticalOptions = LayoutOptions.Center,
         };
@@ -339,11 +339,11 @@ public partial class AppTabBar : ContentView
         grid.ColumnDefinitions[1].Width = compact ? new GridLength(0) : GridLength.Star;
         Grid.SetRow(label, compact ? 1 : 0);
         Grid.SetColumn(label, compact ? 0 : 1);
-        label.FontSize = compact ? 10 : 13.5;
+        label.FontSize = compact ? 13 : 16;
         label.HorizontalTextAlignment = compact ? TextAlignment.Center : TextAlignment.Start;
 
         border.Padding = compact ? new Thickness(4, 8) : new Thickness(12, 10);
-        border.WidthRequest = compact ? 72 : -1;
+        border.WidthRequest = compact ? 90 : -1;
         border.HorizontalOptions = compact ? LayoutOptions.Center : LayoutOptions.Fill;
     }
 
@@ -355,15 +355,14 @@ public partial class AppTabBar : ContentView
         if (collapsed)
         {
             LogoLabel.IsVisible = false;
-            LogoIcon.IsVisible = false;
+            LogoIcon.IsVisible = true;
             RailToggleIcon.Icon = "chevronright";
             SemanticProperties.SetDescription(RailToggleBtn, "Развернуть панель");
 
-            Grid.SetColumn(RailToggleBtn, 0);
-            Grid.SetColumnSpan(RailToggleBtn, 3);
-            RailToggleBtn.HorizontalOptions = LayoutOptions.Center;
+            Grid.SetColumn(RailToggleBtn, 2);
+            RailToggleBtn.HorizontalOptions = LayoutOptions.End;
 
-            WindowsHeaderGrid.Padding = new Thickness(0, 16, 0, 16);
+            WindowsHeaderGrid.Padding = new Thickness(10, 16);
             WindowsTabsStack.Padding = new Thickness(0, 6);
             WindowsFooterStack.Padding = new Thickness(0, 12, 0, 18);
 

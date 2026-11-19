@@ -173,7 +173,7 @@ public sealed class ChipBar : ContentView
     {
         var label = new Label {
             Text = title,
-            FontSize = 14,
+            FontSize = 16,
         };
         label.SetDynamicResource(Label.TextColorProperty, "TextPrimary");
 

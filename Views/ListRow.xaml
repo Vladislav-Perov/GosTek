@@ -39,7 +39,7 @@
                 <vctrl:IconView x:Name="IconCtrl"
                                 Icon="file"
                                 IconColor="BrandGreen"
-                                Size="20"
+                                Size="24"
                                 HorizontalOptions="Center"
                                 VerticalOptions="Center" />
             </Border>
@@ -47,16 +47,16 @@
             <!-- Заголовок и подзаголовок -->
             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                 <Label x:Name="TitleLabel"
-                       FontSize="15"
+                       FontSize="17"
                        FontAttributes="Bold"
                        TextColor="{DynamicResource TextPrimary}" />
                 <Label x:Name="SubtitleLabel"
-                       FontSize="12.5"
+                       FontSize="14"
                        TextColor="{DynamicResource TextSecondary}"
                        LineBreakMode="TailTruncation" />
                 <Label x:Name="DetailsLabel"
                        IsVisible="False"
-                       FontSize="11.5"
+                       FontSize="13"
                        TextColor="{DynamicResource TextSecondary}"
                        LineBreakMode="TailTruncation" />
             </VerticalStackLayout>
@@ -78,7 +78,7 @@
                 <vctrl:IconView x:Name="FavoriteCtrl"
                                 Icon="star"
                                 IconColor="TextSecondary"
-                                Size="18"
+                                Size="22"
                                 HorizontalOptions="Center"
                                 VerticalOptions="Center" />
             </Border>

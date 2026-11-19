@@ -33,7 +33,7 @@
                            FontAttributes="Bold"
                            TextColor="{DynamicResource TextPrimary}" />
                     <Label Text="Реквизиты для автозаполнения документов"
-                           FontSize="13"
+                           FontSize="15"
                            TextColor="{DynamicResource TextSecondary}" />
                 </VerticalStackLayout>
 
@@ -56,7 +56,7 @@
                                        FontAttributes="Bold"
                                        TextColor="{DynamicResource TextPrimary}" />
                                 <Label x:Name="ProgressHint"
-                                       FontSize="12.5"
+                                       FontSize="14"
                                        TextColor="{DynamicResource TextSecondary}"
                                        LineBreakMode="WordWrap" />
                             </VerticalStackLayout>
@@ -72,7 +72,7 @@
                                     VerticalOptions="Center">
                                 <Label x:Name="ProgressBadgeLabel"
                                        Text="0%"
-                                       FontSize="14"
+                                       FontSize="16"
                                        FontAttributes="Bold"
                                        TextColor="{DynamicResource BrandGreen}"
                                        HorizontalOptions="Center" />
@@ -98,11 +98,11 @@
                     <Grid ColumnDefinitions="Auto, *" ColumnSpacing="10" VerticalOptions="Center">
                         <vctrl:IconView Icon="shield"
                                         IconColor="BrandGreen"
-                                        Size="18"
+                                        Size="22"
                                         VerticalOptions="Center" />
                         <Label Grid.Column="1"
                                Text="Данные хранятся исключительно локально на этом устройстве в зашифрованном виде."
-                               FontSize="12"
+                               FontSize="14"
                                TextColor="{DynamicResource TextSecondary}"
                                LineBreakMode="WordWrap"
                                VerticalOptions="Center" />
@@ -111,7 +111,7 @@
 
                 <!-- Заголовок секции полей -->
                 <Label Text="Базовые реквизиты"
-                       FontSize="15"
+                       FontSize="17"
                        FontAttributes="Bold"
                        TextColor="{DynamicResource TextSecondary}"
                        Margin="2, 4, 2, 0" />
@@ -126,7 +126,7 @@
                 <VerticalStackLayout Spacing="12" HorizontalOptions="Fill">
                     <Grid ColumnDefinitions="*, Auto" Margin="2, 0" VerticalOptions="Center">
                         <Label Text="Дополнительные поля"
-                               FontSize="15"
+                               FontSize="17"
                                FontAttributes="Bold"
                                TextColor="{DynamicResource TextSecondary}"
                                VerticalOptions="Center" />
@@ -151,10 +151,10 @@
                         <HorizontalStackLayout HorizontalOptions="Center" Spacing="8" VerticalOptions="Center">
                             <vctrl:IconView Icon="plus"
                                             IconColor="BrandGreen"
-                                            Size="16"
+                                            Size="20"
                                             VerticalOptions="Center" />
                             <Label Text="Добавить своё поле"
-                                   FontSize="14.5"
+                                   FontSize="16"
                                    FontAttributes="Bold"
                                    TextColor="{DynamicResource BrandGreen}"
                                    VerticalOptions="Center" />
@@ -178,7 +178,7 @@
                               CheckedChanged="OnIgnoreChanged" />
                     <Label Grid.Column="1"
                            VerticalOptions="Center"
-                           FontSize="13"
+                           FontSize="15"
                            Text="Игнорировать ошибки и сохранить как есть"
                            TextColor="{DynamicResource TextSecondary}"
                            LineBreakMode="WordWrap">
@@ -203,7 +203,7 @@
                     </Border.GestureRecognizers>
                     <Label x:Name="SaveLabel"
                            Text="Сохранить"
-                           FontSize="15.5"
+                           FontSize="17"
                            FontAttributes="Bold"
                            TextColor="#FFFFFF"
                            HorizontalOptions="Center" />

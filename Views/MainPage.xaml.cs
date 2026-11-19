@@ -39,7 +39,6 @@ public partial class MainPage : ContentPage, IQueryAttributable
         var quick = TemplateCatalog.Items.Take(3).ToList();
         BindableLayout.SetItemsSource(QuickStartList, quick);
         QuickStartSection.IsVisible = quick.Count > 0;   // нет шаблонов — нет и блока
-        QuickStartDivider.IsVisible = quick.Count > 0;
         if (quick.Count > 0)
         {
             Dispatcher.Dispatch(async () =>
@@ -110,7 +109,6 @@ public partial class MainPage : ContentPage, IQueryAttributable
             : $"Заполнено на {summary.Percent}%. {summary.Hint}";
     }
 
-    // ===== Подзаголовок: случайная фраза, не повторяющая предыдущую =====
     // ===== «Проверить» ведёт на экран проверки документа =====
     private async void OnCheckTapped(object? sender, TappedEventArgs e)
     {
@@ -119,6 +117,8 @@ public partial class MainPage : ContentPage, IQueryAttributable
             await ve.AnimateBounceAsync();
         await Shell.Current.GoToAsync("//CheckPage");
     }
+
+    private void OnTemplatesTapped(object? sender, TappedEventArgs e) => OnCreateClicked(sender, e);
 
     // ===== «Создать документ» ведёт в каталог шаблонов =====
     private async void OnCreateClicked(object? sender, EventArgs e)
@@ -137,9 +137,9 @@ public partial class MainPage : ContentPage, IQueryAttributable
     }
 
     // ===== Шаблон из «Быстрого старта» =====
-    private async void OnTemplateTapped(object? sender, EventArgs e)
+    private async void OnTemplateTapped(object? sender, TappedEventArgs e)
     {
-        if (sender is ListRow { BindingContext: TemplateItem item })
+        if (e.Parameter is TemplateItem item)
             await TemplatesPage.OpenAsync(item);
     }
 
