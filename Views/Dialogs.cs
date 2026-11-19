@@ -109,10 +109,10 @@ public static class Dialogs
         var phone = (page.Width > 0 ? page.Width : 400) < PhoneMaxWidth;
         var dark = ThemeService.IsDark;
 
-        var cardBg = Res("CardBg", dark ? "#23282D" : "#FFFFFF");
-        var stroke = Res("CardStroke", dark ? "#414950" : "#D4DCE3");
-        var textPrimary = Res("TextPrimary", dark ? "#EDF0F2" : "#202B35");
-        var textSecondary = Res("TextSecondary", dark ? "#B7BEC5" : "#51606F");
+        var cardBg = Res("CardBg", dark ? "#202C3B" : "#FFFFFF");
+        var stroke = Res("CardStroke", dark ? "#405066" : "#D6E0EA");
+        var textPrimary = Res("TextPrimary", dark ? "#EEF3FA" : "#17283B");
+        var textSecondary = Res("TextSecondary", dark ? "#BBC9DA" : "#485B70");
         var (iconBg, iconFg, glyph) = IconStyle(kind, dark);
 
         var tcs = new TaskCompletionSource<int>();
@@ -342,7 +342,7 @@ public static class Dialogs
         switch (button.Style)
         {
             case DialogButtonStyle.Primary:
-                bg = Res("ActionBg", dark ? "#324A62" : "#263B52");
+                bg = Res("ActionBg", dark ? "#2B4B72" : "#203C62");
                 fg = Colors.White;
                 break;
             case DialogButtonStyle.Danger:
@@ -395,7 +395,7 @@ public static class Dialogs
         DialogKind.Warning => (Res("WarnSoftBg", dark ? "#453720" : "#FCEFD6"), Res("WarnColor", dark ? "#F1C778" : "#805003"), Icons.AlertTriangle),
         DialogKind.Danger => (Res("BadSoftBg", dark ? "#4A2625" : "#FBE5E2"), Res("BadColor", dark ? "#FFABA4" : "#B42318"), Icons.AlertTriangle),
         DialogKind.Delete => (Res("BadSoftBg", dark ? "#4A2625" : "#FBE5E2"), Res("BadColor", dark ? "#FFABA4" : "#B42318"), Icons.Trash),
-        DialogKind.Success => (Res("IconBoxBg", dark ? "#363F49" : "#E7EDF3"), Res("BrandGreen", dark ? "#BACBD9" : "#263B52"), Icons.Check),
+        DialogKind.Success => (Res("IconBoxBg", dark ? "#2C405A" : "#E4EBF4"), Res("BrandGreen", dark ? "#BACBD9" : "#203C62"), Icons.Check),
         DialogKind.Question => (Color.FromArgb(dark ? "#162842" : "#DBEAFE"), Color.FromArgb(dark ? "#60A5FA" : "#2563EB"), Icons.Save),
         _ => (Color.FromArgb(dark ? "#162842" : "#DBEAFE"), Color.FromArgb(dark ? "#60A5FA" : "#2563EB"), Icons.Info),
     };

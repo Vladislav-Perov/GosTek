@@ -13,14 +13,14 @@
 
     <!-- Note: For Android please see also Platforms\Android\Resources\values\colors.xml -->
 
-    <Color x:Key="Primary">#263B52</Color>
+    <Color x:Key="Primary">#203C62</Color>
     <Color x:Key="SecondaryDarkText">#BACBD9</Color>
 
     <Color x:Key="White">White</Color>
     <Color x:Key="Black">Black</Color>
-    <Color x:Key="Magenta">#263B52</Color>
+    <Color x:Key="Magenta">#203C62</Color>
     <Color x:Key="PreviewInk">#374151</Color>
-    <Color x:Key="OffBlack">#1A1E22</Color>
+    <Color x:Key="OffBlack">#161F2C</Color>
 
     <Color x:Key="Gray200">#C8C8C8</Color>
     <Color x:Key="Gray300">#ACACAC</Color>
@@ -30,20 +30,20 @@
     <Color x:Key="Gray950">#141414</Color>
 
     <!-- Базовые fallback-значения динамической палитры темы (ThemeService) -->
-    <Color x:Key="PageBg">#F4F6F8</Color>
+    <Color x:Key="PageBg">#F2F5F8</Color>
     <Color x:Key="CardBg">#FFFFFF</Color>
     <Color x:Key="CardHoverBg">#EDF1F4</Color>
-    <Color x:Key="CardStroke">#D4DCE3</Color>
-    <Color x:Key="TextPrimary">#202B35</Color>
-    <Color x:Key="TextSecondary">#51606F</Color>
-    <Color x:Key="BrandGreen">#263B52</Color>
-    <Color x:Key="AccentGreen">#263B52</Color>
-    <Color x:Key="ActionBg">#263B52</Color>
-    <Color x:Key="ActionHoverBg">#324A62</Color>
-    <Color x:Key="Divider">#D4DCE3</Color>
-    <Color x:Key="IconBoxBg">#E7EDF3</Color>
+    <Color x:Key="CardStroke">#D6E0EA</Color>
+    <Color x:Key="TextPrimary">#17283B</Color>
+    <Color x:Key="TextSecondary">#485B70</Color>
+    <Color x:Key="BrandGreen">#203C62</Color>
+    <Color x:Key="AccentGreen">#203C62</Color>
+    <Color x:Key="ActionBg">#203C62</Color>
+    <Color x:Key="ActionHoverBg">#2B4B72</Color>
+    <Color x:Key="Divider">#D6E0EA</Color>
+    <Color x:Key="IconBoxBg">#E4EBF4</Color>
     <Color x:Key="TabBarBg">#FFFFFF</Color>
-    <Color x:Key="TabActiveBg">#E7EDF3</Color>
+    <Color x:Key="TabActiveBg">#E4EBF4</Color>
     <Color x:Key="ToggleTrackBg">#C4CFDA</Color>
     <Color x:Key="BadColor">#B42318</Color>
     <Color x:Key="BadSoftBg">#FBE5E2</Color>
