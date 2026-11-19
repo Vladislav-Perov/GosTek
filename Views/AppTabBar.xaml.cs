@@ -57,7 +57,7 @@ public partial class AppTabBar : ContentView
 
     private const string PrefRailCollapsed = "office_rail_collapsed";
     private const int CompactRailWidth = 104;
-    private const int ExpandedRailWidth = 150;
+    private const int ExpandedRailWidth = 176;
     private static bool s_isRailCollapsed = Preferences.Get(PrefRailCollapsed, false);
 
     internal static int WindowsRailWidth => s_isRailCollapsed ? CompactRailWidth : ExpandedRailWidth;

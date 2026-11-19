@@ -12,7 +12,7 @@
              x:Class="GosTek.Views.AppTabBar">
 
     <Grid>
-        <!-- На Windows: Вертикальный левый Navigation Rail (150 px / 104 px) -->
+        <!-- На Windows: Вертикальный левый Navigation Rail (176 px / 104 px) -->
         <Border x:Name="WindowsRail"
                 IsVisible="{OnPlatform WinUI=True, Android=False, Default=True}"
                 HorizontalOptions="Fill"
