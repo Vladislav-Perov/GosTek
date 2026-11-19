@@ -18,8 +18,6 @@ namespace GosTek.Views;
 /// </summary>
 public partial class AppTabBar : ContentView
 {
-    private const double HoverScale = 1.05;
-
     private sealed record Tab(string Key, string IconKey, string Title, string? Route);
 
     private static readonly Tab[] TabList =
@@ -58,7 +56,11 @@ public partial class AppTabBar : ContentView
     private string? _hoveredKey;
 
     private const string PrefRailCollapsed = "rail_collapsed";
-    private static bool s_isRailCollapsed = Preferences.Get(PrefRailCollapsed, false);
+    private const int CompactRailWidth = 104;
+    private const int ExpandedRailWidth = 220;
+    private static bool s_isRailCollapsed = Preferences.Get(PrefRailCollapsed, true);
+
+    internal static int WindowsRailWidth => s_isRailCollapsed ? CompactRailWidth : ExpandedRailWidth;
 
     public AppTabBar()
     {
@@ -82,7 +84,7 @@ public partial class AppTabBar : ContentView
             SyncActiveTabFromRoute(shell.CurrentState?.Location?.OriginalString);
 
             // Гарантируем установку ширины Flyout при загрузке
-            shell.FlyoutWidth = s_isRailCollapsed ? 64 : 220;
+            shell.FlyoutWidth = WindowsRailWidth;
         }
     }
 
@@ -149,7 +151,7 @@ public partial class AppTabBar : ContentView
         var icon = new IconView
         {
             Icon = tab.IconKey,
-            Size = 18,
+            Size = 24,
             IconColor = "TextSecondary",
             HorizontalOptions = LayoutOptions.Center,
             VerticalOptions = LayoutOptions.Center,
@@ -158,7 +160,7 @@ public partial class AppTabBar : ContentView
         var label = new Label
         {
             Text = tab.Title,
-            FontSize = 10,
+            FontSize = 12,
             LineBreakMode = LineBreakMode.NoWrap,
             HorizontalOptions = LayoutOptions.Center,
         };
@@ -187,7 +189,7 @@ public partial class AppTabBar : ContentView
         var icon = new IconView
         {
             Icon = tab.IconKey,
-            Size = 20,
+            Size = 27,
             IconColor = "TextSecondary",
             HorizontalOptions = LayoutOptions.Center,
             VerticalOptions = LayoutOptions.Center,
@@ -196,7 +198,7 @@ public partial class AppTabBar : ContentView
         var label = new Label
         {
             Text = tab.Title,
-            FontSize = 13.5,
+            FontSize = 16,
             FontAttributes = FontAttributes.Bold,
             VerticalOptions = LayoutOptions.Center,
         };
@@ -299,7 +301,6 @@ public partial class AppTabBar : ContentView
                 label.SetDynamicResource(Label.TextColorProperty, "TextSecondary");
             }
 
-            border.Scale = hover ? HoverScale : 1.0;
         }
     }
 
@@ -321,71 +322,57 @@ public partial class AppTabBar : ContentView
 #endif
     }
 
-    private void OnCompactThemeClicked(object? sender, EventArgs e)
+    private static void SetRailItemLayout(Border border, Label label, bool compact)
     {
-        HapticHelper.Click();
-        ThemeService.Toggle();
-        CompactThemeIcon.Icon = ThemeService.IsDark ? "sun" : "moon";
+        if (border.Content is not Grid grid)
+            return;
+
+        if (grid.RowDefinitions.Count == 0)
+        {
+            grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+            grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+        }
+
+        grid.ColumnSpacing = compact ? 0 : 10;
+        grid.RowSpacing = compact ? 4 : 0;
+        grid.ColumnDefinitions[0].Width = compact ? GridLength.Star : GridLength.Auto;
+        grid.ColumnDefinitions[1].Width = compact ? new GridLength(0) : GridLength.Star;
+        Grid.SetRow(label, compact ? 1 : 0);
+        Grid.SetColumn(label, compact ? 0 : 1);
+        label.FontSize = compact ? 13 : 16;
+        label.HorizontalTextAlignment = compact ? TextAlignment.Center : TextAlignment.Start;
+
+        border.Padding = compact ? new Thickness(4, 8) : new Thickness(12, 10);
+        border.WidthRequest = compact ? 90 : -1;
+        border.HorizontalOptions = compact ? LayoutOptions.Center : LayoutOptions.Fill;
     }
 
     private void ApplyRailCollapsedState(bool animate)
     {
         bool collapsed = s_isRailCollapsed;
-        double targetWidth = collapsed ? 64 : 220;
+        double targetWidth = WindowsRailWidth;
 
         if (collapsed)
         {
             LogoLabel.IsVisible = false;
-            LogoIcon.IsVisible = false;
+            LogoIcon.IsVisible = true;
             RailToggleIcon.Icon = "chevronright";
             SemanticProperties.SetDescription(RailToggleBtn, "Развернуть панель");
 
-            Grid.SetColumn(RailToggleBtn, 0);
-            Grid.SetColumnSpan(RailToggleBtn, 3);
-            RailToggleBtn.HorizontalOptions = LayoutOptions.Center;
+            Grid.SetColumn(RailToggleBtn, 2);
+            RailToggleBtn.HorizontalOptions = LayoutOptions.End;
 
-            WindowsHeaderGrid.Padding = new Thickness(0, 16, 0, 16);
+            WindowsHeaderGrid.Padding = new Thickness(10, 16);
             WindowsTabsStack.Padding = new Thickness(0, 6);
             WindowsFooterStack.Padding = new Thickness(0, 12, 0, 18);
 
             foreach (var (_, border, icon, label, isRail) in _tabViews)
             {
                 if (!isRail) continue;
-                label.IsVisible = false;
-                border.Padding = new Thickness(0);
-                border.WidthRequest = 44;
-                border.HeightRequest = 44;
-                border.HorizontalOptions = LayoutOptions.Center;
-                icon.HorizontalOptions = LayoutOptions.Center;
-                if (border.Content is Grid g)
-                {
-                    g.ColumnSpacing = 0;
-                    g.HorizontalOptions = LayoutOptions.Center;
-                    if (g.ColumnDefinitions.Count >= 2)
-                    {
-                        g.ColumnDefinitions[0].Width = new GridLength(44);
-                        g.ColumnDefinitions[1].Width = new GridLength(0);
-                    }
-                }
+                SetRailItemLayout(border, label, compact: true);
             }
 
-            WindowsSettingsLabel.IsVisible = false;
-            WindowsSettingsGrid.ColumnSpacing = 0;
-            WindowsSettingsGrid.HorizontalOptions = LayoutOptions.Center;
-            if (WindowsSettingsGrid.ColumnDefinitions.Count >= 2)
-            {
-                WindowsSettingsGrid.ColumnDefinitions[0].Width = new GridLength(44);
-                WindowsSettingsGrid.ColumnDefinitions[1].Width = new GridLength(0);
-            }
-            WindowsSettingsIcon.HorizontalOptions = LayoutOptions.Center;
-            WindowsSettingsButton.WidthRequest = 44;
-            WindowsSettingsButton.HeightRequest = 44;
-            WindowsSettingsButton.Padding = new Thickness(0);
-            WindowsSettingsButton.HorizontalOptions = LayoutOptions.Center;
-
-            WindowsThemeRow.IsVisible = false;
-            WindowsCompactThemeBtn.IsVisible = true;
-            CompactThemeIcon.Icon = ThemeService.IsDark ? "sun" : "moon";
+            SetRailItemLayout(WindowsSettingsButton, WindowsSettingsLabel, compact: true);
         }
         else
         {
@@ -405,40 +392,10 @@ public partial class AppTabBar : ContentView
             foreach (var (_, border, icon, label, isRail) in _tabViews)
             {
                 if (!isRail) continue;
-                label.IsVisible = true;
-                border.Padding = new Thickness(12, 10);
-                border.ClearValue(VisualElement.WidthRequestProperty);
-                border.ClearValue(VisualElement.HeightRequestProperty);
-                border.HorizontalOptions = LayoutOptions.Fill;
-                icon.HorizontalOptions = LayoutOptions.Center;
-                if (border.Content is Grid g)
-                {
-                    g.ColumnSpacing = 12;
-                    g.HorizontalOptions = LayoutOptions.Fill;
-                    if (g.ColumnDefinitions.Count >= 2)
-                    {
-                        g.ColumnDefinitions[0].Width = GridLength.Auto;
-                        g.ColumnDefinitions[1].Width = GridLength.Star;
-                    }
-                }
+                SetRailItemLayout(border, label, compact: false);
             }
 
-            WindowsSettingsLabel.IsVisible = true;
-            WindowsSettingsGrid.ColumnSpacing = 10;
-            WindowsSettingsGrid.HorizontalOptions = LayoutOptions.Fill;
-            if (WindowsSettingsGrid.ColumnDefinitions.Count >= 2)
-            {
-                WindowsSettingsGrid.ColumnDefinitions[0].Width = GridLength.Auto;
-                WindowsSettingsGrid.ColumnDefinitions[1].Width = GridLength.Star;
-            }
-            WindowsSettingsIcon.HorizontalOptions = LayoutOptions.Center;
-            WindowsSettingsButton.ClearValue(VisualElement.WidthRequestProperty);
-            WindowsSettingsButton.ClearValue(VisualElement.HeightRequestProperty);
-            WindowsSettingsButton.Padding = new Thickness(12, 10);
-            WindowsSettingsButton.HorizontalOptions = LayoutOptions.Fill;
-
-            WindowsThemeRow.IsVisible = true;
-            WindowsCompactThemeBtn.IsVisible = false;
+            SetRailItemLayout(WindowsSettingsButton, WindowsSettingsLabel, compact: false);
         }
 
         WindowsRail.ClearValue(VisualElement.WidthRequestProperty);
@@ -447,7 +404,7 @@ public partial class AppTabBar : ContentView
         {
             if (animate)
             {
-                double startWidth = shell.FlyoutWidth > 0 ? shell.FlyoutWidth : (collapsed ? 220 : 64);
+                double startWidth = shell.FlyoutWidth > 0 ? shell.FlyoutWidth : (collapsed ? ExpandedRailWidth : CompactRailWidth);
                 this.AbortAnimation("FlyoutWidthAnim");
                 var anim = new Animation(w => shell.FlyoutWidth = w, startWidth, targetWidth, Easing.CubicInOut);
                 anim.Commit(this, "FlyoutWidthAnim", 16, 200);

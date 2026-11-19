@@ -171,11 +171,9 @@ public sealed class ChipBar : ContentView
 
     private void AddChip(string title, int index)
     {
-        var inactiveTextColor = ThemeService.IsDark ? Color.FromArgb("#F8FAFC") : Color.FromArgb("#16213A");
         var label = new Label {
             Text = title,
-            FontSize = 14,
-            TextColor = inactiveTextColor,
+            FontSize = 16,
         };
         label.SetDynamicResource(Label.TextColorProperty, "TextPrimary");
 
@@ -201,7 +199,7 @@ public sealed class ChipBar : ContentView
         _chips.Add((chip, label));
     }
 
-    // Активный чип залит AccentGreen с белым текстом и легкой тенью, остальные с рамкой
+    // Выбранный фильтр выделен подложкой и рамкой.
     private void UpdateChips()
     {
         if (!MainThread.IsMainThread)
@@ -210,34 +208,14 @@ public sealed class ChipBar : ContentView
             return;
         }
 
-        var inactiveTextColor = ThemeService.IsDark ? Color.FromArgb("#F8FAFC") : Color.FromArgb("#16213A");
-
         for (int i = 0; i < _chips.Count; i++) {
             var (chip, label) = _chips[i];
             bool active = i == _selected;
 
-            if (active) {
-                chip.SetDynamicResource(VisualElement.BackgroundColorProperty, "AccentGreen");
-                chip.StrokeThickness = 0;
-                label.ClearValue(Label.TextColorProperty);
-                label.TextColor = Colors.White;
-                label.FontAttributes = FontAttributes.Bold;
-                chip.Shadow = new Shadow {
-                    Brush = new SolidColorBrush(Colors.Black),
-                    Offset = new Point(0, 2),
-                    Radius = 4,
-                    Opacity = 0.18f,
-                };
-            } else {
-                chip.SetDynamicResource(VisualElement.BackgroundColorProperty, "CardBg");
-                chip.SetDynamicResource(Border.StrokeProperty, "CardStroke");
-                chip.StrokeThickness = 1;
-                label.ClearValue(Label.TextColorProperty);
-                label.SetDynamicResource(Label.TextColorProperty, "TextPrimary");
-                label.TextColor = inactiveTextColor;
-                label.FontAttributes = FontAttributes.None;
-                chip.Shadow = null;
-            }
+            chip.SetDynamicResource(VisualElement.BackgroundColorProperty, active ? "TabActiveBg" : "CardBg");
+            chip.SetDynamicResource(Border.StrokeProperty, active ? "AccentGreen" : "CardStroke");
+            chip.StrokeThickness = 1;
+            label.FontAttributes = active ? FontAttributes.Bold : FontAttributes.None;
 
             SemanticProperties.SetDescription(chip, active ? $"{label.Text}, выбрано" : label.Text);
         }

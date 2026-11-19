@@ -160,7 +160,7 @@ namespace GosTek
             else
             {
                 FlyoutBehavior = FlyoutBehavior.Locked;
-                FlyoutWidth = Preferences.Get("rail_collapsed", false) ? 64 : 220;
+                FlyoutWidth = global::GosTek.Views.AppTabBar.WindowsRailWidth;
             }
 
             Platforms.Windows.WindowSizing.UpdateDragRegion();

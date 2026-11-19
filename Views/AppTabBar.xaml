@@ -3,17 +3,16 @@
  ==============================================================================
  НАЗНАЧЕНИЕ: Адаптивная навигационная панель (левый rail на Windows, нижний бар на Android)
  СОДЕРЖИМОЕ: AppTabBar (ContentView)
- ЗАВИСИМОСТИ: GosTek.Views.AppTabBar, GosTek.Views.Controls.IconView, GosTek.Views.ThemeToggle
+ ЗАВИСИМОСТИ: GosTek.Views.AppTabBar, GosTek.Views.Controls.IconView
  ==============================================================================
 -->
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:views="clr-namespace:GosTek.Views"
              xmlns:vctrl="clr-namespace:GosTek.Views.Controls"
              x:Class="GosTek.Views.AppTabBar">
 
     <Grid>
-        <!-- На Windows: Вертикальный левый Navigation Rail (220 px / 64 px) -->
+        <!-- На Windows: Вертикальный левый Navigation Rail (220 px / 104 px) -->
         <Border x:Name="WindowsRail"
                 IsVisible="{OnPlatform WinUI=True, Android=False, Default=True}"
                 HorizontalOptions="Fill"
@@ -33,14 +32,14 @@
                     <vctrl:IconView x:Name="LogoIcon"
                                     Icon="file"
                                     Size="24"
-                                    IconColor="BrandGreen"
+                                    IconColor="TextPrimary"
                                     VerticalOptions="Center" />
                     <Label x:Name="LogoLabel"
                            Grid.Column="1"
                            Text="GosTek"
-                           FontFamily="PTSansBold"
+                           FontAttributes="Bold"
                            FontSize="27"
-                           TextColor="{DynamicResource BrandGreen}"
+                           TextColor="{DynamicResource TextPrimary}"
                            VerticalOptions="Center"
                            LineBreakMode="NoWrap" />
                     <Border x:Name="RailToggleBtn"
@@ -50,8 +49,8 @@
                             Stroke="{DynamicResource CardStroke}"
                             BackgroundColor="{DynamicResource CardBg}"
                             StrokeShape="RoundRectangle 10"
-                            WidthRequest="32"
-                            HeightRequest="32"
+                            WidthRequest="36"
+                            HeightRequest="36"
                             Padding="0"
                             HorizontalOptions="End"
                             VerticalOptions="Center"
@@ -61,7 +60,7 @@
                         </Border.GestureRecognizers>
                         <vctrl:IconView x:Name="RailToggleIcon"
                                         Icon="chevronleft"
-                                        Size="16"
+                                        Size="20"
                                         IconColor="TextSecondary"
                                         HorizontalOptions="Center"
                                         VerticalOptions="Center" />
@@ -75,7 +74,7 @@
                                          Padding="10, 6" />
                 </ScrollView>
 
-                <!-- Снизу: ThemeToggle и кнопка «Настройки» -->
+                <!-- Снизу: кнопка «Настройки» -->
                 <VerticalStackLayout x:Name="WindowsFooterStack"
                                      Grid.Row="2"
                                      Spacing="10"
@@ -96,57 +95,18 @@
                         <Grid x:Name="WindowsSettingsGrid" ColumnDefinitions="Auto, *" ColumnSpacing="10" VerticalOptions="Center">
                             <vctrl:IconView x:Name="WindowsSettingsIcon"
                                             Icon="sliders"
-                                            Size="18"
+                                            Size="25"
                                             IconColor="TextPrimary"
                                             HorizontalOptions="Center"
                                             VerticalOptions="Center" />
                             <Label x:Name="WindowsSettingsLabel"
                                    Grid.Column="1"
                                    Text="Настройки"
-                                   FontSize="13.5"
+                                   FontSize="15"
                                    FontAttributes="Bold"
                                    TextColor="{DynamicResource TextPrimary}"
                                    VerticalOptions="Center" />
                         </Grid>
-                    </Border>
-
-                    <!-- Переключатель темы (в развернутом виде) -->
-                    <Grid x:Name="WindowsThemeRow"
-                          ColumnDefinitions="*, Auto"
-                          Padding="4, 2"
-                          VerticalOptions="Center">
-                        <Label x:Name="WindowsThemeLabel"
-                               Text="Тема"
-                               FontSize="13"
-                               TextColor="{DynamicResource TextSecondary}"
-                               VerticalOptions="Center" />
-                        <views:ThemeToggle Grid.Column="1"
-                                           HorizontalOptions="End"
-                                           VerticalOptions="Center" />
-                    </Grid>
-
-                    <!-- Компактный переключатель темы (в свернутом виде 64px) -->
-                    <Border x:Name="WindowsCompactThemeBtn"
-                            IsVisible="False"
-                            StyleClass="HoverCard"
-                            StrokeThickness="1"
-                            Stroke="{DynamicResource CardStroke}"
-                            BackgroundColor="{DynamicResource CardBg}"
-                            StrokeShape="RoundRectangle 12"
-                            WidthRequest="40"
-                            HeightRequest="40"
-                            HorizontalOptions="Center"
-                            VerticalOptions="Center"
-                            Padding="0">
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnCompactThemeClicked" />
-                        </Border.GestureRecognizers>
-                        <vctrl:IconView x:Name="CompactThemeIcon"
-                                        Icon="moon"
-                                        Size="18"
-                                        IconColor="TextPrimary"
-                                        HorizontalOptions="Center"
-                                        VerticalOptions="Center" />
                     </Border>
                 </VerticalStackLayout>
             </Grid>

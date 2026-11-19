@@ -510,7 +510,7 @@ public partial class CheckPage : ContentPage
             if (changes > 0)
             {
                 HapticHelper.Success();
-                Toast.Show($"Исправлено замечаний: {changes}", "sparkles");
+                Toast.Show($"Исправлено замечаний: {changes}", "check_ok");
             }
             _status = changes > 0
                 ? $"Исправлено: {RuFormat.Count(changes, "изменение", "изменения", "изменений")}."

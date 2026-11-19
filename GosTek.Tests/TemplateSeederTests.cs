@@ -6,6 +6,7 @@
  * ==============================================================================
  */
 using DocumentFormat.OpenXml.Packaging;
+using GosTek.Models;
 using GosTek.Services;
 using Xunit;
 
@@ -204,6 +205,23 @@ public class TemplateSeederTests
         } finally {
             if (File.Exists(tempPath))
                 File.Delete(tempPath);
+        }
+    }
+
+    [Fact]
+    public void BundledAiDemo_EnablesGenerationOnlyForTextField()
+    {
+        var folder = Directory.CreateTempSubdirectory();
+        try {
+            var assetPath = Path.Combine(FindSolutionDir(), "Resources", "Raw", TemplateSeeder.AiDemoRawAsset);
+            File.Copy(assetPath, Path.Combine(folder.FullName, TemplateSeeder.AiDemoTargetName));
+
+            var template = Assert.Single(TemplateEngine.Scan(folder.FullName));
+            var field = Assert.Single(template.Fields, field => field.TextGeneration is not null);
+            Assert.Equal("Текст", field.Label);
+            Assert.Equal(TextGenerationKind.DocumentText, field.TextGeneration);
+        } finally {
+            folder.Delete(recursive: true);
         }
     }
 

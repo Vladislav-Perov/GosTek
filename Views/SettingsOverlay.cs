@@ -13,7 +13,10 @@ namespace GosTek.Views;
 /// </summary>
 public static class SettingsOverlay
 {
+    internal const int OverlayZIndex = 10000;
+
     private static SettingsPanel? s_panel;
+    private static bool s_opening;
 
     /// <summary>Открыта ли в данный момент панель настроек.</summary>
     public static bool IsOpen => s_panel?.IsShown ?? false;
@@ -36,40 +39,51 @@ public static class SettingsOverlay
     /// </summary>
     public static async Task ShowAsync(Page? targetPage = null)
     {
+        if (s_opening || IsOpen)
+            return;
+
         var page = targetPage ?? Shell.Current?.CurrentPage ?? Application.Current?.Windows.FirstOrDefault()?.Page;
         if (page is null)
             return;
 
-        var panel = GetOrCreatePanel();
-
-        // Если панель уже прикреплена к другой странице, отсоединяем её
-        if (panel.Parent is Layout oldParent)
+        s_opening = true;
+        try
         {
-            if (page is ContentPage cp && ReferenceEquals(oldParent, cp.Content))
+            var panel = GetOrCreatePanel();
+            var grid = EnsureGrid(page);
+            if (!ReferenceEquals(panel.Parent, grid))
             {
-                // Уже прикреплена к целевой странице
-            }
-            else
-            {
-                oldParent.Children.Remove(panel);
-            }
-        }
+                if (panel.Parent is Layout oldParent)
+                    oldParent.Children.Remove(panel);
 
-        var grid = EnsureGrid(page);
-        if (!grid.Children.Contains(panel))
-        {
-            if (grid.RowDefinitions.Count > 0)
                 Grid.SetRowSpan(panel, Math.Max(1, grid.RowDefinitions.Count));
-            if (grid.ColumnDefinitions.Count > 0)
                 Grid.SetColumnSpan(panel, Math.Max(1, grid.ColumnDefinitions.Count));
+                panel.ZIndex = OverlayZIndex;
+                grid.Children.Add(panel);
+            }
 
-            panel.ZIndex = 10000;
-            panel.InputTransparent = false;
-            panel.CascadeInputTransparent = false;
-            grid.Children.Add(panel);
+            await panel.OpenAsync();
         }
-
-        await panel.OpenAsync();
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[SettingsOverlay] {ex}");
+            var failedPanel = s_panel;
+            s_panel = null;
+            try
+            {
+                failedPanel?.Dismiss();
+                if (page.Window is not null)
+                    await page.DisplayAlertAsync("Настройки", "Не удалось открыть настройки. Попробуйте ещё раз.", "Понятно");
+            }
+            catch (Exception recoveryError)
+            {
+                Console.Error.WriteLine($"[SettingsOverlay] {recoveryError}");
+            }
+        }
+        finally
+        {
+            s_opening = false;
+        }
     }
 
     /// <summary>

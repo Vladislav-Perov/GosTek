@@ -29,25 +29,20 @@
             </BoxView.GestureRecognizers>
         </BoxView>
 
-        <!-- Выезжающая панель Side Drawer слева -->
+        <!-- Выезжающая панель Side Drawer: на Android слева, на Windows справа, чтобы не перекрывать левый Navigation Rail -->
         <Border x:Name="Panel"
-                SafeAreaEdges="{OnPlatform Android=Container, Default=None}"
                 ZIndex="100"
                 InputTransparent="False"
-                HorizontalOptions="Start"
-                WidthRequest="{OnPlatform WinUI=360}"
-                MaximumWidthRequest="360"
-                Margin="{OnPlatform Android='0,0,48,0', WinUI=0}"
+                VerticalOptions="Fill"
                 BackgroundColor="{DynamicResource PageBg}"
                 Stroke="{DynamicResource CardStroke}"
                 StrokeThickness="1"
-                StrokeShape="RoundRectangle 0, 24, 24, 0"
                 Padding="0">
             <Border.Shadow>
-                <Shadow Brush="Black" Offset="6, 0" Radius="24" Opacity="0.3" />
+                <Shadow x:Name="PanelShadow" Brush="Black" Radius="24" Opacity="0.3" />
             </Border.Shadow>
 
-            <Grid RowDefinitions="Auto, *"
+            <Grid RowDefinitions="Auto, Auto, *"
                   InputTransparent="False"
                   CascadeInputTransparent="False">
 
@@ -69,7 +64,7 @@
                             VerticalOptions="Center">
                         <vctrl:IconView Icon="sliders"
                                         IconColor="BrandGreen"
-                                        Size="18"
+                                        Size="22"
                                         HorizontalOptions="Center"
                                         VerticalOptions="Center"
                                         InputTransparent="True" />
@@ -97,18 +92,21 @@
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnCloseTapped" />
                         </Border.GestureRecognizers>
-                        <Label Text="✕"
-                               FontSize="14"
-                               FontAttributes="Bold"
-                               TextColor="{DynamicResource TextPrimary}"
-                               HorizontalOptions="Center"
-                               VerticalOptions="Center"
-                               InputTransparent="True" />
+                        <vctrl:IconView Icon="close" Size="20" />
                     </Border>
                 </Grid>
 
+                <Grid Grid.Row="1" ColumnDefinitions="*, *" RowDefinitions="Auto, Auto"
+                      Padding="20,0,20,8" ColumnSpacing="6" RowSpacing="4">
+                    <Button Text="Шаблоны" CommandParameter="templates" Clicked="OnSectionClicked" />
+                    <Button Grid.Column="1" Text="Сохранение" CommandParameter="save" Clicked="OnSectionClicked" />
+                    <Button Grid.Row="1" Text="Оформление" CommandParameter="theme" Clicked="OnSectionClicked" />
+                    <Button Grid.Row="1" Grid.Column="1" Text="О приложении" CommandParameter="about"
+                            Clicked="OnSectionClicked" />
+                </Grid>
+
                 <!-- ===== ПРОКРУЧИВАЕМЫЙ СПИСОК РАЗДЕЛОВ ===== -->
-                <ScrollView Grid.Row="1"
+                <ScrollView x:Name="SettingsScroll" Grid.Row="2"
                             VerticalScrollBarVisibility="Never"
                             InputTransparent="False"
                             CascadeInputTransparent="False">
@@ -119,8 +117,8 @@
 
                         <!-- ===== РАЗДЕЛ: ШАБЛОНЫ ===== -->
                         <VerticalStackLayout Spacing="8">
-                            <Label Text="ШАБЛОНЫ ДОКУМЕНТОВ"
-                                   FontSize="11"
+                            <Label x:Name="TemplatesSection" Text="ШАБЛОНЫ ДОКУМЕНТОВ"
+                                   FontSize="13"
                                    FontAttributes="Bold"
                                    CharacterSpacing="0.8"
                                    TextColor="{DynamicResource BrandGreen}" />
@@ -135,7 +133,7 @@
                                 </Border.Shadow>
 
                                 <VerticalStackLayout Spacing="10">
-                                    <Grid ColumnDefinitions="Auto, *" ColumnSpacing="10" VerticalOptions="Center">
+                                    <Grid x:Name="TemplatesFolderInfo" ColumnDefinitions="Auto, *" ColumnSpacing="10" VerticalOptions="Center">
                                         <Border BackgroundColor="{DynamicResource IconBoxBg}"
                                                 StrokeThickness="0"
                                                 StrokeShape="RoundRectangle 10"
@@ -144,22 +142,24 @@
                                                 VerticalOptions="Center">
                                             <vctrl:IconView Icon="folder"
                                                             IconColor="BrandGreen"
-                                                            Size="16"
+                                                            Size="20"
                                                             HorizontalOptions="Center"
                                                             VerticalOptions="Center" />
                                         </Border>
 
                                         <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                             <Label Text="Папка с шаблонами"
-                                                   FontSize="14"
+                                                   FontSize="16"
                                                    FontAttributes="Bold"
                                                    TextColor="{DynamicResource TextPrimary}" />
                                             <Label x:Name="TemplatesPathLabel"
-                                                   FontSize="12"
+                                                   FontSize="14"
                                                    TextColor="{DynamicResource TextSecondary}"
                                                    LineBreakMode="MiddleTruncation" />
                                         </VerticalStackLayout>
                                     </Grid>
+
+                                    <Button x:Name="ImportButton" Text="Добавить DOCX" IsVisible="{OnPlatform Android=True, Default=False}" Clicked="OnImportClicked" />
 
                                     <!-- Кнопка открыть папку (только Windows) -->
                                     <Border x:Name="OpenTemplatesButton"
@@ -176,11 +176,11 @@
                                         <HorizontalStackLayout HorizontalOptions="Center" Spacing="8" InputTransparent="True">
                                             <vctrl:IconView Icon="folder"
                                                             IconColor="TextPrimary"
-                                                            Size="14"
+                                                            Size="18"
                                                             InputTransparent="True"
                                                             VerticalOptions="Center" />
                                             <Label Text="Открыть в проводнике"
-                                                   FontSize="13"
+                                                   FontSize="15"
                                                    FontAttributes="Bold"
                                                    TextColor="{DynamicResource TextPrimary}"
                                                    InputTransparent="True"
@@ -188,58 +188,23 @@
                                         </HorizontalStackLayout>
                                     </Border>
 
-                                    <Grid ColumnDefinitions="*, Auto" ColumnSpacing="8">
-                                        <Border Grid.Column="0"
-                                                StyleClass="HoverCard"
-                                                StrokeThickness="1"
-                                                Stroke="{DynamicResource CardStroke}"
-                                                BackgroundColor="{DynamicResource CardBg}"
-                                                StrokeShape="RoundRectangle 12"
-                                                Padding="12, 9"
-                                                InputTransparent="False">
-                                            <Border.GestureRecognizers>
-                                                <TapGestureRecognizer Tapped="OnPickTemplatesTapped" />
-                                            </Border.GestureRecognizers>
-                                            <Label Text="Выбрать папку…"
-                                                   FontSize="13"
-                                                   FontAttributes="Bold"
-                                                   TextColor="{DynamicResource TextPrimary}"
-                                                   HorizontalOptions="Center"
-                                                   InputTransparent="True" />
-                                        </Border>
+                                    <Label IsVisible="{OnPlatform WinUI=True, Default=False}"
+                                           FontSize="15"
+                                           TextColor="{DynamicResource TextSecondary}"
+                                           Text="Чтобы добавить шаблон, скопируйте DOCX в открывшуюся папку." />
 
-                                        <Border x:Name="ResetTemplatesButton"
-                                                Grid.Column="1"
-                                                StyleClass="HoverCard"
-                                                StrokeThickness="1"
-                                                Stroke="{DynamicResource CardStroke}"
-                                                BackgroundColor="{DynamicResource CardBg}"
-                                                StrokeShape="RoundRectangle 12"
-                                                Padding="12, 9"
-                                                InputTransparent="False">
-                                            <Border.GestureRecognizers>
-                                                <TapGestureRecognizer Tapped="OnResetTemplatesTapped" />
-                                            </Border.GestureRecognizers>
-                                            <Label Text="Сброс"
-                                                   FontSize="13"
-                                                   TextColor="{DynamicResource TextSecondary}"
-                                                   HorizontalOptions="Center"
-                                                   InputTransparent="True" />
-                                        </Border>
-                                    </Grid>
-
-                                    <Label FontSize="11.5"
+                                    <Label FontSize="13"
                                            LineBreakMode="WordWrap"
                                            TextColor="{DynamicResource TextSecondary}"
-                                           Text="Шаблоны — файлы .docx с именами «Категория_Название.docx». Поля выделяются квадратными [Поле-Пример] или {фигурными} скобками." />
+                                           Text="Сохраните файл как «Категория_Название.docx». Для обычных полей используйте {ФИО} или [Город-Минск]. Для генерации ИИ напишите {Текст} отдельным абзацем в нужном месте. В форме нажмите «Сгенерировать текст» и опишите ситуацию в чате. Результат появится в поле «Текст», остальные поля заполняются отдельно." />
                                 </VerticalStackLayout>
                             </Border>
                         </VerticalStackLayout>
 
                         <!-- ===== РАЗДЕЛ: СОХРАНЕНИЕ ФАЙЛОВ ===== -->
                         <VerticalStackLayout Spacing="8">
-                            <Label Text="СОХРАНЕНИЕ ДОКУМЕНТОВ"
-                                   FontSize="11"
+                            <Label x:Name="SaveSection" Text="СОХРАНЕНИЕ ДОКУМЕНТОВ"
+                                   FontSize="13"
                                    FontAttributes="Bold"
                                    CharacterSpacing="0.8"
                                    TextColor="{DynamicResource BrandGreen}" />
@@ -266,18 +231,18 @@
                                                     VerticalOptions="Center">
                                                 <vctrl:IconView Icon="save"
                                                                 IconColor="BrandGreen"
-                                                                Size="16"
+                                                                Size="20"
                                                                 HorizontalOptions="Center"
                                                                 VerticalOptions="Center" />
                                             </Border>
 
                                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                                 <Label Text="Папка сохранения"
-                                                       FontSize="14"
+                                                       FontSize="16"
                                                        FontAttributes="Bold"
                                                        TextColor="{DynamicResource TextPrimary}" />
                                                 <Label x:Name="FolderPathLabel"
-                                                       FontSize="12"
+                                                       FontSize="14"
                                                        TextColor="{DynamicResource TextSecondary}"
                                                        LineBreakMode="MiddleTruncation" />
                                             </VerticalStackLayout>
@@ -296,7 +261,7 @@
                                                     <TapGestureRecognizer Tapped="OnPickFolderTapped" />
                                                 </Border.GestureRecognizers>
                                                 <Label Text="Выбрать папку…"
-                                                       FontSize="13"
+                                                       FontSize="15"
                                                        FontAttributes="Bold"
                                                        TextColor="{DynamicResource TextPrimary}"
                                                        HorizontalOptions="Center"
@@ -316,7 +281,7 @@
                                                     <TapGestureRecognizer Tapped="OnResetFolderTapped" />
                                                 </Border.GestureRecognizers>
                                                 <Label Text="Сброс"
-                                                       FontSize="13"
+                                                       FontSize="15"
                                                        TextColor="{DynamicResource TextSecondary}"
                                                        HorizontalOptions="Center"
                                                        InputTransparent="True" />
@@ -327,11 +292,11 @@
                                     <!-- Только Android: папка в памяти устройства -->
                                     <VerticalStackLayout x:Name="AndroidFolderBlock" Spacing="4">
                                         <Label Text="Каталог сохранения"
-                                               FontSize="14"
+                                               FontSize="16"
                                                FontAttributes="Bold"
                                                TextColor="{DynamicResource TextPrimary}" />
                                         <Label Text="Документы/GosTek. Файлы доступны в системном проводнике."
-                                               FontSize="12"
+                                               FontSize="14"
                                                TextColor="{DynamicResource TextSecondary}"
                                                LineBreakMode="WordWrap" />
                                     </VerticalStackLayout>
@@ -339,7 +304,7 @@
                                     <!-- Сегмент: Имя файла -->
                                     <VerticalStackLayout Spacing="6">
                                         <Label Text="Имя файла"
-                                               FontSize="13"
+                                               FontSize="15"
                                                FontAttributes="Bold"
                                                TextColor="{DynamicResource TextSecondary}" />
                                         <Grid x:Name="NameHost" />
@@ -348,7 +313,7 @@
                                     <!-- Сегмент: Конфликт имён -->
                                     <VerticalStackLayout Spacing="6">
                                         <Label Text="Если файл уже есть"
-                                               FontSize="13"
+                                               FontSize="15"
                                                FontAttributes="Bold"
                                                TextColor="{DynamicResource TextSecondary}" />
                                         <Grid x:Name="ConflictHost" />
@@ -357,7 +322,7 @@
                                     <!-- Сегмент: Действие после сохранения -->
                                     <VerticalStackLayout Spacing="6">
                                         <Label Text="После сохранения"
-                                               FontSize="13"
+                                               FontSize="15"
                                                FontAttributes="Bold"
                                                TextColor="{DynamicResource TextSecondary}" />
                                         <Grid x:Name="AfterSaveHost" />
@@ -369,8 +334,8 @@
 
                         <!-- ===== РАЗДЕЛ: ОФОРМЛЕНИЕ ===== -->
                         <VerticalStackLayout Spacing="8">
-                            <Label Text="ОФОРМЛЕНИЕ"
-                                   FontSize="11"
+                            <Label x:Name="ThemeSection" Text="ОФОРМЛЕНИЕ"
+                                   FontSize="13"
                                    FontAttributes="Bold"
                                    CharacterSpacing="0.8"
                                    TextColor="{DynamicResource BrandGreen}" />
@@ -386,7 +351,7 @@
 
                                 <VerticalStackLayout Spacing="8">
                                     <Label Text="Тема приложения"
-                                           FontSize="13"
+                                           FontSize="15"
                                            FontAttributes="Bold"
                                            TextColor="{DynamicResource TextSecondary}" />
                                     <Grid x:Name="ThemeHost" />
@@ -397,7 +362,7 @@
                         <!-- ===== РАЗДЕЛ: ДАННЫЕ И ПРИВАТНОСТЬ ===== -->
                         <VerticalStackLayout Spacing="8">
                             <Label Text="ДАННЫЕ И ПРИВАТНОСТЬ"
-                                   FontSize="11"
+                                   FontSize="13"
                                    FontAttributes="Bold"
                                    CharacterSpacing="0.8"
                                    TextColor="{DynamicResource BrandGreen}" />
@@ -421,13 +386,13 @@
                                                 VerticalOptions="Center">
                                             <vctrl:IconView Icon="shield"
                                                             IconColor="BrandGreen"
-                                                            Size="16"
+                                                            Size="20"
                                                             HorizontalOptions="Center"
                                                             VerticalOptions="Center" />
                                         </Border>
                                         <Label Grid.Column="1"
                                                Text="При генерации в облако отправляются сообщение из чата и, при правке, предыдущий вариант из чата. Поля документа, профиль и сканы остаются в приложении."
-                                               FontSize="12"
+                                               FontSize="14"
                                                TextColor="{DynamicResource TextSecondary}"
                                                LineBreakMode="WordWrap"
                                                VerticalOptions="Center" />
@@ -438,11 +403,11 @@
                                     <Grid ColumnDefinitions="*, Auto" Margin="0, 2" VerticalOptions="Center">
                                         <VerticalStackLayout Spacing="2" VerticalOptions="Center" InputTransparent="True">
                                             <Label Text="Разрешить облачный ИИ"
-                                                   FontSize="13"
+                                                   FontSize="15"
                                                    FontAttributes="Bold"
                                                    TextColor="{DynamicResource TextPrimary}" />
                                             <Label Text="Отправка сообщений из чата для генерации текста"
-                                                   FontSize="11"
+                                                   FontSize="13"
                                                    TextColor="{DynamicResource TextSecondary}" />
                                         </VerticalStackLayout>
                                         <Switch Grid.Column="1"
@@ -458,11 +423,11 @@
                                     <Grid ColumnDefinitions="*, Auto" Margin="0, 2" VerticalOptions="Center">
                                         <VerticalStackLayout Spacing="2" VerticalOptions="Center" InputTransparent="True">
                                             <Label Text="Мягкое маскирование имён"
-                                                   FontSize="13"
+                                                   FontSize="15"
                                                    FontAttributes="Bold"
                                                    TextColor="{DynamicResource TextPrimary}" />
                                             <Label Text="Автоматически маскировать одиночные подозрительные имена"
-                                                   FontSize="11"
+                                                   FontSize="13"
                                                    TextColor="{DynamicResource TextSecondary}" />
                                         </VerticalStackLayout>
                                         <Switch Grid.Column="1"
@@ -486,7 +451,7 @@
                                             <TapGestureRecognizer Tapped="OnClearTempTapped" />
                                         </Border.GestureRecognizers>
                                         <Label Text="Очистить временные файлы"
-                                               FontSize="13"
+                                               FontSize="15"
                                                FontAttributes="Bold"
                                                TextColor="{DynamicResource TextPrimary}"
                                                HorizontalOptions="Center"
@@ -505,14 +470,14 @@
                                         </Border.GestureRecognizers>
                                         <HorizontalStackLayout HorizontalOptions="Center" Spacing="8" InputTransparent="True">
                                             <vctrl:IconView Icon="trash"
-                                                            IconColor="#EF4444"
-                                                            Size="14"
+                                                            IconColor="BadColor"
+                                                            Size="18"
                                                             VerticalOptions="Center"
                                                             InputTransparent="True" />
                                             <Label Text="Удалить профиль"
-                                                   FontSize="13"
+                                                   FontSize="15"
                                                    FontAttributes="Bold"
-                                                   TextColor="#EF4444"
+                                                   TextColor="{DynamicResource BadColor}"
                                                    VerticalOptions="Center"
                                                    InputTransparent="True" />
                                         </HorizontalStackLayout>
@@ -530,14 +495,14 @@
                                         </Border.GestureRecognizers>
                                         <HorizontalStackLayout HorizontalOptions="Center" Spacing="8" InputTransparent="True">
                                             <vctrl:IconView Icon="alerttriangle"
-                                                            IconColor="#EF4444"
-                                                            Size="14"
+                                                            IconColor="BadColor"
+                                                            Size="18"
                                                             VerticalOptions="Center"
                                                             InputTransparent="True" />
                                             <Label Text="Сбросить все данные приложения"
-                                                   FontSize="13"
+                                                   FontSize="15"
                                                    FontAttributes="Bold"
-                                                   TextColor="#EF4444"
+                                                   TextColor="{DynamicResource BadColor}"
                                                    VerticalOptions="Center"
                                                    InputTransparent="True" />
                                         </HorizontalStackLayout>
@@ -548,8 +513,8 @@
 
                         <!-- ===== РАЗДЕЛ: О ПРИЛОЖЕНИИ ===== -->
                         <VerticalStackLayout Spacing="8">
-                            <Label Text="О ПРИЛОЖЕНИИ"
-                                   FontSize="11"
+                            <Label x:Name="AboutSection" Text="О ПРИЛОЖЕНИИ"
+                                   FontSize="13"
                                    FontAttributes="Bold"
                                    CharacterSpacing="0.8"
                                    TextColor="{DynamicResource BrandGreen}" />
@@ -573,13 +538,13 @@
                                                 VerticalOptions="Center">
                                             <vctrl:IconView Icon="file"
                                                             IconColor="BrandGreen"
-                                                            Size="16"
+                                                            Size="20"
                                                             HorizontalOptions="Center"
                                                             VerticalOptions="Center" />
                                         </Border>
                                         <Label x:Name="VersionLabel"
                                                Grid.Column="1"
-                                               FontSize="13"
+                                               FontSize="15"
                                                FontAttributes="Bold"
                                                TextColor="{DynamicResource TextPrimary}"
                                                VerticalOptions="Center" />
@@ -598,11 +563,11 @@
                                         <HorizontalStackLayout HorizontalOptions="Center" Spacing="8" InputTransparent="True">
                                             <vctrl:IconView Icon="info"
                                                             IconColor="TextPrimary"
-                                                            Size="14"
+                                                            Size="18"
                                                             VerticalOptions="Center"
                                                             InputTransparent="True" />
                                             <Label Text="Как пользоваться"
-                                                   FontSize="13"
+                                                   FontSize="15"
                                                    FontAttributes="Bold"
                                                    TextColor="{DynamicResource TextPrimary}"
                                                    VerticalOptions="Center"

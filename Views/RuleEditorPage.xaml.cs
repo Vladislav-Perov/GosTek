@@ -101,7 +101,7 @@ public partial class RuleEditorPage : ContentPage
         if (Shell.Current is { } shell)
         {
             shell.FlyoutBehavior = FlyoutBehavior.Locked;
-            shell.FlyoutWidth = Preferences.Get("rail_collapsed", false) ? 64 : 220;
+            shell.FlyoutWidth = global::GosTek.Views.AppTabBar.WindowsRailWidth;
         }
 #endif
     }
@@ -702,7 +702,7 @@ public partial class RuleEditorPage : ContentPage
                 VerticalOptions = LayoutOptions.Center,
                 Spacing = 8,
                 Children = {
-                    new Label { Text = "📐", FontSize = Math.Max(12.0, 16.0 * _previewScale), VerticalOptions = LayoutOptions.Center },
+                    new IconView { Icon = "ruler", Size = Math.Max(12.0, 16.0 * _previewScale), IconColor = "PreviewInk" },
                     new Label {
                         Text = "Иллюстрация ГОСТ (Рис. 1)",
                         FontSize = Math.Max(8.0, 12.0 * ptScale),

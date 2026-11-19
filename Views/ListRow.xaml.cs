@@ -128,7 +128,9 @@ public partial class ListRow : ContentView
 
     private void RefreshHighlight()
     {
-        var highlightColor = ThemeService.IsDark ? Color.FromArgb("#3FC3A1") : Color.FromArgb("#0D6B57");
+        var highlightColor = Application.Current?.Resources.TryGetValue("BrandGreen", out var val) == true && val is Color c
+            ? c
+            : (ThemeService.IsDark ? Color.FromArgb("#3FC3A1") : Color.FromArgb("#0D6B57"));
         SetHighlightedTitle(Title, HighlightQuery, highlightColor);
     }
 

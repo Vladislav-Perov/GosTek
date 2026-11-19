@@ -6,6 +6,7 @@
  * ==============================================================================
  */
 using Microsoft.Maui.Controls.Shapes;
+using GosTek.Resources.Styles;
 
 namespace GosTek.Views;
 
@@ -108,10 +109,10 @@ public static class Dialogs
         var phone = (page.Width > 0 ? page.Width : 400) < PhoneMaxWidth;
         var dark = ThemeService.IsDark;
 
-        var cardBg = Res("CardBg", dark ? "#151A23" : "#FFFFFF");
-        var stroke = Res("CardStroke", dark ? "#2A3142" : "#E2DED2");
-        var textPrimary = Res("TextPrimary", dark ? "#E8ECF4" : "#16213A");
-        var textSecondary = Res("TextSecondary", dark ? "#8A94AA" : "#5A6479");
+        var cardBg = Res("CardBg", dark ? "#23282D" : "#FFFFFF");
+        var stroke = Res("CardStroke", dark ? "#414950" : "#D4DCE3");
+        var textPrimary = Res("TextPrimary", dark ? "#EDF0F2" : "#202B35");
+        var textSecondary = Res("TextSecondary", dark ? "#B7BEC5" : "#51606F");
         var (iconBg, iconFg, glyph) = IconStyle(kind, dark);
 
         var tcs = new TaskCompletionSource<int>();
@@ -122,7 +123,7 @@ public static class Dialogs
         Grid overlay = null!;
 
         // ----- затемнение -----
-        var scrim = new BoxView { Color = Color.FromArgb("#8A000000"), Opacity = 0 };
+        var scrim = new BoxView { Color = Color.FromArgb(SettingsOverlay.IsOpen ? "#40000000" : "#8A000000"), Opacity = 0 };
 
         // ----- содержимое карточки -----
         var content = new VerticalStackLayout { Spacing = 0 };
@@ -156,8 +157,8 @@ public static class Dialogs
                 StrokeLineCap = PenLineCap.Round,
                 StrokeLineJoin = PenLineJoin.Round,
                 Aspect = Stretch.Uniform,
-                WidthRequest = 22,
-                HeightRequest = 22,
+                WidthRequest = 26,
+                HeightRequest = 26,
                 HorizontalOptions = LayoutOptions.Center,
                 VerticalOptions = LayoutOptions.Center,
             },
@@ -178,7 +179,7 @@ public static class Dialogs
             {
                 Text = text,
                 TextColor = textSecondary,
-                FontSize = 14,
+                FontSize = 16,
                 LineHeight = 1.25,
             });
         }
@@ -245,7 +246,7 @@ public static class Dialogs
         // Нажатие на саму карточку не должно закрывать окно
         card.GestureRecognizers.Add(new TapGestureRecognizer());
 
-        overlay = new Grid { ZIndex = 1000, InputTransparent = false };
+        overlay = new Grid { ZIndex = SettingsOverlay.OverlayZIndex + 1, InputTransparent = false };
         overlay.Add(scrim);
         overlay.Add(card);
 
@@ -341,7 +342,7 @@ public static class Dialogs
         switch (button.Style)
         {
             case DialogButtonStyle.Primary:
-                bg = Res("BrandGreen", dark ? "#3FC3A1" : "#0D6B57");
+                bg = Res("ActionBg", dark ? "#324A62" : "#263B52");
                 fg = Colors.White;
                 break;
             case DialogButtonStyle.Danger:
@@ -369,7 +370,7 @@ public static class Dialogs
             {
                 Text = button.Text,
                 TextColor = fg,
-                FontSize = 15,
+                FontSize = 17,
                 FontAttributes = FontAttributes.Bold,
                 HorizontalTextAlignment = TextAlignment.Center,
                 VerticalTextAlignment = TextAlignment.Center,
@@ -388,22 +389,15 @@ public static class Dialogs
         return box;
     }
 
-    // Значки как в макете (Tabler, сетка 24x24, линия 2px)
-    private const string IconAlert = "M12 9v4M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0zM12 16h0.01";
-    private const string IconTrash = "M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3";
-    private const string IconCheck = "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M9 12l2 2l4 -4";
-    private const string IconSave = "M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2M10 14a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M14 4v4h-6v-4";
-    private const string IconInfo = "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M12 9h0.01M11 12h1v4h1";
-
     // Цвет плашки, цвет значка и контур значка для каждого смысла окна
     private static (Color Bg, Color Fg, string Glyph) IconStyle(DialogKind kind, bool dark) => kind switch
     {
-        DialogKind.Warning => (Color.FromArgb(dark ? "#3A2A10" : "#FEF3C7"), Color.FromArgb(dark ? "#F59E0B" : "#D97706"), IconAlert),
-        DialogKind.Danger => (Color.FromArgb(dark ? "#3A141A" : "#FEE2E2"), Color.FromArgb(dark ? "#EF4444" : "#DC2626"), IconAlert),
-        DialogKind.Delete => (Color.FromArgb(dark ? "#3A141A" : "#FEE2E2"), Color.FromArgb(dark ? "#EF4444" : "#DC2626"), IconTrash),
-        DialogKind.Success => (Res("IconBoxBg", dark ? "#0B3D31" : "#DCEFE9"), Res("BrandGreen", dark ? "#3FC3A1" : "#0D6B57"), IconCheck),
-        DialogKind.Question => (Color.FromArgb(dark ? "#162842" : "#DBEAFE"), Color.FromArgb(dark ? "#60A5FA" : "#2563EB"), IconSave),
-        _ => (Color.FromArgb(dark ? "#162842" : "#DBEAFE"), Color.FromArgb(dark ? "#60A5FA" : "#2563EB"), IconInfo),
+        DialogKind.Warning => (Res("WarnSoftBg", dark ? "#453720" : "#FCEFD6"), Res("WarnColor", dark ? "#F1C778" : "#805003"), Icons.AlertTriangle),
+        DialogKind.Danger => (Res("BadSoftBg", dark ? "#4A2625" : "#FBE5E2"), Res("BadColor", dark ? "#FFABA4" : "#B42318"), Icons.AlertTriangle),
+        DialogKind.Delete => (Res("BadSoftBg", dark ? "#4A2625" : "#FBE5E2"), Res("BadColor", dark ? "#FFABA4" : "#B42318"), Icons.Trash),
+        DialogKind.Success => (Res("IconBoxBg", dark ? "#363F49" : "#E7EDF3"), Res("BrandGreen", dark ? "#BACBD9" : "#263B52"), Icons.Check),
+        DialogKind.Question => (Color.FromArgb(dark ? "#162842" : "#DBEAFE"), Color.FromArgb(dark ? "#60A5FA" : "#2563EB"), Icons.Save),
+        _ => (Color.FromArgb(dark ? "#162842" : "#DBEAFE"), Color.FromArgb(dark ? "#60A5FA" : "#2563EB"), Icons.Info),
     };
 
     // Цвет из ресурсов темы; если ресурса нет, берём запасной

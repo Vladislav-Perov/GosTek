@@ -55,12 +55,7 @@
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnCloseTapped" />
                 </Border.GestureRecognizers>
-                <Label Text="✕"
-                       FontSize="18"
-                       FontAttributes="Bold"
-                       TextColor="{DynamicResource TextPrimary}"
-                       HorizontalOptions="Center"
-                       VerticalOptions="Center" />
+                <vctrl:IconView Icon="close" Size="20" />
             </Border>
 
             <!-- Заголовок страницы -->
@@ -166,12 +161,12 @@
                     <Grid ColumnDefinitions="Auto, *" ColumnSpacing="10" VerticalOptions="Center">
                         <vctrl:IconView Icon="bulb"
                                         IconColor="BrandGreen"
-                                        Size="16"
+                                        Size="20"
                                         VerticalOptions="Center" />
                         <Label x:Name="ViewfinderHintLabel"
                                Grid.Column="1"
                                Text="Нажмите круглую кнопку для съёмки с автофокусом и высоким разрешением."
-                               FontSize="12.5"
+                               FontSize="14"
                                TextColor="{DynamicResource TextSecondary}"
                                LineBreakMode="WordWrap"
                                VerticalOptions="Center" />
@@ -182,11 +177,11 @@
                 <Label x:Name="ErrorLabel"
                        Grid.Row="2"
                        IsVisible="False"
-                       FontSize="12.5"
+                       FontSize="14"
                        FontAttributes="Bold"
                        HorizontalTextAlignment="Center"
                        LineBreakMode="WordWrap"
-                       TextColor="#EF4444"
+                       TextColor="{DynamicResource BadColor}"
                        Margin="4, 0" />
             </Grid>
 
@@ -206,8 +201,8 @@
                                 <TapGestureRecognizer Tapped="OnRetakeTapped" />
                             </Border.GestureRecognizers>
                             <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
-                                <Label Text="↩" FontSize="14" FontAttributes="Bold" TextColor="{DynamicResource BrandGreen}" VerticalOptions="Center" />
-                                <Label Text="Снять заново" FontSize="13" FontAttributes="Bold" TextColor="{DynamicResource BrandGreen}" VerticalOptions="Center" />
+                                <Label Text="↩" FontSize="16" FontAttributes="Bold" TextColor="{DynamicResource BrandGreen}" VerticalOptions="Center" />
+                                <Label Text="Снять заново" FontSize="15" FontAttributes="Bold" TextColor="{DynamicResource BrandGreen}" VerticalOptions="Center" />
                             </HorizontalStackLayout>
                         </Border>
                     </HorizontalStackLayout>
@@ -231,19 +226,19 @@
                                             WidthRequest="32"
                                             HeightRequest="32"
                                             VerticalOptions="Center">
-                                        <vctrl:IconView Icon="sparkles"
+                                        <vctrl:IconView Icon="check_ok"
                                                         IconColor="BrandGreen"
-                                                        Size="16"
+                                                        Size="20"
                                                         HorizontalOptions="Center"
                                                         VerticalOptions="Center" />
                                     </Border>
                                     <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
                                         <Label Text="Сравнение с профилем"
-                                               FontSize="15"
+                                               FontSize="17"
                                                FontAttributes="Bold"
                                                TextColor="{DynamicResource TextPrimary}" />
                                         <Label Text="Выберите распознанные данные для применения"
-                                               FontSize="11.5"
+                                               FontSize="13"
                                                TextColor="{DynamicResource TextSecondary}" />
                                     </VerticalStackLayout>
 
@@ -253,13 +248,13 @@
                                             StrokeThickness="0"
                                             StrokeShape="RoundRectangle 8"
                                             Padding="8, 4"
-                                            BackgroundColor="#1510B981"
+                                            BackgroundColor="{DynamicResource IconBoxBg}"
                                             VerticalOptions="Center">
                                         <Label x:Name="MrzStatusLabel"
-                                               Text="✓ MRZ ICAO"
-                                               FontSize="11"
+                                               Text="MRZ · ICAO"
+                                               FontSize="13"
                                                FontAttributes="Bold"
-                                               TextColor="#10B981" />
+                                               TextColor="{DynamicResource BrandGreen}" />
                                     </Border>
                                 </Grid>
 
@@ -271,7 +266,7 @@
                                         <CheckBox x:Name="ApplyNameCheck" IsChecked="True" VerticalOptions="Center" />
                                         <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
                                             <Label Text="ФИО" StyleClass="FieldLabel" />
-                                            <Label x:Name="OldNameLabel" Text="Было: —" FontSize="11" TextColor="{DynamicResource TextSecondary}" />
+                                            <Label x:Name="OldNameLabel" Text="Было: —" FontSize="13" TextColor="{DynamicResource TextSecondary}" />
                                         </VerticalStackLayout>
                                     </Grid>
                                     <Border StyleClass="FieldBox">
@@ -287,7 +282,7 @@
                                         <CheckBox x:Name="ApplyPassportCheck" IsChecked="True" VerticalOptions="Center" />
                                         <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
                                             <Label Text="Паспорт (серия и номер)" StyleClass="FieldLabel" />
-                                            <Label x:Name="OldPassportLabel" Text="Было: —" FontSize="11" TextColor="{DynamicResource TextSecondary}" />
+                                            <Label x:Name="OldPassportLabel" Text="Было: —" FontSize="13" TextColor="{DynamicResource TextSecondary}" />
                                         </VerticalStackLayout>
                                     </Grid>
                                     <Border StyleClass="FieldBox">
@@ -303,7 +298,7 @@
                                         <CheckBox x:Name="ApplyPersonalCheck" IsChecked="True" VerticalOptions="Center" />
                                         <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
                                             <Label Text="Идентификационный (личный) номер РБ" StyleClass="FieldLabel" />
-                                            <Label x:Name="OldPersonalLabel" Text="Было: —" FontSize="11" TextColor="{DynamicResource TextSecondary}" />
+                                            <Label x:Name="OldPersonalLabel" Text="Было: —" FontSize="13" TextColor="{DynamicResource TextSecondary}" />
                                         </VerticalStackLayout>
                                     </Grid>
                                     <Border StyleClass="FieldBox">
@@ -318,7 +313,7 @@
                                         StrokeThickness="0"
                                         Padding="0, 13"
                                         Margin="0, 4, 0, 0"
-                                        BackgroundColor="{DynamicResource BrandGreen}">
+                                        BackgroundColor="{DynamicResource ActionBg}">
                                     <Border.Shadow>
                                         <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.14" />
                                     </Border.Shadow>
@@ -326,7 +321,7 @@
                                         <TapGestureRecognizer Tapped="OnSaveToProfileTapped" />
                                     </Border.GestureRecognizers>
                                     <Label Text="Применить выбранные в профиль"
-                                           FontSize="14.5"
+                                           FontSize="16"
                                            FontAttributes="Bold"
                                            TextColor="#FFFFFF"
                                            HorizontalOptions="Center" />
@@ -352,10 +347,10 @@
                                     <TapGestureRecognizer Tapped="OnTabPreviewTapped" />
                                 </Border.GestureRecognizers>
                                 <HorizontalStackLayout HorizontalOptions="Center" Spacing="6">
-                                    <vctrl:IconView Icon="eye" IconColor="BrandGreen" Size="16" VerticalOptions="Center" />
+                                    <vctrl:IconView Icon="eye" IconColor="BrandGreen" Size="20" VerticalOptions="Center" />
                                     <Label x:Name="TabPreviewLabel"
                                            Text="Предпросмотр А4"
-                                           FontSize="13"
+                                           FontSize="15"
                                            FontAttributes="Bold"
                                            TextColor="{DynamicResource BrandGreen}"
                                            VerticalOptions="Center" />
@@ -372,10 +367,10 @@
                                     <TapGestureRecognizer Tapped="OnTabEditTapped" />
                                 </Border.GestureRecognizers>
                                 <HorizontalStackLayout HorizontalOptions="Center" Spacing="6">
-                                    <vctrl:IconView Icon="edit" IconColor="TextSecondary" Size="16" VerticalOptions="Center" />
+                                    <vctrl:IconView Icon="edit" IconColor="TextSecondary" Size="20" VerticalOptions="Center" />
                                     <Label x:Name="TabEditLabel"
                                            Text="Редактировать текст"
-                                           FontSize="13"
+                                           FontSize="15"
                                            FontAttributes="None"
                                            TextColor="{DynamicResource TextSecondary}"
                                            VerticalOptions="Center" />
@@ -417,11 +412,11 @@
                             <Grid ColumnDefinitions="*, Auto" VerticalOptions="Center">
                                 <VerticalStackLayout Spacing="1">
                                     <Label Text="Редактирование текста"
-                                           FontSize="15"
+                                           FontSize="17"
                                            FontAttributes="Bold"
                                            TextColor="{DynamicResource TextPrimary}" />
                                     <Label Text="Исправьте опечатки перед формированием документа"
-                                           FontSize="11.5"
+                                           FontSize="13"
                                            TextColor="{DynamicResource TextSecondary}" />
                                 </VerticalStackLayout>
 
@@ -436,7 +431,7 @@
                                         </Border.GestureRecognizers>
                                         <Label x:Name="CopyLabel"
                                                Text="Копировать"
-                                               FontSize="12"
+                                               FontSize="14"
                                                FontAttributes="Bold"
                                                VerticalOptions="Center"
                                                TextColor="{DynamicResource BrandGreen}" />
@@ -452,7 +447,7 @@
                                 <Editor x:Name="RawTextEditor"
                                         IsReadOnly="False"
                                         AutoSize="TextChanges"
-                                        FontSize="13.5"
+                                        FontSize="15"
                                         TextColor="{DynamicResource TextPrimary}"
                                         BackgroundColor="Transparent"
                                         TextChanged="OnRawTextChanged" />
@@ -479,12 +474,12 @@
                                 <VerticalStackLayout Spacing="10">
                                     <Grid ColumnDefinitions="*, Auto">
                                         <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
-                                            <vctrl:IconView Icon="settings" IconColor="BrandGreen" Size="16" VerticalOptions="Center" />
-                                            <Label Text="Параметры оформления ГОСТ" FontSize="13" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" VerticalOptions="Center" />
+                                            <vctrl:IconView Icon="settings" IconColor="BrandGreen" Size="20" VerticalOptions="Center" />
+                                            <Label Text="Параметры оформления ГОСТ" FontSize="15" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" VerticalOptions="Center" />
                                         </HorizontalStackLayout>
                                         <Label Grid.Column="1"
                                                Text="По умолчанию"
-                                               FontSize="11.5"
+                                               FontSize="13"
                                                FontAttributes="Bold"
                                                TextColor="{DynamicResource BrandGreen}"
                                                VerticalOptions="Center">
@@ -497,9 +492,9 @@
                                     <!-- Строка 1: Шрифт и размер -->
                                     <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
                                         <VerticalStackLayout Spacing="4">
-                                            <Label Text="Шрифт:" FontSize="11" TextColor="{DynamicResource TextSecondary}" />
+                                            <Label Text="Шрифт:" FontSize="13" TextColor="{DynamicResource TextSecondary}" />
                                             <Border BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="6, 2">
-                                                <Picker x:Name="FontPicker" FontSize="12" TextColor="{DynamicResource TextPrimary}" SelectedIndexChanged="OnFormattingOptionChanged">
+                                                <Picker x:Name="FontPicker" FontSize="14" TextColor="{DynamicResource TextPrimary}" SelectedIndexChanged="OnFormattingOptionChanged">
                                                     <Picker.ItemsSource>
                                                         <x:Array Type="{x:Type x:String}">
                                                             <x:String>Times New Roman</x:String>
@@ -513,9 +508,9 @@
                                         </VerticalStackLayout>
 
                                         <VerticalStackLayout Grid.Column="1" Spacing="4">
-                                            <Label Text="Размер шрифта:" FontSize="11" TextColor="{DynamicResource TextSecondary}" />
+                                            <Label Text="Размер шрифта:" FontSize="13" TextColor="{DynamicResource TextSecondary}" />
                                             <Border BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="6, 2">
-                                                <Picker x:Name="FontSizePicker" FontSize="12" TextColor="{DynamicResource TextPrimary}" SelectedIndexChanged="OnFormattingOptionChanged">
+                                                <Picker x:Name="FontSizePicker" FontSize="14" TextColor="{DynamicResource TextPrimary}" SelectedIndexChanged="OnFormattingOptionChanged">
                                                     <Picker.ItemsSource>
                                                         <x:Array Type="{x:Type x:String}">
                                                             <x:String>12 пт</x:String>
@@ -532,9 +527,9 @@
                                     <!-- Строка 2: Интервал и Красная строка -->
                                     <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
                                         <VerticalStackLayout Spacing="4">
-                                            <Label Text="Межстрочный интервал:" FontSize="11" TextColor="{DynamicResource TextSecondary}" />
+                                            <Label Text="Межстрочный интервал:" FontSize="13" TextColor="{DynamicResource TextSecondary}" />
                                             <Border BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="6, 2">
-                                                <Picker x:Name="LineSpacingPicker" FontSize="12" TextColor="{DynamicResource TextPrimary}" SelectedIndexChanged="OnFormattingOptionChanged">
+                                                <Picker x:Name="LineSpacingPicker" FontSize="14" TextColor="{DynamicResource TextPrimary}" SelectedIndexChanged="OnFormattingOptionChanged">
                                                     <Picker.ItemsSource>
                                                         <x:Array Type="{x:Type x:String}">
                                                             <x:String>1.0 (Одинарный)</x:String>
@@ -548,9 +543,9 @@
                                         </VerticalStackLayout>
 
                                         <VerticalStackLayout Grid.Column="1" Spacing="4">
-                                            <Label Text="Отступ (красная строка):" FontSize="11" TextColor="{DynamicResource TextSecondary}" />
+                                            <Label Text="Отступ (красная строка):" FontSize="13" TextColor="{DynamicResource TextSecondary}" />
                                             <Border BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="6, 2">
-                                                <Picker x:Name="IndentPicker" FontSize="12" TextColor="{DynamicResource TextPrimary}" SelectedIndexChanged="OnFormattingOptionChanged">
+                                                <Picker x:Name="IndentPicker" FontSize="14" TextColor="{DynamicResource TextPrimary}" SelectedIndexChanged="OnFormattingOptionChanged">
                                                     <Picker.ItemsSource>
                                                         <x:Array Type="{x:Type x:String}">
                                                             <x:String>Без отступа (0 см)</x:String>
@@ -568,9 +563,9 @@
                                     <!-- Строка 3: Поля страницы -->
                                     <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
                                         <VerticalStackLayout Spacing="4">
-                                            <Label Text="Выравнивание:" FontSize="11" TextColor="{DynamicResource TextSecondary}" />
+                                            <Label Text="Выравнивание:" FontSize="13" TextColor="{DynamicResource TextSecondary}" />
                                             <Border BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="6, 2">
-                                                <Picker x:Name="AlignPicker" FontSize="12" TextColor="{DynamicResource TextPrimary}" SelectedIndexChanged="OnFormattingOptionChanged">
+                                                <Picker x:Name="AlignPicker" FontSize="14" TextColor="{DynamicResource TextPrimary}" SelectedIndexChanged="OnFormattingOptionChanged">
                                                     <Picker.ItemsSource>
                                                         <x:Array Type="{x:Type x:String}">
                                                             <x:String>По ширине (ГОСТ)</x:String>
@@ -583,9 +578,9 @@
                                         </VerticalStackLayout>
 
                                         <VerticalStackLayout Grid.Column="1" Spacing="4">
-                                            <Label Text="Поля документа:" FontSize="11" TextColor="{DynamicResource TextSecondary}" />
+                                            <Label Text="Поля документа:" FontSize="13" TextColor="{DynamicResource TextSecondary}" />
                                             <Border BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="6, 2">
-                                                <Picker x:Name="MarginsPicker" FontSize="12" TextColor="{DynamicResource TextPrimary}" SelectedIndexChanged="OnFormattingOptionChanged">
+                                                <Picker x:Name="MarginsPicker" FontSize="14" TextColor="{DynamicResource TextPrimary}" SelectedIndexChanged="OnFormattingOptionChanged">
                                                     <Picker.ItemsSource>
                                                         <x:Array Type="{x:Type x:String}">
                                                             <x:String>ГОСТ (30-15-20-20 мм)</x:String>
@@ -605,7 +600,7 @@
                             <Border StyleClass="HoverCard"
                                     StrokeThickness="0"
                                     StrokeShape="RoundRectangle 14"
-                                    Background="{DynamicResource BrandGreenGradient}"
+                                    BackgroundColor="{DynamicResource ActionBg}"
                                     Padding="14, 12"
                                     HorizontalOptions="Fill">
                                 <Border.Shadow>
@@ -617,10 +612,10 @@
                                 <HorizontalStackLayout HorizontalOptions="Center" Spacing="10">
                                     <vctrl:IconView Icon="download"
                                                     IconColor="White"
-                                                    Size="18"
+                                                    Size="22"
                                                     VerticalOptions="Center" />
                                     <Label Text="Оцифровать в DOCX по ГОСТ"
-                                           FontSize="14"
+                                           FontSize="16"
                                            FontAttributes="Bold"
                                            TextColor="White"
                                            VerticalOptions="Center" />
@@ -641,10 +636,10 @@
                                 <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
                                     <vctrl:IconView Icon="templates"
                                                     IconColor="BrandGreen"
-                                                    Size="16"
+                                                    Size="20"
                                                     VerticalOptions="Center" />
                                     <Label Text="Сохранить как шаблон приложения"
-                                           FontSize="13"
+                                           FontSize="15"
                                            FontAttributes="Bold"
                                            TextColor="{DynamicResource BrandGreen}"
                                            VerticalOptions="Center" />
@@ -665,10 +660,10 @@
                                 <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
                                     <vctrl:IconView Icon="filetext"
                                                     IconColor="TextSecondary"
-                                                    Size="16"
+                                                    Size="20"
                                                     VerticalOptions="Center" />
                                     <Label Text="Выбрать существующий шаблон..."
-                                           FontSize="13"
+                                           FontSize="15"
                                            TextColor="{DynamicResource TextSecondary}"
                                            VerticalOptions="Center" />
                                 </HorizontalStackLayout>
@@ -719,12 +714,12 @@
                     </Border.Shadow>
                     <vctrl:IconView Icon="image"
                                     IconColor="TextPrimary"
-                                    Size="20"
+                                    Size="24"
                                     HorizontalOptions="Center"
                                     VerticalOptions="Center" />
                 </Border>
                 <Label Text="Галерея"
-                       FontSize="11.5"
+                       FontSize="13"
                        FontAttributes="Bold"
                        HorizontalOptions="Center"
                        TextColor="{DynamicResource TextSecondary}" />
@@ -748,7 +743,7 @@
                 </Border.GestureRecognizers>
                 <Border StrokeShape="RoundRectangle 34"
                         StrokeThickness="0"
-                        Background="{DynamicResource BrandGreenGradient}">
+                        BackgroundColor="{DynamicResource ActionBg}">
                     <vctrl:IconView Icon="camera"
                                     IconColor="White"
                                     Size="24"
@@ -778,12 +773,12 @@
                     </Border.Shadow>
                     <vctrl:IconView Icon="folder"
                                     IconColor="TextPrimary"
-                                    Size="20"
+                                    Size="24"
                                     HorizontalOptions="Center"
                                     VerticalOptions="Center" />
                 </Border>
                 <Label Text="Файл"
-                       FontSize="11.5"
+                       FontSize="13"
                        FontAttributes="Bold"
                        HorizontalOptions="Center"
                        TextColor="{DynamicResource TextSecondary}" />

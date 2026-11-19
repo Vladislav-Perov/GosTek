@@ -17,7 +17,7 @@ public partial class TemplatesPage : ContentPage
     private const string RecentKey = "recent_templates";
     private const int RecentMax = 3;
 
-    private const string FavoritesChipTitle = "⭐ Избранное";
+    private const string FavoritesChipTitle = "Избранное";
     private bool _isFavoriteFilter;
 
     private string? _category;   // null = «Все» (или режим «Избранное»)
@@ -35,6 +35,12 @@ public partial class TemplatesPage : ContentPage
         InitializeComponent();
 
         CategoryChips.SelectionChanged += OnCategoryChanged;
+    }
+
+    private void OnRecentToggleClicked(object? sender, EventArgs e)
+    {
+        RecentList.IsVisible = !RecentList.IsVisible;
+        RecentToggle.Text = RecentList.IsVisible ? "Скрыть недавние" : "Показать недавние";
     }
 
     private void OnFavoritesChanged()
@@ -171,7 +177,7 @@ public partial class TemplatesPage : ContentPage
 
         // Порядок категорий:
         // 1. Первым элементом (индекс 0) ВСЕГДА идет категория "Все".
-        // 2. Вторым элементом (индекс 1) ВСЕГДА идет категория "Избранное" (со звездочкой).
+        // 2. Вторым элементом (индекс 1) ВСЕГДА идет категория "Избранное".
         // 3. Все остальные категории выводятся строго по алфавиту (А-Я) после первых двух.
         var titles = new List<string> { "Все", FavoritesChipTitle };
         titles.AddRange(sortedCats);
@@ -190,7 +196,7 @@ public partial class TemplatesPage : ContentPage
         CategoryChips.SetItems(titles, selected);
     }
 
-    // Выбрали чип: 0 = «Все», 1 = «⭐ Избранное», дальше категории по алфавиту
+    // Выбрали чип: 0 = «Все», 1 = «Избранное», дальше категории по алфавиту
     private void OnCategoryChanged(object? sender, int index)
     {
         HapticHelper.Click();
@@ -233,25 +239,36 @@ public partial class TemplatesPage : ContentPage
         }
 
         var results = queryable
-            .Select(t => t with { IsFavorite = favIds.Contains(t.Id) })
+            .Select(t => t with { IsFavorite = favIds.Contains(t.Id), HighlightQuery = _query })
             .ToList();
 
         ResultsList.ItemsSource = results;
-        EmptyLabel.IsVisible = results.Count == 0;
         EmptyCard.IsVisible = results.Count == 0;
-        if (TemplateCatalog.Items.Length == 0)
+        if (EmptyCard.IsVisible)
         {
-            EmptyLabel.Text = $"В папке шаблонов нет файлов .docx:\n{SettingsService.TemplatesFolder}\n\nИзменить папку можно в настройках.";
-        }
-        else if (results.Count == 0 && _isFavoriteFilter)
-        {
-            EmptyLabel.Text = "У вас пока нет избранных шаблонов.\nНажмите на звёздочку в карточке шаблона, чтобы добавить его сюда.";
+            if (TemplateCatalog.Items.Length == 0)
+            {
+                EmptyLabel.Text = "В папке шаблонов нет файлов .docx";
+                EmptyHint.Text = DeviceInfo.Platform == DevicePlatform.WinUI
+                    ? $"{SettingsService.TemplatesFolder}\nИзменить папку можно в настройках."
+                    : "Нажмите «Добавить DOCX», чтобы импортировать свой шаблон.";
+            }
+            else if (_isFavoriteFilter && !TemplateCatalog.Items.Any(t => favIds.Contains(t.Id)))
+            {
+                EmptyLabel.Text = "У вас пока нет избранных шаблонов";
+                EmptyHint.Text = "Нажмите на звёздочку в карточке шаблона, чтобы добавить его сюда.";
+            }
+            else
+            {
+                EmptyLabel.Text = "Ничего не найдено";
+                EmptyHint.Text = "Попробуйте изменить поисковый запрос или выбрать другую категорию.";
+            }
         }
 
         // «Недавние» — только когда нет поиска, не включён фильтр избранного и выбрано «Все»
         var recent = LoadRecent();
         var recentWithFav = recent
-            .Select(t => t with { IsFavorite = favIds.Contains(t.Id) })
+            .Select(t => t with { IsFavorite = favIds.Contains(t.Id), HighlightQuery = "" })
             .ToList();
         BindableLayout.SetItemsSource(RecentList, recentWithFav);
         RecentSection.IsVisible = _query.Length == 0 && !_isFavoriteFilter && _category is null && recent.Count > 0;
@@ -318,10 +335,10 @@ public partial class TemplatesPage : ContentPage
     private static void AddRecent(string id)
     {
         var ids = LoadRecentIds();
-
         ids.Remove(id);
         ids.Insert(0, id);
-
-        Preferences.Set(RecentKey, string.Join(",", ids.Take(RecentMax)));
+        if (ids.Count > RecentMax)
+            ids = ids.Take(RecentMax).ToList();
+        Preferences.Set(RecentKey, string.Join(",", ids));
     }
 }

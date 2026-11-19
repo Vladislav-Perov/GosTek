@@ -1,6 +1,6 @@
 /*
  * ==============================================================================
- * НАЗНАЧЕНИЕ: Управление динамическим переключением светлой/тёмной (Slate Dark)/системной тем оформления и градиентов
+ * НАЗНАЧЕНИЕ: Управление динамическим переключением светлой/тёмной/системной тем оформления и градиентов
  * СОДЕРЖИМОЕ: ThemeService, ThemeMode
  * ЗАВИСИМОСТИ: Microsoft.Maui.Controls, GosTek.SettingsService
  * ==============================================================================
@@ -24,30 +24,32 @@ public static class ThemeService
     /// <summary>Сейчас на экране тёмная тема (с учётом режима).</summary>
     public static bool IsDark { get; private set; } = true;
 
-    /// <summary>Тема переключена. На это событие подписан ThemeToggle.</summary>
+    /// <summary>Тема оформления изменилась.</summary>
     public static event Action? Changed;
 
-    // Ключ ресурса, цвет в тёмной теме (Slate Dark), цвет в светлой
+    // Ключ ресурса, цвет в тёмной теме, цвет в светлой
     private static readonly (string Key, string Dark, string Light)[] Palette = {
-        ("PageBg",        "#0F172A", "#F6F4EE"),
-        ("CardBg",        "#1E293B", "#FFFFFF"),
-        ("CardHoverBg",   "#334155", "#EFEBE0"),
-        ("CardStroke",    "#334155", "#E2DED2"),
-        ("TextPrimary",   "#F8FAFC", "#16213A"),
-        ("TextSecondary", "#94A3B8", "#5A6479"),
-        ("BrandGreen",    "#2DD4BF", "#0D6B57"),
-        ("AccentGreen",   "#2DD4BF", "#0D6B57"),
-        ("Divider",       "#334155", "#E2DED2"),
-        ("IconBoxBg",     "#134E4A", "#DCEFE9"),
-        ("TabBarBg",      "#0F172A", "#FFFFFF"),
-        ("TabActiveBg",   "#134E4A", "#DCEFE9"),
-        ("ToggleTrackBg", "#334155", "#D6D1C3"),
+        ("PageBg",        "#1A1E22", "#F4F6F8"),
+        ("CardBg",        "#23282D", "#FFFFFF"),
+        ("CardHoverBg",   "#414950", "#EDF1F4"),
+        ("CardStroke",    "#414950", "#D4DCE3"),
+        ("TextPrimary",   "#EDF0F2", "#202B35"),
+        ("TextSecondary", "#B7BEC5", "#51606F"),
+        ("BrandGreen",    "#BACBD9", "#263B52"),
+        ("AccentGreen",   "#BACBD9", "#263B52"),
+        ("ActionBg",      "#324A62", "#263B52"),
+        ("ActionHoverBg", "#3D5772", "#324A62"),
+        ("Divider",       "#414950", "#D4DCE3"),
+        ("IconBoxBg",     "#363F49", "#E7EDF3"),
+        ("TabBarBg",      "#1A1E22", "#FFFFFF"),
+        ("TabActiveBg",   "#363F49", "#E7EDF3"),
+        ("ToggleTrackBg", "#414950", "#C4CFDA"),
 
         // Экран «Проверка»: важное замечание (красный), желательное (жёлтый) и их мягкие фоны
-        ("BadColor",      "#F87171", "#B42318"),
-        ("BadSoftBg",     "#450A0A", "#FBE5E2"),
-        ("WarnColor",     "#FBBF24", "#9A5B00"),
-        ("WarnSoftBg",    "#451A03", "#FCEFD6"),
+        ("BadColor",      "#FFABA4", "#B42318"),
+        ("BadSoftBg",     "#4A2625", "#FBE5E2"),
+        ("WarnColor",     "#F1C778", "#805003"),
+        ("WarnSoftBg",    "#453720", "#FCEFD6"),
     };
 
     // Вызвать один раз при старте приложения
@@ -96,84 +98,6 @@ public static class ThemeService
             {
                 System.Diagnostics.Debug.WriteLine($"[ThemeService.Changed] Handler error: {ex.Message}");
             }
-        }
-    }
-
-    /// <summary>Плавное переключение темы с эффектом мягкого затемнения и моргания.</summary>
-    public static async Task ToggleWithAnimationAsync()
-    {
-        var targetMode = IsDark ? ThemeMode.Light : ThemeMode.Dark;
-        await SetModeWithAnimationAsync(targetMode);
-    }
-
-    /// <summary>Установка режима темы с визуальным эффектом затухания/проявления.</summary>
-    public static async Task SetModeWithAnimationAsync(ThemeMode mode)
-    {
-        if (mode == Mode)
-            return;
-
-        var page = Shell.Current?.CurrentPage ?? Application.Current?.Windows.FirstOrDefault()?.Page;
-        if (page is ContentPage contentPage && contentPage.Content is Layout layout)
-        {
-            var veil = new BoxView
-            {
-                Color = Colors.Black,
-                Opacity = 0,
-                InputTransparent = true,
-                ZIndex = 99999,
-                HorizontalOptions = LayoutOptions.Fill,
-                VerticalOptions = LayoutOptions.Fill,
-            };
-
-            try
-            {
-                if (layout is Grid grid)
-                {
-                    if (grid.RowDefinitions.Count > 0)
-                        Grid.SetRowSpan(veil, Math.Max(1, grid.RowDefinitions.Count));
-                    if (grid.ColumnDefinitions.Count > 0)
-                        Grid.SetColumnSpan(veil, Math.Max(1, grid.ColumnDefinitions.Count));
-                    grid.Children.Add(veil);
-                }
-                else
-                {
-                    layout.Children.Add(veil);
-                }
-
-                await veil.FadeToAsync(0.45, 120, Easing.CubicIn);
-                SetMode(mode);
-                await veil.FadeToAsync(0.0, 180, Easing.CubicOut);
-            }
-            catch
-            {
-                SetMode(mode);
-            }
-            finally
-            {
-                try
-                {
-                    if (layout.Children.Contains(veil))
-                        layout.Children.Remove(veil);
-                }
-                catch { }
-            }
-        }
-        else
-        {
-            SetMode(mode);
-        }
-    }
-
-    /// <summary>Быстрый переключатель: из любого режима в противоположную тему.</summary>
-    public static void Toggle()
-    {
-        if (Application.Current is not null && MainThread.IsMainThread)
-        {
-            _ = ToggleWithAnimationAsync();
-        }
-        else
-        {
-            SetMode(IsDark ? ThemeMode.Light : ThemeMode.Dark);
         }
     }
 
@@ -256,35 +180,10 @@ public static class ThemeService
         foreach (var (key, dark, light) in Palette)
             app.Resources[key] = Color.FromArgb(IsDark ? dark : light);
 
-        // Градиенты дизайн-системы
-        var brandGradient = new LinearGradientBrush
-        {
-            StartPoint = new Point(0, 0),
-            EndPoint = new Point(1, 1),
-            GradientStops = new GradientStopCollection
-            {
-                new GradientStop(Color.FromArgb(IsDark ? "#0F766E" : "#0D6B57"), 0.0f),
-                new GradientStop(Color.FromArgb(IsDark ? "#2DD4BF" : "#14B8A6"), 1.0f),
-            },
-        };
-        app.Resources["BrandGreenGradient"] = brandGradient;
-
-        var mainRadial = new RadialGradientBrush
-        {
-            Center = new Point(0.5, 0.4),
-            Radius = 0.9,
-            GradientStops = new GradientStopCollection
-            {
-                new GradientStop(Color.FromArgb(IsDark ? "#1E293B" : "#FFFFFF"), 0.0f),
-                new GradientStop(Color.FromArgb(IsDark ? "#0F172A" : "#F6F4EE"), 1.0f),
-            },
-        };
-        app.Resources["MainPageBackgroundBrush"] = mainRadial;
-
         foreach (var window in app.Windows)
         {
             if (window.Page is { } page)
-                page.BackgroundColor = Color.FromArgb(IsDark ? "#0F172A" : "#F6F4EE");
+                page.SetDynamicResource(VisualElement.BackgroundColorProperty, "PageBg");
 
             ApplyPlatformTheme(window);
         }

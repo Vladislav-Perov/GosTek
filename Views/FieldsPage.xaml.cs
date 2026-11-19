@@ -75,6 +75,7 @@ public partial class FieldsPage : ContentPage
     private bool _isChatMaximized;
     private double _originalChatHeight = 540;
     private bool _isProgrammaticFilling;
+    private bool _insertingScannedText;
 
     private int _statusVersion;
     private int _layoutVersion;
@@ -410,12 +411,45 @@ public partial class FieldsPage : ContentPage
         var ui = new FieldUi(field, input, box, error, stack, profileTag);
         if (field.TextGeneration is not null)
         {
-            var generateButton = new Button
+            var sparkIcon = new IconView
+            {
+                Icon = "chat",
+                IconColor = "BrandGreen",
+                Size = 14,
+                VerticalOptions = LayoutOptions.Center
+            };
+            var sparkLabel = new Label
             {
                 Text = "Сгенерировать текст",
-                HorizontalOptions = LayoutOptions.Start,
+                FontSize = 12.5,
+                FontAttributes = FontAttributes.Bold,
+                TextColor = (Color)Application.Current!.Resources["BrandGreen"],
+                VerticalOptions = LayoutOptions.Center
             };
-            generateButton.Clicked += (_, _) => OpenChat(ui);
+            sparkLabel.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
+
+            var generateButton = new Border
+            {
+                StyleClass = new[] { "HoverCard" },
+                BackgroundColor = (Color)Application.Current!.Resources["IconBoxBg"],
+                Stroke = (Color)Application.Current!.Resources["CardStroke"],
+                StrokeThickness = 1,
+                StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(10) },
+                Padding = new Thickness(12, 7),
+                HorizontalOptions = LayoutOptions.Start,
+                Content = new HorizontalStackLayout
+                {
+                    Spacing = 6,
+                    Children = { sparkIcon, sparkLabel }
+                }
+            };
+            generateButton.SetDynamicResource(VisualElement.BackgroundColorProperty, "IconBoxBg");
+            generateButton.SetDynamicResource(Border.StrokeProperty, "CardStroke");
+
+            var tap = new TapGestureRecognizer();
+            tap.Tapped += (_, _) => OpenChat(ui);
+            generateButton.GestureRecognizers.Add(tap);
+
             stack.Children.Insert(1, generateButton);
         }
 
@@ -679,36 +713,51 @@ public partial class FieldsPage : ContentPage
 #endif
         StartBuildPulse();
 
-        if (DraftStore.PendingOcrText is { Length: > 0 } ocrText)
-        {
-            DraftStore.PendingOcrText = null;
+        if (!_insertingScannedText && DraftStore.PendingOcrText is { Length: > 0 } ocrText)
             _ = InsertScannedTextAsync(ocrText);
-        }
     }
 
     private async Task InsertScannedTextAsync(string text)
     {
-        var fields = _fields.Where(field => field.Input is Editor).ToArray();
-        if (fields.Length == 0)
+        _insertingScannedText = true;
+        try
         {
-            await Dialogs.AlertAsync("В шаблоне нет текстового поля", "Распознанный текст можно скопировать в сканере.");
-            return;
+            var fields = _fields.Where(field => field.Input is Editor).ToArray();
+            if (fields.Length == 0)
+            {
+                await Dialogs.AlertAsync("В шаблоне нет многострочного поля",
+                    "Распознанный текст готов к вставке в другой шаблон.");
+                return;
+            }
+
+            var choices = fields.Select((field, index) => $"{index + 1}. {GetDisplayLabel(field.Field.Label)}").ToArray();
+            var selected = await DisplayActionSheetAsync("Куда вставить текст скана?", "Отмена", null, choices);
+            var index = Array.IndexOf(choices, selected);
+            if (index < 0 || !IsCurrentTransfer())
+                return;
+
+            var target = fields[index];
+            if (!_fields.Contains(target))
+                return;
+
+            if (!string.IsNullOrWhiteSpace(target.Input.Text) &&
+                !await Dialogs.ConfirmAsync("Заменить введённый текст?",
+                    "Распознанный текст заменит текущее значение поля.", "Заменить"))
+                return;
+
+            if (!IsCurrentTransfer() || !_fields.Contains(target))
+                return;
+
+            target.Input.Text = text;
+            DraftStore.PendingOcrText = null;
+        }
+        finally
+        {
+            _insertingScannedText = false;
         }
 
-        var choices = fields.Select((field, index) => $"{index + 1}. {GetDisplayLabel(field.Field.Label)}").ToArray();
-        var selected = await DisplayActionSheetAsync("Куда вставить текст скана?", "Отмена", null, choices);
-        var index = Array.IndexOf(choices, selected);
-        if (index < 0)
-            return;
-
-        var target = fields[index];
-        if (!string.IsNullOrWhiteSpace(target.Input.Text) &&
-            !await Dialogs.ConfirmAsync("Заменить введённый текст?",
-                "Распознанный текст заменит текущее значение поля.", "Заменить"))
-            return;
-
-        if (_fields.Contains(target))
-            target.Input.Text = text;
+        bool IsCurrentTransfer() => ReferenceEquals(Shell.Current?.CurrentPage, this)
+            && ReferenceEquals(DraftStore.PendingOcrText, text);
     }
 
     protected override void OnDisappearing()
@@ -720,7 +769,7 @@ public partial class FieldsPage : ContentPage
         if (Shell.Current is { } shell)
         {
             shell.FlyoutBehavior = FlyoutBehavior.Locked;
-            shell.FlyoutWidth = Preferences.Get("rail_collapsed", false) ? 64 : 220;
+            shell.FlyoutWidth = global::GosTek.Views.AppTabBar.WindowsRailWidth;
         }
 #endif
         StopBuildPulse();
@@ -832,7 +881,7 @@ public partial class FieldsPage : ContentPage
         }
     }
 
-    // PDF: нативное сохранение документа в PDF через QuestPDF
+    // PDF: локальный экспорт через движок текущей платформы.
     private async void OnExportPdfTapped(object? sender, EventArgs e)
     {
         if (_template is null)
@@ -1421,7 +1470,7 @@ public partial class FieldsPage : ContentPage
             StrokeThickness = 0,
             StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(16, 16, 2, 16) }
         };
-        border.SetDynamicResource(VisualElement.BackgroundProperty, "BrandGreenGradient");
+        border.SetDynamicResource(VisualElement.BackgroundColorProperty, "ActionBg");
         border.Content = label;
 
         ChatMessagesStack.Children.Add(border);

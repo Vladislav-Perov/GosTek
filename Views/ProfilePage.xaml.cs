@@ -591,10 +591,42 @@ public partial class ProfilePage : ContentPage
         => FieldValidationHelper.Apply(f.Box, f.Error, ProfileRules.Validate(f.Field, f.Entry.Text));
 
     // ===== Прогресс заполнения =====
+    private bool? _completedBadgeStyle;
+
     private void UpdateProgress(bool animated)
     {
         var summary = ProfileRules.Summarize(ReadForm(normalize: false));
         ProgressHint.Text = summary.Hint;
+
+        void ApplyBadgeStyle(int percent)
+        {
+            bool isComplete = percent >= 100;
+            string title = isComplete ? "Профиль заполнен" : $"Заполнено на {percent}%";
+            string value = $"{percent}%";
+            if (ProgressTitle.Text != title)
+                ProgressTitle.Text = title;
+            if (ProgressBadgeLabel.Text != value)
+                ProgressBadgeLabel.Text = value;
+            if (_completedBadgeStyle == isComplete)
+                return;
+
+            _completedBadgeStyle = isComplete;
+            if (isComplete)
+            {
+                ProgressBadgeLabel.TextColor = Colors.White;
+                ProgressBadgeBorder.SetDynamicResource(VisualElement.BackgroundColorProperty, "ActionBg");
+                ProgressBadgeBorder.StrokeThickness = 0;
+            }
+            else
+            {
+                ProgressBadgeLabel.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
+                ProgressBadgeBorder.RemoveDynamicResource(VisualElement.BackgroundProperty);
+                ProgressBadgeBorder.ClearValue(VisualElement.BackgroundProperty);
+                ProgressBadgeBorder.SetDynamicResource(VisualElement.BackgroundColorProperty, "IconBoxBg");
+                ProgressBadgeBorder.SetDynamicResource(Border.StrokeProperty, "BrandGreen");
+                ProgressBadgeBorder.StrokeThickness = 1;
+            }
+        }
 
         if (animated)
         {
@@ -613,28 +645,24 @@ public partial class ProfilePage : ContentPage
                 var anim = new Animation(v =>
                 {
                     int current = (int)Math.Round(v);
-                    ProgressTitle.Text = $"Заполнено на {current}%";
-                    ProgressBadgeLabel.Text = $"{current}%";
+                    ApplyBadgeStyle(current);
                 }, startPercent, targetPercent, Easing.CubicInOut);
 
                 anim.Commit(this, "ProfilePercentCounter", 16, 1000, Easing.CubicInOut, (_, _) =>
                 {
-                    ProgressTitle.Text = $"Заполнено на {targetPercent}%";
-                    ProgressBadgeLabel.Text = $"{targetPercent}%";
+                    ApplyBadgeStyle(targetPercent);
                 });
             }
             else
             {
-                ProgressTitle.Text = $"Заполнено на {targetPercent}%";
-                ProgressBadgeLabel.Text = $"{targetPercent}%";
+                ApplyBadgeStyle(targetPercent);
             }
         }
         else
         {
             this.AbortAnimation("ProfilePercentCounter");
             FillProgress.Progress = summary.Progress;
-            ProgressTitle.Text = $"Заполнено на {summary.Percent}%";
-            ProgressBadgeLabel.Text = $"{summary.Percent}%";
+            ApplyBadgeStyle(summary.Percent);
         }
     }
 }

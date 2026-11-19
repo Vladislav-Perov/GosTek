@@ -6,6 +6,7 @@
  * ==============================================================================
  */
 using GosTek.Models;
+using GosTek.Services;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace GosTek.Views;
@@ -17,6 +18,11 @@ namespace GosTek.Views;
 /// </summary>
 public partial class SettingsPanel : ContentView
 {
+    private static readonly FilePickerFileType DocxFiles = new(new Dictionary<DevicePlatform, IEnumerable<string>>
+    {
+        [DevicePlatform.Android] = new[] { "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
+    });
+
     private const uint OpenMs = 200;
     private const uint CloseMs = 180;
 
@@ -45,10 +51,21 @@ public partial class SettingsPanel : ContentView
     {
         InitializeComponent();
 
+        Panel.HorizontalOptions = IsWindows ? LayoutOptions.End : LayoutOptions.Start;
+        Panel.SafeAreaEdges = new SafeAreaEdges(DeviceInfo.Platform == DevicePlatform.Android
+            ? SafeAreaRegions.Container
+            : SafeAreaRegions.None);
+        Panel.StrokeShape = new RoundRectangle
+        {
+            CornerRadius = IsWindows ? new CornerRadius(24, 0, 0, 24) : new CornerRadius(0, 24, 24, 0),
+        };
+        PanelShadow.Offset = new Point(IsWindows ? -6 : 6, 0);
+
         // Папку выбираем только на ПК; на Android она фиксированная
         FolderBlock.IsVisible = IsWindows;
         AndroidFolderBlock.IsVisible = !IsWindows;
         OpenTemplatesButton.IsVisible = IsWindows;   // на Android папка во внутренней памяти приложения
+        TemplatesFolderInfo.IsVisible = IsWindows;
 
         BuildSegment(NameHost,
             new[] { "Название шаблона", "Название + дата" },
@@ -87,8 +104,6 @@ public partial class SettingsPanel : ContentView
             if (IsVisible && !_animating)
                 UpdateWidth();
         };
-
-        SyncAll();
     }
 
     private void OnLoaded(object? sender, EventArgs e)
@@ -97,7 +112,6 @@ public partial class SettingsPanel : ContentView
         SettingsService.Changed += SyncAll;
         ThemeService.Changed -= SyncAll;
         ThemeService.Changed += SyncAll;
-        SyncAll();
     }
 
     private void OnUnloaded(object? sender, EventArgs e)
@@ -120,8 +134,9 @@ public partial class SettingsPanel : ContentView
             SyncAll();
             UpdateWidth();
 
+            double startX = IsWindows ? _panelWidth : -_panelWidth;
             Scrim.Opacity = 0;
-            Panel.TranslationX = -_panelWidth;
+            Panel.TranslationX = startX;
             IsVisible = true;
 
             await Task.WhenAll(
@@ -139,7 +154,7 @@ public partial class SettingsPanel : ContentView
 
         _animating = true;
         try {
-            double hideX = -_panelWidth;
+            double hideX = IsWindows ? _panelWidth : -_panelWidth;
             await Task.WhenAll(
                 Scrim.FadeToAsync(0, CloseMs, Easing.CubicIn),
                 Panel.TranslateToAsync(hideX, 0, CloseMs, Easing.CubicIn));
@@ -170,7 +185,7 @@ public partial class SettingsPanel : ContentView
         if (Scrim is not null)
             Scrim.Opacity = 0;
         if (Panel is not null)
-            Panel.TranslationX = -_panelWidth;
+            Panel.TranslationX = IsWindows ? _panelWidth : -_panelWidth;
 
         if (Parent is Layout parent)
         {
@@ -182,7 +197,7 @@ public partial class SettingsPanel : ContentView
 
     private void OnCloseTapped(object? sender, TappedEventArgs e) => _ = CloseAsync();
 
-    // ПК: треть окна в пределах 340–440 px. Телефон: 85% ширины (не больше 420)
+    // ПК: треть окна в пределах 360–440 px. Телефон: 88% ширины (не больше 380)
     private void UpdateWidth()
     {
         double total = Parent is VisualElement { Width: > 0 } parent
@@ -190,8 +205,8 @@ public partial class SettingsPanel : ContentView
             : DeviceDisplay.Current.MainDisplayInfo.Width / DeviceDisplay.Current.MainDisplayInfo.Density;
 
         double width = IsWindows
-            ? Math.Clamp(total / 3, 340, 440)
-            : Math.Min(total * 0.85, 420);
+            ? Math.Clamp(total / 3, 360, 440)
+            : Math.Min(total * 0.88, 380);
 
         _panelWidth = Math.Min(width, total * 0.95);
         Panel.WidthRequest = _panelWidth;
@@ -240,9 +255,14 @@ public partial class SettingsPanel : ContentView
             items.Add((box, text));
         }
 
+        int? previous = null;
         void Refresh()
         {
             int current = get();
+            if (current == previous)
+                return;
+
+            previous = current;
 
             for (int i = 0; i < items.Count; i++) {
                 bool on = i == current;
@@ -260,22 +280,26 @@ public partial class SettingsPanel : ContentView
         foreach (var sync in _syncs)
             sync();
 
-        FolderPathLabel.Text = SettingsService.SaveFolder;
-        ResetFolderButton.IsVisible = !SettingsService.IsDefaultFolder;
-        TemplatesPathLabel.Text = SettingsService.TemplatesFolder;
-        ResetTemplatesButton.IsVisible = !SettingsService.IsDefaultTemplatesFolder;
+        if (IsWindows)
+        {
+            FolderPathLabel.Text = SettingsService.SaveFolder;
+            ResetFolderButton.IsVisible = !SettingsService.IsDefaultFolder;
+            TemplatesPathLabel.Text = SettingsService.TemplatesFolder;
+        }
         AiConsentSwitch.IsToggled = SettingsService.TextGenerationConsentAccepted;
         AiMaskSilentSwitch.IsToggled = SettingsService.AiMaskAmbiguousSilent;
     }
 
     private void OnAiConsentToggled(object? sender, ToggledEventArgs e)
     {
-        SettingsService.TextGenerationConsentAccepted = e.Value;
+        if (SettingsService.TextGenerationConsentAccepted != e.Value)
+            SettingsService.TextGenerationConsentAccepted = e.Value;
     }
 
     private void OnAiMaskSilentToggled(object? sender, ToggledEventArgs e)
     {
-        SettingsService.AiMaskAmbiguousSilent = e.Value;
+        if (SettingsService.AiMaskAmbiguousSilent != e.Value)
+            SettingsService.AiMaskAmbiguousSilent = e.Value;
     }
 
     // =====================================================================
@@ -292,14 +316,38 @@ public partial class SettingsPanel : ContentView
     private void OnResetFolderTapped(object? sender, TappedEventArgs e)
         => SettingsService.SaveFolder = SettingsService.DefaultFolder;
 
-    // ===== Папка шаблонов =====
-    private async void OnPickTemplatesTapped(object? sender, TappedEventArgs e)
+    private async void OnImportClicked(object? sender, EventArgs e)
     {
-        var path = await PickFolderAsync();
-        if (path is not null)
-            SettingsService.TemplatesFolder = path;
+        ImportButton.IsEnabled = false;
+        try
+        {
+            var file = await FilePicker.Default.PickAsync(new PickOptions
+            {
+                PickerTitle = "Добавить шаблон Word",
+                FileTypes = DocxFiles
+            });
+            if (file is null)
+                return;
+
+            await using var source = await file.OpenReadAsync();
+            await TemplateImport.SaveAsync(SettingsService.TemplatesFolder, file.FileName, source);
+            TemplateCatalog.Refresh();
+            await Alert("Шаблон добавлен", "Документ доступен в разделе «Шаблоны».", DialogKind.Success);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex);
+            await Dialogs.AlertAsync("Не удалось добавить шаблон",
+                "Выберите доступный файл Word (.docx). Проверьте, что в папку шаблонов можно сохранять файлы.",
+                DialogKind.Danger);
+        }
+        finally
+        {
+            ImportButton.IsEnabled = true;
+        }
     }
 
+    // ===== Папка шаблонов =====
     private async void OnOpenTemplatesTapped(object? sender, TappedEventArgs e)
     {
 #if WINDOWS
@@ -314,9 +362,6 @@ public partial class SettingsPanel : ContentView
         await Task.CompletedTask;
 #endif
     }
-
-    private void OnResetTemplatesTapped(object? sender, TappedEventArgs e)
-        => SettingsService.TemplatesFolder = SettingsService.DefaultTemplatesFolder;
 
     // Выбор папки (только Windows)
     private async Task<string?> PickFolderAsync()
@@ -397,13 +442,30 @@ public partial class SettingsPanel : ContentView
     //  О ПРИЛОЖЕНИИ
     // =====================================================================
 
+    private async void OnSectionClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button button)
+            return;
+
+        var section = (button.CommandParameter as string) switch
+        {
+            "templates" => TemplatesSection,
+            "save" => SaveSection,
+            "theme" => ThemeSection,
+            "about" => AboutSection,
+            _ => null
+        };
+        if (section is not null)
+            await SettingsScroll.ScrollToAsync(section, ScrollToPosition.Start, animated: true);
+    }
+
     private async void OnHelpTapped(object? sender, TappedEventArgs e)
     {
-        await Alert("Как пользоваться",
+        await Alert($"GosTek · {AppInfo.Current.VersionString}",
             "1. Заполните «Мой профиль»: данные подставятся в документы.\n" +
             "2. Выберите шаблон и заполните поля.\n" +
             "3. Нажмите «Собрать документ» и сохраните файл Word.\n\n" +
-            "Всё хранится только на вашем устройстве.");
+            "Генерация текста отправляет сообщение из чата в облако с вашего согласия.");
     }
 
     // =====================================================================

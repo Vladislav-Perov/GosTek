@@ -36,8 +36,7 @@
     <Style TargetType="Editor">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
-        <Setter Property="FontFamily" Value="PTSansRegular"/>
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontSize" Value="16" />
         <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray500}}" />
         <Setter Property="MinimumHeightRequest" Value="44"/>
         <Setter Property="MinimumWidthRequest" Value="44"/>
@@ -58,8 +57,7 @@
     <Style TargetType="Entry">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
-        <Setter Property="FontFamily" Value="PTSansRegular"/>
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontSize" Value="16" />
         <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray500}}" />
         <Setter Property="MinimumHeightRequest" Value="44"/>
         <Setter Property="MinimumWidthRequest" Value="44"/>
@@ -80,8 +78,7 @@
     <Style TargetType="Label">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
-        <Setter Property="FontFamily" Value="PTSansRegular" />
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontSize" Value="16" />
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
                 <VisualStateGroup x:Name="CommonStates">
@@ -97,7 +94,7 @@
     </Style>
 
     <Style TargetType="ProgressBar">
-        <Setter Property="ProgressColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
+        <Setter Property="ProgressColor" Value="{AppThemeBinding Light={StaticResource BrandGreen}, Dark={StaticResource BrandGreen}}" />
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
                 <VisualStateGroup x:Name="CommonStates">
@@ -105,6 +102,30 @@
                     <VisualState x:Name="Disabled">
                         <VisualState.Setters>
                             <Setter Property="ProgressColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <!-- Общий стиль нативных кнопок -->
+    <Style TargetType="Button">
+        <Setter Property="TextColor" Value="{DynamicResource BrandGreen}" />
+        <Setter Property="BackgroundColor" Value="{DynamicResource IconBoxBg}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="14, 8" />
+        <Setter Property="MinimumHeightRequest" Value="38" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="TextColor" Value="{DynamicResource TextSecondary}" />
+                            <Setter Property="BackgroundColor" Value="{DynamicResource CardStroke}" />
                         </VisualState.Setters>
                     </VisualState>
                 </VisualStateGroup>
@@ -144,14 +165,12 @@
                         <VisualState.Setters>
                             <Setter Property="BackgroundColor" Value="{DynamicResource CardBg}" />
                             <Setter Property="Stroke" Value="{DynamicResource CardStroke}" />
-                            <Setter Property="Scale" Value="1" />
                         </VisualState.Setters>
                     </VisualState>
                     <VisualState Name="PointerOver">
                         <VisualState.Setters>
                             <Setter Property="BackgroundColor" Value="{DynamicResource CardHoverBg}" />
                             <Setter Property="Stroke" Value="{DynamicResource AccentGreen}" />
-                            <Setter Property="Scale" Value="1.02" />
                         </VisualState.Setters>
                     </VisualState>
                 </VisualStateGroup>
@@ -159,21 +178,19 @@
         </Setter>
     </Style>
 
-    <!-- Зелёная кнопка / карточка -->
+    <!-- Основное действие -->
     <Style TargetType="Border" Class="HoverGreen">
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
                 <VisualStateGroup Name="CommonStates">
                     <VisualState Name="Normal">
                         <VisualState.Setters>
-                            <Setter Property="BackgroundColor" Value="{DynamicResource AccentGreen}" />
-                            <Setter Property="Scale" Value="1" />
+                            <Setter Property="BackgroundColor" Value="{DynamicResource ActionBg}" />
                         </VisualState.Setters>
                     </VisualState>
                     <VisualState Name="PointerOver">
                         <VisualState.Setters>
-                            <Setter Property="BackgroundColor" Value="#4FE3AF" />
-                            <Setter Property="Scale" Value="1.02" />
+                            <Setter Property="BackgroundColor" Value="{DynamicResource ActionHoverBg}" />
                         </VisualState.Setters>
                     </VisualState>
                 </VisualStateGroup>
@@ -208,7 +225,7 @@
 
     <Style TargetType="Label" Class="FieldLabel">
         <Setter Property="TextColor" Value="{DynamicResource TextSecondary}" />
-        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontSize" Value="15" />
         <Setter Property="FontAttributes" Value="Bold" />
     </Style>
 

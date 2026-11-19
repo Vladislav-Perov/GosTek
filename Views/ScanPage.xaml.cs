@@ -752,15 +752,15 @@ public partial class ScanPage : ContentPage
                 MrzStatusBadge.IsVisible = true;
                 if (data.IsValid)
                 {
-                    MrzStatusBadge.BackgroundColor = Color.FromArgb("#1510B981");
-                    MrzStatusLabel.TextColor = Color.FromArgb("#10B981");
-                    MrzStatusLabel.Text = "✓ ICAO 9303 MRZ проверена";
+                    MrzStatusBadge.SetDynamicResource(VisualElement.BackgroundColorProperty, "IconBoxBg");
+                    MrzStatusLabel.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
+                    MrzStatusLabel.Text = "MRZ проверена · ICAO 9303";
                 }
                 else
                 {
-                    MrzStatusBadge.BackgroundColor = Color.FromArgb("#15F59E0B");
-                    MrzStatusLabel.TextColor = Color.FromArgb("#F59E0B");
-                    MrzStatusLabel.Text = "⚠ Контрольная сумма не сошлась";
+                    MrzStatusBadge.SetDynamicResource(VisualElement.BackgroundColorProperty, "WarnSoftBg");
+                    MrzStatusLabel.SetDynamicResource(Label.TextColorProperty, "WarnColor");
+                    MrzStatusLabel.Text = "Контрольная сумма не сошлась";
                 }
             }
             else
@@ -1035,11 +1035,11 @@ public partial class ScanPage : ContentPage
                 "Документ по ГОСТ сформирован!",
                 "Отмена",
                 null,
-                "📄 Открыть в Word / Офисе",
-                "📤 Поделиться файлом",
-                "📁 Скопировать путь к файлу");
+                "Открыть в Word / Офисе",
+                "Поделиться файлом",
+                "Скопировать путь к файлу");
 
-            if (choice == "📄 Открыть в Word / Офисе")
+            if (choice == "Открыть в Word / Офисе")
             {
                 await Launcher.Default.OpenAsync(new OpenFileRequest
                 {
@@ -1047,7 +1047,7 @@ public partial class ScanPage : ContentPage
                     File = new ReadOnlyFile(targetPath)
                 });
             }
-            else if (choice == "📤 Поделиться файлом")
+            else if (choice == "Поделиться файлом")
             {
                 await Share.Default.RequestAsync(new ShareFileRequest
                 {
@@ -1055,7 +1055,7 @@ public partial class ScanPage : ContentPage
                     File = new ShareFile(targetPath)
                 });
             }
-            else if (choice == "📁 Скопировать путь к файлу")
+            else if (choice == "Скопировать путь к файлу")
             {
                 await Clipboard.Default.SetTextAsync(targetPath);
                 Toast.Show("Путь к файлу скопирован", "copy");
@@ -1138,7 +1138,7 @@ public partial class ScanPage : ContentPage
         await Clipboard.Default.SetTextAsync(RawTextEditor.Text ?? "");
 
         int version = ++_copyVersion;
-        CopyLabel.Text = "Скопировано ✓";
+        CopyLabel.Text = "Скопировано";
 
         await Task.Delay(1500);
         if (version == _copyVersion)
@@ -1179,7 +1179,7 @@ public partial class ScanPage : ContentPage
 
             // Ищем созданный шаблон в обновленном каталоге и сразу открываем его
             var createdTemplate = TemplateCatalog.Items.FirstOrDefault(t =>
-                string.Equals(t.Title, result.Title, StringComparison.OrdinalIgnoreCase));
+                string.Equals(TemplateCatalog.Find(t.Id)?.FilePath, result.FilePath, StringComparison.Ordinal));
             if (createdTemplate != null)
             {
                 await TemplatesPage.OpenAsync(createdTemplate);
@@ -1200,7 +1200,14 @@ public partial class ScanPage : ContentPage
     private async void OnApplyToTemplateTapped(object? sender, TappedEventArgs e)
     {
         HapticHelper.Click();
-        DraftStore.PendingOcrText = RawTextEditor.Text;
+        var text = RawTextEditor.Text;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            Toast.Show("Текст документа пуст", "alert");
+            return;
+        }
+
+        DraftStore.PendingOcrText = text;
         Toast.Show("Текст готов для вставки в шаблон", "filetext");
         await Shell.Current.GoToAsync("//TemplatesPage");
     }
