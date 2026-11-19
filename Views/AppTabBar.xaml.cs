@@ -281,12 +281,21 @@ public partial class AppTabBar : ContentView
             bool active = key == ActiveTab;
             bool hover = key == _hoveredKey;
 
+            if (isRail)
+            {
+                border.SetDynamicResource(VisualElement.BackgroundProperty,
+                    active ? "RailSelectedBrush" : hover ? "RailHoverBrush" : "RailIdleBrush");
+                var railText = active ? "RailSelectedText" : hover ? "TextPrimary" : "TextSecondary";
+                icon.IconColor = railText;
+                label.SetDynamicResource(Label.TextColorProperty, railText);
+                continue;
+            }
+
             if (active)
             {
-                border.SetDynamicResource(VisualElement.BackgroundColorProperty, isRail ? "RailSelectedBg" : "TabActiveBg");
-                var foreground = isRail ? "RailSelectedText" : "BrandGreen";
-                icon.IconColor = foreground;
-                label.SetDynamicResource(Label.TextColorProperty, foreground);
+                border.SetDynamicResource(VisualElement.BackgroundColorProperty, "TabActiveBg");
+                icon.IconColor = "BrandGreen";
+                label.SetDynamicResource(Label.TextColorProperty, "BrandGreen");
             }
             else if (hover)
             {

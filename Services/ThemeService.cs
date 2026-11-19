@@ -29,7 +29,6 @@ public static class ThemeService
 
     // Ключ ресурса, цвет в тёмной теме, цвет в светлой
     private static readonly (string Key, string Dark, string Light)[] Palette = {
-        ("RailSelectedBg", "#A9C4E8", "#203C62"),
         ("RailSelectedText", "#132940", "#FFFFFF"),
         ("PageBg",        "#161F2C", "#F2F5F8"),
         ("CardBg",        "#202C3B", "#FFFFFF"),
@@ -181,6 +180,8 @@ public static class ThemeService
 
         foreach (var (key, dark, light) in Palette)
             app.Resources[key] = Color.FromArgb(IsDark ? dark : light);
+        app.Resources["RailSelectedBrush"] = new SolidColorBrush(Color.FromArgb(IsDark ? "#A9C4E8" : "#203C62"));
+        app.Resources["RailHoverBrush"] = new SolidColorBrush((Color)app.Resources["CardHoverBg"]);
 
         foreach (var window in app.Windows)
         {
