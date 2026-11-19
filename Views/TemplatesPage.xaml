@@ -85,7 +85,7 @@
                     </Grid>
                 </Border>
 
-                <!-- Фильтр категорий (включая чип ⭐ Избранное) -->
+                <!-- Фильтр категорий (включая чип «Избранное») -->
                 <controls:ChipBar x:Name="CategoryChips" ShowArrows="True" Margin="0, 2, 0, 2" />
 
                 <!-- Скелетон загрузки каталога (Shimmer Effect) -->

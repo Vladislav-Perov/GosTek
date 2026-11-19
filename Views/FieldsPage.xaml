@@ -367,12 +367,7 @@
                             <Border.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnExportCloseTapped" />
                             </Border.GestureRecognizers>
-                            <Label Text="✕"
-                                   FontSize="14"
-                                   FontAttributes="Bold"
-                                   TextColor="{DynamicResource TextPrimary}"
-                                   HorizontalOptions="Center"
-                                   VerticalOptions="Center" />
+                            <vctrl:IconView Icon="close" Size="16" />
                         </Border>
                     </Grid>
 
@@ -524,12 +519,7 @@
                             <Border.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnCloseChatTapped" />
                             </Border.GestureRecognizers>
-                            <Label Text="✕"
-                                   FontSize="14"
-                                   FontAttributes="Bold"
-                                   TextColor="{DynamicResource TextPrimary}"
-                                   HorizontalOptions="Center"
-                                   VerticalOptions="Center" />
+                            <vctrl:IconView Icon="close" Size="16" />
                         </Border>
                     </Grid>
 
@@ -569,7 +559,7 @@
                                    Text="Отмена"
                                    FontSize="12"
                                    FontAttributes="Bold"
-                                   TextColor="#EF4444"
+                                   TextColor="{DynamicResource BadColor}"
                                    VerticalOptions="Center">
                                 <Label.GestureRecognizers>
                                     <TapGestureRecognizer Tapped="OnCancelChatRequestTapped" />

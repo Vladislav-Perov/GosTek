@@ -92,13 +92,7 @@
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnCloseTapped" />
                         </Border.GestureRecognizers>
-                        <Label Text="✕"
-                               FontSize="14"
-                               FontAttributes="Bold"
-                               TextColor="{DynamicResource TextPrimary}"
-                               HorizontalOptions="Center"
-                               VerticalOptions="Center"
-                               InputTransparent="True" />
+                        <vctrl:IconView Icon="close" Size="16" />
                     </Border>
                 </Grid>
 
@@ -511,14 +505,14 @@
                                         </Border.GestureRecognizers>
                                         <HorizontalStackLayout HorizontalOptions="Center" Spacing="8" InputTransparent="True">
                                             <vctrl:IconView Icon="trash"
-                                                            IconColor="#EF4444"
+                                                            IconColor="BadColor"
                                                             Size="14"
                                                             VerticalOptions="Center"
                                                             InputTransparent="True" />
                                             <Label Text="Удалить профиль"
                                                    FontSize="13"
                                                    FontAttributes="Bold"
-                                                   TextColor="#EF4444"
+                                                   TextColor="{DynamicResource BadColor}"
                                                    VerticalOptions="Center"
                                                    InputTransparent="True" />
                                         </HorizontalStackLayout>
@@ -536,14 +530,14 @@
                                         </Border.GestureRecognizers>
                                         <HorizontalStackLayout HorizontalOptions="Center" Spacing="8" InputTransparent="True">
                                             <vctrl:IconView Icon="alerttriangle"
-                                                            IconColor="#EF4444"
+                                                            IconColor="BadColor"
                                                             Size="14"
                                                             VerticalOptions="Center"
                                                             InputTransparent="True" />
                                             <Label Text="Сбросить все данные приложения"
                                                    FontSize="13"
                                                    FontAttributes="Bold"
-                                                   TextColor="#EF4444"
+                                                   TextColor="{DynamicResource BadColor}"
                                                    VerticalOptions="Center"
                                                    InputTransparent="True" />
                                         </HorizontalStackLayout>

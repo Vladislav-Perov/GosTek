@@ -601,7 +601,7 @@ public partial class ProfilePage : ContentPage
         void ApplyBadgeStyle(int percent)
         {
             bool isComplete = percent >= 100;
-            string title = isComplete ? "Профиль заполнен ✓" : $"Заполнено на {percent}%";
+            string title = isComplete ? "Профиль заполнен" : $"Заполнено на {percent}%";
             string value = $"{percent}%";
             if (ProgressTitle.Text != title)
                 ProgressTitle.Text = title;

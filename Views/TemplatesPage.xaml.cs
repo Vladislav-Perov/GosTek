@@ -17,7 +17,7 @@ public partial class TemplatesPage : ContentPage
     private const string RecentKey = "recent_templates";
     private const int RecentMax = 3;
 
-    private const string FavoritesChipTitle = "⭐ Избранное";
+    private const string FavoritesChipTitle = "Избранное";
     private bool _isFavoriteFilter;
 
     private string? _category;   // null = «Все» (или режим «Избранное»)
@@ -166,7 +166,7 @@ public partial class TemplatesPage : ContentPage
         CategoryChips.SetItems(titles, selected);
     }
 
-    // Выбрали чип: 0 = «Все», 1 = «⭐ Избранное», дальше категории по алфавиту
+    // Выбрали чип: 0 = «Все», 1 = «Избранное», дальше категории по алфавиту
     private void OnCategoryChanged(object? sender, int index)
     {
         HapticHelper.Click();
@@ -252,7 +252,7 @@ public partial class TemplatesPage : ContentPage
 
     private void UpdateRowsState(Layout layout, IReadOnlyList<string> favIds, string query)
     {
-        var highlightColor = ThemeService.IsDark ? Color.FromArgb("#3FC3A1") : Color.FromArgb("#0D6B57");
+        var highlightColor = (Color)Application.Current!.Resources["BrandGreen"];
         foreach (var child in layout.Children)
         {
             if (child is ListRow row && row.BindingContext is TemplateItem item)

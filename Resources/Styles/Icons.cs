@@ -25,7 +25,7 @@ public static class Icons
     public const string StarFilled = "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z";
     public const string Trash = "M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6";
     public const string Eye = "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z";
-    public const string Sparkles = "M12 3v3m0 12v3m9-9h-3M6 12H3m15.364-6.364l-2.121 2.121M7.757 16.243l-2.121 2.121m12.728 0l-2.121-2.121M7.757 7.757L5.636 5.636";
+    public const string Sparkles = "M10 3l1.9 5.1L17 10l-5.1 1.9L10 17l-1.9-5.1L3 10l5.1-1.9L10 3z M19 13v8m-4-4h8 M19 3v4m-2-2h4";
     public const string User = "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z";
     public const string Bulb = "M9 18h6m-4 4h2m4-12a6 6 0 1 0-10 0c0 2.5 2 4 2 6h4c0-2 2-3.5 2-6z";
     public const string Info = "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 16v-4 M12 8h.01";
@@ -41,6 +41,11 @@ public static class Icons
     public const string Maximize = "M15 3h6v6 M9 21H3v-6 M21 3l-7 7 M3 21l7-7";
     public const string Minimize = "M4 14h6v6 M20 10h-6V4 M14 10l7-7 M10 14l-7 7";
     public const string Search = "M21 21l-4.35-4.35M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0z";
+    public const string Close = "M6 6l12 12M18 6 6 18";
+    public const string Table = "M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M3 9h18 M3 14h18 M10 9v11";
+    public const string Code = "M8 6l-6 6 6 6 M16 6l6 6-6 6 M14 4l-4 16";
+    public const string ZoomIn = Search + " M6.5 10h7 M10 6.5v7";
+    public const string ZoomOut = Search + " M6.5 10h7";
     public const string ChevronDown = "M6 9l6 6 6-6";
     public const string ChevronUp = "M18 15l-6-6-6 6";
     public const string ChevronRight = "M9 18l6-6-6-6";
@@ -93,6 +98,11 @@ public static class Icons
             "maximize" or "expand" or "fullscreen" => Maximize,
             "minimize" or "restore" or "compress" => Minimize,
             "search" or "🔍" => Search,
+            "close" => Close,
+            "table" => Table,
+            "code" => Code,
+            "zoomin" => ZoomIn,
+            "zoomout" => ZoomOut,
             "chevrondown" or "chevron_down" => ChevronDown,
             "chevronup" or "chevron_up" => ChevronUp,
             "chevronright" or "chevron_right" => ChevronRight,

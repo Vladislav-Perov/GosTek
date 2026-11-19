@@ -286,7 +286,7 @@
                                 IsVisible="{Binding HasFixableIssues}"
                                 StyleClass="HoverGreen"
                                 StrokeThickness="0"
-                                BackgroundColor="{DynamicResource BrandGreen}"
+                                BackgroundColor="{DynamicResource ActionBg}"
                                 StrokeShape="RoundRectangle 10"
                                 Padding="14, 7"
                                 VerticalOptions="Center">
@@ -420,7 +420,7 @@
                                                 <Border IsVisible="{Binding CanFix}"
                                                         StyleClass="HoverGreen"
                                                         StrokeThickness="0"
-                                                        BackgroundColor="{DynamicResource BrandGreen}"
+                                                        BackgroundColor="{DynamicResource ActionBg}"
                                                         StrokeShape="RoundRectangle 8"
                                                         Padding="14, 5"
                                                         VerticalOptions="Center">
@@ -491,7 +491,7 @@
                                                                     <Border IsVisible="{Binding CanFix}"
                                                                             StyleClass="HoverGreen"
                                                                             StrokeThickness="0"
-                                                                            BackgroundColor="{DynamicResource BrandGreen}"
+                                                                            BackgroundColor="{DynamicResource ActionBg}"
                                                                             StrokeShape="RoundRectangle 6"
                                                                             Padding="10, 4"
                                                                             VerticalOptions="Center">

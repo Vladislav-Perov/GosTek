@@ -1,6 +1,6 @@
 /*
  * ==============================================================================
- * НАЗНАЧЕНИЕ: Управление динамическим переключением светлой/тёмной (Slate Dark)/системной тем оформления и градиентов
+ * НАЗНАЧЕНИЕ: Управление динамическим переключением светлой/тёмной/системной тем оформления и градиентов
  * СОДЕРЖИМОЕ: ThemeService, ThemeMode
  * ЗАВИСИМОСТИ: Microsoft.Maui.Controls, GosTek.SettingsService
  * ==============================================================================
@@ -24,30 +24,31 @@ public static class ThemeService
     /// <summary>Сейчас на экране тёмная тема (с учётом режима).</summary>
     public static bool IsDark { get; private set; } = true;
 
-    /// <summary>Тема переключена. На это событие подписан ThemeToggle.</summary>
+    /// <summary>Тема оформления изменилась.</summary>
     public static event Action? Changed;
 
-    // Ключ ресурса, цвет в тёмной теме (Slate Dark), цвет в светлой
+    // Ключ ресурса, цвет в тёмной теме, цвет в светлой
     private static readonly (string Key, string Dark, string Light)[] Palette = {
-        ("PageBg",        "#0F172A", "#F6F4EE"),
-        ("CardBg",        "#1E293B", "#FFFFFF"),
-        ("CardHoverBg",   "#334155", "#EFEBE0"),
-        ("CardStroke",    "#334155", "#E2DED2"),
-        ("TextPrimary",   "#F8FAFC", "#16213A"),
-        ("TextSecondary", "#94A3B8", "#5A6479"),
-        ("BrandGreen",    "#2DD4BF", "#0D6B57"),
-        ("AccentGreen",   "#2DD4BF", "#0D6B57"),
-        ("Divider",       "#334155", "#E2DED2"),
-        ("IconBoxBg",     "#134E4A", "#DCEFE9"),
-        ("TabBarBg",      "#0F172A", "#FFFFFF"),
-        ("TabActiveBg",   "#134E4A", "#DCEFE9"),
-        ("ToggleTrackBg", "#334155", "#D6D1C3"),
+        ("PageBg",        "#121B1C", "#F4F7F5"),
+        ("CardBg",        "#1B2829", "#FFFFFF"),
+        ("CardHoverBg",   "#344846", "#E8F0EC"),
+        ("CardStroke",    "#344846", "#D5E0DB"),
+        ("TextPrimary",   "#EDF5F1", "#172823"),
+        ("TextSecondary", "#A9BBB5", "#49605A"),
+        ("BrandGreen",    "#69D6B6", "#14634F"),
+        ("AccentGreen",   "#69D6B6", "#14634F"),
+        ("ActionBg",      "#17664F", "#14634F"),
+        ("Divider",       "#344846", "#D5E0DB"),
+        ("IconBoxBg",     "#23483D", "#DCEFE7"),
+        ("TabBarBg",      "#121B1C", "#FFFFFF"),
+        ("TabActiveBg",   "#23483D", "#DCEFE7"),
+        ("ToggleTrackBg", "#344846", "#C5D5CF"),
 
         // Экран «Проверка»: важное замечание (красный), желательное (жёлтый) и их мягкие фоны
-        ("BadColor",      "#F87171", "#B42318"),
-        ("BadSoftBg",     "#450A0A", "#FBE5E2"),
-        ("WarnColor",     "#FBBF24", "#9A5B00"),
-        ("WarnSoftBg",    "#451A03", "#FCEFD6"),
+        ("BadColor",      "#FFABA4", "#B42318"),
+        ("BadSoftBg",     "#4A2625", "#FBE5E2"),
+        ("WarnColor",     "#F1C778", "#805003"),
+        ("WarnSoftBg",    "#453720", "#FCEFD6"),
     };
 
     // Вызвать один раз при старте приложения
@@ -98,9 +99,6 @@ public static class ThemeService
             }
         }
     }
-
-    /// <summary>Переключить светлую и тёмную темы.</summary>
-    public static void Toggle() => SetMode(IsDark ? ThemeMode.Light : ThemeMode.Dark);
 
     /// <summary>Применить системную тему нативной платформы (WinUI ElementTheme на Windows).</summary>
     public static void ApplyPlatformTheme(Window? window = null)
@@ -188,8 +186,8 @@ public static class ThemeService
             EndPoint = new Point(1, 1),
             GradientStops = new GradientStopCollection
             {
-                new GradientStop(Color.FromArgb(IsDark ? "#0F766E" : "#0D6B57"), 0.0f),
-                new GradientStop(Color.FromArgb(IsDark ? "#2DD4BF" : "#14B8A6"), 1.0f),
+                new GradientStop(Color.FromArgb(IsDark ? "#104C3D" : "#14634F"), 0.0f),
+                new GradientStop(Color.FromArgb("#17664F"), 1.0f),
             },
         };
         app.Resources["BrandGreenGradient"] = brandGradient;
@@ -200,8 +198,8 @@ public static class ThemeService
             Radius = 0.9,
             GradientStops = new GradientStopCollection
             {
-                new GradientStop(Color.FromArgb(IsDark ? "#1E293B" : "#FFFFFF"), 0.0f),
-                new GradientStop(Color.FromArgb(IsDark ? "#0F172A" : "#F6F4EE"), 1.0f),
+                new GradientStop((Color)app.Resources["CardBg"], 0.0f),
+                new GradientStop((Color)app.Resources["PageBg"], 1.0f),
             },
         };
         app.Resources["MainPageBackgroundBrush"] = mainRadial;
@@ -209,7 +207,7 @@ public static class ThemeService
         foreach (var window in app.Windows)
         {
             if (window.Page is { } page)
-                page.BackgroundColor = Color.FromArgb(IsDark ? "#0F172A" : "#F6F4EE");
+                page.SetDynamicResource(VisualElement.BackgroundColorProperty, "PageBg");
 
             ApplyPlatformTheme(window);
         }

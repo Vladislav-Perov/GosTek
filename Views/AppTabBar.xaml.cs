@@ -321,13 +321,6 @@ public partial class AppTabBar : ContentView
 #endif
     }
 
-    private void OnCompactThemeClicked(object? sender, EventArgs e)
-    {
-        HapticHelper.Click();
-        ThemeService.Toggle();
-        CompactThemeIcon.Icon = ThemeService.IsDark ? "sun" : "moon";
-    }
-
     private void ApplyRailCollapsedState(bool animate)
     {
         bool collapsed = s_isRailCollapsed;
@@ -383,9 +376,6 @@ public partial class AppTabBar : ContentView
             WindowsSettingsButton.Padding = new Thickness(0);
             WindowsSettingsButton.HorizontalOptions = LayoutOptions.Center;
 
-            WindowsThemeRow.IsVisible = false;
-            WindowsCompactThemeBtn.IsVisible = true;
-            CompactThemeIcon.Icon = ThemeService.IsDark ? "sun" : "moon";
         }
         else
         {
@@ -437,8 +427,6 @@ public partial class AppTabBar : ContentView
             WindowsSettingsButton.Padding = new Thickness(12, 10);
             WindowsSettingsButton.HorizontalOptions = LayoutOptions.Fill;
 
-            WindowsThemeRow.IsVisible = true;
-            WindowsCompactThemeBtn.IsVisible = false;
         }
 
         WindowsRail.ClearValue(VisualElement.WidthRequestProperty);

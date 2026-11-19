@@ -81,7 +81,7 @@
                     <Grid ColumnDefinitions="*, *" ColumnSpacing="6">
                         <Border x:Name="TabSettingsBtn"
                                 Grid.Column="0"
-                                BackgroundColor="{DynamicResource BrandGreen}"
+                                BackgroundColor="{DynamicResource ActionBg}"
                                 StrokeThickness="0"
                                 StrokeShape="RoundRectangle 10"
                                 Padding="10, 8">
@@ -331,7 +331,7 @@
                             <VerticalStackLayout Spacing="14">
                                 <!-- Шапка карточки таблиц -->
                                 <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="10" VerticalOptions="Center">
-                                    <Label Grid.Column="0" Text="📊" FontSize="18" VerticalOptions="Center" />
+                                    <vctrl:IconView Grid.Column="0" Icon="table" Size="18" IconColor="BrandGreen" />
                                     <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                         <Label Text="Оформление таблиц" FontSize="15.5" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
                                         <Label Text="Шрифт, кегль и межстрочный интервал в ячейках таблиц" FontSize="12" TextColor="{DynamicResource TextSecondary}" />
@@ -460,7 +460,7 @@
                             <VerticalStackLayout Spacing="14">
                                 <!-- Шапка карточки рисунков -->
                                 <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="10" VerticalOptions="Center">
-                                    <Label Grid.Column="0" Text="🖼️" FontSize="18" VerticalOptions="Center" />
+                                    <vctrl:IconView Grid.Column="0" Icon="image" Size="18" IconColor="BrandGreen" />
                                     <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                         <Label Text="Рисунки и подписи" FontSize="15.5" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
                                         <Label Text="Выравнивание иллюстраций, подписи и отступы ГОСТ" FontSize="12" TextColor="{DynamicResource TextSecondary}" />
@@ -576,7 +576,7 @@
                             <VerticalStackLayout Spacing="14">
                                 <!-- Шапка карточки кода -->
                                 <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="10" VerticalOptions="Center">
-                                    <Label Grid.Column="0" Text="💻" FontSize="18" VerticalOptions="Center" />
+                                    <vctrl:IconView Grid.Column="0" Icon="code" Size="18" IconColor="BrandGreen" />
                                     <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                         <Label Text="Листинги программного кода" FontSize="15.5" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
                                         <Label Text="Моноширинный шрифт, кегль, компактный интервал" FontSize="12" TextColor="{DynamicResource TextSecondary}" />
@@ -645,7 +645,7 @@
                             <VerticalStackLayout Spacing="14">
                                 <!-- Шапка карточки заголовков -->
                                 <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="10" VerticalOptions="Center">
-                                    <Label Grid.Column="0" Text="📑" FontSize="18" VerticalOptions="Center" />
+                                    <vctrl:IconView Grid.Column="0" Icon="file" Size="18" IconColor="BrandGreen" />
                                     <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                         <Label Text="Оформление заголовков" FontSize="15.5" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" />
                                         <Label Text="Шрифт, кегль, выравнивание, отступы и правила разделов" FontSize="12" TextColor="{DynamicResource TextSecondary}" />
@@ -819,7 +819,7 @@
                                     <Border.GestureRecognizers>
                                         <TapGestureRecognizer Tapped="OnZoomOutTapped" />
                                     </Border.GestureRecognizers>
-                                    <Label Text="🔍−" FontSize="13" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" VerticalOptions="Center" />
+                                    <vctrl:IconView Icon="zoomout" Size="16" />
                                 </Border>
 
                                 <Border BackgroundColor="{DynamicResource IconBoxBg}"
@@ -845,7 +845,7 @@
                                     <Border.GestureRecognizers>
                                         <TapGestureRecognizer Tapped="OnZoomInTapped" />
                                     </Border.GestureRecognizers>
-                                    <Label Text="🔍+" FontSize="13" FontAttributes="Bold" TextColor="{DynamicResource TextPrimary}" VerticalOptions="Center" />
+                                    <vctrl:IconView Icon="zoomin" Size="16" />
                                 </Border>
                             </HorizontalStackLayout>
                         </Grid>

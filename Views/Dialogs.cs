@@ -6,6 +6,7 @@
  * ==============================================================================
  */
 using Microsoft.Maui.Controls.Shapes;
+using GosTek.Resources.Styles;
 
 namespace GosTek.Views;
 
@@ -108,10 +109,10 @@ public static class Dialogs
         var phone = (page.Width > 0 ? page.Width : 400) < PhoneMaxWidth;
         var dark = ThemeService.IsDark;
 
-        var cardBg = Res("CardBg", dark ? "#151A23" : "#FFFFFF");
-        var stroke = Res("CardStroke", dark ? "#2A3142" : "#E2DED2");
-        var textPrimary = Res("TextPrimary", dark ? "#E8ECF4" : "#16213A");
-        var textSecondary = Res("TextSecondary", dark ? "#8A94AA" : "#5A6479");
+        var cardBg = Res("CardBg", dark ? "#1B2829" : "#FFFFFF");
+        var stroke = Res("CardStroke", dark ? "#344846" : "#D5E0DB");
+        var textPrimary = Res("TextPrimary", dark ? "#EDF5F1" : "#172823");
+        var textSecondary = Res("TextSecondary", dark ? "#A9BBB5" : "#49605A");
         var (iconBg, iconFg, glyph) = IconStyle(kind, dark);
 
         var tcs = new TaskCompletionSource<int>();
@@ -341,7 +342,7 @@ public static class Dialogs
         switch (button.Style)
         {
             case DialogButtonStyle.Primary:
-                bg = Res("BrandGreen", dark ? "#3FC3A1" : "#0D6B57");
+                bg = Res("ActionBg", dark ? "#17664F" : "#14634F");
                 fg = Colors.White;
                 break;
             case DialogButtonStyle.Danger:
@@ -388,22 +389,15 @@ public static class Dialogs
         return box;
     }
 
-    // Значки как в макете (Tabler, сетка 24x24, линия 2px)
-    private const string IconAlert = "M12 9v4M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0zM12 16h0.01";
-    private const string IconTrash = "M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3";
-    private const string IconCheck = "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M9 12l2 2l4 -4";
-    private const string IconSave = "M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2M10 14a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M14 4v4h-6v-4";
-    private const string IconInfo = "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M12 9h0.01M11 12h1v4h1";
-
     // Цвет плашки, цвет значка и контур значка для каждого смысла окна
     private static (Color Bg, Color Fg, string Glyph) IconStyle(DialogKind kind, bool dark) => kind switch
     {
-        DialogKind.Warning => (Color.FromArgb(dark ? "#3A2A10" : "#FEF3C7"), Color.FromArgb(dark ? "#F59E0B" : "#D97706"), IconAlert),
-        DialogKind.Danger => (Color.FromArgb(dark ? "#3A141A" : "#FEE2E2"), Color.FromArgb(dark ? "#EF4444" : "#DC2626"), IconAlert),
-        DialogKind.Delete => (Color.FromArgb(dark ? "#3A141A" : "#FEE2E2"), Color.FromArgb(dark ? "#EF4444" : "#DC2626"), IconTrash),
-        DialogKind.Success => (Res("IconBoxBg", dark ? "#0B3D31" : "#DCEFE9"), Res("BrandGreen", dark ? "#3FC3A1" : "#0D6B57"), IconCheck),
-        DialogKind.Question => (Color.FromArgb(dark ? "#162842" : "#DBEAFE"), Color.FromArgb(dark ? "#60A5FA" : "#2563EB"), IconSave),
-        _ => (Color.FromArgb(dark ? "#162842" : "#DBEAFE"), Color.FromArgb(dark ? "#60A5FA" : "#2563EB"), IconInfo),
+        DialogKind.Warning => (Res("WarnSoftBg", dark ? "#453720" : "#FCEFD6"), Res("WarnColor", dark ? "#F1C778" : "#805003"), Icons.AlertTriangle),
+        DialogKind.Danger => (Res("BadSoftBg", dark ? "#4A2625" : "#FBE5E2"), Res("BadColor", dark ? "#FFABA4" : "#B42318"), Icons.AlertTriangle),
+        DialogKind.Delete => (Res("BadSoftBg", dark ? "#4A2625" : "#FBE5E2"), Res("BadColor", dark ? "#FFABA4" : "#B42318"), Icons.Trash),
+        DialogKind.Success => (Res("IconBoxBg", dark ? "#23483D" : "#DCEFE7"), Res("BrandGreen", dark ? "#69D6B6" : "#14634F"), Icons.Check),
+        DialogKind.Question => (Color.FromArgb(dark ? "#162842" : "#DBEAFE"), Color.FromArgb(dark ? "#60A5FA" : "#2563EB"), Icons.Save),
+        _ => (Color.FromArgb(dark ? "#162842" : "#DBEAFE"), Color.FromArgb(dark ? "#60A5FA" : "#2563EB"), Icons.Info),
     };
 
     // Цвет из ресурсов темы; если ресурса нет, берём запасной

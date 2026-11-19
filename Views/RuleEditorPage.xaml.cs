@@ -702,7 +702,7 @@ public partial class RuleEditorPage : ContentPage
                 VerticalOptions = LayoutOptions.Center,
                 Spacing = 8,
                 Children = {
-                    new Label { Text = "📐", FontSize = Math.Max(12.0, 16.0 * _previewScale), VerticalOptions = LayoutOptions.Center },
+                    new IconView { Icon = "ruler", Size = Math.Max(12.0, 16.0 * _previewScale), IconColor = "PreviewInk" },
                     new Label {
                         Text = "Иллюстрация ГОСТ (Рис. 1)",
                         FontSize = Math.Max(8.0, 12.0 * ptScale),

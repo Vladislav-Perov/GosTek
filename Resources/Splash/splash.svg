@@ -1,20 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <!-- Документ ГОСТ -->
-    <path d="M144 80C144 66.7452 154.745 56 168 56H296L368 128V432C368 445.255 357.255 456 344 456H168C154.745 456 144 445.255 144 432V80Z" 
-          fill="#FFFFFF" fill-opacity="0.2" stroke="#FFFFFF" stroke-width="16" stroke-linejoin="round"/>
-    <!-- Загнутый уголок листа -->
-    <path d="M296 56V128H368" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
-    
-    <!-- Строки документа -->
-    <line x1="184" y1="160" x2="260" y2="160" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round"/>
-    <line x1="184" y1="196" x2="328" y2="196" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round"/>
-    
-    <!-- Защитный щит ГОСТ по центру -->
-    <path d="M256 220L328 252V320C328 368 296 404 256 420C216 404 184 368 184 320V252L256 220Z" 
-          fill="#FFFFFF" stroke="#FFFFFF" stroke-width="12" stroke-linejoin="round"/>
-          
-    <!-- Знак соответствия / Галочка внутри щита (вырез) -->
-    <path d="M224 316L248 340L292 284" 
-          stroke="#0D6B57" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+    <path d="M184 140h112l44 44v164a24 24 0 0 1-24 24H184a24 24 0 0 1-24-24V164a24 24 0 0 1 24-24Z M296 140v44h44"
+          stroke="#EDF5F1" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M203 218h60 M205 286l27 27 62-62"
+          stroke="#69D6B6" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

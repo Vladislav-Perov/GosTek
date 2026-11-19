@@ -67,11 +67,6 @@
                            TextColor="{DynamicResource BrandGreen}"
                            HorizontalOptions="Center"
                            VerticalOptions="Center" />
-
-                    <!-- Переключатель темы справа (только на Android; на Windows — в левом rail) -->
-                    <views:ThemeToggle Grid.Column="2"
-                                       HorizontalOptions="End"
-                                       VerticalOptions="Center" />
                 </Grid>
 
                 <!-- Заголовок страницы -->

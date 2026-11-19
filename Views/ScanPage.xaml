@@ -55,12 +55,7 @@
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnCloseTapped" />
                 </Border.GestureRecognizers>
-                <Label Text="✕"
-                       FontSize="18"
-                       FontAttributes="Bold"
-                       TextColor="{DynamicResource TextPrimary}"
-                       HorizontalOptions="Center"
-                       VerticalOptions="Center" />
+                <vctrl:IconView Icon="close" Size="16" />
             </Border>
 
             <!-- Заголовок страницы -->
@@ -186,7 +181,7 @@
                        FontAttributes="Bold"
                        HorizontalTextAlignment="Center"
                        LineBreakMode="WordWrap"
-                       TextColor="#EF4444"
+                       TextColor="{DynamicResource BadColor}"
                        Margin="4, 0" />
             </Grid>
 
@@ -253,13 +248,13 @@
                                             StrokeThickness="0"
                                             StrokeShape="RoundRectangle 8"
                                             Padding="8, 4"
-                                            BackgroundColor="#1510B981"
+                                            BackgroundColor="{DynamicResource IconBoxBg}"
                                             VerticalOptions="Center">
                                         <Label x:Name="MrzStatusLabel"
-                                               Text="✓ MRZ ICAO"
+                                               Text="MRZ · ICAO"
                                                FontSize="11"
                                                FontAttributes="Bold"
-                                               TextColor="#10B981" />
+                                               TextColor="{DynamicResource BrandGreen}" />
                                     </Border>
                                 </Grid>
 
@@ -318,7 +313,7 @@
                                         StrokeThickness="0"
                                         Padding="0, 13"
                                         Margin="0, 4, 0, 0"
-                                        BackgroundColor="{DynamicResource BrandGreen}">
+                                        BackgroundColor="{DynamicResource ActionBg}">
                                     <Border.Shadow>
                                         <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.14" />
                                     </Border.Shadow>
