@@ -100,7 +100,7 @@ public static class WindowSizing
 
             try
             {
-                return Preferences.Default.Get("rail_collapsed", false) ? 64 : 220;
+                return global::GosTek.Views.AppTabBar.WindowsRailWidth;
             }
             catch
             {

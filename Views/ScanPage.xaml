@@ -226,7 +226,7 @@
                                             WidthRequest="32"
                                             HeightRequest="32"
                                             VerticalOptions="Center">
-                                        <vctrl:IconView Icon="sparkles"
+                                        <vctrl:IconView Icon="check_ok"
                                                         IconColor="BrandGreen"
                                                         Size="16"
                                                         HorizontalOptions="Center"
@@ -600,7 +600,7 @@
                             <Border StyleClass="HoverCard"
                                     StrokeThickness="0"
                                     StrokeShape="RoundRectangle 14"
-                                    Background="{DynamicResource BrandGreenGradient}"
+                                    BackgroundColor="{DynamicResource ActionBg}"
                                     Padding="14, 12"
                                     HorizontalOptions="Fill">
                                 <Border.Shadow>
@@ -743,7 +743,7 @@
                 </Border.GestureRecognizers>
                 <Border StrokeShape="RoundRectangle 34"
                         StrokeThickness="0"
-                        Background="{DynamicResource BrandGreenGradient}">
+                        BackgroundColor="{DynamicResource ActionBg}">
                     <vctrl:IconView Icon="camera"
                                     IconColor="White"
                                     Size="24"

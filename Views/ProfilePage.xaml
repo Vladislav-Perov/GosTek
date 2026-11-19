@@ -194,7 +194,7 @@
                         Padding="8, 15"
                         Margin="0, 4, 0, 10"
                         HorizontalOptions="Fill"
-                        Background="{DynamicResource BrandGreenGradient}">
+                        BackgroundColor="{DynamicResource ActionBg}">
                     <Border.Shadow>
                         <Shadow Brush="Black" Offset="0, 4" Radius="10" Opacity="0.18" />
                     </Border.Shadow>

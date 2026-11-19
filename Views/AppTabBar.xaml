@@ -12,7 +12,7 @@
              x:Class="GosTek.Views.AppTabBar">
 
     <Grid>
-        <!-- На Windows: Вертикальный левый Navigation Rail (220 px / 64 px) -->
+        <!-- На Windows: Вертикальный левый Navigation Rail (220 px / 84 px) -->
         <Border x:Name="WindowsRail"
                 IsVisible="{OnPlatform WinUI=True, Android=False, Default=True}"
                 HorizontalOptions="Fill"
@@ -32,14 +32,14 @@
                     <vctrl:IconView x:Name="LogoIcon"
                                     Icon="file"
                                     Size="24"
-                                    IconColor="BrandGreen"
+                                    IconColor="TextPrimary"
                                     VerticalOptions="Center" />
                     <Label x:Name="LogoLabel"
                            Grid.Column="1"
                            Text="GosTek"
-                           FontFamily="PTSansBold"
+                           FontAttributes="Bold"
                            FontSize="27"
-                           TextColor="{DynamicResource BrandGreen}"
+                           TextColor="{DynamicResource TextPrimary}"
                            VerticalOptions="Center"
                            LineBreakMode="NoWrap" />
                     <Border x:Name="RailToggleBtn"

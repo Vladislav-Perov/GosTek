@@ -11,7 +11,7 @@
        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
        xmlns:views="clr-namespace:GosTek.Views"
        FlyoutBehavior="{OnPlatform WinUI=Locked, Default=Disabled}"
-       FlyoutWidth="{OnPlatform WinUI=220, Default=0}"
+       FlyoutWidth="{OnPlatform WinUI=84, Default=0}"
        FlyoutBackgroundColor="{DynamicResource TabBarBg}"
        Shell.NavBarIsVisible="False"
        Shell.TabBarIsVisible="{OnPlatform Android=True, WinUI=False, Default=False}"

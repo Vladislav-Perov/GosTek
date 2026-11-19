@@ -101,7 +101,7 @@ public partial class RuleEditorPage : ContentPage
         if (Shell.Current is { } shell)
         {
             shell.FlyoutBehavior = FlyoutBehavior.Locked;
-            shell.FlyoutWidth = Preferences.Get("rail_collapsed", false) ? 64 : 220;
+            shell.FlyoutWidth = global::GosTek.Views.AppTabBar.WindowsRailWidth;
         }
 #endif
     }

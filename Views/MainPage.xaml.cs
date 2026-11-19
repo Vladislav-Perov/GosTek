@@ -14,51 +14,12 @@ namespace GosTek.Views;
 
 public partial class MainPage : ContentPage, IQueryAttributable
 {
-    private int _lastSubtitleIndex = -1;
-
-    private static readonly string[] Subtitles =
-    {
-        "Какой документ оформим сегодня?",
-        "Что будем оформлять на этот раз?",
-        "С какого шаблона начнем?",
-        "Какой документ подготовить?",
-        "Выберите шаблон — остальное сделаем мы.",
-        "Начните оформление прямо сейчас.",
-        "Создайте документ за пару кликов.",
-        "Оформление документов по шаблонам.",
-        "Подготовка документа к работе.",
-        "Выбор шаблона для оформления.",
-        "Ну что, оформим бумаги?",
-        "Готовы создать новый документ?",
-    };
-
     public MainPage()
     {
         InitializeComponent();
 
         // Данные удалили в настройках: обновить плашку профиля
         SettingsOverlay.DataCleared += async () => await RefreshProfileCardAsync();
-
-        AttachHoverEffect(CheckCard);
-        AttachHoverEffect(ScanCard);
-    }
-
-    private static void AttachHoverEffect(Border border)
-    {
-        var pointer = new PointerGestureRecognizer();
-        pointer.PointerEntered += (_, _) =>
-        {
-            _ = border.ScaleToAsync(1.02, 100);
-            if (Application.Current?.Resources.TryGetValue("AccentGreen", out var color) == true && color is Color c)
-                border.Stroke = new SolidColorBrush(c);
-        };
-        pointer.PointerExited += (_, _) =>
-        {
-            _ = border.ScaleToAsync(1.0, 100);
-            if (Application.Current?.Resources.TryGetValue("CardStroke", out var color) == true && color is Color c)
-                border.Stroke = new SolidColorBrush(c);
-        };
-        border.GestureRecognizers.Add(pointer);
     }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
@@ -72,7 +33,6 @@ public partial class MainPage : ContentPage, IQueryAttributable
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        ShowRandomSubtitle();
 
         // «Быстрый старт»: первые три шаблона из папки шаблонов
         TemplateCatalog.Refresh();
@@ -151,18 +111,6 @@ public partial class MainPage : ContentPage, IQueryAttributable
     }
 
     // ===== Подзаголовок: случайная фраза, не повторяющая предыдущую =====
-    private void ShowRandomSubtitle()
-    {
-        int index;
-        do {
-            index = Random.Shared.Next(Subtitles.Length);
-        }
-        while (index == _lastSubtitleIndex);
-
-        _lastSubtitleIndex = index;
-        SubtitleLabel.Text = Subtitles[index];
-    }
-
     // ===== «Проверить» ведёт на экран проверки документа =====
     private async void OnCheckTapped(object? sender, TappedEventArgs e)
     {
@@ -173,11 +121,9 @@ public partial class MainPage : ContentPage, IQueryAttributable
     }
 
     // ===== «Создать документ» ведёт в каталог шаблонов =====
-    private async void OnCreateTapped(object? sender, TappedEventArgs e)
+    private async void OnCreateClicked(object? sender, EventArgs e)
     {
         HapticHelper.Click();
-        if (sender is VisualElement ve)
-            await ve.AnimateBounceAsync();
         await Shell.Current.GoToAsync("//TemplatesPage");
     }
 

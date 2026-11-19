@@ -29,20 +29,21 @@ public static class ThemeService
 
     // Ключ ресурса, цвет в тёмной теме, цвет в светлой
     private static readonly (string Key, string Dark, string Light)[] Palette = {
-        ("PageBg",        "#121B1C", "#F4F7F5"),
-        ("CardBg",        "#1B2829", "#FFFFFF"),
-        ("CardHoverBg",   "#344846", "#E8F0EC"),
-        ("CardStroke",    "#344846", "#D5E0DB"),
-        ("TextPrimary",   "#EDF5F1", "#172823"),
-        ("TextSecondary", "#A9BBB5", "#49605A"),
-        ("BrandGreen",    "#69D6B6", "#14634F"),
-        ("AccentGreen",   "#69D6B6", "#14634F"),
-        ("ActionBg",      "#17664F", "#14634F"),
-        ("Divider",       "#344846", "#D5E0DB"),
-        ("IconBoxBg",     "#23483D", "#DCEFE7"),
-        ("TabBarBg",      "#121B1C", "#FFFFFF"),
-        ("TabActiveBg",   "#23483D", "#DCEFE7"),
-        ("ToggleTrackBg", "#344846", "#C5D5CF"),
+        ("PageBg",        "#1A1E22", "#F4F6F8"),
+        ("CardBg",        "#23282D", "#FFFFFF"),
+        ("CardHoverBg",   "#414950", "#EDF1F4"),
+        ("CardStroke",    "#414950", "#D4DCE3"),
+        ("TextPrimary",   "#EDF0F2", "#202B35"),
+        ("TextSecondary", "#B7BEC5", "#51606F"),
+        ("BrandGreen",    "#BACBD9", "#263B52"),
+        ("AccentGreen",   "#BACBD9", "#263B52"),
+        ("ActionBg",      "#324A62", "#263B52"),
+        ("ActionHoverBg", "#3D5772", "#324A62"),
+        ("Divider",       "#414950", "#D4DCE3"),
+        ("IconBoxBg",     "#363F49", "#E7EDF3"),
+        ("TabBarBg",      "#1A1E22", "#FFFFFF"),
+        ("TabActiveBg",   "#363F49", "#E7EDF3"),
+        ("ToggleTrackBg", "#414950", "#C4CFDA"),
 
         // Экран «Проверка»: важное замечание (красный), желательное (жёлтый) и их мягкие фоны
         ("BadColor",      "#FFABA4", "#B42318"),
@@ -178,31 +179,6 @@ public static class ThemeService
 
         foreach (var (key, dark, light) in Palette)
             app.Resources[key] = Color.FromArgb(IsDark ? dark : light);
-
-        // Градиенты дизайн-системы
-        var brandGradient = new LinearGradientBrush
-        {
-            StartPoint = new Point(0, 0),
-            EndPoint = new Point(1, 1),
-            GradientStops = new GradientStopCollection
-            {
-                new GradientStop(Color.FromArgb(IsDark ? "#104C3D" : "#14634F"), 0.0f),
-                new GradientStop(Color.FromArgb("#17664F"), 1.0f),
-            },
-        };
-        app.Resources["BrandGreenGradient"] = brandGradient;
-
-        var mainRadial = new RadialGradientBrush
-        {
-            Center = new Point(0.5, 0.4),
-            Radius = 0.9,
-            GradientStops = new GradientStopCollection
-            {
-                new GradientStop((Color)app.Resources["CardBg"], 0.0f),
-                new GradientStop((Color)app.Resources["PageBg"], 1.0f),
-            },
-        };
-        app.Resources["MainPageBackgroundBrush"] = mainRadial;
 
         foreach (var window in app.Windows)
         {

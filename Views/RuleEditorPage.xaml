@@ -883,9 +883,6 @@
                                         Stroke="{DynamicResource BrandGreen}"
                                         StrokeShape="RoundRectangle 4"
                                         HorizontalOptions="Center">
-                                    <Border.Shadow>
-                                        <Shadow Brush="#10B981" Offset="0, 4" Radius="16" Opacity="0.22" />
-                                    </Border.Shadow>
                                 </Border>
 
                             </VerticalStackLayout>
@@ -938,7 +935,7 @@
                             StrokeShape="RoundRectangle 14"
                             StrokeThickness="0"
                             Padding="12,14"
-                            Background="{DynamicResource BrandGreenGradient}">
+                            BackgroundColor="{DynamicResource ActionBg}">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnSaveTapped" />
                         </Border.GestureRecognizers>

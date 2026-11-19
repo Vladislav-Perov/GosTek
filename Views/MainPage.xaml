@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!--
  ==============================================================================
- НАЗНАЧЕНИЕ: Главный дашборд приложения с радиальным градиентом, векторными иконками и левым rail на Windows
+ НАЗНАЧЕНИЕ: Главный дашборд приложения, векторными иконками и левым rail на Windows
  СОДЕРЖИМОЕ: MainPage (ContentPage)
  ЗАВИСИМОСТИ: GosTek.Views, GosTek.Models, GosTek.Views.SettingsPanel, GosTek.Views.AppTabBar, GosTek.Views.Controls.IconView
  ==============================================================================
@@ -16,9 +16,8 @@
              Shell.NavBarIsVisible="False"
              SafeAreaEdges="{OnPlatform Android=Container, Default=None}">
 
-    <!-- Радиальный фон дизайн-системы для избавления от плоского вида -->
     <Grid RowDefinitions="*"
-          Background="{DynamicResource MainPageBackgroundBrush}">
+          BackgroundColor="{DynamicResource PageBg}">
 
         <!-- ==================== КОНТЕНТ ==================== -->
         <ScrollView Grid.Row="0"
@@ -62,109 +61,59 @@
                     <!-- Логотип GosTek по центру (только на Android, чтобы не дублировать логотип левого rail Windows) -->
                     <Label Grid.Column="1"
                            Text="GosTek"
-                           FontFamily="PTSansBold"
+                           FontAttributes="Bold"
                            FontSize="28"
-                           TextColor="{DynamicResource BrandGreen}"
+                           TextColor="{DynamicResource TextPrimary}"
                            HorizontalOptions="Center"
                            VerticalOptions="Center" />
                 </Grid>
 
                 <!-- Заголовок страницы -->
                 <VerticalStackLayout Spacing="2" VerticalOptions="Center">
-                    <Label Text="Главная"
+                    <Label Text="Работа с документами"
                            FontSize="26"
                            FontAttributes="Bold"
                            TextColor="{DynamicResource TextPrimary}" />
-                    <Label x:Name="SubtitleLabel"
-                           Text="Что оформим сегодня?"
+                    <Label Text="Шаблоны, проверка по ГОСТ и экспорт"
                            FontSize="13"
                            TextColor="{DynamicResource TextSecondary}" />
                 </VerticalStackLayout>
 
-                <!-- Главная премиальная градиентная карточка «Создать документ» -->
-                <Border StyleClass="HoverGreen"
-                        StrokeShape="RoundRectangle 20"
-                        StrokeThickness="0"
-                        Padding="22, 20"
-                        HorizontalOptions="Fill"
-                        Background="{DynamicResource BrandGreenGradient}">
-                    <Border.Shadow>
-                        <Shadow Brush="Black" Offset="0,4" Radius="12" Opacity="0.22" />
-                    </Border.Shadow>
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnCreateTapped" />
-                    </Border.GestureRecognizers>
-
-                    <Grid ColumnDefinitions="*, Auto" ColumnSpacing="16" VerticalOptions="Center">
-                        <!-- Текстовая часть слева -->
-                        <VerticalStackLayout Grid.Column="0" Spacing="6" VerticalOptions="Center">
-                            <Label Text="Создать документ"
-                                   FontSize="21"
-                                   FontAttributes="Bold"
-                                   TextColor="#FFFFFF" />
-                            <Label Text="Выберите шаблон и заполните поля — получите Word или PDF."
-                                   FontSize="13.5"
-                                   LineHeight="1.35"
-                                   TextColor="#E3F3EE"
-                                   LineBreakMode="WordWrap" />
-                        </VerticalStackLayout>
-
-                        <!-- Декоративная миниатюра листа документа справа -->
-                        <Border Grid.Column="1"
-                                WidthRequest="58"
-                                HeightRequest="74"
-                                StrokeShape="RoundRectangle 6"
-                                StrokeThickness="1"
-                                Stroke="#CFE5DE"
-                                BackgroundColor="#FFFFFF"
-                                Padding="8, 10"
-                                Rotation="-4"
-                                VerticalOptions="Center">
-                            <VerticalStackLayout Spacing="5" VerticalOptions="Center">
-                                <BoxView HeightRequest="4" WidthRequest="24" HorizontalOptions="Start" Color="{DynamicResource BrandGreen}" CornerRadius="2" />
-                                <BoxView HeightRequest="2.5" Color="#CFE5DE" CornerRadius="1" />
-                                <BoxView HeightRequest="2.5" Color="#CFE5DE" CornerRadius="1" />
-                                <BoxView HeightRequest="2.5" WidthRequest="30" HorizontalOptions="Start" Color="#CFE5DE" CornerRadius="1" />
-                            </VerticalStackLayout>
-                        </Border>
-                    </Grid>
+                <Border BackgroundColor="{DynamicResource ActionBg}"
+                        StrokeThickness="0" StrokeShape="RoundRectangle 8"
+                        Padding="22, 20">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Новый документ"
+                               FontSize="22" FontAttributes="Bold" TextColor="White" />
+                        <Label Text="Выберите шаблон, заполните поля и сохраните документ в Word или PDF."
+                               FontSize="14" TextColor="White" />
+                        <Button Text="Создать документ" Clicked="OnCreateClicked"
+                                HorizontalOptions="Start" Margin="0,4,0,0"
+                                BackgroundColor="White" TextColor="{DynamicResource ActionBg}"
+                                CornerRadius="5" FontAttributes="Bold" />
+                    </VerticalStackLayout>
                 </Border>
 
                 <!-- Карточки быстрых действий: на Android две в ряд («Проверить» и «Сканировать»), на Windows одна широкая («Проверить») -->
                 <Grid ColumnDefinitions="{OnPlatform Android='*, *', WinUI='*', Default='*'}" ColumnSpacing="16" HorizontalOptions="Fill">
 
                     <!-- Плитка «Проверить» -->
-                    <Border x:Name="CheckCard"
-                            Grid.Column="0"
+                    <Border Grid.Column="0"
                             StyleClass="HoverCard"
-                            StrokeShape="RoundRectangle 18"
-                            StrokeThickness="1.5"
+                            StrokeShape="RoundRectangle 8"
+                            StrokeThickness="1"
                             Stroke="{DynamicResource CardStroke}"
                             BackgroundColor="{DynamicResource CardBg}"
                             HorizontalOptions="Fill"
-                            Padding="16, 18">
-                        <Border.Shadow>
-                            <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.08" />
-                        </Border.Shadow>
+                            Padding="12, 14">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnCheckTapped" />
                         </Border.GestureRecognizers>
 
-                        <VerticalStackLayout Spacing="12">
-                            <Border BackgroundColor="{DynamicResource IconBoxBg}"
-                                    StrokeShape="RoundRectangle 12"
-                                    StrokeThickness="0"
-                                    WidthRequest="42"
-                                    HeightRequest="42"
-                                    HorizontalOptions="Start">
-                                <vctrl:IconView Icon="shield"
-                                                IconColor="BrandGreen"
-                                                Size="20"
-                                                HorizontalOptions="Center"
-                                                VerticalOptions="Center" />
-                            </Border>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                            <vctrl:IconView Icon="shield" IconColor="TextSecondary" Size="20" />
 
-                            <VerticalStackLayout Spacing="3">
+                            <VerticalStackLayout Grid.Column="1" Spacing="3">
                                 <Label Text="Проверить"
                                        FontSize="16"
                                        FontAttributes="Bold"
@@ -174,42 +123,27 @@
                                        TextColor="{DynamicResource TextSecondary}"
                                        LineBreakMode="WordWrap" />
                             </VerticalStackLayout>
-                        </VerticalStackLayout>
+                        </Grid>
                     </Border>
 
                     <!-- Плитка «Сканировать» (только на мобильных устройствах Android) -->
-                    <Border x:Name="ScanCard"
-                            Grid.Column="1"
+                    <Border Grid.Column="1"
                             IsVisible="{OnPlatform Android=True, WinUI=False, Default=False}"
                             StyleClass="HoverCard"
-                            StrokeShape="RoundRectangle 18"
-                            StrokeThickness="1.5"
+                            StrokeShape="RoundRectangle 8"
+                            StrokeThickness="1"
                             Stroke="{DynamicResource CardStroke}"
                             BackgroundColor="{DynamicResource CardBg}"
                             HorizontalOptions="Fill"
-                            Padding="16, 18">
-                        <Border.Shadow>
-                            <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.08" />
-                        </Border.Shadow>
+                            Padding="12, 14">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnScanTapped" />
                         </Border.GestureRecognizers>
 
-                        <VerticalStackLayout Spacing="12">
-                            <Border BackgroundColor="{DynamicResource IconBoxBg}"
-                                    StrokeShape="RoundRectangle 12"
-                                    StrokeThickness="0"
-                                    WidthRequest="42"
-                                    HeightRequest="42"
-                                    HorizontalOptions="Start">
-                                <vctrl:IconView Icon="camera"
-                                                IconColor="BrandGreen"
-                                                Size="20"
-                                                HorizontalOptions="Center"
-                                                VerticalOptions="Center" />
-                            </Border>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                            <vctrl:IconView Icon="camera" IconColor="TextSecondary" Size="20" />
 
-                            <VerticalStackLayout Spacing="3">
+                            <VerticalStackLayout Grid.Column="1" Spacing="3">
                                 <Label Text="Сканировать"
                                        FontSize="16"
                                        FontAttributes="Bold"
@@ -219,7 +153,7 @@
                                        TextColor="{DynamicResource TextSecondary}"
                                        LineBreakMode="WordWrap" />
                             </VerticalStackLayout>
-                        </VerticalStackLayout>
+                        </Grid>
                     </Border>
                 </Grid>
 
@@ -228,15 +162,12 @@
                 <!-- Карточка профиля со статусом готовности -->
                 <Border x:Name="ProfileCard"
                         StyleClass="HoverCard"
-                        StrokeShape="RoundRectangle 18"
+                        StrokeShape="RoundRectangle 8"
                         StrokeThickness="1"
                         Stroke="{DynamicResource CardStroke}"
                         BackgroundColor="{DynamicResource CardBg}"
                         HorizontalOptions="Fill"
                         Padding="18, 16">
-                    <Border.Shadow>
-                        <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.08" />
-                    </Border.Shadow>
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnProfileTapped" />
                     </Border.GestureRecognizers>
@@ -270,7 +201,7 @@
                                 <Label Text="Настроить"
                                        FontSize="11.5"
                                        FontAttributes="Bold"
-                                       TextColor="{DynamicResource BrandGreen}"
+                                       TextColor="{DynamicResource TextPrimary}"
                                        VerticalOptions="Center" />
                             </Border>
                         </Grid>

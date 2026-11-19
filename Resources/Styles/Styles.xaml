@@ -36,7 +36,6 @@
     <Style TargetType="Editor">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
-        <Setter Property="FontFamily" Value="PTSansRegular"/>
         <Setter Property="FontSize" Value="14" />
         <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray500}}" />
         <Setter Property="MinimumHeightRequest" Value="44"/>
@@ -58,7 +57,6 @@
     <Style TargetType="Entry">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
-        <Setter Property="FontFamily" Value="PTSansRegular"/>
         <Setter Property="FontSize" Value="14" />
         <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray500}}" />
         <Setter Property="MinimumHeightRequest" Value="44"/>
@@ -80,7 +78,6 @@
     <Style TargetType="Label">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
-        <Setter Property="FontFamily" Value="PTSansRegular" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
@@ -112,14 +109,13 @@
         </Setter>
     </Style>
 
-    <!-- Стили нативных кнопок Button для соответствия дизайн-системе (зелёный цвет вместо фиолетового дефолта MAUI) -->
+    <!-- Общий стиль нативных кнопок -->
     <Style TargetType="Button">
         <Setter Property="TextColor" Value="{DynamicResource BrandGreen}" />
         <Setter Property="BackgroundColor" Value="{DynamicResource IconBoxBg}" />
-        <Setter Property="FontFamily" Value="PTSansRegular" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="FontAttributes" Value="Bold" />
-        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="CornerRadius" Value="6" />
         <Setter Property="Padding" Value="14, 8" />
         <Setter Property="MinimumHeightRequest" Value="38" />
         <Setter Property="VisualStateManager.VisualStateGroups">
@@ -130,11 +126,6 @@
                         <VisualState.Setters>
                             <Setter Property="TextColor" Value="{DynamicResource TextSecondary}" />
                             <Setter Property="BackgroundColor" Value="{DynamicResource CardStroke}" />
-                        </VisualState.Setters>
-                    </VisualState>
-                    <VisualState x:Name="Pressed">
-                        <VisualState.Setters>
-                            <Setter Property="Scale" Value="0.97" />
                         </VisualState.Setters>
                     </VisualState>
                 </VisualStateGroup>
@@ -174,14 +165,12 @@
                         <VisualState.Setters>
                             <Setter Property="BackgroundColor" Value="{DynamicResource CardBg}" />
                             <Setter Property="Stroke" Value="{DynamicResource CardStroke}" />
-                            <Setter Property="Scale" Value="1" />
                         </VisualState.Setters>
                     </VisualState>
                     <VisualState Name="PointerOver">
                         <VisualState.Setters>
                             <Setter Property="BackgroundColor" Value="{DynamicResource CardHoverBg}" />
                             <Setter Property="Stroke" Value="{DynamicResource AccentGreen}" />
-                            <Setter Property="Scale" Value="1.02" />
                         </VisualState.Setters>
                     </VisualState>
                 </VisualStateGroup>
@@ -189,21 +178,19 @@
         </Setter>
     </Style>
 
-    <!-- Зелёная кнопка / карточка -->
+    <!-- Основное действие -->
     <Style TargetType="Border" Class="HoverGreen">
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
                 <VisualStateGroup Name="CommonStates">
                     <VisualState Name="Normal">
                         <VisualState.Setters>
-                            <Setter Property="BackgroundColor" Value="{DynamicResource AccentGreen}" />
-                            <Setter Property="Scale" Value="1" />
+                            <Setter Property="BackgroundColor" Value="{DynamicResource ActionBg}" />
                         </VisualState.Setters>
                     </VisualState>
                     <VisualState Name="PointerOver">
                         <VisualState.Setters>
-                            <Setter Property="BackgroundColor" Value="#4FE3AF" />
-                            <Setter Property="Scale" Value="1.02" />
+                            <Setter Property="BackgroundColor" Value="{DynamicResource ActionHoverBg}" />
                         </VisualState.Setters>
                     </VisualState>
                 </VisualStateGroup>

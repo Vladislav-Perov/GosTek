@@ -289,7 +289,7 @@
                     Padding="0, 16"
                     Margin="20, 12"
                     MaximumWidthRequest="700"
-                    Background="{DynamicResource BrandGreenGradient}">
+                    BackgroundColor="{DynamicResource ActionBg}">
                 <Border.Shadow>
                     <Shadow Brush="Black" Offset="0, 4" Radius="10" Opacity="0.18" />
                 </Border.Shadow>
@@ -298,7 +298,7 @@
                 </Border.GestureRecognizers>
 
                 <HorizontalStackLayout HorizontalOptions="Center" Spacing="10" VerticalOptions="Center">
-                    <vctrl:IconView Icon="sparkles"
+                    <vctrl:IconView Icon="file"
                                     IconColor="White"
                                     Size="18"
                                     VerticalOptions="Center" />
@@ -467,7 +467,7 @@
                                 WidthRequest="36"
                                 HeightRequest="36"
                                 VerticalOptions="Center">
-                            <vctrl:IconView Icon="sparkles"
+                            <vctrl:IconView Icon="chat"
                                             IconColor="BrandGreen"
                                             Size="18"
                                             HorizontalOptions="Center"
@@ -593,7 +593,7 @@
                                     StrokeShape="RoundRectangle 16"
                                     WidthRequest="46"
                                     HeightRequest="46"
-                                    Background="{DynamicResource BrandGreenGradient}"
+                                    BackgroundColor="{DynamicResource ActionBg}"
                                     VerticalOptions="Center">
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Tapped="OnSendMessageTapped" />

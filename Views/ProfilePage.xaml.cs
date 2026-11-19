@@ -614,7 +614,7 @@ public partial class ProfilePage : ContentPage
             if (isComplete)
             {
                 ProgressBadgeLabel.TextColor = Colors.White;
-                ProgressBadgeBorder.SetDynamicResource(VisualElement.BackgroundProperty, "BrandGreenGradient");
+                ProgressBadgeBorder.SetDynamicResource(VisualElement.BackgroundColorProperty, "ActionBg");
                 ProgressBadgeBorder.StrokeThickness = 0;
             }
             else

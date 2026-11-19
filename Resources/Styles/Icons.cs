@@ -41,6 +41,7 @@ public static class Icons
     public const string Maximize = "M15 3h6v6 M9 21H3v-6 M21 3l-7 7 M3 21l7-7";
     public const string Minimize = "M4 14h6v6 M20 10h-6V4 M14 10l7-7 M10 14l-7 7";
     public const string Search = "M21 21l-4.35-4.35M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0z";
+    public const string Chat = "M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-9l-5 4v-4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M7 9h10 M7 13h7";
     public const string Close = "M6 6l12 12M18 6 6 18";
     public const string Table = "M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M3 9h18 M3 14h18 M10 9v11";
     public const string Code = "M8 6l-6 6 6 6 M16 6l6 6-6 6 M14 4l-4 16";
@@ -98,6 +99,7 @@ public static class Icons
             "maximize" or "expand" or "fullscreen" => Maximize,
             "minimize" or "restore" or "compress" => Minimize,
             "search" or "🔍" => Search,
+            "chat" => Chat,
             "close" => Close,
             "table" => Table,
             "code" => Code,

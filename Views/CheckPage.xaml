@@ -294,7 +294,7 @@
                                 <TapGestureRecognizer Command="{Binding AcceptAllCommand}" />
                             </Border.GestureRecognizers>
                             <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
-                                <vctrl:IconView Icon="sparkles"
+                                <vctrl:IconView Icon="check_ok"
                                                 IconColor="White"
                                                 Size="14"
                                                 VerticalOptions="Center" />
@@ -589,7 +589,7 @@
                             StrokeShape="RoundRectangle 14"
                             StrokeThickness="0"
                             Padding="12, 14"
-                            Background="{DynamicResource BrandGreenGradient}">
+                            BackgroundColor="{DynamicResource ActionBg}">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnPrimaryTapped" />
                         </Border.GestureRecognizers>

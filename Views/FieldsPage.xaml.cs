@@ -413,7 +413,7 @@ public partial class FieldsPage : ContentPage
         {
             var sparkIcon = new IconView
             {
-                Icon = "sparkles",
+                Icon = "chat",
                 IconColor = "BrandGreen",
                 Size = 14,
                 VerticalOptions = LayoutOptions.Center
@@ -769,7 +769,7 @@ public partial class FieldsPage : ContentPage
         if (Shell.Current is { } shell)
         {
             shell.FlyoutBehavior = FlyoutBehavior.Locked;
-            shell.FlyoutWidth = Preferences.Get("rail_collapsed", false) ? 64 : 220;
+            shell.FlyoutWidth = global::GosTek.Views.AppTabBar.WindowsRailWidth;
         }
 #endif
         StopBuildPulse();
@@ -1470,7 +1470,7 @@ public partial class FieldsPage : ContentPage
             StrokeThickness = 0,
             StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(16, 16, 2, 16) }
         };
-        border.SetDynamicResource(VisualElement.BackgroundProperty, "BrandGreenGradient");
+        border.SetDynamicResource(VisualElement.BackgroundColorProperty, "ActionBg");
         border.Content = label;
 
         ChatMessagesStack.Children.Add(border);
