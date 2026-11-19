@@ -15,7 +15,13 @@ namespace GosTek.Services;
 
 public static partial class OcrService
 {
-    public static partial async Task<string> RecognizeTextAsync(Stream photoStream, CancellationToken cancellationToken)
+    public static partial Task<string> RecognizeTextAsync(Stream photoStream, CancellationToken cancellationToken)
+        => RecognizeAsync(photoStream, cancellationToken, passport: true);
+
+    public static Task<string> RecognizeDocumentAsync(Stream photoStream, CancellationToken cancellationToken = default)
+        => RecognizeAsync(photoStream, cancellationToken, passport: false);
+
+    private static async Task<string> RecognizeAsync(Stream photoStream, CancellationToken cancellationToken, bool passport)
     {
         // Для паспортов используем двухзонное распознавание:
         // Верхняя часть (визуальная зона) — русский язык (ru-RU).
@@ -40,9 +46,18 @@ public static partial class OcrService
         await photoStream.CopyToAsync(memory, cancellationToken);
         byte[] bytes = memory.ToArray();
 
+        if (!passport)
+        {
+            var engine = ruEngine ?? enEngine!;
+            var text = await ReadDocumentAsync(bytes, engine, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(text))
+                return text;
+            var enhanced = await ImagePreprocessor.Instance.PreprocessForOcrAsync(bytes);
+            return await ReadDocumentAsync(enhanced, engine, cancellationToken);
+        }
+
         // Предварительная обработка изображения (выравнивание наклона, оттенки серого, бинаризация)
         bytes = await ImagePreprocessor.Instance.PreprocessForOcrAsync(bytes);
-
         cancellationToken.ThrowIfCancellationRequested();
 
         using var original = SKBitmap.Decode(bytes);
@@ -85,6 +100,24 @@ public static partial class OcrService
             return topText;
 
         return $"{topText}\n{bottomText}";
+    }
+
+    private static async Task<string> ReadDocumentAsync(byte[] bytes, OcrEngine engine, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        using var original = SKBitmap.Decode(bytes);
+        if (original is null)
+            return string.Empty;
+
+        int maxSide = Math.Max(original.Width, original.Height);
+        double scale = Math.Min(1d, (double)OcrEngine.MaxImageDimension / maxSide);
+        using var resized = scale < 1 ? original.Resize(new SKImageInfo(
+            Math.Max(1, (int)(original.Width * scale)),
+            Math.Max(1, (int)(original.Height * scale))), SKSamplingOptions.Default) : null;
+        using var bitmap = await ToSoftwareBitmapAsync(resized ?? original);
+        var result = await engine.RecognizeAsync(bitmap);
+        token.ThrowIfCancellationRequested();
+        return string.Join("\n", result.Lines.Select(line => line.Text));
     }
 
     private static async Task<SoftwareBitmap> ToSoftwareBitmapAsync(SKBitmap bitmap)

@@ -94,7 +94,7 @@
                     </Grid>
                 </Border>
 
-                <Grid ColumnDefinitions="{OnPlatform Android='*', Default='*,*,*'}"
+                <Grid ColumnDefinitions="{OnPlatform Android='*', Default='*,*,*,*'}"
                       RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
                     <Border Grid.Column="0" StyleClass="HoverCard"
                             StrokeShape="RoundRectangle 6" StrokeThickness="1"
@@ -122,7 +122,7 @@
                                    TextColor="{DynamicResource TextPrimary}" VerticalOptions="Center" />
                         </Grid>
                     </Border>
-                    <Border Grid.Row="2" Grid.Column="0" IsVisible="{OnPlatform Android=True, Default=False}" StyleClass="HoverCard"
+                    <Border Grid.Row="{OnPlatform Android=2, Default=0}" Grid.Column="{OnPlatform Android=0, Default=2}" StyleClass="HoverCard"
                             StrokeShape="RoundRectangle 6" StrokeThickness="1"
                             Stroke="{DynamicResource CardStroke}" BackgroundColor="{DynamicResource CardBg}"
                             Padding="10, 12" MinimumHeightRequest="56">
@@ -131,11 +131,11 @@
                         </Border.GestureRecognizers>
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
                             <vctrl:IconView Icon="camera" IconColor="TextSecondary" Size="24" />
-                            <Label Grid.Column="1" Text="Сканирование" FontSize="17" FontAttributes="Bold"
+                            <Label Grid.Column="1" Text="{OnPlatform Android=Сканирование, Default='Оцифровать фото'}" FontSize="17" FontAttributes="Bold"
                                    TextColor="{DynamicResource TextPrimary}" VerticalOptions="Center" />
                         </Grid>
                     </Border>
-                    <Border Grid.Column="2" IsVisible="{OnPlatform WinUI=True, Default=False}" StyleClass="HoverCard"
+                    <Border Grid.Column="3" IsVisible="{OnPlatform WinUI=True, Default=False}" StyleClass="HoverCard"
                             StrokeShape="RoundRectangle 6" StrokeThickness="1"
                             Stroke="{DynamicResource CardStroke}" BackgroundColor="{DynamicResource CardBg}"
                             Padding="10, 12" MinimumHeightRequest="56">

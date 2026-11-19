@@ -33,6 +33,7 @@ public partial class AppTabBar : ContentView
     {
         new("home",      "home",      "Главная",  "//MainPage"),
         new("templates", "templates", "Шаблоны",  "//TemplatesPage"),
+        new("scan",      "scan",      "Оцифровка", "//ScanPage"),
         new("check",     "check",     "Проверка", "//CheckPage"),
         new("profile",   "profile",   "Профиль",  "//ProfilePage"),
     };

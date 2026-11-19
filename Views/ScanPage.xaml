@@ -26,7 +26,7 @@
     </ContentPage.Resources>
 
     <Grid RowDefinitions="Auto, *, Auto"
-          MaximumWidthRequest="700"
+          MaximumWidthRequest="{OnPlatform Android=700, Default=1250}"
           HorizontalOptions="Fill">
 
         <!-- ==================== ШАПКА ==================== -->
@@ -69,10 +69,46 @@
         </Grid>
 
         <!-- ==================== ЦЕНТР: ВИДОИСКАТЕЛЬ ИЛИ РЕЗУЛЬТАТ ==================== -->
-        <Grid Grid.Row="1" Margin="20, 4">
+        <Grid Grid.Row="1" Margin="20, 4" ColumnSpacing="16"
+              ColumnDefinitions="{OnPlatform WinUI='*,1.15*', Default='*'}">
+
+            <Border x:Name="DesktopDropZone" IsVisible="{OnPlatform WinUI=True, Default=False}"
+                    BackgroundColor="{DynamicResource CardBg}" Stroke="{DynamicResource CardStroke}"
+                    StrokeShape="RoundRectangle 12" Padding="16">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
+                    <Label Text="Исходное изображение" FontAttributes="Bold" FontSize="17"
+                           TextColor="{DynamicResource TextPrimary}" />
+                    <Image x:Name="DesktopImage" Grid.Row="1" Aspect="AspectFit" IsVisible="False" />
+                    <VerticalStackLayout x:Name="DesktopDropHint" Grid.Row="1" Spacing="12"
+                                         VerticalOptions="Center" HorizontalOptions="Center">
+                        <vctrl:IconView Icon="image" Size="40" IconColor="TextSecondary" />
+                        <Label Text="Перетащите фото или скан сюда" HorizontalTextAlignment="Center"
+                               TextColor="{DynamicResource TextSecondary}" />
+                        <Label Text="JPG или PNG" HorizontalTextAlignment="Center"
+                               TextColor="{DynamicResource TextSecondary}" />
+                    </VerticalStackLayout>
+                    <Label x:Name="DesktopFileName" Grid.Row="2" LineBreakMode="MiddleTruncation"
+                           TextColor="{DynamicResource TextSecondary}" />
+                </Grid>
+            </Border>
+
+            <VerticalStackLayout x:Name="DesktopInputPanel" Grid.Column="{OnPlatform WinUI=1, Default=0}"
+                                 IsVisible="{OnPlatform WinUI=True, Default=False}"
+                                 VerticalOptions="Center" Spacing="12" Padding="12">
+                <Label Text="Оцифровка изображения" FontSize="22" FontAttributes="Bold"
+                       TextColor="{DynamicResource TextPrimary}" />
+                <Label Text="Загрузите фото документа, распознайте текст и проверьте его по оригиналу."
+                       TextColor="{DynamicResource TextSecondary}" />
+                <Button Text="Выбрать изображение" Clicked="OnChooseDesktopImageClicked" />
+                <Button x:Name="RecognizeDesktopButton" Text="Распознать текст"
+                        Clicked="OnRecognizeDesktopClicked" IsEnabled="False"
+                        BackgroundColor="{DynamicResource ActionBg}" TextColor="White" />
+                <Label x:Name="DesktopError" IsVisible="False" TextColor="{DynamicResource BadColor}" />
+            </VerticalStackLayout>
 
             <!-- Рамка видоискателя с акцентными уголками и подсказкой -->
-            <Grid x:Name="FramePanel" RowDefinitions="*, Auto, Auto" RowSpacing="12">
+            <Grid x:Name="FramePanel" IsVisible="{OnPlatform Android=True, Default=False}"
+                  RowDefinitions="*, Auto, Auto" RowSpacing="12">
 
                 <!-- Область камеры/видоискателя -->
                 <Grid x:Name="ViewfinderArea" Grid.Row="0" HorizontalOptions="Fill" VerticalOptions="Fill">
@@ -186,7 +222,8 @@
             </Grid>
 
             <!-- Результат распознавания (панель скролла) -->
-            <ScrollView x:Name="ResultPanel" IsVisible="False" VerticalScrollBarVisibility="Never">
+            <ScrollView x:Name="ResultPanel" Grid.Column="{OnPlatform WinUI=1, Default=0}"
+                        IsVisible="False" VerticalScrollBarVisibility="Never">
                 <VerticalStackLayout Spacing="14" Padding="{OnPlatform Android='0, 4, 0, 36', WinUI='0, 4, 0, 16'}">
 
                     <!-- Кнопка «Снять заново» в виде аккуратного чипа -->
@@ -202,7 +239,7 @@
                             </Border.GestureRecognizers>
                             <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
                                 <Label Text="↩" FontSize="16" FontAttributes="Bold" TextColor="{DynamicResource BrandGreen}" VerticalOptions="Center" />
-                                <Label Text="Снять заново" FontSize="15" FontAttributes="Bold" TextColor="{DynamicResource BrandGreen}" VerticalOptions="Center" />
+                                <Label Text="{OnPlatform WinUI='Другое изображение', Default='Снять заново'}" FontSize="15" FontAttributes="Bold" TextColor="{DynamicResource BrandGreen}" VerticalOptions="Center" />
                             </HorizontalStackLayout>
                         </Border>
                     </HorizontalStackLayout>
@@ -622,6 +659,9 @@
                                 </HorizontalStackLayout>
                             </Border>
 
+                            <Button Text="Экспортировать PDF" IsVisible="{OnPlatform WinUI=True, Default=False}"
+                                    Clicked="OnExportGostPdfClicked" />
+
                             <!-- Кнопка: Создать ГОСТ-шаблон из этого текста -->
                             <Border StyleClass="HoverCard"
                                     Stroke="{DynamicResource BrandGreen}"
@@ -684,6 +724,7 @@
 
         <!-- ==================== ПАНЕЛЬ ДЕЙСТВИЙ (ГАЛЕРЕЯ, ЗАТВОР, ФАЙЛ) ==================== -->
         <Grid Grid.Row="2"
+              IsVisible="{OnPlatform Android=True, Default=False}"
               ColumnDefinitions="*, Auto, *"
               VerticalOptions="End">
             <Grid.Padding>

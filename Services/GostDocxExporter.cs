@@ -40,7 +40,6 @@ public static class GostDocxExporter
             Footer = 720
         };
         sectionProps.AppendChild(pageMargin);
-        body.AppendChild(sectionProps);
 
         // Универсальный структурный парсер документа (Зоны 1-4)
         var blocks = UniversalDocumentParser.Parse(text ?? string.Empty);
@@ -85,6 +84,7 @@ public static class GostDocxExporter
             }
         }
 
+        body.AppendChild(sectionProps);
         mainPart.Document.Save();
     }
 

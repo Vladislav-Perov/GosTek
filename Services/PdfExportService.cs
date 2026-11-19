@@ -111,11 +111,15 @@ public static class PdfExportService
                                 continue;
                             }
 
-                            col.Item().PaddingBottom(4).Text(text =>
+                            col.Item().PaddingBottom(4).PaddingLeft((float)para.LeftIndentMm, Unit.Millimetre).Text(text =>
                             {
                                 if (formatting?.FirstLineMm is { } firstLine)
                                     text.ParagraphFirstLineIndentation((float)firstLine, Unit.Millimetre);
-                                if ((formatting?.Alignment ?? para.Align) == Microsoft.Maui.TextAlignment.Center)
+                                else if (para.FirstLineMm > 0)
+                                    text.ParagraphFirstLineIndentation((float)para.FirstLineMm, Unit.Millimetre);
+                                if (para.Justify && formatting?.Alignment is null)
+                                    text.Justify();
+                                else if ((formatting?.Alignment ?? para.Align) == Microsoft.Maui.TextAlignment.Center)
                                     text.AlignCenter();
                                 else if ((formatting?.Alignment ?? para.Align) == Microsoft.Maui.TextAlignment.End)
                                     text.AlignRight();
@@ -134,6 +138,7 @@ public static class PdfExportService
                                     var span = text.Span(content);
                                     if (para.Bold) span.Bold();
                                     if (para.Italic) span.Italic();
+                                    if (para.LineSpacing is { } lineSpacing) span.LineHeight((float)lineSpacing);
                                     if ((formatting?.FontSize ?? para.Pt) > 0) span.FontSize((float)(formatting?.FontSize ?? para.Pt));
                                 }
                             });

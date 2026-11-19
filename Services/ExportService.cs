@@ -40,8 +40,8 @@ public static class ExportService
     public static Task<SaveResult?> SavePdfAsync(TemplateDef template, IReadOnlyDictionary<string, string> values, string name, DocumentFormatting? formatting = null)
         => SaveAsync(name + ".pdf", (fileName, overwrite) => FileSaveService.SavePdf(template, values, fileName, overwrite, formatting));
 
-    public static Task<SaveResult?> SaveCopyAsync(string sourcePath, string name)
-        => SaveAsync(name + ".docx", (fileName, overwrite) => FileSaveService.SaveCopy(sourcePath, fileName, overwrite));
+    public static Task<SaveResult?> SaveCopyAsync(string sourcePath, string name, string extension = ".docx")
+        => SaveAsync(name + extension, (fileName, overwrite) => FileSaveService.SaveCopy(sourcePath, fileName, overwrite));
 
     private static async Task<SaveResult?> SaveAsync(string fileName, Func<string, bool, SaveResult> save)
     {
