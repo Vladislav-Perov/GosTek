@@ -51,6 +51,8 @@ public static class TemplateEngine
     private const string Blank = "__________";
 
     // [..], {{..}} или {..}; внутри обязательно есть буква (чтобы не трогать сноски вида [1])
+    internal const string RetiredAiDemoFileName = "Примеры_Тестовая объяснительная с ИИ.docx";
+
     private static readonly Regex Rx = new(@"\[([^\[\]]*\p{L}[^\[\]]*)\]|\{\{([^{}]*\p{L}[^{}]*)\}\}|\{([^{}]*\p{L}[^{}]*)\}", RegexOptions.Compiled);
     private static readonly char[] Seps = { '-', '–', '—', ':', '|' };
 
@@ -124,8 +126,11 @@ public static class TemplateEngine
                     return new List<TemplateDef>();
             }
 
+            // Skip the former bundled sample on upgrades without deleting an existing file.
+            string retiredDemo = Path.GetFullPath(Path.Combine(folder, RetiredAiDemoFileName));
             var files = Directory.EnumerateFiles(folder, "*.docx", SearchOption.AllDirectories)
-                .Where(f => !Path.GetFileName(f).StartsWith("~$"))
+                .Where(f => !Path.GetFileName(f).StartsWith("~$") &&
+                            !string.Equals(Path.GetFullPath(f), retiredDemo, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             Parallel.ForEach(files, file =>

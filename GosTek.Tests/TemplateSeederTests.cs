@@ -209,17 +209,19 @@ public class TemplateSeederTests
     }
 
     [Fact]
-    public void BundledAiDemo_EnablesGenerationOnlyForTextField()
+    public void RetiredAiDemo_IsExcludedFromCatalogWithoutDeletingFile()
     {
         var folder = Directory.CreateTempSubdirectory();
         try {
-            var assetPath = Path.Combine(FindSolutionDir(), "Resources", "Raw", TemplateSeeder.AiDemoRawAsset);
-            File.Copy(assetPath, Path.Combine(folder.FullName, TemplateSeeder.AiDemoTargetName));
+            const string retiredName = "Примеры_Тестовая объяснительная с ИИ.docx";
+            var retiredPath = Path.Combine(folder.FullName, retiredName);
+            var normalPath = Path.Combine(folder.FullName, TemplateSeeder.ExplanationTargetName);
+            TemplateSeeder.CreateTemplateDocument(retiredPath, retiredName);
+            TemplateSeeder.CreateTemplateDocument(normalPath, TemplateSeeder.ExplanationTargetName);
 
-            var template = Assert.Single(TemplateEngine.Scan(folder.FullName));
-            var field = Assert.Single(template.Fields, field => field.TextGeneration is not null);
-            Assert.Equal("Текст", field.Label);
-            Assert.Equal(TextGenerationKind.DocumentText, field.TextGeneration);
+            Assert.DoesNotContain(TemplateSeeder.DefaultTemplates, template => template.TargetFileName == retiredName);
+            Assert.Equal(normalPath, Assert.Single(TemplateEngine.Scan(folder.FullName)).FilePath);
+            Assert.True(File.Exists(retiredPath));
         } finally {
             folder.Delete(recursive: true);
         }

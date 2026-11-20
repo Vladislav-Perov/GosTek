@@ -28,9 +28,6 @@ public static class TemplateSeeder
     public const string ContractTargetName = "Договоры_Договор_купли_продажи.docx";
     public const string ExplanationTargetName = "Служебные_Объяснительная_записка.docx";
 
-    public const string AiDemoRawAsset = "ai_demo_template.docx";
-    public const string AiDemoTargetName = "Примеры_Тестовая объяснительная с ИИ.docx";
-
     // Студенческие шаблоны по ГОСТ Республики Беларусь (Фаза 13)
     public const string StudyCertificateRawAsset = "study_certificate_template.docx";
     public const string FinancialAidRawAsset = "financial_aid_template.docx";
@@ -57,7 +54,6 @@ public static class TemplateSeeder
         (AcademicLeaveRawAsset, AcademicLeaveTargetName),
         (StudentExplanationRawAsset, StudentExplanationTargetName),
         (IndividualScheduleRawAsset, IndividualScheduleTargetName),
-        (AiDemoRawAsset, AiDemoTargetName),
 
         // Дополнительные шаблоны (из библиотеки примеров)
         ("tpl_it_dogovor_na_razrabotku_programmnogo_obespecheniya.docx", "IT_Договор_на_разработку_программного_обеспечения.docx"),
@@ -214,19 +210,10 @@ public static class TemplateSeeder
         else if (templateName.Contains("график", StringComparison.OrdinalIgnoreCase) ||
                  templateName.Contains("individual_schedule", StringComparison.OrdinalIgnoreCase))
             BuildIndividualScheduleTemplate(body);
-        else if (templateName == AiDemoTargetName || templateName == AiDemoRawAsset)
-            BuildAiDemoTemplate(body);
         else
             BuildExplanationTemplate(body);
 
         mainPart.Document.Save();
-    }
-
-    private static void BuildAiDemoTemplate(Body body)
-    {
-        AddParagraph(body, "ОБЪЯСНИТЕЛЬНАЯ ЗАПИСКА", JustificationValues.Center, isBold: true);
-        AddParagraph(body, "{Текст}", JustificationValues.Left);
-        AddParagraph(body, "[Дата-00.00.0000]                                     [ФИО]", JustificationValues.Left);
     }
 
     private static void BuildVacationTemplate(Body body)
